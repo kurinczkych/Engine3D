@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -33,6 +35,20 @@ namespace Mario64
                 this.p = p;
                 W = new double[]{ 1.0f, 1.0f, 1.0f};
                 color = Color4.White;
+            }
+
+            public string GetPointsStr()
+            {
+                return p[0].ToString() + p[1].ToString() + p[2].ToString();
+            }
+
+            public void ClipPoints(int width, int height)
+            {
+                for (int i = 0; i < p.Length; i++)
+                {
+                    p[i].X = Math.Max(0, Math.Min(width, p[i].X));
+                    p[i].Y = Math.Max(0, Math.Min(height, p[i].Y));
+                }
             }
 
             public triangle GetCopy()
@@ -108,7 +124,10 @@ namespace Mario64
                             if (result[0] == 'v')
                             {
                                 string[] vStr = result.Substring(2).Split(" ");
-                                Vector3d v = new Vector3d(double.Parse(vStr[0]), double.Parse(vStr[1]), double.Parse(vStr[2]));
+                                var a = double.Parse(vStr[0]);
+                                var b = double.Parse(vStr[1]);
+                                var c = double.Parse(vStr[2]);
+                                Vector3d v = new Vector3d(a,b,c);
                                 verts.Add(v);
                             }
                             else if (result[0] == 'f')
@@ -279,8 +298,7 @@ namespace Mario64
 
             Func<Vector3d, double> dist = (Vector3d p) =>
             {
-                Vector3d n = Vector3d.Normalize(p);
-                return (plane_n.X * n.X + plane_n.Y * n.Y + plane_n.Z * n.Z - Vector3d.Dot(plane_n, plane_p));
+                return (plane_n.X * p.X + plane_n.Y * p.Y + plane_n.Z * p.Z - Vector3d.Dot(plane_n, plane_p));
             };
 
             // Create two temporary storage arrays to classify points either side of plane
@@ -348,8 +366,10 @@ namespace Mario64
 
                 // Copy appearance info to new triangles
                 out_tri1.color = in_tri.color;
+                out_tri1.color = new Color4(0.0f, 1.0f, 0.0f, 1.0f);
 
                 out_tri2.color = in_tri.color;
+                out_tri2.color = new Color4(0.0f, 0.0f, 1.0f, 1.0f);
 
                 // The first triangle consists of the two inside points and a new
                 // point determined by the location where one side of the triangle
@@ -478,6 +498,8 @@ namespace Mario64
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
+
             screenWidth = width;
             screenHeight = height;
             this.CenterWindow(new Vector2i(screenWidth, screenHeight));
@@ -558,10 +580,8 @@ namespace Mario64
                 p2 = Matrix_MultiplyVector(matView, triTransormed.p[2], triTransormed.W[2]); triViewed.p[2] = p2.Item1; triViewed.W[2] = p2.Item2;
 
                 int nClippedTriangles = 0;
-                triangle clipped1 = new triangle();
-                triangle clipped2 = new triangle();
-                nClippedTriangles = Triangle_ClipAgainstPlane(new Vector3d(0.0f, 0.0f, 0.1f), new Vector3d(0.0f, 0.0f, 1.0f), triViewed, ref clipped1, ref clipped2);
-                triangle[] clipped = new triangle[2] { clipped1, clipped2 };
+                triangle[] clipped = new triangle[2] { new triangle(), new triangle() };
+                nClippedTriangles = Triangle_ClipAgainstPlane(new Vector3d(0.0f, 0.0f, 0.1f), new Vector3d(0.0f, 0.0f, 1.0f), triViewed, ref clipped[0], ref clipped[1]);
 
                 for (int n = 0; n < nClippedTriangles; n++)
                 {
@@ -583,9 +603,12 @@ namespace Mario64
                     triProjected.p[1] += offsetView;
                     triProjected.p[2] += offsetView;
 
+
                     triProjected.p[0] *= new Vector3d(0.5f * (double)screenWidth, 0.5f * (double)screenHeight, 1.0f);
                     triProjected.p[1] *= new Vector3d(0.5f * (double)screenWidth, 0.5f * (double)screenHeight, 1.0f);
                     triProjected.p[2] *= new Vector3d(0.5f * (double)screenWidth, 0.5f * (double)screenHeight, 1.0f);
+
+                    //triProjected.ClipPoints(screenWidth, screenHeight);
 
                     trisToClip.Add(triProjected);
                 }
@@ -595,13 +618,16 @@ namespace Mario64
             trisToClip.Sort((a, b) => a.CompareTo(b));
 
             trisToRaster = new List<triangle>();
+
             foreach (triangle triToClip in trisToClip)
             {
                 // Clip triangles against all four screen edges, this could yield
                 // a bunch of triangles, so create a queue that we traverse to 
                 //  ensure we only test new triangles generated against planes
                 triangle[] clippedNew = new triangle[2] { new triangle(), new triangle() };
-                List<triangle> listTriangles = new List<triangle>() { triToClip };
+
+                Queue<triangle> list = new Queue<triangle>();
+                list.Enqueue(triToClip);
 
                 int nNewTriangles = 1;
 
@@ -611,8 +637,7 @@ namespace Mario64
                     while (nNewTriangles > 0)
                     {
                         // Take triangle from front of queue
-                        triangle test = listTriangles.First();
-                        listTriangles.RemoveAt(0);
+                        triangle test = list.Dequeue();
                         nNewTriangles--;
 
                         // Clip it against a plane. We only need to test each 
@@ -636,16 +661,25 @@ namespace Mario64
                         // Clipping may yield a variable number of triangles, so
                         // add these new ones to the back of the queue for subsequent
                         // clipping against next planes
+                        ;
 
                         for (int w = 0; w < nTrisToAdd; w++)
-                            listTriangles.Add(clippedNew[w]);
+                            list.Enqueue(clippedNew[w]);
                     }
-                    nNewTriangles = listTriangles.Count();
+                    nNewTriangles = list.Count();
                 }
-
-                foreach (triangle listTriangle in listTriangles)
+                ;
+                foreach (triangle listTriangle in list)
                     trisToRaster.Add(listTriangle);
             }
+            //string b = "";
+            //foreach (triangle tri in trisToRaster)
+            //{
+            //    var a = tri.GetPointsStr();
+            //    b += a + "\n";
+            //}
+
+            ;
         }
 
 
@@ -671,7 +705,8 @@ namespace Mario64
             vertices = new List<Vertex>();
             foreach (var tri in tris)
             {
-                Color4 c = new Color4((float)rnd.Next(0, 100) / 100f, (float)rnd.Next(0, 100) / 100f, (float)rnd.Next(0, 100) / 100f, 1.0f);
+                //Color4 c = new Color4((float)rnd.Next(0, 100) / 100f, (float)rnd.Next(0, 100) / 100f, (float)rnd.Next(0, 100) / 100f, 1.0f);
+                Color4 c = tri.color;
                 //vertices.Add(ConvertToNDC(tri.p[0], tri.color));
                 //vertices.Add(ConvertToNDC(tri.p[1], tri.color));
                 //vertices.Add(ConvertToNDC(tri.p[2], tri.color));
@@ -701,10 +736,10 @@ namespace Mario64
 
             GL.DisableVertexAttribArray(0);
 
-            foreach (triangle tri in trisToRaster)
-            {
-                DrawTriangle(tri, Color4.Red);
-            }
+            //foreach (triangle tri in trisToRaster)
+            //{
+            //    DrawTriangle(tri, Color4.Red);
+            //}
 
             Context.SwapBuffers();
 
@@ -812,7 +847,7 @@ namespace Mario64
             GL.DeleteShader(fragmentShader);
 
             // Projection matrix and mesh loading
-            meshCube.ProcessObj("cube.obj");
+            meshCube.ProcessObj("mountains.obj");
 
             //Projection matrix
             double near = 0.1f;
