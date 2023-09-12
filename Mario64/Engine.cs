@@ -15,26 +15,188 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using static System.Net.Mime.MediaTypeNames;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace Mario64
 {
     public class Engine : GameWindow
     {
-        private struct triangle
+        class Vec2d
         {
-            public triangle()
+            public Vec2d() { }
+
+            public Vec2d(double u, double v)
             {
-                p = new Vector3d[3];
-                W = new double[] { 1.0f, 1.0f, 1.0f };
+                this.u = u;
+                this.v = v;
+                this.w = 1.0f;
+            }
+
+            public double u = 0.0f;
+            public double v = 0.0f;
+            public double w;
+
+
+            public Vec2d GetCopy()
+            {
+                Vec2d v2 = new Vec2d(u, v);
+                v2.w = w;
+                return v2;
+            }
+        }
+
+        class Vec3d
+        {
+            public Vec3d()
+            {
+                W = 1.0f;
                 color = Color4.White;
             }
 
-            public triangle(Vector3d[] p)
+            public Vec3d(double x, double y, double z)
             {
-                this.p = p;
-                W = new double[]{ 1.0f, 1.0f, 1.0f};
+                X = x;
+                Y = y;
+                Z = z;
+                W = 1.0f;
                 color = Color4.White;
+            }
+
+            public double X;
+            public double Y;
+            public double Z;
+            public double W;
+
+            public Vec3d GetCopy()
+            {
+                Vec3d v = new Vec3d(X, Y, Z);
+                v.W = W;
+                v.color = color;
+                return v;
+            }
+
+            public static double Dot(Vec3d v1, Vec3d v2)
+            {
+                return v1.X * v2.X + v1.Y * v2.Y + v1.Z * v2.Z;
+            }
+
+            public static Vec3d Cross(Vec3d v1, Vec3d v2)
+            {
+                Vec3d v = new Vec3d();
+                v.X = v1.Y * v2.Z - v1.Z * v2.Y;
+                v.Y = v1.Z * v2.X - v1.X * v2.Z;
+                v.Z = v1.X * v2.Y - v1.Y * v2.X;
+                v.W = v1.W;
+                v.color = v1.color;
+                return v;
+            }
+
+            public static Vec3d Normalize(Vec3d v)
+            {
+                double l = v.Length;
+                Vec3d v2 = new Vec3d(v.X / l, v.Y / l, v.Z / l);
+                v2.W = v.W;
+                v2.color = v.color;
+                return v;
+            }
+
+            public void Normalize()
+            {
+                double l = Length;
+                X /= l;
+                Y /= l;
+                Z /= l;
+            }
+
+            #region Operator overloads
+            public static Vec3d operator -(Vec3d v1, Vec3d v2)
+            {
+                Vec3d v3 = new Vec3d(v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
+                v3.W = v1.W;
+                v3.color = v1.color;
+                return v3;
+            }
+            public static Vec3d operator +(Vec3d v1, Vec3d v2)
+            {
+                Vec3d v3 = new Vec3d(v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
+                v3.W = v1.W;
+                v3.color = v1.color;
+                return v3;
+            }
+            public static Vec3d operator /(Vec3d v1, double d)
+            {
+                if (d == 0)
+                    return v1;
+                Vec3d v3 = new Vec3d(v1.X / d, v1.Y / d, v1.Z / d);
+                v3.W = v1.W;
+                v3.color = v1.color;
+                return v3;
+            }
+            public static Vec3d operator *(Vec3d v1, double d)
+            {
+                Vec3d v3 = new Vec3d(v1.X * d, v1.Y * d, v1.Z * d);
+                v3.W = v1.W;
+                v3.color = v1.color;
+                return v3;
+            }
+            #endregion
+
+            public Color4 color;
+            public double Length
+            {
+                get
+                {
+                    return Math.Sqrt(Vec3d.Dot(this, this));
+                }
+            }
+        }
+
+        private class triangle
+        {
+            public triangle()
+            {
+                p = new Vec3d[3];
+                t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            }
+
+            public triangle(Vec3d[] p)
+            {
+                this.p = new Vec3d[p.Length];
+                for (int p_ = 0; p_ < p.Length; p_++)
+                {
+                    this.p[p_] = p[p_].GetCopy();
+                }
+
+                t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            }
+
+            public triangle(Vec3d[] p, Vec2d[] t)
+            {
+                this.p = new Vec3d[p.Length];
+                this.t = new Vec2d[t.Length];
+                for (int p_ = 0; p_ < p.Length; p_++)
+                {
+                    this.p[p_] = p[p_].GetCopy();
+                }
+                for (int t_ = 0; t_ < t.Length; t_++)
+                {
+                    this.t[t_] = t[t_].GetCopy();
+                }
+            }
+
+            public void Color(Color4 c)
+            {
+                foreach (Vec3d p_ in p)
+                    p_.color = c;
+            }
+
+            public void Color(triangle t)
+            {
+                for (int p_ = 0; p_ < p.Length; p_++)
+                {
+                    p[p_].color = t.p[p_].color;
+                }
             }
 
             public string GetPointsStr()
@@ -42,37 +204,17 @@ namespace Mario64
                 return p[0].ToString() + p[1].ToString() + p[2].ToString();
             }
 
-            public void ClipPoints(int width, int height)
-            {
-                for (int i = 0; i < p.Length; i++)
-                {
-                    p[i].X = Math.Max(0, Math.Min(width, p[i].X));
-                    p[i].Y = Math.Max(0, Math.Min(height, p[i].Y));
-                }
-            }
-
             public triangle GetCopy()
             {
                 triangle tri = new triangle();
-                tri.p[0] = p[0];
-                tri.p[1] = p[1];
-                tri.p[2] = p[2];
-                tri.W[0] = W[0];
-                tri.W[1] = W[1];
-                tri.W[2] = W[2];
-                tri.color = color;
+                tri.p[0] = p[0].GetCopy();
+                tri.p[1] = p[1].GetCopy();
+                tri.p[2] = p[2].GetCopy();
+                tri.t[0] = t[0].GetCopy();
+                tri.t[1] = t[1].GetCopy();
+                tri.t[2] = t[2].GetCopy();
 
                 return tri;
-            }
-
-            public static Vector3d GetVec3d(Vector4d v)
-            {
-                return new Vector3d(v);
-            }
-
-            public Vector4d GetVec4d(int index)
-            {
-                return new Vector4d(p[index], 1.0f);
             }
 
             public int CompareTo(triangle tri)
@@ -88,9 +230,8 @@ namespace Mario64
                     return 0;
             }
 
-            public Vector3d[] p;
-            public double[] W;
-            public Color4 color;
+            public Vec3d[] p;
+            public Vec2d[] t;
         }
 
         private struct mesh
@@ -98,6 +239,25 @@ namespace Mario64
             public mesh()
             {
                 tris = new List<triangle>();
+            }
+
+            public void OnlyCube()
+            {
+                tris = new List<triangle>
+                {
+                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(1.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(0.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(0.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) })
+                };
             }
 
             public void ProcessObj(string filename)
@@ -109,10 +269,10 @@ namespace Mario64
                     .Single(str => str.EndsWith(filename));
 
                 string result;
-                List<Vector3d> verts = new List<Vector3d>();
+                List<Vec3d> verts = new List<Vec3d>();
 
-                #pragma warning disable CS8600
-                #pragma warning disable CS8604
+#pragma warning disable CS8600
+#pragma warning disable CS8604
                 using (Stream stream = assembly.GetManifestResourceStream(resourceName))
                 using (StreamReader reader = new StreamReader(stream))
                 {
@@ -127,7 +287,7 @@ namespace Mario64
                                 var a = double.Parse(vStr[0]);
                                 var b = double.Parse(vStr[1]);
                                 var c = double.Parse(vStr[2]);
-                                Vector3d v = new Vector3d(a,b,c);
+                                Vec3d v = new Vec3d(a, b, c);
                                 verts.Add(v);
                             }
                             else if (result[0] == 'f')
@@ -135,7 +295,7 @@ namespace Mario64
                                 string[] vStr = result.Substring(2).Split(" ");
                                 int[] f = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
 
-                                tris.Add(new triangle(new Vector3d[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
+                                tris.Add(new triangle(new Vec3d[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
                             }
                         }
 
@@ -143,8 +303,8 @@ namespace Mario64
                             break;
                     }
                 }
-                #pragma warning restore CS8600
-                #pragma warning restore CS8604
+#pragma warning restore CS8600
+#pragma warning restore CS8604
             }
 
             public List<triangle> tris;
@@ -153,8 +313,9 @@ namespace Mario64
         private int vertexSize;
         struct Vertex
         {
-            public Vector3 Position;
+            public Vector4 Position;
             public Color4 Color;
+            public Vector3 Texture;
         }
 
 
@@ -231,19 +392,19 @@ namespace Mario64
             return matrix;
         }
 
-        Matrix4d Matrix_PointAt(Vector3d pos, Vector3d target, Vector3d up)
+        Matrix4d Matrix_PointAt(Vec3d pos, Vec3d target, Vec3d up)
         {
             // Calculate new forward direction
-            Vector3d newForward = target - pos;
-            newForward = Vector3d.Normalize(newForward);
+            Vec3d newForward = target - pos;
+            newForward = Vec3d.Normalize(newForward);
 
             // Calculate new Up direction
-            Vector3d a = newForward * Vector3d.Dot(up, newForward);
-            Vector3d newUp = up - a;
-            newUp = Vector3d.Normalize(newUp);
+            Vec3d a = newForward * Vec3d.Dot(up, newForward);
+            Vec3d newUp = up - a;
+            newUp = Vec3d.Normalize(newUp);
 
             // New Right direction is easy, its just cross product
-            Vector3d newRight = Vector3d.Cross(newUp, newForward);
+            Vec3d newRight = Vec3d.Cross(newUp, newForward);
 
             // Construct Dimensioning and Translation Matrix	
             Matrix4d matrix = new Matrix4d();
@@ -267,56 +428,83 @@ namespace Mario64
             return matrix;
         }
 
-        Tuple<Vector3d, double> Matrix_MultiplyVector(Matrix4d m, Vector3d i, double w)
+        Vec3d Matrix_MultiplyVector(Matrix4d m, Vec3d i)
         {
-            Vector3d v;
-            v.X = i.X * m.Row0[0] + i.Y * m.Row1[0] + i.Z * m.Row2[0] + w * m.Row3[0];
-            v.Y = i.X * m.Row0[1] + i.Y * m.Row1[1] + i.Z * m.Row2[1] + w * m.Row3[1];
-            v.Z = i.X * m.Row0[2] + i.Y * m.Row1[2] + i.Z * m.Row2[2] + w * m.Row3[2];
-            double _w = i.X * m.Row0[3] + i.Y * m.Row1[3] + i.Z * m.Row2[3] + w * m.Row3[3];
-            return new Tuple<Vector3d, double>(v, _w);
+            Vec3d v = new Vec3d();
+            v.X = i.X * m.Row0[0] + i.Y * m.Row1[0] + i.Z * m.Row2[0] + i.W * m.Row3[0];
+            v.Y = i.X * m.Row0[1] + i.Y * m.Row1[1] + i.Z * m.Row2[1] + i.W * m.Row3[1];
+            v.Z = i.X * m.Row0[2] + i.Y * m.Row1[2] + i.Z * m.Row2[2] + i.W * m.Row3[2];
+            v.W = i.X * m.Row0[3] + i.Y * m.Row1[3] + i.Z * m.Row2[3] + i.W * m.Row3[3];
+            v.color = i.color;
+            return v;
         }
         #endregion
 
         #region Clipping stuff
-        Vector3d Vector_IntersectPlane(Vector3d plane_p, Vector3d plane_n, Vector3d lineStart, Vector3d lineEnd)
+        Vec3d Vector_IntersectPlane(Vec3d plane_p, Vec3d plane_n, Vec3d lineStart, Vec3d lineEnd, ref double t)
         {
-            plane_n = Vector3d.Normalize(plane_n);
-            double plane_d = -Vector3d.Dot(plane_n, plane_p);
-            double ad = Vector3d.Dot(lineStart, plane_n);
-            double bd = Vector3d.Dot(lineEnd, plane_n);
-            double t = (-plane_d - ad) / (bd - ad);
-            Vector3d lineStartToEnd = lineEnd - lineStart;
-            Vector3d lineToIntersect = lineStartToEnd * t;
+            plane_n = Vec3d.Normalize(plane_n);
+            double plane_d = -Vec3d.Dot(plane_n, plane_p);
+            double ad = Vec3d.Dot(lineStart, plane_n);
+            double bd = Vec3d.Dot(lineEnd, plane_n);
+            t = (-plane_d - ad) / (bd - ad);
+            Vec3d lineStartToEnd = lineEnd - lineStart;
+            Vec3d lineToIntersect = lineStartToEnd * t;
             return lineStart + lineToIntersect;
         }
 
-        int Triangle_ClipAgainstPlane(Vector3d plane_p, Vector3d plane_n, triangle in_tri, ref triangle out_tri1, ref triangle out_tri2)
+        int Triangle_ClipAgainstPlane(Vec3d plane_p, Vec3d plane_n, triangle in_tri, ref triangle out_tri1, ref triangle out_tri2)
         {
             // Make sure plane normal is indeed normal
-            plane_n = Vector3d.Normalize(plane_n);
+            plane_n = Vec3d.Normalize(plane_n);
 
-            Func<Vector3d, double> dist = (Vector3d p) =>
+            Func<Vec3d, double> dist = (Vec3d p) =>
             {
-                return (plane_n.X * p.X + plane_n.Y * p.Y + plane_n.Z * p.Z - Vector3d.Dot(plane_n, plane_p));
+                return (plane_n.X * p.X + plane_n.Y * p.Y + plane_n.Z * p.Z - Vec3d.Dot(plane_n, plane_p));
             };
 
             // Create two temporary storage arrays to classify points either side of plane
             // If distance sign is positive, point lies on "inside" of plane
-            Vector3d[] inside_points = new Vector3d[3]; int nInsidePointCount = 0;
-            Vector3d[] outside_points = new Vector3d[3]; int nOutsidePointCount = 0;
+            Vec3d[] inside_points = new Vec3d[3]; int nInsidePointCount = 0;
+            Vec3d[] outside_points = new Vec3d[3]; int nOutsidePointCount = 0;
+            Vec2d[] inside_tex = new Vec2d[3]; int nInsideTexCount = 0;
+            Vec2d[] outside_tex = new Vec2d[3]; int nOutsideTexCount = 0;
 
             // Get signed distance of each point in triangle to plane
             double d0 = dist(in_tri.p[0]);
             double d1 = dist(in_tri.p[1]);
             double d2 = dist(in_tri.p[2]);
 
-            if (d0 >= 0) { inside_points[nInsidePointCount++] = in_tri.p[0]; }
-            else { outside_points[nOutsidePointCount++] = in_tri.p[0]; }
-            if (d1 >= 0) { inside_points[nInsidePointCount++] = in_tri.p[1]; }
-            else { outside_points[nOutsidePointCount++] = in_tri.p[1]; }
-            if (d2 >= 0) { inside_points[nInsidePointCount++] = in_tri.p[2]; }
-            else { outside_points[nOutsidePointCount++] = in_tri.p[2]; }
+            if (d0 >= 0)
+            {
+                inside_points[nInsidePointCount++] = in_tri.p[0].GetCopy();
+                inside_tex[nInsideTexCount++] = in_tri.t[0].GetCopy();
+            }
+            else
+            {
+                outside_points[nOutsidePointCount++] = in_tri.p[0].GetCopy();
+                outside_tex[nOutsideTexCount++] = in_tri.t[0].GetCopy();
+            }
+            if (d1 >= 0)
+            {
+                inside_points[nInsidePointCount++] = in_tri.p[1].GetCopy();
+                inside_tex[nInsideTexCount++] = in_tri.t[1].GetCopy();
+            }
+            else
+            {
+                outside_points[nOutsidePointCount++] = in_tri.p[1].GetCopy();
+                outside_tex[nOutsideTexCount++] = in_tri.t[1].GetCopy();
+            }
+            if (d2 >= 0)
+            {
+                inside_points[nInsidePointCount++] = in_tri.p[2].GetCopy();
+                inside_tex[nInsideTexCount++] = in_tri.t[2].GetCopy();
+            }
+            else
+            {
+                outside_points[nOutsidePointCount++] = in_tri.p[2].GetCopy();
+                outside_tex[nOutsideTexCount++] = in_tri.t[2].GetCopy();
+            }
 
             // Now classify triangle points, and break the input triangle into 
             // smaller output triangles if required. There are four possible
@@ -344,16 +532,25 @@ namespace Mario64
                 // Triangle should be clipped. As two points lie outside
                 // the plane, the triangle simply becomes a smaller triangle
 
-                // Copy appearance info to new triangle
-                out_tri1.color = in_tri.color;
 
                 // The inside point is valid, so keep that...
-                out_tri1.p[0] = inside_points[0];
+                out_tri1.p[0] = inside_points[0].GetCopy();
+                out_tri1.t[0] = inside_tex[0].GetCopy();
 
                 // but the two new points are at the locations where the 
                 // original sides of the triangle (lines) intersect with the plane
-                out_tri1.p[1] = Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0]);
-                out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1]);
+                double t = 0;
+                out_tri1.p[1] = Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0], ref t);
+                out_tri1.t[1].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
+                out_tri1.t[1].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
+                out_tri1.t[1].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
+                out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[1], ref t);
+                out_tri1.t[2].u = t * (outside_tex[1].u - inside_tex[0].u) + inside_tex[0].u;
+                out_tri1.t[2].v = t * (outside_tex[1].v - inside_tex[0].v) + inside_tex[0].v;
+                out_tri1.t[2].w = t * (outside_tex[1].w - inside_tex[0].w) + inside_tex[0].w;
+
+                // Copy appearance info to new triangle
+                out_tri1.Color(in_tri);
 
                 return 1; // Return the newly formed single triangle
             }
@@ -364,26 +561,39 @@ namespace Mario64
                 // the clipped triangle becomes a "quad". Fortunately, we can
                 // represent a quad with two new triangles
 
-                // Copy appearance info to new triangles
-                out_tri1.color = in_tri.color;
-                out_tri1.color = new Color4(0.0f, 1.0f, 0.0f, 1.0f);
-
-                out_tri2.color = in_tri.color;
-                out_tri2.color = new Color4(0.0f, 0.0f, 1.0f, 1.0f);
 
                 // The first triangle consists of the two inside points and a new
                 // point determined by the location where one side of the triangle
                 // intersects with the plane
-                out_tri1.p[0] = inside_points[0];
-                out_tri1.p[1] = inside_points[1];
-                out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0]);
+                double t = 0;
+
+                out_tri1.p[0] = inside_points[0].GetCopy();
+                out_tri1.p[1] = inside_points[1].GetCopy();
+                out_tri1.t[0] = inside_tex[0].GetCopy();
+                out_tri1.t[1] = inside_tex[1].GetCopy();
+
+                out_tri1.p[2] = Vector_IntersectPlane(plane_p, plane_n, inside_points[0], outside_points[0], ref t);
+                out_tri1.t[2].u = t * (outside_tex[0].u - inside_tex[0].u) + inside_tex[0].u;
+                out_tri1.t[2].v = t * (outside_tex[0].v - inside_tex[0].v) + inside_tex[0].v;
+                out_tri1.t[2].w = t * (outside_tex[0].w - inside_tex[0].w) + inside_tex[0].w;
 
                 // The second triangle is composed of one of he inside points, a
                 // new point determined by the intersection of the other side of the 
                 // triangle and the plane, and the newly created point above
-                out_tri2.p[0] = inside_points[1];
-                out_tri2.p[1] = out_tri1.p[2];
-                out_tri2.p[2] = Vector_IntersectPlane(plane_p, plane_n, inside_points[1], outside_points[0]);
+                out_tri2.p[0] = inside_points[1].GetCopy();
+                out_tri2.p[1] = out_tri1.p[2].GetCopy();
+                out_tri2.t[0] = inside_tex[1].GetCopy();
+                out_tri2.t[1] = out_tri1.t[2].GetCopy();
+                out_tri2.p[2] = Vector_IntersectPlane(plane_p, plane_n, inside_points[1], outside_points[0], ref t);
+                out_tri2.t[2].u = t * (outside_tex[0].u - inside_tex[1].u) + inside_tex[1].u;
+                out_tri2.t[2].v = t * (outside_tex[0].v - inside_tex[1].v) + inside_tex[1].v;
+                out_tri2.t[2].w = t * (outside_tex[0].w - inside_tex[1].w) + inside_tex[1].w;
+
+                // Copy appearance info to new triangles
+                //out_tri1.Color(new Color4(0.0f, 1.0f, 0.0f, 1.0f));
+                //out_tri2.Color(new Color4(0.0f, 0.0f, 1.0f, 1.0f));
+                out_tri1.Color(in_tri);
+                out_tri2.Color(in_tri);
 
                 return 2; // Return two newly formed triangles which form a quad
             }
@@ -492,8 +702,8 @@ namespace Mario64
         private Matrix4d matRotZ, matRotX, matTrans, matWorld;
         private double theta = 0f;
 
-        private Vector3d camera;
-        private Vector3d lookDir;
+        private Vec3d camera = new Vec3d();
+        private Vec3d lookDir = new Vec3d();
         private double yaw;
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
@@ -533,12 +743,12 @@ namespace Mario64
             matWorld = Matrix4d.Mult(matRotZ, matRotX);
             matWorld = Matrix4d.Mult(matWorld, matTrans);
 
-            Vector3d up = new Vector3d(0.0f, 1.0f, 0.0f);
-            Vector3d target = new Vector3d(0.0f, 0.0f, 1.0f);
+            Vec3d up = new Vec3d(0.0f, 1.0f, 0.0f);
+            Vec3d target = new Vec3d(0.0f, 0.0f, 1.0f);
             Matrix4d matCameraRot = Matrix_MakeRotationY(yaw);
 
-            var cameraP = Matrix_MultiplyVector(matCameraRot, target, 1.0f); 
-            lookDir = cameraP.Item1;
+            var cameraP = Matrix_MultiplyVector(matCameraRot, target);
+            lookDir = cameraP.GetCopy();
             target = camera + lookDir;
 
             List<triangle> trisToClip = new List<triangle>();
@@ -550,63 +760,86 @@ namespace Mario64
             {
                 triangle triTransormed = new triangle();
                 // Offset to screen
-                var p = Matrix_MultiplyVector(matWorld, tri.p[0], tri.W[0]); triTransormed.p[0] = p.Item1; triTransormed.W[0] = p.Item2;
-                var p1 = Matrix_MultiplyVector(matWorld, tri.p[1], tri.W[1]); triTransormed.p[1] = p1.Item1; triTransormed.W[1] = p1.Item2;
-                var p2 = Matrix_MultiplyVector(matWorld, tri.p[2], tri.W[2]); triTransormed.p[2] = p2.Item1; triTransormed.W[2] = p2.Item2;
+                triTransormed.p[0] = Matrix_MultiplyVector(matWorld, tri.p[0]);
+                triTransormed.p[1] = Matrix_MultiplyVector(matWorld, tri.p[1]);
+                triTransormed.p[2] = Matrix_MultiplyVector(matWorld, tri.p[2]);
+                triTransormed.t[0] = tri.t[0].GetCopy();
+                triTransormed.t[1] = tri.t[1].GetCopy();
+                triTransormed.t[2] = tri.t[2].GetCopy();
 
                 // Normal calculation
-                Vector3d normal, line1, line2;
+                Vec3d normal, line1, line2;
                 line1 = triTransormed.p[1] - triTransormed.p[0];
                 line2 = triTransormed.p[2] - triTransormed.p[0];
 
-                normal = Vector3d.Cross(line1, line2);
+                normal = Vec3d.Cross(line1, line2);
                 normal.Normalize();
 
-                Vector3d cameraRay = triTransormed.p[0] - camera;
+                Vec3d cameraRay = triTransormed.p[0] - camera;
                 // If not visible, continue
-                if (Vector3d.Dot(normal, cameraRay) >= 0)
+                if (Vec3d.Dot(normal, cameraRay) >= 0)
                     continue;
 
-                Vector3d lightDir = new Vector3d(0.0f, 0.0f, -1.0f);
+                Vec3d lightDir = new Vec3d(0.0f, 0.0f, -1.0f);
                 lightDir.Normalize();
-                double dp = Math.Max(0.1f, Vector3d.Dot(normal, lightDir));
-                triTransormed.color = new Color4((float)dp, (float)dp, (float)dp, 1.0f);
+                double dp = Math.Max(0.1f, Vec3d.Dot(normal, lightDir));
+                triTransormed.Color(new Color4((float)dp, (float)dp, (float)dp, 1.0f));
 
                 // Convert world space to view space
                 triangle triViewed = new triangle();
-                triViewed.color = triTransormed.color;
-                p = Matrix_MultiplyVector(matView, triTransormed.p[0], triTransormed.W[0]); triViewed.p[0] = p.Item1; triViewed.W[0] = p.Item2;
-                p1 = Matrix_MultiplyVector(matView, triTransormed.p[1], triTransormed.W[1]); triViewed.p[1] = p1.Item1; triViewed.W[1] = p1.Item2;
-                p2 = Matrix_MultiplyVector(matView, triTransormed.p[2], triTransormed.W[2]); triViewed.p[2] = p2.Item1; triViewed.W[2] = p2.Item2;
+                triViewed.p[0] = Matrix_MultiplyVector(matView, triTransormed.p[0]);
+                triViewed.p[1] = Matrix_MultiplyVector(matView, triTransormed.p[1]);
+                triViewed.p[2] = Matrix_MultiplyVector(matView, triTransormed.p[2]);
+                triViewed.t[0] = triTransormed.t[0].GetCopy();
+                triViewed.t[1] = triTransormed.t[1].GetCopy();
+                triViewed.t[2] = triTransormed.t[2].GetCopy();
+                triViewed.Color(triTransormed);
 
                 int nClippedTriangles = 0;
                 triangle[] clipped = new triangle[2] { new triangle(), new triangle() };
-                nClippedTriangles = Triangle_ClipAgainstPlane(new Vector3d(0.0f, 0.0f, 0.1f), new Vector3d(0.0f, 0.0f, 1.0f), triViewed, ref clipped[0], ref clipped[1]);
+                nClippedTriangles = Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.1f), new Vec3d(0.0f, 0.0f, 1.0f), triViewed, ref clipped[0], ref clipped[1]);
 
                 for (int n = 0; n < nClippedTriangles; n++)
                 {
                     triangle triProjected = new triangle();
 
                     // Project triangles from 3D to 2D
-                    p = Matrix_MultiplyVector(matProj, clipped[n].p[0], clipped[n].W[0]); triProjected.p[0] = p.Item1; triProjected.W[0] = p.Item2;
-                    p1 = Matrix_MultiplyVector(matProj, clipped[n].p[1], clipped[n].W[1]); triProjected.p[1] = p1.Item1; triProjected.W[1] = p1.Item2;
-                    p2 = Matrix_MultiplyVector(matProj, clipped[n].p[2], clipped[n].W[2]); triProjected.p[2] = p2.Item1; triProjected.W[2] = p2.Item2;
-                    triProjected.color = clipped[n].color;
+                    triProjected.p[0] = Matrix_MultiplyVector(matProj, clipped[n].p[0]);
+                    triProjected.p[1] = Matrix_MultiplyVector(matProj, clipped[n].p[1]);
+                    triProjected.p[2] = Matrix_MultiplyVector(matProj, clipped[n].p[2]);
+                    triProjected.t[0] = clipped[n].t[0].GetCopy();
+                    triProjected.t[1] = clipped[n].t[1].GetCopy();
+                    triProjected.t[2] = clipped[n].t[2].GetCopy();
+                    triProjected.Color(clipped[n]);
 
-                    triProjected.p[0] = triProjected.p[0] / triProjected.W[0];
-                    triProjected.p[1] = triProjected.p[1] / triProjected.W[1];
-                    triProjected.p[2] = triProjected.p[2] / triProjected.W[2];
+                    //triProjected.t[0].u = triProjected.t[0].u / triProjected.p[0].Z;
+                    //triProjected.t[1].u = triProjected.t[1].u / triProjected.p[1].Z;
+                    //triProjected.t[2].u = triProjected.t[2].u / triProjected.p[2].Z;
+                                                                              
+                    //triProjected.t[0].v = triProjected.t[0].v / triProjected.p[0].Z;
+                    //triProjected.t[1].v = triProjected.t[1].v / triProjected.p[1].Z;
+                    //triProjected.t[2].v = triProjected.t[2].v / triProjected.p[2].Z;
+
+                    //triProjected.t[0].w = 1.0f / triProjected.p[0].W;
+                    //triProjected.t[1].w = 1.0f / triProjected.p[1].W;
+                    //triProjected.t[2].w = 1.0f / triProjected.p[2].W;
+
+                    triProjected.p[0] = triProjected.p[0] / triProjected.p[0].W;
+                    triProjected.p[1] = triProjected.p[1] / triProjected.p[1].W;
+                    triProjected.p[2] = triProjected.p[2] / triProjected.p[2].W;
 
                     // Scale into view
-                    Vector3d offsetView = new Vector3d(1.0f, 1.0f, 0.0f);
+                    Vec3d offsetView = new Vec3d(1.0f, 1.0f, 0.0f);
                     triProjected.p[0] += offsetView;
                     triProjected.p[1] += offsetView;
                     triProjected.p[2] += offsetView;
 
-
-                    triProjected.p[0] *= new Vector3d(0.5f * (double)screenWidth, 0.5f * (double)screenHeight, 1.0f);
-                    triProjected.p[1] *= new Vector3d(0.5f * (double)screenWidth, 0.5f * (double)screenHeight, 1.0f);
-                    triProjected.p[2] *= new Vector3d(0.5f * (double)screenWidth, 0.5f * (double)screenHeight, 1.0f);
+                    triProjected.p[0].X *= 0.5f * screenWidth;
+                    triProjected.p[0].Y *= 0.5f * screenHeight;
+                    triProjected.p[1].X *= 0.5f * screenWidth;
+                    triProjected.p[1].Y *= 0.5f * screenHeight;
+                    triProjected.p[2].X *= 0.5f * screenWidth;
+                    triProjected.p[2].Y *= 0.5f * screenHeight;
 
                     //triProjected.ClipPoints(screenWidth, screenHeight);
 
@@ -614,7 +847,7 @@ namespace Mario64
                 }
             }
 
-                // Sort triangles back to front
+            // Sort triangles back to front
             trisToClip.Sort((a, b) => a.CompareTo(b));
 
             trisToRaster = new List<triangle>();
@@ -647,24 +880,23 @@ namespace Mario64
                         // comment is almost completely and utterly justified
 
                         if (p_ == 0)
-                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vector3d(0.0f, 0.0f, 0.0f), new Vector3d(0.0f, 1.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
+                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
 
                         if (p_ == 1)
-                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vector3d(0.0f, (float)screenHeight - 1, 0.0f), new Vector3d(0.0f, -1.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
+                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vec3d(0.0f, (float)screenHeight - 1, 0.0f), new Vec3d(0.0f, -1.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
 
                         if (p_ == 2)
-                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vector3d(0.0f, 0.0f, 0.0f), new Vector3d(1.0f, 0.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
+                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
 
                         if (p_ == 3)
-                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vector3d((float)screenWidth - 1, 0.0f, 0.0f), new Vector3d(-1.0f, 0.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
+                            nTrisToAdd = Triangle_ClipAgainstPlane(new Vec3d((float)screenWidth - 1, 0.0f, 0.0f), new Vec3d(-1.0f, 0.0f, 0.0f), test, ref clippedNew[0], ref clippedNew[1]);
 
                         // Clipping may yield a variable number of triangles, so
                         // add these new ones to the back of the queue for subsequent
                         // clipping against next planes
-                        ;
 
                         for (int w = 0; w < nTrisToAdd; w++)
-                            list.Enqueue(clippedNew[w]);
+                            list.Enqueue(clippedNew[w].GetCopy());
                     }
                     nNewTriangles = list.Count();
                 }
@@ -672,24 +904,16 @@ namespace Mario64
                 foreach (triangle listTriangle in list)
                     trisToRaster.Add(listTriangle);
             }
-            //string b = "";
-            //foreach (triangle tri in trisToRaster)
-            //{
-            //    var a = tri.GetPointsStr();
-            //    b += a + "\n";
-            //}
-
-            ;
         }
 
 
-        public double ConvertRange( double originalStart, double originalEnd, double newStart, double newEnd, double value) 
+        public double ConvertRange(double originalStart, double originalEnd, double newStart, double newEnd, double value)
         {
             double scale = (double)(newEnd - newStart) / (originalEnd - originalStart);
-            return (double)(newStart + ((value - originalStart) * scale)); 
+            return (double)(newStart + ((value - originalStart) * scale));
         }
 
-        Vertex ConvertToNDC(Vector3d screenPos, Color4 color)
+        Vertex ConvertToNDC(Vec3d screenPos, Color4 color, Vec2d tex)
         {
             //float x = (float)ConvertRange(0, screenWidth, -1, 1, screenPos[0]);
             //float y = (float)ConvertRange(0, screenHeight, -1, 1, screenPos[1]);
@@ -697,7 +921,8 @@ namespace Mario64
             float x = (2.0f * (float)screenPos.X / screenWidth) - 1.0f;
             float y = (2.0f * (float)screenPos.Y / screenHeight) - 1.0f;
 
-            return new Vertex() { Position = new Vector3(x, y, 1.0f), Color = color };
+            //return new Vertex() { Position = new Vector3(x, y, 1.0f), Color = color, Texture = new Vector3((float)tex.u, (float)tex.v, (float)tex.w) };
+            return new Vertex() { Position = new Vector4(x, y, 1.0f, (float)screenPos.W), Color = color, Texture = new Vector3((float)tex.u, (float)tex.v, (float)tex.w) };
         }
 
         void ConvertListToNDC(List<triangle> tris)
@@ -706,13 +931,13 @@ namespace Mario64
             foreach (var tri in tris)
             {
                 //Color4 c = new Color4((float)rnd.Next(0, 100) / 100f, (float)rnd.Next(0, 100) / 100f, (float)rnd.Next(0, 100) / 100f, 1.0f);
-                Color4 c = tri.color;
+                Color4 c = tri.p[0].color;
                 //vertices.Add(ConvertToNDC(tri.p[0], tri.color));
                 //vertices.Add(ConvertToNDC(tri.p[1], tri.color));
                 //vertices.Add(ConvertToNDC(tri.p[2], tri.color));
-                vertices.Add(ConvertToNDC(tri.p[0], c));
-                vertices.Add(ConvertToNDC(tri.p[1], c));
-                vertices.Add(ConvertToNDC(tri.p[2], c));
+                vertices.Add(ConvertToNDC(tri.p[0], c, tri.t[0]));
+                vertices.Add(ConvertToNDC(tri.p[1], c, tri.t[1]));
+                vertices.Add(ConvertToNDC(tri.p[2], c, tri.t[2]));
             }
         }
 
@@ -726,11 +951,14 @@ namespace Mario64
             GL.UseProgram(shaderProgram); // bind vao
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
 
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, vertexSize, 0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
             GL.EnableVertexAttribArray(0);
 
-            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, vertexSize, 3 * sizeof(float));
+            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
             GL.EnableVertexAttribArray(1);
+
+            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, vertexSize, 8 * sizeof(float));
+            GL.EnableVertexAttribArray(2);
 
             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
 
@@ -760,7 +988,9 @@ namespace Mario64
                 camera.Y -= 8.0f * args.Time;
             }
 
-            Vector3d forward = lookDir * (4.0f * args.Time);
+            Vec3d forward = lookDir * (4.0f * args.Time);
+            Vec3d leftLookDir = new Vec3d(-lookDir.Z, 0.0f, lookDir.X);
+            Vec3d left = leftLookDir * (8.0f * args.Time);  //8.0f <- speed
             if (IsKeyDown(Keys.W))
             {
                 camera += forward;
@@ -771,11 +1001,11 @@ namespace Mario64
             }
             if (IsKeyDown(Keys.A))
             {
-                camera.X -= 8.0f * args.Time;
+                camera = camera + left;
             }
             if (IsKeyDown(Keys.D))
             {
-                camera.X += 8.0f * args.Time;
+                camera = camera - left;
             }
 
             if (IsKeyDown(Keys.Left))
@@ -789,7 +1019,7 @@ namespace Mario64
 
             CalculateTriangles();
             ConvertListToNDC(trisToRaster);
-            
+
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
             GL.BufferData(BufferTarget.ArrayBuffer, vertices.Count * vertexSize, vertices.ToArray(), BufferUsageHint.StaticDraw);
         }
@@ -800,24 +1030,56 @@ namespace Mario64
 
             vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex));
 
+            GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
+
             // OPENGL init
             vao = GL.GenVertexArray();
 
             // generate a buffer
             GL.GenBuffers(1, out vbo);
 
+            // Texture -----------------------------------------------
+            int textureId = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, textureId);
+
+            // Load the image (using System.Drawing or another library)
+            Stream stream = GetResourceStreamByNameEnd("bmp_24.bmp");
+            if (stream != null)
+            {
+                using (stream)
+                {
+                    Bitmap bitmap = new Bitmap(stream);
+                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+                    bitmap.UnlockBits(data);
+
+                    // Texture settings
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                }
+            }
+            else
+            {
+                ;
+            }
+            // Texture --------------------------------------------
+
             // bind the vao
             GL.BindVertexArray(vao);
             // point slot (0) of the VAO to the currently bound VBO (vbo)
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, vertexSize, 0);
-            // enable the slot
-            //GL.EnableVertexArrayAttrib(vao, 0);
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
             GL.EnableVertexAttribArray(0);
 
 
-            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, vertexSize, 3 * sizeof(float));
-            //GL.EnableVertexArrayAttrib(vao, 1);
+            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
             GL.EnableVertexAttribArray(1);
+
+            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, vertexSize, 8 * sizeof(float));
+            GL.EnableVertexAttribArray(2);
 
 
             // create the shader program
@@ -842,12 +1104,18 @@ namespace Mario64
             // Link the program to OpenGL
             GL.LinkProgram(shaderProgram);
 
+            int textureLocation = GL.GetUniformLocation(shaderProgram, "textureSampler");
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, textureId);
+            GL.Uniform1(textureLocation, 0);  // 0 corresponds to TextureUnit.Texture0
+
             // delete the shaders
             GL.DeleteShader(vertexShader);
             GL.DeleteShader(fragmentShader);
 
             // Projection matrix and mesh loading
-            meshCube.ProcessObj("mountains.obj");
+            meshCube.OnlyCube();
+            //meshCube.ProcessObj("cube.obj");
 
             //Projection matrix
             double near = 0.1f;
@@ -893,6 +1161,19 @@ namespace Mario64
             }
 
             return shaderSource;
+        }
+
+        private Stream GetResourceStreamByNameEnd(string nameEnd)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            foreach (string resourceName in assembly.GetManifestResourceNames())
+            {
+                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
+                {
+                    return assembly.GetManifestResourceStream(resourceName);
+                }
+            }
+            return null; // or throw an exception if the resource is not found
         }
     }
 }
