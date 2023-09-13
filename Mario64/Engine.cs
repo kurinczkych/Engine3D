@@ -18,368 +18,136 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.ComponentModel.Design;
+using static System.Net.WebRequestMethods;
 
 #pragma warning disable CS8600
+#pragma warning disable CA1416
 #pragma warning disable CS8604
 
 namespace Mario64
 {
-    public class Vec3d
+    public class Plane
     {
-        public Vec3d()
+        public Plane() { }
+
+        public Plane(Vector3 normal, float dist)
         {
-            W = 1.0f;
-            color = Color4.White;
+            this.normal = normal.Normalized();
+            distance = dist;
         }
 
-        public Vec3d(float x, float y, float z)
+        // unit vector
+        public Vector3 normal = new Vector3(0.0f, 1.0f, 0.0f);
+
+        // distance from origin to the nearest point in the plane
+        public float distance = 0.0f;
+
+        public float DistanceToPoint(Vector3 point)
         {
-            X = x;
-            Y = y;
-            Z = z;
-            W = 1.0f;
-            color = Color4.White;
+            return Vector3.Dot(normal, point) + distance;
         }
 
-        public float X;
-        public float Y;
-        public float Z;
-        public float W;
-
-        public Vec3d GetCopy()
+        public float DistanceToPoint(Vec3d point)
         {
-            Vec3d v = new Vec3d(X, Y, Z);
-            v.W = W;
-            v.color = color;
-            return v;
+            return Vector3.Dot(normal, new Vector3(point.X, point.Y, point.Z)) + distance;
         }
+    };
 
-        public static float Dot(Vec3d v1, Vec3d v2)
+    public class Frustum
+    {
+        public Frustum() 
         {
-            return v1.X * v2.X + v1.Y * v2.Y + v1.Z * v2.Z;
-        }
-
-        public static Vec3d Cross(Vec3d v1, Vec3d v2)
-        {
-            Vec3d v = new Vec3d();
-            v.X = v1.Y * v2.Z - v1.Z * v2.Y;
-            v.Y = v1.Z * v2.X - v1.X * v2.Z;
-            v.Z = v1.X * v2.Y - v1.Y * v2.X;
-            v.W = v1.W;
-            v.color = v1.color;
-            return v;
+            Left = new Plane();
+            Right = new Plane(); 
+            Bottom = new Plane();
+            Top = new Plane();
+            Near = new Plane();
+            Far = new Plane();
         }
 
-        public static Vec3d Normalize(Vec3d v)
+        public bool IsInside(Vector3 point)
         {
-            float l = v.Length;
-            Vec3d v2 = new Vec3d(v.X / l, v.Y / l, v.Z / l);
-            v2.W = v.W;
-            v2.color = v.color;
-            return v;
+            if (Left.DistanceToPoint(point) < 0) return false;
+            if (Right.DistanceToPoint(point) < 0) return false;
+            if (Bottom.DistanceToPoint(point) < 0) return false;
+            if (Top.DistanceToPoint(point) < 0) return false;
+            if (Near.DistanceToPoint(point) < 0) return false;
+            if (Far.DistanceToPoint(point) < 0) return false;
+            return true;
         }
 
-        public void Normalize()
+        public bool IsInside(Vec3d point)
         {
-            float l = Length;
-            X /= l;
-            Y /= l;
-            Z /= l;
+            if (Left.DistanceToPoint(point) < 0) return false;
+            if (Right.DistanceToPoint(point) < 0) return false;
+            if (Bottom.DistanceToPoint(point) < 0) return false;
+            if (Top.DistanceToPoint(point) < 0) return false;
+            if (Near.DistanceToPoint(point) < 0) return false;
+            if (Far.DistanceToPoint(point) < 0) return false;
+            return true;
         }
 
-        #region Operator overloads
-        public static Vec3d operator -(Vec3d v1, Vec3d v2)
+        public bool IsTriangleInside(triangle tri)
         {
-            Vec3d v3 = new Vec3d(v1.X - v2.X, v1.Y - v2.Y, v1.Z - v2.Z);
-            v3.W = v1.W;
-            v3.color = v1.color;
-            return v3;
+            var a = IsInside(tri.p[0]);
+            var b = IsInside(tri.p[1]);
+            var c = IsInside(tri.p[2]);
+            return a || b || c;
         }
-        public static Vec3d operator +(Vec3d v1, Vec3d v2)
-        {
-            Vec3d v3 = new Vec3d(v1.X + v2.X, v1.Y + v2.Y, v1.Z + v2.Z);
-            v3.W = v1.W;
-            v3.color = v1.color;
-            return v3;
-        }
-        public static Vec3d operator /(Vec3d v1, float d)
-        {
-            if (d == 0)
-                return v1;
-            Vec3d v3 = new Vec3d(v1.X / d, v1.Y / d, v1.Z / d);
-            v3.W = v1.W;
-            v3.color = v1.color;
-            return v3;
-        }
-        public static Vec3d operator *(Vec3d v1, float d)
-        {
-            Vec3d v3 = new Vec3d(v1.X * d, v1.Y * d, v1.Z * d);
-            v3.W = v1.W;
-            v3.color = v1.color;
-            return v3;
-        }
-        #endregion
 
-        public Color4 color;
-        public float Length
-        {
-            get
-            {
-                return (float)Math.Sqrt(Vec3d.Dot(this, this));
-            }
+        public List<triangle> GetTriangles()
+        { 
+            List<triangle> triangles = new List<triangle>();
+
+            Vec3d[] corners = new Vec3d[8];
+            corners[0] = new Vec3d(ntl.X, ntl.Y, ntl.Z);
+            corners[1] = new Vec3d(ntr.X, ntr.Y, ntr.Z);
+            corners[2] = new Vec3d(nbl.X, nbl.Y, nbl.Z);
+            corners[3] = new Vec3d(nbr.X, nbr.Y, nbr.Z);
+            corners[4] = new Vec3d(ftl.X, ftl.Y, ftl.Z);
+            corners[5] = new Vec3d(ftr.X, ftr.Y, ftr.Z);
+            corners[6] = new Vec3d(fbl.X, fbl.Y, fbl.Z);
+            corners[7] = new Vec3d(fbr.X, fbr.Y, fbr.Z);
+
+            triangles.Add(new triangle( new Vec3d[] { corners[0], corners[1], corners[2] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[1], corners[3], corners[2] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[4], corners[5], corners[6] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[5], corners[7], corners[6] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[0], corners[4], corners[2] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[4], corners[6], corners[2] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[1], corners[5], corners[3] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[5], corners[7], corners[3] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[0], corners[1], corners[4] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[1], corners[5], corners[4] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[2], corners[3], corners[6] } ));
+            triangles.Add(new triangle( new Vec3d[] { corners[3], corners[7], corners[6] } ));
+
+            return triangles;
         }
+
+        public Plane Left;
+        public Plane Right;
+        public Plane Bottom;
+        public Plane Top;
+        public Plane Near;
+        public Plane Far;
+
+        public Vector3 nearCenter;
+        public Vector3 farCenter;
+
+        public Vector3 ntl;
+        public Vector3 ntr;
+        public Vector3 nbl;
+        public Vector3 nbr;
+        public Vector3 ftl;
+        public Vector3 ftr;
+        public Vector3 fbl;
+        public Vector3 fbr;
     }
 
     public class Engine : GameWindow
     {
-        class Vec2d
-        {
-            public Vec2d() { }
-
-            public Vec2d(float u, float v)
-            {
-                this.u = u;
-                this.v = v;
-                this.w = 1.0f;
-            }
-
-            public float u = 0.0f;
-            public float v = 0.0f;
-            public float w;
-
-
-            public Vec2d GetCopy()
-            {
-                Vec2d v2 = new Vec2d(u, v);
-                v2.w = w;
-                return v2;
-            }
-        }
-
-
-        private class triangle
-        {
-            public triangle()
-            {
-                p = new Vec3d[3];
-                t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
-            }
-
-            public triangle(Vec3d[] p)
-            {
-                this.p = new Vec3d[p.Length];
-                for (int p_ = 0; p_ < p.Length; p_++)
-                {
-                    this.p[p_] = p[p_].GetCopy();
-                }
-
-                t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
-            }
-
-            public triangle(Vec3d[] p, Vec2d[] t)
-            {
-                this.p = new Vec3d[p.Length];
-                this.t = new Vec2d[t.Length];
-                for (int p_ = 0; p_ < p.Length; p_++)
-                {
-                    this.p[p_] = p[p_].GetCopy();
-                }
-                for (int t_ = 0; t_ < t.Length; t_++)
-                {
-                    this.t[t_] = t[t_].GetCopy();
-                }
-            }
-
-            public Vec3d GetMiddle()
-            {
-                return (p[0] + p[1] + p[2]) / 3;
-            }
-
-            public void Color(Color4 c)
-            {
-                foreach (Vec3d p_ in p)
-                    p_.color = c;
-            }
-
-            public void Color(triangle t)
-            {
-                for (int p_ = 0; p_ < p.Length; p_++)
-                {
-                    p[p_].color = t.p[p_].color;
-                }
-            }
-
-            public string GetPointsStr()
-            {
-                return p[0].ToString() + p[1].ToString() + p[2].ToString();
-            }
-
-            public Vec3d ComputeNormal()
-            {
-                Vec3d normal, line1, line2;
-                line1 = p[1] - p[0];
-                line2 = p[2] - p[0];
-
-                normal = Vec3d.Cross(line1, line2);
-                normal.Normalize();
-                return normal;
-            }
-
-            public triangle GetCopy()
-            {
-                triangle tri = new triangle();
-                tri.p[0] = p[0].GetCopy();
-                tri.p[1] = p[1].GetCopy();
-                tri.p[2] = p[2].GetCopy();
-                tri.t[0] = t[0].GetCopy();
-                tri.t[1] = t[1].GetCopy();
-                tri.t[2] = t[2].GetCopy();
-
-                return tri;
-            }
-
-            public int CompareTo(triangle tri)
-            {
-                double z1 = (p[0].Z + p[1].Z + p[2].Z) / 3.0f;
-                double z2 = (tri.p[0].Z + tri.p[1].Z + tri.p[2].Z) / 3.0f;
-
-                if (z1 < z2)
-                    return 1;
-                else if (z1 > z2)
-                    return -1;
-                else
-                    return 0;
-            }
-
-            public Vec3d[] p;
-            public Vec2d[] t;
-        }
-
-        private struct mesh
-        {
-            public mesh()
-            {
-                tris = new List<triangle>();
-            }
-
-            public void OnlyCube()
-            {
-                tris = new List<triangle>
-                {
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(1.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(0.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(0.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) })
-                };
-            }
-                
-            public void OnlyTriangle()
-            {
-                tris = new List<triangle>
-                {
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) })                
-                };
-            }
-
-            public void ProcessObj(string filename)
-            {
-                tris = new List<triangle>();
-
-                var assembly = Assembly.GetExecutingAssembly();
-                string resourceName = assembly.GetManifestResourceNames()
-                    .Single(str => str.EndsWith(filename));
-
-                string result;
-                List<Vec3d> verts = new List<Vec3d>();
-                List<Vec2d> uvs = new List<Vec2d>();
-                
-                using (Stream stream = assembly.GetManifestResourceStream(resourceName))
-                using (StreamReader reader = new StreamReader(stream))
-                {
-                    while (true)
-                    {
-                        result = reader.ReadLine();
-                        if (result != null && result.Length > 0)
-                        {
-                            if (result[0] == 'v')
-                            {
-                                if (result[1] == 't')
-                                {
-                                    string[] vStr = result.Substring(3).Split(" ");
-                                    var a = float.Parse(vStr[0]);
-                                    var b = float.Parse(vStr[1]);
-                                    Vec2d v = new Vec2d(a, b);
-                                    uvs.Add(v);
-                                }
-                                else if (result[1] == 'n')
-                                {
-                                    //string[] vStr = result.Substring(3).Split(" ");
-                                    //var a = float.Parse(vStr[0]);
-                                    //var b = float.Parse(vStr[1]);
-                                    //Vec2d v = new Vec2d(a, b);
-                                    //uvs.Add(v);
-                                }
-                                else
-                                {
-                                    string[] vStr = result.Substring(2).Split(" ");
-                                    var a = float.Parse(vStr[0]);
-                                    var b = float.Parse(vStr[1]);
-                                    var c = float.Parse(vStr[2]);
-                                    Vec3d v = new Vec3d(a, b, c);
-                                    verts.Add(v);
-                                }
-                            }
-                            else if (result[0] == 'f')
-                            {
-                                if(result.Contains("//"))
-                                {
-
-                                }
-                                else if (result.Contains("/"))
-                                {
-                                    string[] vStr = result.Substring(2).Split(" ");
-                                    if (vStr.Length > 3)
-                                        throw new Exception();
-
-                                    // 1/1, 2/2, 3/3
-                                    int[] v = new int[3];
-                                    int[] uv = new int[3];
-                                    for(int i = 0; i < 3; i++)
-                                    {
-                                        string[] fStr = vStr[i].Split("/");
-                                        v[i] = int.Parse(fStr[0]);
-                                        uv[i] = int.Parse(fStr[1]);
-                                    }
-
-                                    tris.Add(new triangle(new Vec3d[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
-                                }
-                                else
-                                {
-                                    string[] vStr = result.Substring(2).Split(" ");
-                                    int[] f = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
-
-                                    tris.Add(new triangle(new Vec3d[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
-                                }
-                            }
-                        }
-
-                        if (result == null)
-                            break;
-                    }
-                }
-            }
-
-            public List<triangle> tris;
-        }
+        
 
         private int vertexSize;
         struct Vertex
@@ -390,116 +158,6 @@ namespace Mario64
             public Vector3 Camera;
         }
 
-
-        #region Matrix stuff
-        Matrix4 Matrix_MakeIdentity()
-        {
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = 1.0f;
-            matrix.Row1[1] = 1.0f;
-            matrix.Row2[2] = 1.0f;
-            matrix.Row3[3] = 1.0f;
-            return matrix;
-        }
-
-        Matrix4 Matrix_MakeRotationX(float fAngleRad)
-        {
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = 1.0f;
-            matrix.Row1[1] = (float)Math.Cos(fAngleRad);
-            matrix.Row1[2] = (float)Math.Sin(fAngleRad);
-            matrix.Row2[1] = -(float)Math.Sin(fAngleRad);
-            matrix.Row2[2] = (float)Math.Cos(fAngleRad);
-            matrix.Row3[3] = 1.0f;
-            return matrix;
-        }
-
-        Matrix4 Matrix_MakeRotationY(float fAngleRad)
-        {
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = (float)Math.Cos(fAngleRad);
-            matrix.Row0[2] = (float)Math.Sin(fAngleRad);
-            matrix.Row2[0] = -(float)Math.Sin(fAngleRad);
-            matrix.Row1[1] = 1.0f;
-            matrix.Row2[2] = (float)Math.Cos(fAngleRad);
-            matrix.Row3[3] = 1.0f;
-            return matrix;
-        }
-
-        Matrix4 Matrix_MakeRotationZ(float fAngleRad)
-        {
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = (float)Math.Cos(fAngleRad);
-            matrix.Row0[1] = (float)Math.Sin(fAngleRad);
-            matrix.Row1[0] = -(float)Math.Sin(fAngleRad);
-            matrix.Row1[1] = (float)Math.Cos(fAngleRad);
-            matrix.Row2[2] = 1.0f;
-            matrix.Row3[3] = 1.0f;
-            return matrix;
-        }
-
-        Matrix4 Matrix_MakeTranslation(float x, float y, float z)
-        {
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = 1.0f;
-            matrix.Row1[1] = 1.0f;
-            matrix.Row2[2] = 1.0f;
-            matrix.Row3[3] = 1.0f;
-            matrix.Row3[0] = x;
-            matrix.Row3[1] = y;
-            matrix.Row3[2] = z;
-            return matrix;
-        }
-
-        Matrix4 Matrix_MakeProjection(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
-        {
-            float fFovRad = 1.0f / (float)Math.Tan(fFovDegrees * 0.5f / 180.0f * Math.PI);
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = fAspectRatio * fFovRad;
-            matrix.Row1[1] = fFovRad;
-            matrix.Row2[2] = fFar / (fFar - fNear);
-            matrix.Row3[2] = (-fFar * fNear) / (fFar - fNear);
-            matrix.Row2[3] = 1.0f;
-            matrix.Row3[3] = 0.0f;
-            return matrix;
-        }
-
-        Matrix4 Matrix_PointAt(Vec3d pos, Vec3d target, Vec3d up)
-        {
-            // Calculate new forward direction
-            Vec3d newForward = target - pos;
-            newForward = Vec3d.Normalize(newForward);
-
-            // Calculate new Up direction
-            Vec3d a = newForward * Vec3d.Dot(up, newForward);
-            Vec3d newUp = up - a;
-            newUp = Vec3d.Normalize(newUp);
-
-            // New Right direction is easy, its just cross product
-            Vec3d newRight = Vec3d.Cross(newUp, newForward);
-
-            // Construct Dimensioning and Translation Matrix	
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = newRight.X; matrix.Row0[1] = newRight.Y; matrix.Row0[2] = newRight.Z; matrix.Row0[3] = 0.0f;
-            matrix.Row1[0] = newUp.X; matrix.Row1[1] = newUp.Y; matrix.Row1[2] = newUp.Z; matrix.Row1[3] = 0.0f;
-            matrix.Row2[0] = newForward.X; matrix.Row2[1] = newForward.Y; matrix.Row2[2] = newForward.Z; matrix.Row2[3] = 0.0f;
-            matrix.Row3[0] = pos.X; matrix.Row3[1] = pos.Y; matrix.Row3[2] = pos.Z; matrix.Row3[3] = 1.0f;
-            return matrix;
-        }
-
-        Matrix4 Matrix_QuickInverse(Matrix4 m)
-        {
-            Matrix4 matrix = new Matrix4();
-            matrix.Row0[0] = m.Row0[0]; matrix.Row0[1] = m.Row1[0]; matrix.Row0[2] = m.Row2[0]; matrix.Row0[3] = 0.0f;
-            matrix.Row1[0] = m.Row0[1]; matrix.Row1[1] = m.Row1[1]; matrix.Row1[2] = m.Row2[1]; matrix.Row1[3] = 0.0f;
-            matrix.Row2[0] = m.Row0[2]; matrix.Row2[1] = m.Row1[2]; matrix.Row2[2] = m.Row2[2]; matrix.Row2[3] = 0.0f;
-            matrix.Row3[0] = -(m.Row3[0] * matrix.Row0[0] + m.Row3[1] * matrix.Row1[0] + m.Row3[2] * matrix.Row2[0]);
-            matrix.Row3[1] = -(m.Row3[0] * matrix.Row0[1] + m.Row3[1] * matrix.Row1[1] + m.Row3[2] * matrix.Row2[1]);
-            matrix.Row3[2] = -(m.Row3[0] * matrix.Row0[2] + m.Row3[1] * matrix.Row1[2] + m.Row3[2] * matrix.Row2[2]);
-            matrix.Row3[3] = 1.0f;
-            return matrix;
-        }
-        #endregion
 
         #region Wireframe drawing
         private void DrawPixel(double x, double y, Color4 color, bool scissorTest = true)
@@ -601,6 +259,7 @@ namespace Mario64
 
         private Camera camera = new Camera();
         private float yaw;
+        private Frustum frustum;
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
@@ -612,6 +271,7 @@ namespace Mario64
             screenHeight = height;
             this.CenterWindow(new Vector2i(screenWidth, screenHeight));
             vertices = new List<Vertex>();
+            frustum = new Frustum();
         }
 
         private void DrawFps(double deltaTime)
@@ -689,30 +349,29 @@ namespace Mario64
                 yaw -= 2.0f * (float)args.Time;
             }
 
-            trisToRaster = new List<triangle>();
-            foreach (triangle tri in meshCube.tris)
-            {
-                trisToRaster.Add(tri);
-            }
-
             int viewMatrixLocation = GL.GetUniformLocation(shaderProgram, "viewMatrix");
             int modelMatrixLocation = GL.GetUniformLocation(shaderProgram, "modelMatrix");
 
-            //Vec3d up = new Vec3d(0.0f, 1.0f, 0.0f);
-            //Vec3d target = new Vec3d(0.0f, 0.0f, 1.0f);
-            //Matrix4 matCameraRot = Matrix_MakeRotationY(yaw);
-            //var cameraP = Matrix_MultiplyVector(matCameraRot, target);
-            //lookDir = cameraP.GetCopy();
-            //target = camera + lookDir;
-            //Matrix4 matCamera = Matrix_PointAt(camera, target, up);
-            //viewMatrix = Matrix_QuickInverse(matCamera);
-            //viewMatrix = Matrix4.Identity;
             viewMatrix = camera.GetViewMatrix();
+            //frustum = camera.GetFrustum();
+
+            trisToRaster = new List<triangle>();
+            foreach (triangle tri in meshCube.tris)
+            {
+                if (frustum.IsTriangleInside(tri))
+                    trisToRaster.Add(tri);
+            }
+
+            foreach (triangle tri in frustum.GetTriangles())
+            {
+                tri.Color(Color4.Red);
+                trisToRaster.Add(tri);
+            }
 
             modelMatrix = Matrix4.Identity;
             //theta += 1f * (float)args.Time;
-            modelMatrix = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(45f));
-            modelMatrix *= Matrix4.CreateTranslation(new Vector3(0f, -1.5f, -3f));
+            //modelMatrix = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(45f));
+            //modelMatrix *= Matrix4.CreateTranslation(new Vector3(0f, -1.5f, -3f));
 
             GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
             GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
@@ -759,12 +418,13 @@ namespace Mario64
             GL.BindTexture(TextureTarget.Texture2D, textureId);
 
             // Load the image (using System.Drawing or another library)
-            Stream stream = GetResourceStreamByNameEnd("high.png");
+            Stream stream = GetResourceStreamByNameEnd("High.png");
             if (stream != null)
             {
                 using (stream)
                 {
                     Bitmap bitmap = new Bitmap(stream);
+                    bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                     BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
@@ -864,6 +524,7 @@ namespace Mario64
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             meshCube.ProcessObj("spiro.obj");
+            frustum = camera.GetFrustum();
         }
 
         protected override void OnUnload()

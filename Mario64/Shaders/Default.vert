@@ -3,7 +3,7 @@
 layout (location = 0) in vec4 inPosition;
 layout (location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
-layout(location = 3) in vec3 inCamera;
+layout(location = 4) in vec3 inCamera;
 
 out vec4 fragColor;
 out vec2 fragTexCoord;
@@ -34,6 +34,6 @@ void main()
 	lightDir = normalize(lightDir);
 	float dp = max(0.1, dot(inNormal, lightDir));
 
-	fragColor = vec4(dp,dp,dp,1.0);
+	fragColor = vec4(dp,dp,dp,1.0) * vec4(1.0, 0.0, 0.0, 0.2);
 	fragTexCoord = inUV;
 }
