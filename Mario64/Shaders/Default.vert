@@ -34,6 +34,7 @@ void main()
 	lightDir = normalize(lightDir);
 	float dp = max(0.1, dot(inNormal, lightDir));
 
-	fragColor = vec4(dp,dp,dp,1.0) * vec4(1.0, 0.0, 0.0, 0.2);
+	fragColor = vec4(dp,dp,dp,1.0);// * vec4(1.0, 0.0, 0.0, 0.3);
+//	fragColor.a = 0.3;
 	fragTexCoord = inUV;
 }

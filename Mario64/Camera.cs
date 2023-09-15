@@ -27,11 +27,12 @@ namespace Mario64
             get { return new Vec3d(position.X, position.Y, position.Z); }
         }
         private Vector3 up = Vector3.UnitY;
-        private Vector3 front = -Vector3.UnitZ;
+        public Vector3 front = -Vector3.UnitZ;
         private Vector3 right = Vector3.UnitX;
 
         private float yaw;
-        private float pitch = -90.0f;
+        //private float pitch = -90.0f;
+        private float pitch = 0f;
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -54,103 +55,116 @@ namespace Mario64
             return Matrix4.LookAt(position, position + front, up);
         }
 
+        public Matrix4 GetViewMatrixa()
+        {
+            Vector3 v = new Vector3(0, 0, -100) + position;
+            return Matrix4.LookAt(v, v + front, up);
+        }
+
+        public Matrix4 GetViewMatrixb()
+        {
+            return Matrix4.LookAt(new Vector3(0,0,0), new Vector3(0,0,0) + front, up);
+        }
+
         public Matrix4 GetProjectionMatrix()
         {
-            //projectionMatrix = Matrix_MakeProjection(fov, aspectRatio, near, far);
             return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), aspectRatio, near, far);
+        }
+
+        public Matrix4 GetProjectionMatrixBigger(float fovMult = 1.1f)
+        {
+            return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov * fovMult), aspectRatio, near, far);
         }
 
         public Frustum GetFrustum()
         {
             Frustum frustum = new Frustum();
+            Matrix4 m = GetViewMatrix();
+            m = m * GetProjectionMatrixBigger(0.7f);
 
-            float tanHalfFOV = (float)Math.Tan(MathHelper.DegreesToRadians(fov) / 2.0);
-            float nearHeight = near * tanHalfFOV;
-            float nearWidth = nearHeight * aspectRatio;
+            //right
+            frustum.planes[0].normal.X = m.Row0[3] - m.Row0[0];
+            frustum.planes[0].normal.Y = m.Row1[3] - m.Row1[0];
+            frustum.planes[0].normal.Z = m.Row2[3] - m.Row2[0];
+            frustum.planes[0].distance = m.Row3[3] - m.Row3[0];
+                   
+            //left
+            frustum.planes[1].normal.X = m.Row0[3] + m.Row0[0];
+            frustum.planes[1].normal.Y = m.Row1[3] + m.Row1[0];
+            frustum.planes[1].normal.Z = m.Row2[3] + m.Row2[0];
+            frustum.planes[1].distance = m.Row3[3] + m.Row3[0];
+                
+            //down
+            frustum.planes[2].normal.X = m.Row0[3] + m.Row0[1];
+            frustum.planes[2].normal.Y = m.Row1[3] + m.Row1[1];
+            frustum.planes[2].normal.Z = m.Row2[3] + m.Row2[1];
+            frustum.planes[2].distance = m.Row3[3] + m.Row3[1];
+                
+            //up
+            frustum.planes[3].normal.X = m.Row0[3] - m.Row0[1];
+            frustum.planes[3].normal.Y = m.Row1[3] - m.Row1[1];
+            frustum.planes[3].normal.Z = m.Row2[3] - m.Row2[1];
+            frustum.planes[3].distance = m.Row3[3] - m.Row3[1];
+              
+            //far
+            frustum.planes[4].normal.X = m.Row0[3] - m.Row0[2];
+            frustum.planes[4].normal.Y = m.Row1[3] - m.Row1[2];
+            frustum.planes[4].normal.Z = m.Row2[3] - m.Row2[2];
+            frustum.planes[4].distance = m.Row3[3] - m.Row3[2];
+                     
+            //near
+            frustum.planes[5].normal.X = m.Row0[3] + m.Row0[2];
+            frustum.planes[5].normal.Y = m.Row1[3] + m.Row1[2];
+            frustum.planes[5].normal.Z = m.Row2[3] + m.Row2[2];
+            frustum.planes[5].distance = m.Row3[3] + m.Row3[2];
 
-            float farHeight = far * tanHalfFOV;
-            float farWidth = farHeight * aspectRatio;
 
-            frustum.nearCenter = position + front * near;
-            frustum.farCenter = position + front * far;
+            //Normalize all plane normals
+            //for (int i = 0; i < 6; i++)
+            //    frustum.planes[i].normal.Normalize();
+            for (int i = 0; i < 6; i++)
+            {
+                float magnitude = frustum.planes[i].normal.Length;
+                frustum.planes[i].normal /= magnitude;
+                frustum.planes[i].distance /= magnitude;
+            }
+            //--------------------------------------------------------------------------------------
 
-            frustum.ntl = frustum.nearCenter + (up * nearHeight) - (right * nearWidth);
-            frustum.ntr = frustum.nearCenter + (up * nearHeight) + (right * nearWidth);
-            frustum.nbl = frustum.nearCenter - (up * nearHeight) - (right * nearWidth);
-            frustum.nbr = frustum.nearCenter - (up * nearHeight) + (right * nearWidth);
+            //float tanHalfFOV = (float)Math.Tan(MathHelper.DegreesToRadians(fov) / 2.0);
+            //float nearHeight = 2.0f * tanHalfFOV * near;
+            //float nearWidth = nearHeight * aspectRatio;
 
-            frustum.ftl = frustum.farCenter + (up * farHeight) - (right * farWidth);
-            frustum.ftr = frustum.farCenter + (up * farHeight) + (right * farWidth);
-            frustum.fbl = frustum.farCenter - (up * farHeight) - (right * farWidth);
-            frustum.fbr = frustum.farCenter - (up * farHeight) + (right * farWidth);
+            //float farHeight = 2.0f * tanHalfFOV * far;
+            //float farWidth = farHeight * aspectRatio;
 
-            // Near plane
-            frustum.Near.normal = -front.Normalized();
-            frustum.Near.distance = -Vector3.Dot(frustum.Near.normal, frustum.nbl);
+            //// Near plane corners
+            //frustum.ntl = new Vector3(-nearWidth / 2.0f, nearHeight / 2.0f, -near);
+            //frustum.ntr = new Vector3(nearWidth / 2.0f, nearHeight / 2.0f, -near);
+            //frustum.nbl = new Vector3(-nearWidth / 2.0f, -nearHeight / 2.0f, -near);
+            //frustum.nbr = new Vector3(nearWidth / 2.0f, -nearHeight / 2.0f, -near);
 
-            // Far plane
-            frustum.Far.normal = front.Normalized();
-            frustum.Far.distance = -Vector3.Dot(frustum.Far.normal, frustum.fbl);
+            //// Far plane corners
+            //frustum.ftl = new Vector3(-farWidth / 2.0f, farHeight / 2.0f, -far);
+            //frustum.ftr = new Vector3(farWidth / 2.0f, farHeight / 2.0f, -far);
+            //frustum.fbl = new Vector3(-farWidth / 2.0f, -farHeight / 2.0f, -far);
+            //frustum.fbr = new Vector3(farWidth / 2.0f, -farHeight / 2.0f, -far);
 
-            // Left plane
-            Vector3 vecToPoint1l = frustum.nbl - position;
-            Vector3 vecToPoint2l = frustum.ntl - position;
-            frustum.Left.normal = Vector3.Cross(vecToPoint1l, vecToPoint2l).Normalized();
-            frustum.Left.distance = -Vector3.Dot(frustum.Left.normal, frustum.nbl);
+            //Matrix4 viewInverse = Matrix4.Invert(GetViewMatrix());
 
-            // Right plane
-            Vector3 vecToPoint1r = frustum.nbr - position;
-            Vector3 vecToPoint2r = frustum.ntr - position;
-            frustum.Right.normal = Vector3.Cross(vecToPoint2r, vecToPoint1r).Normalized();
-            frustum.Right.distance = -Vector3.Dot(frustum.Right.normal, frustum.nbr);
+            //frustum.ntl = Vector3.TransformPosition(frustum.ntl, viewInverse);
+            //frustum.ntr = Vector3.TransformPosition(frustum.ntr, viewInverse);
+            //frustum.nbl = Vector3.TransformPosition(frustum.nbl, viewInverse);
+            //frustum.nbr = Vector3.TransformPosition(frustum.nbr, viewInverse);
 
-            // Top plane
-            Vector3 vecToPoint1t = frustum.ntl - position;
-            Vector3 vecToPoint2t = frustum.ntr - position;
-            frustum.Top.normal = Vector3.Cross(vecToPoint2t, vecToPoint1t).Normalized();
-            frustum.Top.distance = -Vector3.Dot(frustum.Top.normal, frustum.ntl);
+            //frustum.ftl = Vector3.TransformPosition(frustum.ftl, viewInverse);
+            //frustum.ftr = Vector3.TransformPosition(frustum.ftr, viewInverse);
+            //frustum.fbl = Vector3.TransformPosition(frustum.fbl, viewInverse);
+            //frustum.fbr = Vector3.TransformPosition(frustum.fbr, viewInverse);
 
-            // Bottom plane
-            Vector3 vecToPoint1b = frustum.nbl - position;
-            Vector3 vecToPoint2b = frustum.nbr - position;
-
-            frustum.Bottom.normal = Vector3.Cross(vecToPoint1b, vecToPoint2b).Normalized();
-            frustum.Bottom.distance = -Vector3.Dot(frustum.Bottom.normal, frustum.nbl);
-
-            //Matrix4 viewProjectionMatrix = GetViewMatrix() * GetProjectionMatrix();
-
-            //frustum.Left = new Plane(
-            //new Vector3(viewProjectionMatrix.Row3 + viewProjectionMatrix.Row0).Normalized(),
-            //(viewProjectionMatrix.Row3 + viewProjectionMatrix.Row0).W);
-
-            //// Right plane
-            //frustum.Right = new Plane(
-            //    new Vector3(viewProjectionMatrix.Row3 - viewProjectionMatrix.Row0).Normalized(),
-            //    (viewProjectionMatrix.Row3 - viewProjectionMatrix.Row0).W);
-
-            //// Bottom plane
-            //frustum.Bottom = new Plane(
-            //    new Vector3(viewProjectionMatrix.Row3 + viewProjectionMatrix.Row1).Normalized(),
-            //    (viewProjectionMatrix.Row3 + viewProjectionMatrix.Row1).W);
-
-            //// Top plane
-            //frustum.Top = new Plane(
-            //    new Vector3(viewProjectionMatrix.Row3 - viewProjectionMatrix.Row1).Normalized(),
-            //    (viewProjectionMatrix.Row3 - viewProjectionMatrix.Row1).W);
-
-            //// Near plane
-            //frustum.Near = new Plane(
-            //    new Vector3(viewProjectionMatrix.Row3 + viewProjectionMatrix.Row2).Normalized(),
-            //    (viewProjectionMatrix.Row3 + viewProjectionMatrix.Row2).W);
-
-            //// Far plane
-            //frustum.Far = new Plane(
-            //    new Vector3(viewProjectionMatrix.Row3 - viewProjectionMatrix.Row2).Normalized(),
-            //    (viewProjectionMatrix.Row3 - viewProjectionMatrix.Row2).W);
             return frustum;
         }
 
-        private void UpdateVectors()
+        public void UpdateVectors()
         {
             if (pitch > 89f)
                 pitch = 89f;

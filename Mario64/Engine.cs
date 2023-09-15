@@ -26,124 +26,7 @@ using static System.Net.WebRequestMethods;
 
 namespace Mario64
 {
-    public class Plane
-    {
-        public Plane() { }
-
-        public Plane(Vector3 normal, float dist)
-        {
-            this.normal = normal.Normalized();
-            distance = dist;
-        }
-
-        // unit vector
-        public Vector3 normal = new Vector3(0.0f, 1.0f, 0.0f);
-
-        // distance from origin to the nearest point in the plane
-        public float distance = 0.0f;
-
-        public float DistanceToPoint(Vector3 point)
-        {
-            return Vector3.Dot(normal, point) + distance;
-        }
-
-        public float DistanceToPoint(Vec3d point)
-        {
-            return Vector3.Dot(normal, new Vector3(point.X, point.Y, point.Z)) + distance;
-        }
-    };
-
-    public class Frustum
-    {
-        public Frustum() 
-        {
-            Left = new Plane();
-            Right = new Plane(); 
-            Bottom = new Plane();
-            Top = new Plane();
-            Near = new Plane();
-            Far = new Plane();
-        }
-
-        public bool IsInside(Vector3 point)
-        {
-            if (Left.DistanceToPoint(point) < 0) return false;
-            if (Right.DistanceToPoint(point) < 0) return false;
-            if (Bottom.DistanceToPoint(point) < 0) return false;
-            if (Top.DistanceToPoint(point) < 0) return false;
-            if (Near.DistanceToPoint(point) < 0) return false;
-            if (Far.DistanceToPoint(point) < 0) return false;
-            return true;
-        }
-
-        public bool IsInside(Vec3d point)
-        {
-            if (Left.DistanceToPoint(point) < 0) return false;
-            if (Right.DistanceToPoint(point) < 0) return false;
-            if (Bottom.DistanceToPoint(point) < 0) return false;
-            if (Top.DistanceToPoint(point) < 0) return false;
-            if (Near.DistanceToPoint(point) < 0) return false;
-            if (Far.DistanceToPoint(point) < 0) return false;
-            return true;
-        }
-
-        public bool IsTriangleInside(triangle tri)
-        {
-            var a = IsInside(tri.p[0]);
-            var b = IsInside(tri.p[1]);
-            var c = IsInside(tri.p[2]);
-            return a || b || c;
-        }
-
-        public List<triangle> GetTriangles()
-        { 
-            List<triangle> triangles = new List<triangle>();
-
-            Vec3d[] corners = new Vec3d[8];
-            corners[0] = new Vec3d(ntl.X, ntl.Y, ntl.Z);
-            corners[1] = new Vec3d(ntr.X, ntr.Y, ntr.Z);
-            corners[2] = new Vec3d(nbl.X, nbl.Y, nbl.Z);
-            corners[3] = new Vec3d(nbr.X, nbr.Y, nbr.Z);
-            corners[4] = new Vec3d(ftl.X, ftl.Y, ftl.Z);
-            corners[5] = new Vec3d(ftr.X, ftr.Y, ftr.Z);
-            corners[6] = new Vec3d(fbl.X, fbl.Y, fbl.Z);
-            corners[7] = new Vec3d(fbr.X, fbr.Y, fbr.Z);
-
-            triangles.Add(new triangle( new Vec3d[] { corners[0], corners[1], corners[2] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[1], corners[3], corners[2] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[4], corners[5], corners[6] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[5], corners[7], corners[6] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[0], corners[4], corners[2] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[4], corners[6], corners[2] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[1], corners[5], corners[3] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[5], corners[7], corners[3] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[0], corners[1], corners[4] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[1], corners[5], corners[4] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[2], corners[3], corners[6] } ));
-            triangles.Add(new triangle( new Vec3d[] { corners[3], corners[7], corners[6] } ));
-
-            return triangles;
-        }
-
-        public Plane Left;
-        public Plane Right;
-        public Plane Bottom;
-        public Plane Top;
-        public Plane Near;
-        public Plane Far;
-
-        public Vector3 nearCenter;
-        public Vector3 farCenter;
-
-        public Vector3 ntl;
-        public Vector3 ntr;
-        public Vector3 nbl;
-        public Vector3 nbr;
-        public Vector3 ftl;
-        public Vector3 ftr;
-        public Vector3 fbl;
-        public Vector3 fbr;
-    }
+    
 
     public class Engine : GameWindow
     {
@@ -353,7 +236,7 @@ namespace Mario64
             int modelMatrixLocation = GL.GetUniformLocation(shaderProgram, "modelMatrix");
 
             viewMatrix = camera.GetViewMatrix();
-            //frustum = camera.GetFrustum();
+            frustum = camera.GetFrustum();
 
             trisToRaster = new List<triangle>();
             foreach (triangle tri in meshCube.tris)
@@ -362,11 +245,6 @@ namespace Mario64
                     trisToRaster.Add(tri);
             }
 
-            foreach (triangle tri in frustum.GetTriangles())
-            {
-                tri.Color(Color4.Red);
-                trisToRaster.Add(tri);
-            }
 
             modelMatrix = Matrix4.Identity;
             //theta += 1f * (float)args.Time;
@@ -406,6 +284,9 @@ namespace Mario64
             base.OnLoad();
 
             vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex));
+            //GL.Disable(EnableCap.CullFace);
+            //GL.Enable(EnableCap.Blend);
+            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             // OPENGL init
             vao = GL.GenVertexArray();
@@ -492,6 +373,7 @@ namespace Mario64
             int windowSizeLocation = GL.GetUniformLocation(shaderProgram, "windowSize");
 
             camera = new Camera(new Vector2(screenWidth, screenHeight));
+            camera.UpdateVectors();
 
             // Matrixes
             int modelMatrixLocation = GL.GetUniformLocation(shaderProgram, "modelMatrix");

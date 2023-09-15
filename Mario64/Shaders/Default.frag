@@ -13,5 +13,4 @@ void main()
 //    vec2 correctedUV = fragTexCoord * rhw;
     FragColor = fragColor * texture(textureSampler, fragTexCoord);
 //    FragColor = fragColor;
-//    FragColor = fragColor;
 }
