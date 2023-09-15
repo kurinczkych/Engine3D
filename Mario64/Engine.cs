@@ -19,6 +19,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.ComponentModel.Design;
 using static System.Net.WebRequestMethods;
+using System.Security.Cryptography;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -26,21 +27,17 @@ using static System.Net.WebRequestMethods;
 
 namespace Mario64
 {
-    
+    public struct Vertex
+    {
+        public Vector4 Position;
+        public Vector3 Normal;
+        public Vector2 Texture;
+        public Vector3 Camera;
+    }
 
     public class Engine : GameWindow
     {
-        
-
-        private int vertexSize;
-        struct Vertex
-        {
-            public Vector4 Position;
-            public Vector3 Normal;
-            public Vector2 Texture;
-            public Vector3 Camera;
-        }
-
+       
 
         #region Wireframe drawing
         private void DrawPixel(double x, double y, Color4 color, bool scissorTest = true)
@@ -126,8 +123,7 @@ namespace Mario64
         private int vao;
         private int shaderProgram;
         private int vbo;
-        private List<Vertex> vertices;
-        private List<triangle> trisToRaster = new List<triangle>();
+        private List<Vertex> trisToDraw = new List<Vertex>();
 
         // Program variables
         private Random rnd = new Random((int)DateTime.Now.Ticks);
@@ -137,7 +133,7 @@ namespace Mario64
         private double totalTime;
 
         // Engine variables
-        private mesh meshCube;
+        private List<Mesh> meshes;
         private float theta = 0f;
 
         private Camera camera = new Camera();
@@ -153,7 +149,8 @@ namespace Mario64
             screenWidth = width;
             screenHeight = height;
             this.CenterWindow(new Vector2i(screenWidth, screenHeight));
-            vertices = new List<Vertex>();
+            trisToDraw = new List<Vertex>();
+            meshes = new List<Mesh>();
             frustum = new Frustum();
         }
 
@@ -172,43 +169,15 @@ namespace Mario64
             }
         }
 
-        Vertex ConvertToNDC(Vec3d screenPos, Vec2d tex, Vec3d normal)
-        {
-            return new Vertex()
-            {
-                Position = new Vector4(screenPos.X, screenPos.Y, screenPos.Z, screenPos.W),
-                Normal = new Vector3(normal.X, normal.Y, normal.Z),
-                Texture = new Vector2(tex.u, tex.v),
-                Camera = new Vector3(0f,0f,0f)
-            };
-        }
-
-        void ConvertListToNDC(List<triangle> tris)
-        {
-            vertices = new List<Vertex>();
-            foreach (var tri in tris)
-            {
-                //Vec3d m = tri.GetMiddle();
-                //Vec3d cameraToTri = camera.position_ - m;
-                //if (Math.Abs(cameraToTri.Length) > 50)
-                //    continue;
-
-                Vec3d normal = tri.ComputeNormal();
-                vertices.Add(ConvertToNDC(tri.p[0], tri.t[0], normal));
-                vertices.Add(ConvertToNDC(tri.p[1], tri.t[1], normal));
-                vertices.Add(ConvertToNDC(tri.p[2], tri.t[2], normal));
-            }
-        }
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             GL.ClearColor(Color4.Cyan);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-
             DrawFps(args.Time);
 
-            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            GL.DrawArrays(PrimitiveType.Triangles, 0, trisToDraw.Count);
 
             GL.DisableVertexAttribArray(0);
 
@@ -238,52 +207,23 @@ namespace Mario64
             viewMatrix = camera.GetViewMatrix();
             frustum = camera.GetFrustum();
 
-            trisToRaster = new List<triangle>();
-            foreach (triangle tri in meshCube.tris)
-            {
-                if (frustum.IsTriangleInside(tri))
-                    trisToRaster.Add(tri);
-            }
-
-
-            modelMatrix = Matrix4.Identity;
-            //theta += 1f * (float)args.Time;
-            //modelMatrix = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(45f));
-            //modelMatrix *= Matrix4.CreateTranslation(new Vector3(0f, -1.5f, -3f));
-
-            GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
             GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
 
-            ConvertListToNDC(trisToRaster);
+            trisToDraw = new List<Vertex>();
+            foreach (Mesh mesh in meshes)
+            {
+                trisToDraw.AddRange(mesh.UpdateVertexArray(ref frustum, ref camera));
+            }
+            int vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex));
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
-            //GL.EnableVertexAttribArray(0);
-            GL.EnableVertexArrayAttrib(vao, 0);
-
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
-            //GL.EnableVertexAttribArray(1);
-            GL.EnableVertexArrayAttrib(vao, 1);
-
-            GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, vertexSize, 7 * sizeof(float));
-            //GL.EnableVertexAttribArray(2);
-            GL.EnableVertexArrayAttrib(vao, 2);
-
-            GL.VertexAttribPointer(3, 3, VertexAttribPointerType.Float, false, vertexSize, 9 * sizeof(float));
-            //GL.EnableVertexAttribArray(3);
-            GL.EnableVertexArrayAttrib(vao, 3);
-
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Count * vertexSize, vertices.ToArray(), BufferUsageHint.DynamicDraw);
-
-            GL.Enable(EnableCap.DepthTest);
+            GL.BufferData(BufferTarget.ArrayBuffer, trisToDraw.Count * vertexSize, trisToDraw.ToArray(), BufferUsageHint.DynamicDraw);
         }
 
         protected override void OnLoad()
         {
             base.OnLoad();
 
-            vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex));
+            GL.Enable(EnableCap.DepthTest);
             //GL.Disable(EnableCap.CullFace);
             //GL.Enable(EnableCap.Blend);
             //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -291,64 +231,8 @@ namespace Mario64
             // OPENGL init
             vao = GL.GenVertexArray();
 
-            // generate a buffer
-            GL.GenBuffers(1, out vbo);
-
-            // Texture -----------------------------------------------
-            int textureId = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-
-            // Load the image (using System.Drawing or another library)
-            Stream stream = GetResourceStreamByNameEnd("High.png");
-            if (stream != null)
-            {
-                using (stream)
-                {
-                    Bitmap bitmap = new Bitmap(stream);
-                    bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-                    bitmap.UnlockBits(data);
-
-                    // Texture settings
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                }
-            }
-            else
-            {
-                ;
-            }
-            // Texture --------------------------------------------
-
-            // bind the vao
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vao);
-            // point slot (0) of the VAO to the currently bound VBO (vbo)
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
-            //GL.EnableVertexAttribArray(0);
-            GL.EnableVertexArrayAttrib(vao, 0);
-
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
-            //GL.EnableVertexAttribArray(1);
-            GL.EnableVertexArrayAttrib(vao, 1);
-
-            GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, vertexSize, 7 * sizeof(float));
-            //GL.EnableVertexAttribArray(2);
-            GL.EnableVertexArrayAttrib(vao, 2);
-
-            GL.VertexAttribPointer(3, 3, VertexAttribPointerType.Float, false, vertexSize, 9 * sizeof(float));
-            //GL.EnableVertexAttribArray(3);
-            GL.EnableVertexArrayAttrib(vao, 3);
-
             // create the shader program
             shaderProgram = GL.CreateProgram();
-
-
 
             // create the vertex shader
             int vertexShader = GL.CreateShader(ShaderType.VertexShader);
@@ -380,7 +264,6 @@ namespace Mario64
             int viewMatrixLocation = GL.GetUniformLocation(shaderProgram, "viewMatrix");
             int projectionMatrixLocation = GL.GetUniformLocation(shaderProgram, "projectionMatrix");
 
-
             modelMatrix = Matrix4.CreateRotationY(theta);
             modelMatrix *= Matrix4.CreateTranslation(new Vector3(0f, 0f, -3f));
             viewMatrix = camera.GetViewMatrix();
@@ -391,11 +274,6 @@ namespace Mario64
             GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
             GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
 
-            int textureLocation = GL.GetUniformLocation(shaderProgram, "textureSampler");
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.Uniform1(textureLocation, 0);  // 0 corresponds to TextureUnit.Texture0
-
             // delete the shaders
             GL.DeleteShader(vertexShader);
             GL.DeleteShader(fragmentShader);
@@ -405,7 +283,8 @@ namespace Mario64
             // Projection matrix and mesh loading
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
-            meshCube.ProcessObj("spiro.obj");
+            //meshCube.ProcessObj("spiro.obj");
+            meshes.Add(new Mesh(vao, shaderProgram, "spiro.obj", "High.png"));
             frustum = camera.GetFrustum();
         }
 
@@ -445,17 +324,6 @@ namespace Mario64
             return shaderSource;
         }
 
-        private Stream GetResourceStreamByNameEnd(string nameEnd)
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            foreach (string resourceName in assembly.GetManifestResourceNames())
-            {
-                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly.GetManifestResourceStream(resourceName);
-                }
-            }
-            return null; // or throw an exception if the resource is not found
-        }
+        
     }
 }

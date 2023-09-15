@@ -76,11 +76,25 @@ namespace Mario64
             return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov * fovMult), aspectRatio, near, far);
         }
 
+        public bool IsTriangleClose(triangle tri)
+        {
+            float dist1 = (position - new Vector3(tri.p[0].X, tri.p[0].Y, tri.p[0].Z)).Length;
+            float dist2 = (position - new Vector3(tri.p[1].X, tri.p[1].Y, tri.p[1].Z)).Length;
+            float dist3 = (position - new Vector3(tri.p[2].X, tri.p[2].Y, tri.p[2].Z)).Length;
+            float dist = float.PositiveInfinity;
+            if (dist1 < dist) dist = dist1;
+            if (dist2 < dist) dist = dist2;
+            if (dist3 < dist) dist = dist3;
+
+            return dist < 15.0f;
+
+        }
+
         public Frustum GetFrustum()
         {
             Frustum frustum = new Frustum();
             Matrix4 m = GetViewMatrix();
-            m = m * GetProjectionMatrixBigger(0.7f);
+            m = m * GetProjectionMatrixBigger(1.3f);
 
             //right
             frustum.planes[0].normal.X = m.Row0[3] - m.Row0[0];
