@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 using OpenTK.Mathematics;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -24,9 +26,12 @@ namespace Mario64
         private string embeddedModelName;
         private string embeddedTextureName;
         private int vertexSize;
+        private int matrix4Size;
 
         private List<triangle> tris;
         private List<Vertex> vertices;
+
+        private Matrix4 transformMatrix;
 
         public Mesh(int vaoId, int shaderProgramId, string embeddedModelName, string embeddedTextureName)
         {
@@ -50,6 +55,8 @@ namespace Mario64
             LoadTexture(embeddedTextureName);
 
             vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex));
+            int sizeOfFloat = Marshal.SizeOf(typeof(float));
+            matrix4Size = sizeOfFloat * 16;
 
             // VAO creating
             GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
@@ -64,56 +71,48 @@ namespace Mario64
             GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, vertexSize, 7 * sizeof(float));
             GL.EnableVertexArrayAttrib(vaoId, 2);
 
-            GL.VertexAttribPointer(3, 3, VertexAttribPointerType.Float, false, vertexSize, 9 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 3);
-
             int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, textureId);
             GL.Uniform1(textureLocation, 0);  // 0 corresponds to TextureUnit.Texture0
         }
 
-        public void Transform(Vector3 trans)
+        public void TranslateRotateScale(Vector3 trans, Vector3 rotate, Vector3 scale)
         {
-            foreach(triangle tri in tris)
-            {
-                
-            }
+            Matrix4 s = Matrix4.CreateScale(scale);
+            Matrix4 rX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotate.X));
+            Matrix4 rY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotate.Y));
+            Matrix4 rZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotate.Z));
+            Matrix4 t = Matrix4.CreateTranslation(trans);
+
+            transformMatrix = s * rX * rY * rZ * t;
         }
 
-        public void Rotate(Vector3 rotate)
-        {
-
-        }
-
-        public void Scale(Vector3 scale)
-        {
-
-        }
-
-        Vertex ConvertToNDC(Vec3d screenPos, Vec2d tex, Vec3d normal)
+        Vertex ConvertToNDC(Vector3 screenPos, Vec2d tex, Vector3 normal, Matrix4 transform)
         {
             return new Vertex()
             {
-                Position = new Vector4(screenPos.X, screenPos.Y, screenPos.Z, screenPos.W),
+                Position = new Vector4(screenPos.X, screenPos.Y, screenPos.Z, 1.0f),
                 Normal = new Vector3(normal.X, normal.Y, normal.Z),
-                Texture = new Vector2(tex.u, tex.v),
-                Camera = new Vector3(0f, 0f, 0f)
+                Texture = new Vector2(tex.u, tex.v)
             };
         }
 
-        public List<Vertex> UpdateVertexArray(ref Frustum frustum, ref Camera camera)
+        public void UpdateVertexArray(ref Frustum frustum, ref Camera camera)
         {
             vertices = new List<Vertex>();
+
+            int transformMatrixLocation = GL.GetUniformLocation(shaderProgramId, "transformMatrix");
+            GL.UniformMatrix4(transformMatrixLocation, true, ref transformMatrix);
 
             foreach (triangle tri in tris)
             {
                 if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
                 {
-                    Vec3d normal = tri.ComputeNormal();
-                    vertices.Add(ConvertToNDC(tri.p[0], tri.t[0], normal));
-                    vertices.Add(ConvertToNDC(tri.p[1], tri.t[1], normal));
-                    vertices.Add(ConvertToNDC(tri.p[2], tri.t[2], normal));
+                    Vector3 normal = tri.ComputeNormal();
+                    vertices.Add(ConvertToNDC(tri.p[0], tri.t[0], normal, transformMatrix));
+                    vertices.Add(ConvertToNDC(tri.p[1], tri.t[1], normal, transformMatrix));
+                    vertices.Add(ConvertToNDC(tri.p[2], tri.t[2], normal, transformMatrix));
                 }
             }
 
@@ -128,10 +127,12 @@ namespace Mario64
             GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, vertexSize, 7 * sizeof(float));
             GL.EnableVertexArrayAttrib(vaoId, 2);
 
-            GL.VertexAttribPointer(3, 3, VertexAttribPointerType.Float, false, vertexSize, 9 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 3);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Count * vertexSize, vertices.ToArray(), BufferUsageHint.DynamicDraw);
+        }
 
-            return vertices;
+        public void Draw()
+        {
+            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
         }
 
         private void LoadTexture(string embeddedResourceName)
@@ -185,7 +186,7 @@ namespace Mario64
                 .Single(str => str.EndsWith(filename));
 
             string result;
-            List<Vec3d> verts = new List<Vec3d>();
+            List<Vector3> verts = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
             using (Stream stream = assembly.GetManifestResourceStream(resourceName))
@@ -220,7 +221,7 @@ namespace Mario64
                                 var a = float.Parse(vStr[0]);
                                 var b = float.Parse(vStr[1]);
                                 var c = float.Parse(vStr[2]);
-                                Vec3d v = new Vec3d(a, b, c);
+                                Vector3 v = new Vector3(a, b, c);
                                 verts.Add(v);
                             }
                         }
@@ -246,7 +247,7 @@ namespace Mario64
                                     uv[i] = int.Parse(fStr[1]);
                                 }
 
-                                tris.Add(new triangle(new Vec3d[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
+                                tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
                                                       new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
                             }
                             else
@@ -254,7 +255,7 @@ namespace Mario64
                                 string[] vStr = result.Substring(2).Split(" ");
                                 int[] f = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
 
-                                tris.Add(new triangle(new Vec3d[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
+                                tris.Add(new triangle(new Vector3[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
                             }
                         }
                     }
@@ -269,18 +270,18 @@ namespace Mario64
         {
             tris = new List<triangle>
                 {
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(1.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(0.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(0.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(0.0f, 1.0f, 1.0f), new Vec3d(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 1.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vec3d[] { new Vec3d(1.0f, 0.0f, 1.0f), new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) })
+                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(0.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(0.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vector3[] { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vector3[] { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
+                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
+                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) })
                 };
         }
 
@@ -288,7 +289,7 @@ namespace Mario64
         {
             tris = new List<triangle>
                 {
-                    new triangle(new Vec3d[] { new Vec3d(0.0f, 0.0f, 0.0f), new Vec3d(0.0f, 1.0f, 0.0f), new Vec3d(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) })
+                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) })
                 };
         }
     }

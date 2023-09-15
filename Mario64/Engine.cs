@@ -32,7 +32,6 @@ namespace Mario64
         public Vector4 Position;
         public Vector3 Normal;
         public Vector2 Texture;
-        public Vector3 Camera;
     }
 
     public class Engine : GameWindow
@@ -123,7 +122,6 @@ namespace Mario64
         private int vao;
         private int shaderProgram;
         private int vbo;
-        private List<Vertex> trisToDraw = new List<Vertex>();
 
         // Program variables
         private Random rnd = new Random((int)DateTime.Now.Ticks);
@@ -149,7 +147,6 @@ namespace Mario64
             screenWidth = width;
             screenHeight = height;
             this.CenterWindow(new Vector2i(screenWidth, screenHeight));
-            trisToDraw = new List<Vertex>();
             meshes = new List<Mesh>();
             frustum = new Frustum();
         }
@@ -177,7 +174,12 @@ namespace Mario64
 
             DrawFps(args.Time);
 
-            GL.DrawArrays(PrimitiveType.Triangles, 0, trisToDraw.Count);
+
+            foreach (Mesh mesh in meshes)
+            {
+                mesh.UpdateVertexArray(ref frustum, ref camera);
+                mesh.Draw();
+            }
 
             GL.DisableVertexAttribArray(0);
 
@@ -208,15 +210,6 @@ namespace Mario64
             frustum = camera.GetFrustum();
 
             GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
-
-            trisToDraw = new List<Vertex>();
-            foreach (Mesh mesh in meshes)
-            {
-                trisToDraw.AddRange(mesh.UpdateVertexArray(ref frustum, ref camera));
-            }
-            int vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex));
-
-            GL.BufferData(BufferTarget.ArrayBuffer, trisToDraw.Count * vertexSize, trisToDraw.ToArray(), BufferUsageHint.DynamicDraw);
         }
 
         protected override void OnLoad()
@@ -285,6 +278,8 @@ namespace Mario64
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
             meshes.Add(new Mesh(vao, shaderProgram, "spiro.obj", "High.png"));
+            //meshes.Add(new Mesh(vao, shaderProgram, "spiro.obj", "High.png"));
+            meshes.Last().TranslateRotateScale(new Vector3(0, 0, 0), new Vector3(0, 90, 0), Vector3.One);
             frustum = camera.GetFrustum();
         }
 

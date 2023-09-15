@@ -1,4 +1,5 @@
 ﻿using OpenTK.Mathematics;
+using OpenTK.Platform.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,28 +12,39 @@ namespace Mario64
     {
         public triangle()
         {
-            p = new Vec3d[3];
+            p = new Vector3[3];
+            c = new Color4[3];
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
         }
 
-        public triangle(Vec3d[] p)
+        public triangle(Vector3[] p)
         {
-            this.p = new Vec3d[p.Length];
+            this.p = new Vector3[p.Length];
             for (int p_ = 0; p_ < p.Length; p_++)
             {
-                this.p[p_] = p[p_].GetCopy();
+                this.p[p_] = p[p_];
+            }
+            c = new Color4[p.Length];
+            for (int c_ = 0; c_ < p.Length; c_++)
+            {
+                c[c_] = Color4.White;
             }
 
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
         }
 
-        public triangle(Vec3d[] p, Vec2d[] t)
+        public triangle(Vector3[] p, Vec2d[] t)
         {
-            this.p = new Vec3d[p.Length];
+            this.p = new Vector3[p.Length];
+            c = new Color4[p.Length];
+            for (int c_ = 0; c_ < p.Length; c_++)
+            {
+                c[c_] = Color4.White;
+            }
             this.t = new Vec2d[t.Length];
             for (int p_ = 0; p_ < p.Length; p_++)
             {
-                this.p[p_] = p[p_].GetCopy();
+                this.p[p_] = p[p_];
             }
             for (int t_ = 0; t_ < t.Length; t_++)
             {
@@ -40,22 +52,24 @@ namespace Mario64
             }
         }
 
-        public Vec3d GetMiddle()
+        public Vector3 GetMiddle()
         {
             return (p[0] + p[1] + p[2]) / 3;
         }
 
         public void Color(Color4 c)
         {
-            foreach (Vec3d p_ in p)
-                p_.color = c;
+            for (int i = 0; i < this.c.Length; i++)
+            {
+                this.c[i] = c;
+            }
         }
 
         public void Color(triangle t)
         {
-            for (int p_ = 0; p_ < p.Length; p_++)
+            for (int i = 0; i < this.c.Length; i++)
             {
-                p[p_].color = t.p[p_].color;
+                this.c[i] = t.c[i];
             }
         }
 
@@ -64,13 +78,13 @@ namespace Mario64
             return p[0].ToString() + p[1].ToString() + p[2].ToString();
         }
 
-        public Vec3d ComputeNormal()
+        public Vector3 ComputeNormal()
         {
-            Vec3d normal, line1, line2;
+            Vector3 normal, line1, line2;
             line1 = p[1] - p[0];
             line2 = p[2] - p[0];
 
-            normal = Vec3d.Cross(line1, line2);
+            normal = Vector3.Cross(line1, line2);
             normal.Normalize();
             return normal;
         }
@@ -78,9 +92,9 @@ namespace Mario64
         public triangle GetCopy()
         {
             triangle tri = new triangle();
-            tri.p[0] = p[0].GetCopy();
-            tri.p[1] = p[1].GetCopy();
-            tri.p[2] = p[2].GetCopy();
+            tri.p[0] = p[0];
+            tri.p[1] = p[1];
+            tri.p[2] = p[2];
             tri.t[0] = t[0].GetCopy();
             tri.t[1] = t[1].GetCopy();
             tri.t[2] = t[2].GetCopy();
@@ -101,7 +115,8 @@ namespace Mario64
                 return 0;
         }
 
-        public Vec3d[] p;
+        public Vector3[] p;
+        public Color4[] c;
         public Vec2d[] t;
     }
 }

@@ -87,28 +87,28 @@ namespace Mario64
             //foreach (Plane p in planes)
             //    triangles.AddRange(p.GetTriangles());
 
-            Vec3d[] corners = new Vec3d[8];
-            corners[0] = new Vec3d(ntl.X, ntl.Y, ntl.Z);
-            corners[1] = new Vec3d(ntr.X, ntr.Y, ntr.Z);
-            corners[2] = new Vec3d(nbl.X, nbl.Y, nbl.Z);
-            corners[3] = new Vec3d(nbr.X, nbr.Y, nbr.Z);
-            corners[4] = new Vec3d(ftl.X, ftl.Y, ftl.Z);
-            corners[5] = new Vec3d(ftr.X, ftr.Y, ftr.Z);
-            corners[6] = new Vec3d(fbl.X, fbl.Y, fbl.Z);
-            corners[7] = new Vec3d(fbr.X, fbr.Y, fbr.Z);
+            Vector3[] corners = new Vector3[8];
+            corners[0] = new Vector3(ntl.X, ntl.Y, ntl.Z);
+            corners[1] = new Vector3(ntr.X, ntr.Y, ntr.Z);
+            corners[2] = new Vector3(nbl.X, nbl.Y, nbl.Z);
+            corners[3] = new Vector3(nbr.X, nbr.Y, nbr.Z);
+            corners[4] = new Vector3(ftl.X, ftl.Y, ftl.Z);
+            corners[5] = new Vector3(ftr.X, ftr.Y, ftr.Z);
+            corners[6] = new Vector3(fbl.X, fbl.Y, fbl.Z);
+            corners[7] = new Vector3(fbr.X, fbr.Y, fbr.Z);
 
-            triangles.Add(new triangle(new Vec3d[] { corners[0], corners[1], corners[2] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[1], corners[3], corners[2] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[4], corners[5], corners[6] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[5], corners[7], corners[6] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[0], corners[4], corners[2] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[4], corners[6], corners[2] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[1], corners[5], corners[3] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[5], corners[7], corners[3] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[0], corners[1], corners[4] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[1], corners[5], corners[4] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[2], corners[3], corners[6] }));
-            triangles.Add(new triangle(new Vec3d[] { corners[3], corners[7], corners[6] }));
+            triangles.Add(new triangle(new Vector3[] { corners[0], corners[1], corners[2] }));
+            triangles.Add(new triangle(new Vector3[] { corners[1], corners[3], corners[2] }));
+            triangles.Add(new triangle(new Vector3[] { corners[4], corners[5], corners[6] }));
+            triangles.Add(new triangle(new Vector3[] { corners[5], corners[7], corners[6] }));
+            triangles.Add(new triangle(new Vector3[] { corners[0], corners[4], corners[2] }));
+            triangles.Add(new triangle(new Vector3[] { corners[4], corners[6], corners[2] }));
+            triangles.Add(new triangle(new Vector3[] { corners[1], corners[5], corners[3] }));
+            triangles.Add(new triangle(new Vector3[] { corners[5], corners[7], corners[3] }));
+            triangles.Add(new triangle(new Vector3[] { corners[0], corners[1], corners[4] }));
+            triangles.Add(new triangle(new Vector3[] { corners[1], corners[5], corners[4] }));
+            triangles.Add(new triangle(new Vector3[] { corners[2], corners[3], corners[6] }));
+            triangles.Add(new triangle(new Vector3[] { corners[3], corners[7], corners[6] }));
 
             return triangles;
         }
