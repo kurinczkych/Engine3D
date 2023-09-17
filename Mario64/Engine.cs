@@ -173,7 +173,6 @@ namespace Mario64
             int windowSizeLocation = GL.GetUniformLocation(shaderProgram.id, "windowSize");
             int modelMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "modelMatrix");
             int viewMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "viewMatrix");
-            int lightSpaceMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "lightSpaceMatrix");
             int projectionMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "projectionMatrix");
             int cameraPositionLocation = GL.GetUniformLocation(shaderProgram.id, "cameraPosition");
 
@@ -183,7 +182,6 @@ namespace Mario64
             GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
             GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
             GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
-            GL.UniformMatrix4(lightSpaceMatrixLocation, false, ref lightSpaceMatrix);
             GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
             GL.Uniform3(cameraPositionLocation, camera.position);
         }
@@ -194,58 +192,17 @@ namespace Mario64
             GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
         }
 
-        public void GenerateShadowMap()
-        {
-            GL.GenFramebuffers(1, out depthMapFBO);
-
-            GL.GenTextures(1, out depthMap);
-            GL.BindTexture(TextureTarget.Texture2D, depthMap);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, SHADOW_WIDTH, SHADOW_HEIGHT, 0, PixelFormat.DepthComponent,
-                PixelType.Float, IntPtr.Zero);
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
-            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D,
-                depthMap, 0);
-            GL.DrawBuffer(DrawBufferMode.None);
-            GL.ReadBuffer(ReadBufferMode.None);
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-        }
-
         protected override void OnRenderFrame(FrameEventArgs args)
         {
+            GL.ClearColor(Color4.Cyan);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
             double fps = DrawFps(args.Time);
 
             viewMatrix = camera.GetViewMatrix();
             frustum = camera.GetFrustum();
 
-            //Rendering scene to depthmap
-            GL.Viewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
-            GL.Clear(ClearBufferMask.DepthBufferBit);
 
-            GL.Enable(EnableCap.DepthTest);
-            shaderProgram.Use();
-            SendUniforms();
-
-            //PointLight.SendToGPU(ref pointLights, shaderProgram.id);
-
-            foreach (Mesh mesh in meshes)
-            {
-                mesh.Draw(ref frustum, ref camera);
-            }
-
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            //Rendering scene with depth map
-            GL.Viewport(0, 0, screenWidth, screenHeight);
-            GL.ClearColor(Color4.Cyan);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            GL.BindTexture(TextureTarget.Texture2D, depthMap);
-            //Rendering scene to depthmap
             GL.Enable(EnableCap.DepthTest);
             shaderProgram.Use();
             SendUniforms();
@@ -306,8 +263,6 @@ namespace Mario64
             // OPENGL init
             vao = GL.GenVertexArray();
             textVao = GL.GenVertexArray();
-            GenerateShadowMap();
-            lightSpaceMatrix = PointLight.GetDirLightSpaceMatrix();
 
             // create the shader program
             shaderProgram = new Shader("Default.vert", "Default.frag");
@@ -324,7 +279,6 @@ namespace Mario64
 
             // Passing uniforms to GPU
             SendUniforms();
-
 
             // Projection matrix and mesh loading
             //meshCube.OnlyCube();
