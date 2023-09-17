@@ -10,20 +10,30 @@ namespace Mario64
 {
     public class triangle
     {
+        public Vector3[] p;
+        public Vector3[] n;
+        public Color4[] c;
+        public Vec2d[] t;
+        public bool gotPointNormals;
+
         public triangle()
         {
+            gotPointNormals = false;
             p = new Vector3[3];
+            n = new Vector3[3];
             c = new Color4[3];
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
         }
 
         public triangle(Vector3[] p)
         {
+            gotPointNormals = false;
             this.p = new Vector3[p.Length];
             for (int p_ = 0; p_ < p.Length; p_++)
             {
                 this.p[p_] = p[p_];
             }
+            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
             c = new Color4[p.Length];
             for (int c_ = 0; c_ < p.Length; c_++)
             {
@@ -35,17 +45,44 @@ namespace Mario64
 
         public triangle(Vector3[] p, Vec2d[] t)
         {
+            gotPointNormals = false;
             this.p = new Vector3[p.Length];
+            for (int p_ = 0; p_ < p.Length; p_++)
+            {
+                this.p[p_] = p[p_];
+            }
+            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
             c = new Color4[p.Length];
             for (int c_ = 0; c_ < p.Length; c_++)
             {
                 c[c_] = Color4.White;
             }
             this.t = new Vec2d[t.Length];
+            for (int t_ = 0; t_ < t.Length; t_++)
+            {
+                this.t[t_] = t[t_].GetCopy();
+            }
+        }
+
+        public triangle(Vector3[] p, Vector3[] n, Vec2d[] t)
+        {
+            gotPointNormals = true;
+            this.p = new Vector3[p.Length];
             for (int p_ = 0; p_ < p.Length; p_++)
             {
                 this.p[p_] = p[p_];
             }
+            this.n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
+            for (int p_ = 0; p_ < p.Length; p_++)
+            {
+                this.n[p_] = n[p_];
+            }
+            c = new Color4[p.Length];
+            for (int c_ = 0; c_ < p.Length; c_++)
+            {
+                c[c_] = Color4.White;
+            }
+            this.t = new Vec2d[t.Length];
             for (int t_ = 0; t_ < t.Length; t_++)
             {
                 this.t[t_] = t[t_].GetCopy();
@@ -78,7 +115,7 @@ namespace Mario64
             return p[0].ToString() + p[1].ToString() + p[2].ToString();
         }
 
-        public Vector3 ComputeNormal()
+        public Vector3 ComputeTriangleNormal()
         {
             Vector3 normal, line1, line2;
             line1 = p[1] - p[0];
@@ -95,9 +132,15 @@ namespace Mario64
             tri.p[0] = p[0];
             tri.p[1] = p[1];
             tri.p[2] = p[2];
+            tri.n[0] = n[0];
+            tri.n[1] = n[1];
+            tri.n[2] = n[2];
             tri.t[0] = t[0].GetCopy();
             tri.t[1] = t[1].GetCopy();
             tri.t[2] = t[2].GetCopy();
+            tri.c[0] = c[0];
+            tri.c[1] = c[1];
+            tri.c[2] = c[2];
 
             return tri;
         }
@@ -114,9 +157,5 @@ namespace Mario64
             else
                 return 0;
         }
-
-        public Vector3[] p;
-        public Color4[] c;
-        public Vec2d[] t;
     }
 }

@@ -15,29 +15,17 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.ComponentModel.Design;
 using static System.Net.WebRequestMethods;
 using System.Security.Cryptography;
 
-#pragma warning disable CS8600
-#pragma warning disable CA1416
-#pragma warning disable CS8604
+#pragma warning disable CS0649
 
 namespace Mario64
 {
-    public struct Vertex
-    {
-        public Vector4 Position;
-        public Vector3 Normal;
-        public Vector2 Texture;
-    }
 
     public class Engine : GameWindow
     {
-       
-
         #region Wireframe drawing
         private void DrawPixel(double x, double y, Color4 color, bool scissorTest = true)
         {
@@ -120,8 +108,15 @@ namespace Mario64
 
         // OPENGL
         private int vao;
-        private int shaderProgram;
-        private int vbo;
+        private int textVao;
+        private Shader shaderProgram;
+        private Shader textShaderProgram;
+        private int textureCount = 0;
+
+        private const int SHADOW_WIDTH = 1024;
+        private const int SHADOW_HEIGHT = 1024;
+        private int depthMapFBO;
+        private int depthMap;
 
         // Program variables
         private Random rnd = new Random((int)DateTime.Now.Ticks);
@@ -132,13 +127,14 @@ namespace Mario64
 
         // Engine variables
         private List<Mesh> meshes;
-        private float theta = 0f;
+        private List<Text> textMeshes;
 
         private Camera camera = new Camera();
-        private float yaw;
         private Frustum frustum;
+        private List<PointLight> pointLights;
+        private TextGenerator textGenerator;
 
-        Matrix4 modelMatrix, viewMatrix, projectionMatrix;
+        Matrix4 modelMatrix, viewMatrix, projectionMatrix, lightSpaceMatrix;
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
@@ -148,10 +144,14 @@ namespace Mario64
             screenHeight = height;
             this.CenterWindow(new Vector2i(screenWidth, screenHeight));
             meshes = new List<Mesh>();
+            textMeshes = new List<Text>();
             frustum = new Frustum();
+            shaderProgram = new Shader();
+            textShaderProgram = new Shader();
+            pointLights = new List<PointLight>();
         }
 
-        private void DrawFps(double deltaTime)
+        private double DrawFps(double deltaTime)
         {
             frameCount += 1;
             totalTime += deltaTime;
@@ -164,21 +164,116 @@ namespace Mario64
                 frameCount = 0;
                 totalTime = 0;
             }
+
+            return fps;
         }
 
+        private void SendUniforms()
+        {
+            int windowSizeLocation = GL.GetUniformLocation(shaderProgram.id, "windowSize");
+            int modelMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "modelMatrix");
+            int viewMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "viewMatrix");
+            int lightSpaceMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "lightSpaceMatrix");
+            int projectionMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "projectionMatrix");
+            int cameraPositionLocation = GL.GetUniformLocation(shaderProgram.id, "cameraPosition");
+
+            modelMatrix = Matrix4.Identity;
+            projectionMatrix = camera.GetProjectionMatrix();
+
+            GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
+            GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
+            GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
+            GL.UniformMatrix4(lightSpaceMatrixLocation, false, ref lightSpaceMatrix);
+            GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
+            GL.Uniform3(cameraPositionLocation, camera.position);
+        }
+
+        private void SendTextUniforms()
+        {
+            int windowSizeLocation = GL.GetUniformLocation(shaderProgram.id, "windowSize");
+            GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
+        }
+
+        public void GenerateShadowMap()
+        {
+            GL.GenFramebuffers(1, out depthMapFBO);
+
+            GL.GenTextures(1, out depthMap);
+            GL.BindTexture(TextureTarget.Texture2D, depthMap);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, SHADOW_WIDTH, SHADOW_HEIGHT, 0, PixelFormat.DepthComponent,
+                PixelType.Float, IntPtr.Zero);
+
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D,
+                depthMap, 0);
+            GL.DrawBuffer(DrawBufferMode.None);
+            GL.ReadBuffer(ReadBufferMode.None);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.ClearColor(Color4.Cyan);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            double fps = DrawFps(args.Time);
 
-            DrawFps(args.Time);
+            viewMatrix = camera.GetViewMatrix();
+            frustum = camera.GetFrustum();
 
+            //Rendering scene to depthmap
+            GL.Viewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, depthMapFBO);
+            GL.Clear(ClearBufferMask.DepthBufferBit);
+
+            GL.Enable(EnableCap.DepthTest);
+            shaderProgram.Use();
+            SendUniforms();
+
+            //PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
             foreach (Mesh mesh in meshes)
             {
-                mesh.UpdateVertexArray(ref frustum, ref camera);
-                mesh.Draw();
+                mesh.Draw(ref frustum, ref camera);
+            }
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            //Rendering scene with depth map
+            GL.Viewport(0, 0, screenWidth, screenHeight);
+            GL.ClearColor(Color4.Cyan);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.BindTexture(TextureTarget.Texture2D, depthMap);
+            //Rendering scene to depthmap
+            GL.Enable(EnableCap.DepthTest);
+            shaderProgram.Use();
+            SendUniforms();
+
+            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
+
+            foreach (Mesh mesh in meshes)
+            {
+                mesh.Draw(ref frustum, ref camera);
+            }
+
+            // Text rendering
+
+            GL.Disable(EnableCap.DepthTest);
+
+            textMeshes[0] = textGenerator.Generate(textVao, textShaderProgram.id,
+                ((int)fps).ToString() + " fps",
+                new Vector2(10, screenHeight-35),
+                Color4.White,
+                new Vector2(1.5f, 1.5f),
+                new Vector2(screenWidth, screenHeight),
+                ref textureCount);
+
+            textShaderProgram.Use();
+            SendTextUniforms();
+            foreach (Text textMesh in textMeshes)
+            {
+                textMesh.Draw();
             }
 
             GL.DisableVertexAttribArray(0);
@@ -193,94 +288,64 @@ namespace Mario64
             base.OnUpdateFrame(args);
 
             camera.Update(KeyboardState, MouseState, args);
-
-            if (IsKeyDown(Keys.Left))
-            {
-                yaw += 2.0f * (float)args.Time;
-            }
-            if (IsKeyDown(Keys.Right))
-            {
-                yaw -= 2.0f * (float)args.Time;
-            }
-
-            int viewMatrixLocation = GL.GetUniformLocation(shaderProgram, "viewMatrix");
-            int modelMatrixLocation = GL.GetUniformLocation(shaderProgram, "modelMatrix");
-
-            viewMatrix = camera.GetViewMatrix();
-            frustum = camera.GetFrustum();
-
-            GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
         }
 
         protected override void OnLoad()
         {
             base.OnLoad();
+            CursorState = CursorState.Grabbed;
+
+            textGenerator = new TextGenerator();
 
             GL.Enable(EnableCap.DepthTest);
+            //GL.Enable(EnableCap.FramebufferSrgb);
             //GL.Disable(EnableCap.CullFace);
-            //GL.Enable(EnableCap.Blend);
-            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
             // OPENGL init
             vao = GL.GenVertexArray();
+            textVao = GL.GenVertexArray();
+            GenerateShadowMap();
+            lightSpaceMatrix = PointLight.GetDirLightSpaceMatrix();
 
             // create the shader program
-            shaderProgram = GL.CreateProgram();
+            shaderProgram = new Shader("Default.vert", "Default.frag");
+            textShaderProgram = new Shader("textVert.vert", "textFrag.frag");
 
-            // create the vertex shader
-            int vertexShader = GL.CreateShader(ShaderType.VertexShader);
-            // add the source code from "Default.vert" in the Shaders file
-            GL.ShaderSource(vertexShader, LoadShaderSource("Default.vert"));
-            // Compile the Shader
-            GL.CompileShader(vertexShader);
-
-            // Same as vertex shader
-            int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShader, LoadShaderSource("Default.frag"));
-            GL.CompileShader(fragmentShader);
-
-            // Attach the shaders to the shader program
-            GL.AttachShader(shaderProgram, vertexShader);
-            GL.AttachShader(shaderProgram, fragmentShader);
-
-            // Link the program to OpenGL
-            GL.LinkProgram(shaderProgram);
-            GL.UseProgram(shaderProgram); // bind vao
-
-            int windowSizeLocation = GL.GetUniformLocation(shaderProgram, "windowSize");
-
+            shaderProgram.Use();
+            //Camera
             camera = new Camera(new Vector2(screenWidth, screenHeight));
             camera.UpdateVectors();
 
-            // Matrixes
-            int modelMatrixLocation = GL.GetUniformLocation(shaderProgram, "modelMatrix");
-            int viewMatrixLocation = GL.GetUniformLocation(shaderProgram, "viewMatrix");
-            int projectionMatrixLocation = GL.GetUniformLocation(shaderProgram, "projectionMatrix");
+            //Point Lights
+            //pointLights.Add(new PointLight(new Vector3(0, 10, 0), Color4.White, shaderProgram.id, pointLights.Count));
+            //PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
-            modelMatrix = Matrix4.CreateRotationY(theta);
-            modelMatrix *= Matrix4.CreateTranslation(new Vector3(0f, 0f, -3f));
-            viewMatrix = camera.GetViewMatrix();
-            projectionMatrix = camera.GetProjectionMatrix();
+            // Passing uniforms to GPU
+            SendUniforms();
 
-            GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
-            GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
-            GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
-            GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
-
-            // delete the shaders
-            GL.DeleteShader(vertexShader);
-            GL.DeleteShader(fragmentShader);
-
-            CursorState = CursorState.Grabbed;
 
             // Projection matrix and mesh loading
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(vao, shaderProgram, "spiro.obj", "High.png"));
-            //meshes.Add(new Mesh(vao, shaderProgram, "spiro.obj", "High.png"));
-            meshes.Last().TranslateRotateScale(new Vector3(0, 0, 0), new Vector3(0, 90, 0), Vector3.One);
+            meshes.Add(new Mesh(vao, shaderProgram.id, "spiro.obj", "High.png", ref textureCount));
+            //meshes.Add(new Mesh(vao, shaderProgram.id, "sphere.obj"));
+            //meshes.Last().TranslateRotateScale(new Vector3(7, -2.0f, 0), new Vector3(0, 0, 0), Vector3.One);
+
             frustum = camera.GetFrustum();
+
+            textShaderProgram.Use();
+            SendTextUniforms();
+
+            textMeshes.Add(textGenerator.Generate(textVao, textShaderProgram.id,
+                "test",
+                new Vector2(10, 10),
+                Color4.White,
+                new Vector2(10, 10),
+                new Vector2(screenWidth, screenHeight),
+                ref textureCount));
         }
 
         protected override void OnUnload()
@@ -288,8 +353,12 @@ namespace Mario64
             base.OnUnload();
 
             GL.DeleteVertexArray(vao);
-            GL.DeleteBuffer(vbo);
-            GL.DeleteProgram(shaderProgram);
+            foreach(Mesh mesh in meshes)
+                GL.DeleteBuffer(mesh.vbo);
+            foreach(Text mesh in textMeshes)
+                GL.DeleteBuffer(mesh.vbo);
+            shaderProgram.Unload();
+            textShaderProgram.Unload();
         }
 
         protected override void OnResize(ResizeEventArgs e)
@@ -299,26 +368,5 @@ namespace Mario64
             screenWidth = e.Width;
             screenHeight = e.Height;
         }
-
-        public string LoadShaderSource(string filePath)
-        {
-            string shaderSource = "";
-
-            try
-            {
-                using (StreamReader reader = new StreamReader("../../../Shaders/" + filePath))
-                {
-                    shaderSource = reader.ReadToEnd();
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Failed to load shader source file: " + e.Message);
-            }
-
-            return shaderSource;
-        }
-
-        
     }
 }
