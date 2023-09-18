@@ -35,7 +35,17 @@ namespace Mario64
         private string? embeddedTextureName;
         private int vertexSize;
 
-        private Matrix4 transformMatrix;
+        public Vector3 Position;
+        public Vector3 Rotation;
+        public Vector3 Scale;
+        private bool IsTransformed
+        {
+            get
+            {
+                return !(Position == Vector3.Zero && Rotation == Vector3.Zero && Scale == Vector3.One);
+            }
+        }
+
         private Frustum frustum;
         private Camera camera;
         private Vector2 windowSize;
@@ -50,6 +60,10 @@ namespace Mario64
             this.windowSize = windowSize;
             this.frustum = frustum;
             this.camera = camera;
+
+            Position = Vector3.Zero;
+            Rotation = Vector3.Zero;
+            Scale = Vector3.One;
 
             GL.GenBuffers(1, out vbo);
 
@@ -91,11 +105,12 @@ namespace Mario64
             SendUniforms();
         }
 
-        private Vertex ConvertToNDC(triangle tri, int index)
+        private Vertex ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
         {
+            Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
             return new Vertex()
             {
-                Position = new Vector4(tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f),
+                Position = new Vector4(v.X, v.Y, v.Z, 1.0f),
                 Normal = new Vector3(tri.n[index].X, tri.n[index].Y, tri.n[index].Z),
                 Texture = new Vector2(tri.t[index].u, tri.t[index].v)
             };
@@ -132,22 +147,32 @@ namespace Mario64
 
             vertices = new List<Vertex>();
 
+            Matrix4 s = Matrix4.CreateScale(Scale);
+            Matrix4 rX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(Rotation.X));
+            Matrix4 rY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(Rotation.Y));
+            Matrix4 rZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(Rotation.Z));
+            Matrix4 t = Matrix4.CreateTranslation(Position);
+
+            Matrix4 transformMatrix = Matrix4.Identity;
+            if (IsTransformed)
+                transformMatrix = s * rX * rY * rZ * t;
+
             foreach (triangle tri in tris)
             {
                 if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
                 {
                     if (tri.gotPointNormals)
                     {
-                        vertices.Add(ConvertToNDC(tri, 0));
-                        vertices.Add(ConvertToNDC(tri, 1));
-                        vertices.Add(ConvertToNDC(tri, 2));
+                        vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
+                        vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
+                        vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
                     }
                     else
                     {
                         Vector3 normal = tri.ComputeTriangleNormal();
-                        vertices.Add(ConvertToNDC(tri, 0));
-                        vertices.Add(ConvertToNDC(tri, 1));
-                        vertices.Add(ConvertToNDC(tri, 2));
+                        vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
+                        vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
+                        vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
                     }
                 }
             }
@@ -165,24 +190,6 @@ namespace Mario64
 
             GL.BindVertexArray(0); // Unbind the VAO
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
-        }
-
-        public void TranslateRotateScale(Vector3 trans, Vector3 rotate, Vector3 scale)
-        {
-            Matrix4 s = Matrix4.CreateScale(scale);
-            Matrix4 rX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotate.X));
-            Matrix4 rY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotate.Y));
-            Matrix4 rZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotate.Z));
-            Matrix4 t = Matrix4.CreateTranslation(trans);
-
-            transformMatrix = s * rX * rY * rZ * t;
-            foreach (triangle tri in tris)
-            {
-                for (int i = 0; i < tri.p.Length; i++)
-                {
-                    tri.p[i] = Vector3.TransformPosition(tri.p[i], transformMatrix);
-                }
-            }
         }
 
         private void LoadTexture(string embeddedResourceName)

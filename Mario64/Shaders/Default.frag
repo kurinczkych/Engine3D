@@ -103,11 +103,12 @@ void main()
     dirLight.specular = vec3(1.0,1.0,1.0);
     dirLight.specularPow = 2;
 
+    vec3 result = vec3(0,0,0);
+
     // phase 1: Directional lighting
-    vec3 result = CalcDirLight(dirLight, normal, viewDir);
+    result = CalcDirLight(dirLight, normal, viewDir);
 
     // phase 2: Point lights
-//    vec3 result = vec3(0,0,0);
     for(int i = 0; i < actualNumOfLights; i++)
         result += CalcPointLight(pointLights[i], normal, fragPos, viewDir);
 

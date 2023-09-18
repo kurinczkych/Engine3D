@@ -1,5 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using OpenTK.Platform.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,21 @@ namespace Mario64
     public class PointLight
     {
         public int positionLoc;
-        public Vector3 position;
+
+        private Vector3 _position;
+        public Vector3 Position
+        {
+            set
+            {
+                _position = value;
+                if(mesh != null)
+                    mesh.Position = value;
+            }
+            get
+            {
+                return _position;
+            }
+        }
 
         public int colorLoc;
         public Color4 color;
@@ -42,7 +57,7 @@ namespace Mario64
 
         public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Frustum frustum, ref Camera camera, int meshVao, int meshShaderProgramId, int i)
         {
-            position = pos;
+            Position = pos;
             this.color = color;
 
             ambient = new Vector3(color.R * ambientS, color.G * ambientS, color.B * ambientS);
@@ -83,7 +98,8 @@ namespace Mario64
         public static NoTextureMesh GetMesh(PointLight pointLight, int vaoId, int shaderProgramId, ref Frustum frustum, ref Camera camera)
         {
             NoTextureMesh mesh = new NoTextureMesh(vaoId, shaderProgramId, "sphereSmall.obj", ref frustum, ref camera, pointLight.color);
-            mesh.TranslateRotateScale(pointLight.position, Vector3.Zero, new Vector3(0.5f,0.5f,0.5f));
+            mesh.Position = pointLight.Position;
+            mesh.Scale = new Vector3(0.5f,0.5f,0.5f);
 
             return mesh;
         }
@@ -94,7 +110,7 @@ namespace Mario64
             for (int i = 0; i < pointLights.Count; i++)
             {
                 Vector3 c = new Vector3(pointLights[i].color.R, pointLights[i].color.G, pointLights[i].color.B);
-                GL.Uniform3(pointLights[i].positionLoc, pointLights[i].position);
+                GL.Uniform3(pointLights[i].positionLoc, pointLights[i].Position);
                 GL.Uniform3(pointLights[i].colorLoc, c);
 
                 GL.Uniform3(pointLights[i].ambientLoc, pointLights[i].ambient);
