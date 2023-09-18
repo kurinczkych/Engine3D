@@ -206,11 +206,6 @@ namespace Mario64
             GL.BindTexture(TextureTarget.Texture2D, textureId);
             GL.Uniform1(textureLocation, textureUnit);
 
-            if(depthMap != -1)
-            {
-                GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "shadowMap"), depthMap);
-            }
-
             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
 
             GL.BindVertexArray(0); // Unbind the VAO
