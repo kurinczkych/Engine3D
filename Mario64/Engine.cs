@@ -196,19 +196,19 @@ namespace Mario64
             GL.Disable(EnableCap.DepthTest);
 
 
-            //textMeshes[0] = textGenerator.Generate(textVao, textShaderProgram.id,
-            //    ((int)fps).ToString() + " fps",
-            //    new Vector2(10, screenHeight-35),
-            //    Color4.White,
-            //    new Vector2(1.5f, 1.5f),
-            //    new Vector2(screenWidth, screenHeight),
-            //    ref textureCount);
+            textMeshes[0] = textGenerator.Generate(textVao, textShaderProgram.id,
+                ((int)fps).ToString() + " fps",
+                new Vector2(10, screenHeight - 35),
+                Color4.White,
+                new Vector2(1.5f, 1.5f),
+                new Vector2(screenWidth, screenHeight),
+                ref textureCount);
 
-            //textShaderProgram.Use();
-            //foreach (TextMesh textMesh in textMeshes)
-            //{
-            //    textMesh.Draw();
-            //}
+            textShaderProgram.Use();
+            foreach (TextMesh textMesh in textMeshes)
+            {
+                textMesh.Draw();
+            }
 
             GL.DisableVertexAttribArray(0);
 
@@ -252,7 +252,7 @@ namespace Mario64
 
             //Point Lights
             noTextureShaderProgram.Use();
-            pointLights.Add(new PointLight(new Vector3(0, 0, 0), Color4.Red, vao, shaderProgram.id, ref frustum, ref camera, noTextureVao, noTextureShaderProgram.id, pointLights.Count));
+            pointLights.Add(new PointLight(new Vector3(0, 5, 0), Color4.White, vao, shaderProgram.id, ref frustum, ref camera, noTextureVao, noTextureShaderProgram.id, pointLights.Count));
 
 
             shaderProgram.Use();
@@ -266,15 +266,15 @@ namespace Mario64
             //meshes.Add(new Mesh(vao, shaderProgram.id, "sphere.obj"));
             //meshes.Last().TranslateRotateScale(new Vector3(7, -2.0f, 0), new Vector3(0, 0, 0), Vector3.One);
 
-            //textShaderProgram.Use();
+            textShaderProgram.Use();
 
-            //textMeshes.Add(textGenerator.Generate(textVao, textShaderProgram.id,
-            //    "test",
-            //    new Vector2(10, 10),
-            //    Color4.White,
-            //    new Vector2(10, 10),
-            //    new Vector2(screenWidth, screenHeight),
-            //    ref textureCount));
+            textMeshes.Add(textGenerator.Generate(textVao, textShaderProgram.id,
+                "test",
+                new Vector2(10, 10),
+                Color4.White,
+                new Vector2(10, 10),
+                new Vector2(screenWidth, screenHeight),
+                ref textureCount));
 
 
             if (textMeshes.Count > 0)
