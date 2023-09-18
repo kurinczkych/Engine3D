@@ -28,7 +28,6 @@ struct DirLight {
 in vec3 fragPos;
 in vec3 normal;
 in vec2 fragTexCoord;
-in vec4 fragPosLightSpace;
 
 uniform vec3 cameraPosition;
 

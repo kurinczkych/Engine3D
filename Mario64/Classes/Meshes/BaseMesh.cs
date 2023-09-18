@@ -15,7 +15,7 @@ namespace Mario64
         public int vbo;
         protected int shaderProgramId;
 
-        protected List<triangle> tris;
+        public List<triangle> tris;
 
         public BaseMesh(int vaoId, int shaderProgramId)
         {

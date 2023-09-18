@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Mario64
 {
+
     public class PointLight
     {
         public int positionLoc;
@@ -37,7 +38,9 @@ namespace Mario64
         public int specularLoc;
         public Vector3 specular;
 
-        public PointLight(Vector3 pos, Color4 color, int shaderProgramId, int i)
+        public NoTextureMesh mesh;
+
+        public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Frustum frustum, ref Camera camera, int meshVao, int meshShaderProgramId, int i)
         {
             position = pos;
             this.color = color;
@@ -63,6 +66,8 @@ namespace Mario64
             constantLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].constant");
             linearLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].linear");
             quadraticLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].quadratic");
+
+            mesh = GetMesh(this, meshVao, meshShaderProgramId, ref frustum, ref camera);
         }
 
         public static PointLight[] GetPointLights(ref List<PointLight> lights)
@@ -73,6 +78,14 @@ namespace Mario64
                 pl[i] = lights[i];
             }
             return pl;
+        }
+
+        public static NoTextureMesh GetMesh(PointLight pointLight, int vaoId, int shaderProgramId, ref Frustum frustum, ref Camera camera)
+        {
+            NoTextureMesh mesh = new NoTextureMesh(vaoId, shaderProgramId, "sphereSmall.obj", ref frustum, ref camera, pointLight.color);
+            mesh.TranslateRotateScale(pointLight.position, Vector3.Zero, new Vector3(0.5f,0.5f,0.5f));
+
+            return mesh;
         }
 
         public static void SendToGPU(ref List<PointLight> pointLights, int shaderProgramId)
