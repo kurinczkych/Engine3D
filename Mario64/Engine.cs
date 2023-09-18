@@ -113,11 +113,6 @@ namespace Mario64
         private Shader textShaderProgram;
         private int textureCount = 0;
 
-        private const int SHADOW_WIDTH = 1024;
-        private const int SHADOW_HEIGHT = 1024;
-        private int depthMapFBO;
-        private int depthMap;
-
         // Program variables
         private Random rnd = new Random((int)DateTime.Now.Ticks);
         private int screenWidth;
@@ -127,14 +122,12 @@ namespace Mario64
 
         // Engine variables
         private List<Mesh> meshes;
-        private List<Text> textMeshes;
+        private List<TextMesh> textMeshes;
 
         private Camera camera = new Camera();
         private Frustum frustum;
         private List<PointLight> pointLights;
         private TextGenerator textGenerator;
-
-        Matrix4 modelMatrix, viewMatrix, projectionMatrix, lightSpaceMatrix;
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
@@ -144,7 +137,7 @@ namespace Mario64
             screenHeight = height;
             this.CenterWindow(new Vector2i(screenWidth, screenHeight));
             meshes = new List<Mesh>();
-            textMeshes = new List<Text>();
+            textMeshes = new List<TextMesh>();
             frustum = new Frustum();
             shaderProgram = new Shader();
             textShaderProgram = new Shader();
@@ -168,30 +161,6 @@ namespace Mario64
             return fps;
         }
 
-        private void SendUniforms()
-        {
-            int windowSizeLocation = GL.GetUniformLocation(shaderProgram.id, "windowSize");
-            int modelMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "modelMatrix");
-            int viewMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "viewMatrix");
-            int projectionMatrixLocation = GL.GetUniformLocation(shaderProgram.id, "projectionMatrix");
-            int cameraPositionLocation = GL.GetUniformLocation(shaderProgram.id, "cameraPosition");
-
-            modelMatrix = Matrix4.Identity;
-            projectionMatrix = camera.GetProjectionMatrix();
-
-            GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
-            GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
-            GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
-            GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
-            GL.Uniform3(cameraPositionLocation, camera.position);
-        }
-
-        private void SendTextUniforms()
-        {
-            int windowSizeLocation = GL.GetUniformLocation(shaderProgram.id, "windowSize");
-            GL.Uniform2(windowSizeLocation, new Vector2(screenWidth, screenHeight));
-        }
-
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             GL.ClearColor(Color4.Cyan);
@@ -199,19 +168,17 @@ namespace Mario64
 
             double fps = DrawFps(args.Time);
 
-            viewMatrix = camera.GetViewMatrix();
             frustum = camera.GetFrustum();
-
 
             GL.Enable(EnableCap.DepthTest);
             shaderProgram.Use();
-            SendUniforms();
 
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
             foreach (Mesh mesh in meshes)
             {
-                mesh.Draw(ref frustum, ref camera);
+                mesh.UpdateFrustumAndCamera(ref frustum, ref camera);
+                mesh.Draw();
             }
 
             // Text rendering
@@ -227,8 +194,7 @@ namespace Mario64
                 ref textureCount);
 
             textShaderProgram.Use();
-            SendTextUniforms();
-            foreach (Text textMesh in textMeshes)
+            foreach (TextMesh textMesh in textMeshes)
             {
                 textMesh.Draw();
             }
@@ -255,10 +221,8 @@ namespace Mario64
             textGenerator = new TextGenerator();
 
             GL.Enable(EnableCap.DepthTest);
-            //GL.Enable(EnableCap.FramebufferSrgb);
             //GL.Disable(EnableCap.CullFace);
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
 
             // OPENGL init
             vao = GL.GenVertexArray();
@@ -272,26 +236,22 @@ namespace Mario64
             //Camera
             camera = new Camera(new Vector2(screenWidth, screenHeight));
             camera.UpdateVectors();
+            frustum = camera.GetFrustum();
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 10, 0), Color4.White, shaderProgram.id, pointLights.Count));
             //PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
-            // Passing uniforms to GPU
-            SendUniforms();
-
             // Projection matrix and mesh loading
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(vao, shaderProgram.id, "spiro.obj", "High.png", ref textureCount));
+            meshes.Add(new Mesh(vao, shaderProgram.id, "spiro.obj", "High.png", new Vector2(screenWidth, screenHeight), ref frustum, ref camera, ref textureCount));
             //meshes.Add(new Mesh(vao, shaderProgram.id, "sphere.obj"));
             //meshes.Last().TranslateRotateScale(new Vector3(7, -2.0f, 0), new Vector3(0, 0, 0), Vector3.One);
 
-            frustum = camera.GetFrustum();
 
             textShaderProgram.Use();
-            SendTextUniforms();
 
             textMeshes.Add(textGenerator.Generate(textVao, textShaderProgram.id,
                 "test",
@@ -300,6 +260,13 @@ namespace Mario64
                 new Vector2(10, 10),
                 new Vector2(screenWidth, screenHeight),
                 ref textureCount));
+
+
+            if (textMeshes.Count > 0)
+            {
+                GL.Enable(EnableCap.Blend);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            }
         }
 
         protected override void OnUnload()
@@ -309,7 +276,7 @@ namespace Mario64
             GL.DeleteVertexArray(vao);
             foreach(Mesh mesh in meshes)
                 GL.DeleteBuffer(mesh.vbo);
-            foreach(Text mesh in textMeshes)
+            foreach(TextMesh mesh in textMeshes)
                 GL.DeleteBuffer(mesh.vbo);
             shaderProgram.Unload();
             textShaderProgram.Unload();

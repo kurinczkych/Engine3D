@@ -1,0 +1,218 @@
+﻿using Newtonsoft.Json;
+using OpenTK.Mathematics;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Mario64
+{
+    public class TextGenerator
+    {
+        public class Root
+        {
+            public Config config { get; set; }
+            public List<Symbol> symbols { get; set; }
+        }
+        public class Config
+        {
+            public int _base { get; set; }
+            public int bold { get; set; }
+            public int charHeight { get; set; }
+            public int charSpacing { get; set; }
+            public string face { get; set; }
+            public int italic { get; set; }
+            public int lineSpacing { get; set; }
+            public int size { get; set; }
+            public int smooth { get; set; }
+            public string textureFile { get; set; }
+            public int textureHeight { get; set; }
+            public int textureWidth { get; set; }
+        }
+        public class Symbol
+        {
+            public int height { get; set; }
+            public int id { get; set; }
+            public char c { get { return (char)id; } }
+            public int width { get; set; }
+            public int x { get; set; }
+            public int xadvance { get; set; }
+            public int xoffset { get; set; }
+            public int y { get; set; }
+            public int yoffset { get; set; }
+        }
+
+        private SortedDictionary<char, Symbol> symbols { get; set; }
+        private Root font;
+
+        public TextGenerator()
+        {
+            font = JsonConvert.DeserializeObject<Root>(GetFile("font.json"));
+
+            symbols = new SortedDictionary<char, Symbol>();
+            foreach (Symbol s in font.symbols)
+            {
+                symbols.Add(s.c, s);
+            }
+        }
+
+        public TextMesh Generate(int vaoId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, ref int textureCount)
+        {
+            TextMesh textMesh = new TextMesh(vaoId, shaderProgramId, "font.png", windowSize, ref textureCount);
+            textMesh.position = pos;
+            textMesh.color = color;
+            textMesh.sizeScale = sizeScale;
+
+            Vector2 start = pos;
+            for (int i = 0; i < t.Length; i++)
+            {
+                Symbol s = symbols[t[i]];
+
+                float width = s.width * sizeScale.X;
+                float height = s.height * sizeScale.Y;
+
+                Vector2 topleft = new Vector2(s.x / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+                Vector2 topRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+                Vector2 bottomLeft = new Vector2(s.x / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+                Vector2 bottomRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+
+                triangle t1 = new triangle();
+                t1.p[0].X = start.X;
+                t1.p[0].Y = start.Y;
+                t1.t[0].u = topleft.X;
+                t1.t[0].v = topleft.Y;
+                t1.c[0] = color;
+                t1.p[1].X = start.X;
+                t1.p[1].Y = start.Y + height;
+                t1.t[1].u = bottomLeft.X;
+                t1.t[1].v = bottomLeft.Y;
+                t1.c[1] = color;
+                t1.p[2].X = start.X + width;
+                t1.p[2].Y = start.Y;
+                t1.t[2].u = topRight.X;
+                t1.t[2].v = topRight.Y;
+                t1.c[2] = color;
+
+                triangle t2 = new triangle();
+                t2.p[0].X = start.X + width;
+                t2.p[0].Y = start.Y;
+                t2.t[0].u = topRight.X;
+                t2.t[0].v = topRight.Y;
+                t2.c[0] = color;
+                t2.p[1].X = start.X;
+                t2.p[1].Y = start.Y + height;
+                t2.t[1].u = bottomLeft.X;
+                t2.t[1].v = bottomLeft.Y;
+                t2.c[1] = color;
+                t2.p[2].X = start.X + width;
+                t2.p[2].Y = start.Y + height;
+                t2.t[2].u = bottomRight.X;
+                t2.t[2].v = bottomRight.Y;
+                t2.c[2] = color;
+
+                textMesh.AddTriangle(t1);
+                textMesh.AddTriangle(t2);
+
+                start.X += width;
+            }
+
+            return textMesh;
+        }
+
+        public TextMesh Generate(int vaoId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, int textureCount)
+        {
+            TextMesh textMesh = new TextMesh(vaoId, shaderProgramId, "font.png", windowSize, ref textureCount);
+            textMesh.position = pos;
+            textMesh.color = color;
+            textMesh.sizeScale = sizeScale;
+
+            Vector2 start = pos;
+            for (int i = 0; i < t.Length; i++)
+            {
+                Symbol s = symbols[t[i]];
+
+                float width = s.width * sizeScale.X;
+                float height = s.height * sizeScale.Y;
+
+                Vector2 topleft = new Vector2(s.x / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+                Vector2 topRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+                Vector2 bottomLeft = new Vector2(s.x / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+                Vector2 bottomRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+
+                triangle t1 = new triangle();
+                t1.p[0].X = start.X;
+                t1.p[0].Y = start.Y;
+                t1.t[0].u = topleft.X;
+                t1.t[0].v = topleft.Y;
+                t1.c[0] = color;
+                t1.p[1].X = start.X;
+                t1.p[1].Y = start.Y + height;
+                t1.t[1].u = bottomLeft.X;
+                t1.t[1].v = bottomLeft.Y;
+                t1.c[1] = color;
+                t1.p[2].X = start.X + width;
+                t1.p[2].Y = start.Y;
+                t1.t[2].u = topRight.X;
+                t1.t[2].v = topRight.Y;
+                t1.c[2] = color;
+
+                triangle t2 = new triangle();
+                t2.p[0].X = start.X + width;
+                t2.p[0].Y = start.Y;
+                t2.t[0].u = topRight.X;
+                t2.t[0].v = topRight.Y;
+                t2.c[0] = color;
+                t2.p[1].X = start.X;
+                t2.p[1].Y = start.Y + height;
+                t2.t[1].u = bottomLeft.X;
+                t2.t[1].v = bottomLeft.Y;
+                t2.c[1] = color;
+                t2.p[2].X = start.X + width;
+                t2.p[2].Y = start.Y + height;
+                t2.t[2].u = bottomRight.X;
+                t2.t[2].v = bottomRight.Y;
+                t2.c[2] = color;
+
+                textMesh.AddTriangle(t1);
+                textMesh.AddTriangle(t2);
+
+                start.X += width;
+            }
+
+            return textMesh;
+        }
+
+        private string GetFile(string embeddedResourceName)
+        {
+            // Load the image (using System.Drawing or another library)
+            Stream stream = GetResourceStreamByNameEnd(embeddedResourceName);
+            if (stream != null)
+            {
+                using (stream)
+                {
+                    StreamReader sr = new StreamReader(stream);
+                    return sr.ReadToEnd();
+                }
+            }
+            else
+            {
+                throw new Exception("No file was found");
+            }
+        }
+
+        private Stream GetResourceStreamByNameEnd(string nameEnd)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            foreach (string resourceName in assembly.GetManifestResourceNames())
+            {
+                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
+                {
+                    return assembly.GetManifestResourceStream(resourceName);
+                }
+            }
+            return null; // or throw an exception if the resource is not found
+        }
+    }
+}
