@@ -23,18 +23,15 @@ namespace Mario64
             var half = (Bounds.Max - Bounds.Min) / 2f;
             var mid = Bounds.Min + half;
 
-            // Define the bounds for the eight children
+            // Define the bounds for the eight children ignoring Y component
             BoundingBox[] childBounds = {
-                new BoundingBox(Bounds.Min, mid), // 0: min to midpoint
-                new BoundingBox(new Vector3(mid.X, Bounds.Min.Y, Bounds.Min.Z), new Vector3(Bounds.Max.X, mid.Y, mid.Z)), // 1: front-bottom-right quadrant
-                new BoundingBox(new Vector3(Bounds.Min.X, mid.Y, Bounds.Min.Z), new Vector3(mid.X, Bounds.Max.Y, mid.Z)), // 2: front-top-left quadrant
-                new BoundingBox(new Vector3(Bounds.Min.X, Bounds.Min.Y, mid.Z), new Vector3(mid.X, mid.Y, Bounds.Max.Z)), // 3: back-bottom-left quadrant
-                new BoundingBox(new Vector3(mid.X, mid.Y, Bounds.Min.Z), Bounds.Max), // 4: front-top-right quadrant
-                new BoundingBox(new Vector3(mid.X, Bounds.Min.Y, mid.Z), new Vector3(Bounds.Max.X, mid.Y, Bounds.Max.Z)), // 5: back-bottom-right quadrant
-                new BoundingBox(new Vector3(Bounds.Min.X, mid.Y, mid.Z), new Vector3(mid.X, Bounds.Max.Y, Bounds.Max.Z)), // 6: back-top-left quadrant
-                new BoundingBox(mid, Bounds.Max)}; // 7: back-top-right quadrant (midpoint to max)
+        new BoundingBox(new Vector3(Bounds.Min.X, -float.MaxValue, Bounds.Min.Z), new Vector3(mid.X, float.MaxValue, mid.Z)),
+        new BoundingBox(new Vector3(mid.X, -float.MaxValue, Bounds.Min.Z), new Vector3(Bounds.Max.X, float.MaxValue, mid.Z)),
+        new BoundingBox(new Vector3(Bounds.Min.X, -float.MaxValue, mid.Z), new Vector3(mid.X, float.MaxValue, Bounds.Max.Z)),
+        new BoundingBox(new Vector3(mid.X, -float.MaxValue, mid.Z), new Vector3(Bounds.Max.X, float.MaxValue, Bounds.Max.Z))
+    };
 
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 4; i++)  // Note: Change from 8 to 4 since we now have 4 bounding boxes.
             {
                 Children[i] = new OctreeNode { Bounds = childBounds[i] };
 
@@ -52,6 +49,7 @@ namespace Mario64
             // Optionally clear triangles in the current node to save memory
             Triangles.Clear();
         }
+
 
         private bool Intersects(BoundingBox box, triangle tri)
         {

@@ -111,6 +111,9 @@ namespace Mario64
         private MeshVAO meshVao;
         private MeshVBO meshVbo;
 
+        private MeshVAO testVao;
+        private MeshVBO testVbo;
+
         private TextVAO textVao;
         private TextVBO textVbo;
 
@@ -133,6 +136,7 @@ namespace Mario64
 
         // Engine variables
         private List<Mesh> meshes;
+        private List<TestMesh> testMeshes;
         private List<TextMesh> textMeshes;
         private List<UITextureMesh> uiTexMeshes;
 
@@ -148,6 +152,7 @@ namespace Mario64
             windowSize = new Vector2(width, height);
             this.CenterWindow(new Vector2i(width, height));
             meshes = new List<Mesh>();
+            testMeshes = new List<TestMesh>();
             textMeshes = new List<TextMesh>();
             uiTexMeshes = new List<UITextureMesh>();
             frustum = new Frustum();
@@ -194,6 +199,17 @@ namespace Mario64
                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             }
 
+            //-------------------------------TestMesh---------------------------------
+            //testMeshes[0].tris = meshes[0].Octree.GetNearTriangles(character.Position);
+            //foreach (TestMesh mesh in testMeshes)
+            //{
+            //    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //    List<Vertex> vertices = mesh.Draw();
+            //    testVbo.Buffer(vertices);
+            //    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            //}
+            //------------------------------------------------------------------------
+
             noTextureShaderProgram.Use();
             foreach (PointLight pl in pointLights)
             {
@@ -234,7 +250,7 @@ namespace Mario64
         {
             base.OnUpdateFrame(args);
 
-            character.UpdatePosition(KeyboardState, MouseState, args);
+            character.UpdatePosition(KeyboardState, MouseState, ref meshes[0].Octree, args);
             //camera.UpdatePositionToGround(meshes[0].Octree.GetNearTriangles(camera.position));
         }
 
@@ -255,6 +271,12 @@ namespace Mario64
             meshVao.LinkToVAO(0, 4, 0, meshVbo);
             meshVao.LinkToVAO(1, 3, 4, meshVbo);
             meshVao.LinkToVAO(2, 2, 7, meshVbo);
+
+            testVbo = new MeshVBO();
+            testVao = new MeshVAO();
+            testVao.LinkToVAO(0, 4, 0, testVbo);
+            testVao.LinkToVAO(1, 3, 4, testVbo);
+            testVao.LinkToVAO(2, 2, 7, testVbo);
 
             textVbo = new TextVBO();
             textVao = new TextVAO();
@@ -282,7 +304,7 @@ namespace Mario64
             Camera camera = new Camera(windowSize);
             camera.UpdateVectors();
 
-            character = new Character(new Vector3(0, 20, 0), camera);
+            character = new Character(new Vector3(0, 10, 0), camera);
             frustum = character.camera.GetFrustum();
 
             //Point Lights
@@ -297,7 +319,8 @@ namespace Mario64
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(meshVao,meshVbo, shaderProgram.id, "spiro.obj", "High.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
+            meshes.Add(new Mesh(meshVao,meshVbo, shaderProgram.id, "spiro.obj", "High.png", 6, windowSize, ref frustum, ref camera, ref textureCount));
+            //testMeshes.Add(new TestMesh(testVao,testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
 
             posTexShader.Use();

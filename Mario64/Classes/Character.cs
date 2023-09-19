@@ -1,4 +1,5 @@
 ﻿using Cyotek.Drawing.BitmapFont;
+using OpenTK.Audio.OpenAL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -19,6 +20,7 @@ namespace Mario64
         private float gravity = 120;
         private float jumpForce = 0.005f;
         private float terminalVelocity = -0.7f;
+        private float characterHeight = 4f;
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -46,14 +48,18 @@ namespace Mario64
             camera.position = position;
         }
 
-        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
+        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, ref Octree octree, FrameEventArgs args)
         {
             //Velocity.Y -= gravity * (float)args.Time;
             Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
             if (Velocity.Y < terminalVelocity)
                 Velocity.Y = terminalVelocity;
 
-            if (keyboardState.IsKeyDown(Keys.Space) && IsOnGround())
+
+            float ground = 0;
+            float distToGround = IsOnGround(ref octree, out ground);
+
+            if (keyboardState.IsKeyDown(Keys.Space) && distToGround < 0)
             {
                 Velocity.Y += jumpForce;
             }
@@ -80,16 +86,16 @@ namespace Mario64
             }
 
             Vector3 newPosition = Position + Velocity;
-            if(newPosition.Y > 0)
+            if(distToGround > characterHeight)
             {
                 Position += Velocity;
             }
             else
             {
                 Position += new Vector3(Velocity.X, 0, Velocity.Z);
+                Position.Y = ground + characterHeight;
                 Velocity.Y = 0;
             }
-
 
 
             camera.position = Position;
@@ -113,9 +119,40 @@ namespace Mario64
             camera.UpdateVectors();
         }
 
-        private bool IsOnGround()
+        private float IsOnGround(ref Octree octree, out float ground)
         {
-            return Math.Round(Position.Y) == 0;
+            List<triangle> tris = octree.GetNearTriangles(Position);
+            triangle closest = new triangle();
+            float minDist = float.MaxValue;
+
+            var a = tris.Count();
+            ;
+
+            foreach (triangle triangle in tris)
+            {
+                float dist = (triangle.GetMiddle() - Position).Length;
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closest = triangle;
+                }
+            }
+
+
+            Vector3 pointAbove = closest.GetPointAboveXZ(Position);
+
+            Vector3 center = closest.GetMiddle();
+            float distToCenter = Position.Y - center.Y;
+            ground = center.Y;
+
+            if (pointAbove != Vector3.NegativeInfinity)
+            {
+                distToCenter = Position.Y - pointAbove.Y;
+                ground = pointAbove.Y;
+            }
+
+            return distToCenter;
+            //return Math.Round(Position.Y) == 0;
         }
 
         private void ZeroSmallVelocity()

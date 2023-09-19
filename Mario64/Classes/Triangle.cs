@@ -101,6 +101,53 @@ namespace Mario64
             p[2] += transform;
         }
 
+        public bool RayIntersects(Vector3 rayOrigin, Vector3 rayDir, out Vector3 intersection)
+        {
+            intersection = new Vector3();
+
+            Vector3 e1 = p[1] - p[0];
+            Vector3 e2 = p[2] - p[0];
+            Vector3 h = Vector3.Cross(rayDir, e2);
+            float a = Vector3.Dot(e1, h);
+
+            if (a > -float.Epsilon && a < float.Epsilon)
+                return false;
+
+            float f = 1.0f / a;
+            Vector3 s = rayOrigin - p[0];
+            float u = f * Vector3.Dot(s, h);
+
+            if (u < 0.0f || u > 1.0f)
+                return false;
+
+            Vector3 q = Vector3.Cross(s, e1);
+            float v = f * Vector3.Dot(rayDir, q);
+
+            if (v < 0.0f || u + v > 1.0f)
+                return false;
+
+            float t = f * Vector3.Dot(e2, q);
+
+            if (t > float.Epsilon)
+            {
+                intersection = rayOrigin + rayDir * t;
+                return true;
+            }
+
+            return false;
+        }
+
+        public Vector3 GetPointAboveXZ(Vector3 point)
+        {
+            Vector3 rayDir = new Vector3(0, -1, 0);
+
+            if (RayIntersects(point, rayDir, out Vector3 intersection))
+            {
+                return intersection;
+            }
+            return Vector3.NegativeInfinity;
+        }
+
         public void Color(Color4 c)
         {
             for (int i = 0; i < this.c.Length; i++)
