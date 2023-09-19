@@ -18,9 +18,11 @@ namespace Mario64
         private float speed = 2f;
         //private float gravity = 0.7f;
         private float gravity = 120;
-        private float jumpForce = 0.005f;
+        private float jumpForce = 0.5f;
         private float terminalVelocity = -0.7f;
         private float characterHeight = 4f;
+
+        private bool isOnGround = false;
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -56,10 +58,10 @@ namespace Mario64
                 Velocity.Y = terminalVelocity;
 
 
-            float ground = 0;
-            float distToGround = IsOnGround(ref octree, out ground);
+            float groundY = 0;
+            float distToGround = GetGround(ref octree, out groundY);
 
-            if (keyboardState.IsKeyDown(Keys.Space) && distToGround < 0)
+            if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
             {
                 Velocity.Y += jumpForce;
             }
@@ -85,16 +87,17 @@ namespace Mario64
                 Velocity += (camera.right * speed_) * (float)args.Time;
             }
 
-            Vector3 newPosition = Position + Velocity;
             if(distToGround > characterHeight)
             {
                 Position += Velocity;
+                isOnGround = false;
             }
             else
             {
                 Position += new Vector3(Velocity.X, 0, Velocity.Z);
-                Position.Y = ground + characterHeight;
+                Position.Y = groundY + characterHeight;
                 Velocity.Y = 0;
+                isOnGround = true;
             }
 
 
@@ -119,25 +122,22 @@ namespace Mario64
             camera.UpdateVectors();
         }
 
-        private float IsOnGround(ref Octree octree, out float ground)
+        private float GetGround(ref Octree octree, out float ground)
         {
             List<triangle> tris = octree.GetNearTriangles(Position);
             triangle closest = new triangle();
-            float minDist = float.MaxValue;
 
-            var a = tris.Count();
-            ;
+            Vector3 rayDir = new Vector3(0, -1, 0);
+            Vector3 intersect = new Vector3();
 
             foreach (triangle triangle in tris)
             {
-                float dist = (triangle.GetMiddle() - Position).Length;
-                if (dist < minDist)
+                if(triangle.RayIntersects(Position, rayDir, out intersect))
                 {
-                    minDist = dist;
                     closest = triangle;
-                }
+                    break;
+                }    
             }
-
 
             Vector3 pointAbove = closest.GetPointAboveXZ(Position);
 
