@@ -20,58 +20,23 @@ namespace Mario64
 
     public class TextMesh : BaseMesh
     {
-        private int textureId;
-        private int textureUnit;
+        public Texture texture;
 
         private Vector2 windowSize;
 
         private List<TextVertex> vertices = new List<TextVertex>();
-        private string? embeddedTextureName;
-        private int vertexSize;
 
         // Text variables
         public Vector2 position;
         public Vector2 sizeScale;
         public Color4 color;
 
-        public TextMesh(int vaoId, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref int textureCount) : base(vaoId, shaderProgramId)
+        public TextMesh(int vaoId, int vboId, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref int textureCount) : base(vaoId, vboId, shaderProgramId)
         {
-            this.windowSize = windowSize;
-
-            textureUnit = textureCount;
+            texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
 
-            GL.GenBuffers(1, out vbo);
-
-            // Texture -----------------------------------------------
-            textureId = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-
-            this.embeddedTextureName = embeddedTextureName;
-            LoadTexture(embeddedTextureName);
-
-            vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(TextVertex));
-
-            // VAO creating
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
-            GL.EnableVertexArrayAttrib(vaoId, 0);
-
-            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 1);
-
-            GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, vertexSize, 8 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 2);
-
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.Uniform1(textureLocation, textureUnit);
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
+            this.windowSize = windowSize;
 
             SendUniforms();
         }
@@ -91,14 +56,14 @@ namespace Mario64
 
         protected override void SendUniforms()
         {
+            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
             int windowSizeLocation = GL.GetUniformLocation(shaderProgramId, "windowSize");
             GL.Uniform2(windowSizeLocation, windowSize);
+            GL.Uniform1(textureLocation, texture.unit);
         }
 
-        public override void Draw()
+        public List<TextVertex> Draw()
         {
-            SendUniforms();
-
             vertices = new List<TextVertex>();
 
             foreach (triangle tri in tris)
@@ -108,19 +73,10 @@ namespace Mario64
                 vertices.Add(ConvertToNDC(tri.p[2], tri.t[2], tri.c[0]));
             }
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Count * vertexSize, vertices.ToArray(), BufferUsageHint.DynamicDraw);
+            SendUniforms();
+            texture.Bind();
 
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.Uniform1(textureLocation, textureUnit);
-
-            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
+            return vertices;
         }
 
         private void LoadTexture(string embeddedResourceName)

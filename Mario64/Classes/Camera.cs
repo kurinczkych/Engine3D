@@ -12,9 +12,7 @@ namespace Mario64
 {
     public class Camera
     {
-        private float speed = 8f;
         private Vector2 screenSize;
-        private float sensitivity = 180f;
 
         public float near;
         public float far;
@@ -22,16 +20,14 @@ namespace Mario64
         public float aspectRatio;
 
         public Vector3 position;
-        private Vector3 up = Vector3.UnitY;
+        public Vector3 up = Vector3.UnitY;
         public Vector3 front = -Vector3.UnitZ;
-        private Vector3 right = Vector3.UnitX;
+        public Vector3 frontClamped = -Vector3.UnitZ;
+        public Vector3 right = Vector3.UnitX;
 
-        private float yaw;
+        public float yaw;
         //private float pitch = -90.0f;
-        private float pitch = 0f;
-
-        private bool firstMove = true;
-        public Vector2 lastPos;
+        public float pitch = 0f;
 
         public Camera() { }
 
@@ -170,55 +166,13 @@ namespace Mario64
             front.Y = MathF.Sin(MathHelper.DegreesToRadians(pitch));
             front.Z = MathF.Cos(MathHelper.DegreesToRadians(pitch)) * MathF.Sin(MathHelper.DegreesToRadians(yaw));
 
+            frontClamped = new Vector3(front.X, 0, front.Z);
+
             front.Normalize();
+            frontClamped.Normalize();
 
             right = Vector3.Normalize(Vector3.Cross(front, Vector3.UnitY));
             up = Vector3.Normalize(Vector3.Cross(right, front));
-        }
-
-        public void Update(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
-        {
-            if (keyboardState.IsKeyDown(Keys.Space))
-            {
-                position.Y += speed * (float)args.Time;
-            }
-            if (keyboardState.IsKeyDown(Keys.LeftShift))
-            {
-                position.Y -= speed * (float)args.Time;
-            }
-
-            if (keyboardState.IsKeyDown(Keys.W))
-            {
-                position += (front * speed) * (float)args.Time;
-            }
-            if (keyboardState.IsKeyDown(Keys.S))
-            {
-                position -= (front * speed) * (float)args.Time;
-            }
-            if (keyboardState.IsKeyDown(Keys.A))
-            {
-                position -= (right * speed) * (float)args.Time;
-            }
-            if (keyboardState.IsKeyDown(Keys.D))
-            {
-               position += (right * speed) * (float)args.Time;
-            }
-
-            if(firstMove)
-            {
-                lastPos = new Vector2(mouseState.X, mouseState.Y);
-                firstMove = false;
-            }
-            else
-            {
-                float deltaX = mouseState.X - lastPos.X;
-                float deltaY = mouseState.Y - lastPos.Y;
-                lastPos = new Vector2(mouseState.X, mouseState.Y);
-
-                yaw += deltaX * sensitivity * (float)args.Time;
-                pitch -= deltaY * sensitivity * (float)args.Time;
-            }
-            UpdateVectors();
         }
     }
 }

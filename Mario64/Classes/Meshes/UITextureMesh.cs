@@ -45,7 +45,7 @@ namespace Mario64
         }
         private Vector3 rotation;
 
-        public UITextureMesh(int vaoId, int shaderProgramId, string embeddedTextureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vaoId, shaderProgramId)
+        public UITextureMesh(int vaoId, int shaderProgramId, string embeddedTextureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vaoId, 1, shaderProgramId)
         {
             this.windowSize = windowSize;
             Position = new Vector3(position.X, position.Y, 0);
@@ -113,7 +113,7 @@ namespace Mario64
             };
         }
 
-        public override void Draw()
+        public void Draw()
         {
             SendUniforms();
             vertices = new List<UITextureVertex>();

@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
+using static OpenTK.Graphics.OpenGL.GL;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -27,13 +28,10 @@ namespace Mario64
 
     public class Mesh : BaseMesh
     {
-        private int textureId;
-        private int textureUnit;
+        public Texture texture;
 
         private List<Vertex> vertices = new List<Vertex>();
         private string? embeddedModelName;
-        private string? embeddedTextureName;
-        private int vertexSize;
 
         public BoundingBox BoundingBox;
         public Octree Octree;
@@ -55,9 +53,9 @@ namespace Mario64
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        public Mesh(int vaoId, int shaderProgramId, string embeddedModelName, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vaoId, shaderProgramId)
+        public Mesh(int vaoId, int vboId, int shaderProgramId, string embeddedModelName, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vaoId, vboId, shaderProgramId)
         {
-            textureUnit = textureCount;
+            texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
 
             this.windowSize = windowSize;
@@ -68,12 +66,6 @@ namespace Mario64
             Rotation = Vector3.Zero;
             Scale = Vector3.One;
 
-            GL.GenBuffers(1, out vbo);
-
-            // Texture -----------------------------------------------
-            textureId = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-
             this.embeddedModelName = embeddedModelName;
             ProcessObj(embeddedModelName);
 
@@ -83,33 +75,7 @@ namespace Mario64
                 Octree = new Octree(new List<triangle>(tris), BoundingBox, ocTreeDepth);
             }
 
-            this.embeddedTextureName = embeddedTextureName;
-            LoadTexture(embeddedTextureName);
-
             ComputeVertexNormals(ref tris);
-
-            vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex));
-
-            // VAO creating
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
-            GL.EnableVertexArrayAttrib(vaoId, 0);
-
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 1);
-
-            GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, vertexSize, 7 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 2);
-
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.Uniform1(textureLocation, textureUnit);  // 0 corresponds to TextureUnit.Texture0
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
 
             SendUniforms();
         }
@@ -133,6 +99,7 @@ namespace Mario64
 
         protected override void SendUniforms()
         {
+            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
             int windowSizeLocation = GL.GetUniformLocation(shaderProgramId, "windowSize");
             int modelMatrixLocation = GL.GetUniformLocation(shaderProgramId, "modelMatrix");
             int viewMatrixLocation = GL.GetUniformLocation(shaderProgramId, "viewMatrix");
@@ -148,12 +115,11 @@ namespace Mario64
             GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
             GL.Uniform2(windowSizeLocation, windowSize);
             GL.Uniform3(cameraPositionLocation, camera.position);
+            GL.Uniform1(textureLocation, texture.unit);
         }
 
-        public override void Draw()
+        public List<Vertex> Draw()
         {
-            SendUniforms();
-
             vertices = new List<Vertex>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);
@@ -186,19 +152,10 @@ namespace Mario64
                 }
             }
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Count * vertexSize, vertices.ToArray(), BufferUsageHint.DynamicDraw);
+            SendUniforms();
+            texture.Bind();
 
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.Uniform1(textureLocation, textureUnit);
-
-            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
+            return vertices;
         }
 
         public void CalculateBoundingBox()
@@ -231,35 +188,6 @@ namespace Mario64
             }
 
             BoundingBox = new BoundingBox(min, max);
-        }
-
-        private void LoadTexture(string embeddedResourceName)
-        {
-            // Load the image (using System.Drawing or another library)
-            Stream stream = GetResourceStreamByNameEnd(embeddedResourceName);
-            if (stream != null)
-            {
-                using (stream)
-                {
-                    Bitmap bitmap = new Bitmap(stream);
-                    bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-                    bitmap.UnlockBits(data);
-
-                    // Texture settings
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                }
-            }
-            else
-            {
-                throw new Exception("No texture was found");
-            }
         }
 
         private Stream GetResourceStreamByNameEnd(string nameEnd)

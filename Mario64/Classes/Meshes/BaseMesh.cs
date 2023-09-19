@@ -11,17 +11,19 @@ namespace Mario64
 
     public abstract class BaseMesh
     {
-        public int vaoId;
         public int vbo;
+        public int vaoId;
+        public int vboId;
         protected int shaderProgramId;
 
         public List<triangle> tris;
 
-        public BaseMesh(int vaoId, int shaderProgramId)
+        public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
             tris = new List<triangle>();
 
             this.vaoId = vaoId;
+            this.vboId = vboId;
             this.shaderProgramId = shaderProgramId;
 
         }
@@ -29,8 +31,6 @@ namespace Mario64
         {
             tris.Add(tri);
         }
-
-        public abstract void Draw();
         protected abstract void SendUniforms();
 
         protected static Vector3 ComputeFaceNormal(triangle triangle)

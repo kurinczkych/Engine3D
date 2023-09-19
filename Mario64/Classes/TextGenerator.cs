@@ -58,9 +58,9 @@ namespace Mario64
             }
         }
 
-        public TextMesh Generate(int vaoId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, ref int textureCount)
+        public TextMesh Generate(int vaoId, int vboId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, ref int textureCount)
         {
-            TextMesh textMesh = new TextMesh(vaoId, shaderProgramId, "font.png", windowSize, ref textureCount);
+            TextMesh textMesh = new TextMesh(vaoId, vboId, shaderProgramId, "font.png", windowSize, ref textureCount);
             textMesh.position = pos;
             textMesh.color = color;
             textMesh.sizeScale = sizeScale;
@@ -121,9 +121,9 @@ namespace Mario64
             return textMesh;
         }
 
-        public TextMesh Generate(int vaoId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, int textureCount)
+        public TextMesh Generate(int vaoId, int vboId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, int textureCount)
         {
-            TextMesh textMesh = new TextMesh(vaoId, shaderProgramId, "font.png", windowSize, ref textureCount);
+            TextMesh textMesh = new TextMesh(vaoId, vboId, shaderProgramId, "font.png", windowSize, ref textureCount);
             textMesh.position = pos;
             textMesh.color = color;
             textMesh.sizeScale = sizeScale;

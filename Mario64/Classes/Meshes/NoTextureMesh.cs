@@ -28,7 +28,6 @@ namespace Mario64
     {
         private List<VertexNoTexture> vertices = new List<VertexNoTexture>();
         private string? embeddedModelName;
-        private int vertexSize;
 
         public Vector3 Position;
         public Vector3 Rotation;
@@ -46,7 +45,7 @@ namespace Mario64
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        public NoTextureMesh(int vaoId, int shaderProgramId, string embeddedModelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vaoId, shaderProgramId)
+        public NoTextureMesh(int vaoId, int vboId, int shaderProgramId, string embeddedModelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vaoId, vboId, shaderProgramId)
         {
             this.frustum = frustum;
             this.camera = camera;
@@ -54,10 +53,6 @@ namespace Mario64
             Position = Vector3.Zero;
             Rotation = Vector3.Zero;
             Scale = Vector3.One;
-
-            GL.GenBuffers(1, out vbo);
-
-            // Texture -----------------------------------------------
 
             this.embeddedModelName = embeddedModelName;
             ProcessObj(embeddedModelName, color);
@@ -68,23 +63,6 @@ namespace Mario64
                 tri.c[1] = color;
                 tri.c[2] = color;
             }
-
-            vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(VertexNoTexture));
-
-            // VAO creating
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
-            GL.EnableVertexArrayAttrib(vaoId, 0);
-
-            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 1);
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
-
-            SendUniforms();
         }
 
 
@@ -119,10 +97,8 @@ namespace Mario64
             };
         }
 
-        public override void Draw()
+        public List<VertexNoTexture> Draw()
         {
-            SendUniforms();
-
             vertices = new List<VertexNoTexture>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);
@@ -155,27 +131,9 @@ namespace Mario64
                 }
             }
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Count * vertexSize, vertices.ToArray(), BufferUsageHint.DynamicDraw);
+            SendUniforms();
 
-            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
-        }
-
-        private Stream GetResourceStreamByNameEnd(string nameEnd)
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            foreach (string resourceName in assembly.GetManifestResourceNames())
-            {
-                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly.GetManifestResourceStream(resourceName);
-                }
-            }
-            return null; // or throw an exception if the resource is not found
+            return vertices;
         }
 
         public void OnlyCube()
