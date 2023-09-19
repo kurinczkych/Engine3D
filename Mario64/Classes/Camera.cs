@@ -22,10 +22,6 @@ namespace Mario64
         public float aspectRatio;
 
         public Vector3 position;
-        public Vec3d position_
-        {
-            get { return new Vec3d(position.X, position.Y, position.Z); }
-        }
         private Vector3 up = Vector3.UnitY;
         public Vector3 front = -Vector3.UnitZ;
         private Vector3 right = Vector3.UnitX;

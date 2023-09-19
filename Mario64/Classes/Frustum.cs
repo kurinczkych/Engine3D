@@ -12,32 +12,11 @@ namespace Mario64
     {
         public Plane() { }
 
-        public Plane(Vector3 normal, float dist)
-        {
-            this.normal = normal.Normalized();
-            distance = dist;
-        }
-
         // unit vector
         public Vector3 normal = new Vector3(0.0f, 0.0f, 0.0f);
 
         // distance from origin to the nearest point in the plane
         public float distance = 0.0f;
-
-        public Vector3 PointOnPlane()
-        {
-            return normal * distance;
-        }
-
-        public float DistanceToPoint(Vector3 point)
-        {
-            return Vector3.Dot(normal, point) + distance;
-        }
-
-        public float DistanceToPoint(Vec3d point)
-        {
-            return Vector3.Dot(normal, new Vector3(point.X, point.Y, point.Z)) + distance;
-        }
     };
 
     public class Frustum
@@ -58,17 +37,6 @@ namespace Mario64
                 if (Vector3.Dot(planes[i].normal, point) + planes[i].distance < 0)
                     return false;
             }
-            return true;
-        }
-
-        public bool IsInside(Vec3d point)
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                if (Vec3d.Dot(new Vec3d(planes[i].normal.X, planes[i].normal.Y, planes[i].normal.Z), point) + planes[i].distance < 0)
-                    return false;
-            }
-
             return true;
         }
 
