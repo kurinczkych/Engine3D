@@ -110,21 +110,22 @@ namespace Mario64
         private int vao;
         private int textVao;
         private int noTextureVao;
+        private int uiTextureVao;
         private Shader shaderProgram;
-        private Shader textShaderProgram;
+        private Shader posTexShader;
         private Shader noTextureShaderProgram;
         private int textureCount = 0;
 
         // Program variables
         private Random rnd = new Random((int)DateTime.Now.Ticks);
-        private int screenWidth;
-        private int screenHeight;
+        private Vector2 windowSize;
         private int frameCount;
         private double totalTime;
 
         // Engine variables
         private List<Mesh> meshes;
         private List<TextMesh> textMeshes;
+        private List<UITextureMesh> uiTexMeshes;
 
         private Camera camera = new Camera();
         private Frustum frustum;
@@ -135,14 +136,14 @@ namespace Mario64
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
 
-            screenWidth = width;
-            screenHeight = height;
-            this.CenterWindow(new Vector2i(screenWidth, screenHeight));
+            windowSize = new Vector2(width, height);
+            this.CenterWindow(new Vector2i(width, height));
             meshes = new List<Mesh>();
             textMeshes = new List<TextMesh>();
+            uiTexMeshes = new List<UITextureMesh>();
             frustum = new Frustum();
             shaderProgram = new Shader();
-            textShaderProgram = new Shader();
+            posTexShader = new Shader();
             pointLights = new List<PointLight>();
         }
 
@@ -196,15 +197,20 @@ namespace Mario64
             GL.Disable(EnableCap.DepthTest);
 
 
-            textMeshes[0] = textGenerator.Generate(textVao, textShaderProgram.id,
+            textMeshes[0] = textGenerator.Generate(textVao, posTexShader.id,
                 ((int)fps).ToString() + " fps",
-                new Vector2(10, screenHeight - 35),
+                new Vector2(10, windowSize.Y - 35),
                 Color4.White,
                 new Vector2(1.5f, 1.5f),
-                new Vector2(screenWidth, screenHeight),
+                windowSize,
                 ref textureCount);
 
-            textShaderProgram.Use();
+            posTexShader.Use();
+            foreach(UITextureMesh mesh in uiTexMeshes)
+            {
+                mesh.Draw();
+            }
+
             foreach (TextMesh textMesh in textMeshes)
             {
                 textMesh.Draw();
@@ -239,14 +245,15 @@ namespace Mario64
             vao = GL.GenVertexArray();
             textVao = GL.GenVertexArray();
             noTextureVao = GL.GenVertexArray();
+            uiTextureVao = GL.GenVertexArray();
 
             // create the shader program
             shaderProgram = new Shader("Default.vert", "Default.frag");
-            textShaderProgram = new Shader("textVert.vert", "textFrag.frag");
+            posTexShader = new Shader("postex.vert", "postex.frag");
             noTextureShaderProgram = new Shader("noTexture.vert", "noTexture.frag");
 
             //Camera
-            camera = new Camera(new Vector2(screenWidth, screenHeight));
+            camera = new Camera(windowSize);
             camera.UpdateVectors();
             frustum = camera.GetFrustum();
 
@@ -262,18 +269,20 @@ namespace Mario64
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(vao, shaderProgram.id, "spiro.obj", "High.png", new Vector2(screenWidth, screenHeight), ref frustum, ref camera, ref textureCount));
+            meshes.Add(new Mesh(vao, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount));
             //meshes.Add(new Mesh(vao, shaderProgram.id, "sphere.obj"));
             //meshes.Last().TranslateRotateScale(new Vector3(7, -2.0f, 0), new Vector3(0, 0, 0), Vector3.One);
 
-            textShaderProgram.Use();
+            posTexShader.Use();
 
-            textMeshes.Add(textGenerator.Generate(textVao, textShaderProgram.id,
+            uiTexMeshes.Add(new UITextureMesh(uiTextureVao, posTexShader.id, "bmp_24.bmp", new Vector2(10,10), new Vector2(100,100), windowSize, ref textureCount));
+
+            textMeshes.Add(textGenerator.Generate(textVao, posTexShader.id,
                 "test",
                 new Vector2(10, 10),
                 Color4.White,
                 new Vector2(10, 10),
-                new Vector2(screenWidth, screenHeight),
+                windowSize,
                 ref textureCount));
 
 
@@ -294,15 +303,16 @@ namespace Mario64
             foreach(TextMesh mesh in textMeshes)
                 GL.DeleteBuffer(mesh.vbo);
             shaderProgram.Unload();
-            textShaderProgram.Unload();
+            noTextureShaderProgram.Unload();
+            posTexShader.Unload();
         }
 
         protected override void OnResize(ResizeEventArgs e)
         {
             base.OnResize(e);
             GL.Viewport(0, 0, e.Width, e.Height);
-            screenWidth = e.Width;
-            screenHeight = e.Height;
+            windowSize.X = e.Width;
+            windowSize.Y = e.Height;
         }
     }
 }
