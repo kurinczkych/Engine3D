@@ -15,7 +15,9 @@ namespace Mario64
     {
         private float sensitivity = 180f;
         private float speed = 2f;
-        private float gravity = 1;
+        private float gravity = 0.7f;
+        private float jumpForce = 0.03f;
+        private float terminalVelocity = -0.7f;
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -45,16 +47,14 @@ namespace Mario64
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
         {
-            //Velocity.Y -= gravity * (float)args.Time;
+            Velocity.Y -= gravity * (float)args.Time;
+            if (Velocity.Y < terminalVelocity)
+                Velocity.Y = terminalVelocity;
 
-            //if (keyboardState.IsKeyDown(Keys.Space))
-            //{
-            //    Position.Y += speed * (float)args.Time;
-            //}
-            //if (keyboardState.IsKeyDown(Keys.LeftShift))
-            //{
-            //    Position.Y -= speed * (float)args.Time;
-            //}
+            if (keyboardState.IsKeyDown(Keys.Space) && IsOnGround())
+            {
+                Velocity.Y += jumpForce;
+            }
 
             float speed_ = speed;
             if (keyboardState.IsKeyDown(Keys.LeftShift))
@@ -85,12 +85,13 @@ namespace Mario64
             else
             {
                 Position += new Vector3(Velocity.X, 0, Velocity.Z);
+                Velocity.Y = 0;
             }
 
 
 
             camera.position = Position;
-            Velocity *= 0.9f;
+            Velocity.Xz *= 0.9f;
             ZeroSmallVelocity();
 
             if (firstMove)
@@ -108,6 +109,11 @@ namespace Mario64
                 camera.pitch -= deltaY * sensitivity * (float)args.Time;
             }
             camera.UpdateVectors();
+        }
+
+        private bool IsOnGround()
+        {
+            return Math.Round(Position.Y) == 0;
         }
 
         private void ZeroSmallVelocity()
