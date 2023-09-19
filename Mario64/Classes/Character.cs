@@ -15,8 +15,9 @@ namespace Mario64
     {
         private float sensitivity = 180f;
         private float speed = 2f;
-        private float gravity = 0.7f;
-        private float jumpForce = 0.03f;
+        //private float gravity = 0.7f;
+        private float gravity = 120;
+        private float jumpForce = 0.005f;
         private float terminalVelocity = -0.7f;
 
         private bool firstMove = true;
@@ -47,7 +48,8 @@ namespace Mario64
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
         {
-            Velocity.Y -= gravity * (float)args.Time;
+            //Velocity.Y -= gravity * (float)args.Time;
+            Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
             if (Velocity.Y < terminalVelocity)
                 Velocity.Y = terminalVelocity;
 
