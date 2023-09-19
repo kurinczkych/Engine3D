@@ -35,6 +35,9 @@ namespace Mario64
         private string? embeddedTextureName;
         private int vertexSize;
 
+        public BoundingBox BoundingBox;
+        public Octree Octree;
+
         public Vector3 Position;
         public Vector3 Rotation;
         public Vector3 Scale;
@@ -52,7 +55,7 @@ namespace Mario64
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        public Mesh(int vaoId, int shaderProgramId, string embeddedModelName, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vaoId, shaderProgramId)
+        public Mesh(int vaoId, int shaderProgramId, string embeddedModelName, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vaoId, shaderProgramId)
         {
             textureUnit = textureCount;
             textureCount++;
@@ -73,6 +76,12 @@ namespace Mario64
 
             this.embeddedModelName = embeddedModelName;
             ProcessObj(embeddedModelName);
+
+            if (ocTreeDepth != -1)
+            {
+                CalculateBoundingBox();
+                Octree = new Octree(tris, BoundingBox, ocTreeDepth);
+            }
 
             this.embeddedTextureName = embeddedTextureName;
             LoadTexture(embeddedTextureName);
@@ -190,6 +199,38 @@ namespace Mario64
 
             GL.BindVertexArray(0); // Unbind the VAO
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
+        }
+
+        public void CalculateBoundingBox()
+        {
+            if (tris == null || tris.Count == 0)
+            {
+                throw new InvalidOperationException("Mesh contains no triangles.");
+            }
+
+            // Initialize with the first vertex of the first triangle
+            Vector3 min = tris[0].p[0];
+            Vector3 max = tris[0].p[0];
+
+            foreach (var triangle in tris)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    Vector3 vertex = triangle.p[i];
+
+                    // Check for a new min
+                    if (vertex.X < min.X) min.X = vertex.X;
+                    if (vertex.Y < min.Y) min.Y = vertex.Y;
+                    if (vertex.Z < min.Z) min.Z = vertex.Z;
+
+                    // Check for a new max
+                    if (vertex.X > max.X) max.X = vertex.X;
+                    if (vertex.Y > max.Y) max.Y = vertex.Y;
+                    if (vertex.Z > max.Z) max.Z = vertex.Z;
+                }
+            }
+
+            BoundingBox = new BoundingBox(min, max);
         }
 
         private void LoadTexture(string embeddedResourceName)
