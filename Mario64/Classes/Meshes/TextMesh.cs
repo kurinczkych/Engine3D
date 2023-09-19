@@ -23,34 +23,66 @@ namespace Mario64
         public Texture texture;
 
         private Vector2 windowSize;
+        private TextGenerator textGenerator;
 
         private List<TextVertex> vertices = new List<TextVertex>();
 
         // Text variables
-        public Vector2 position;
-        public Vector2 sizeScale;
-        public Color4 color;
-
-        public TextMesh(int vaoId, int vboId, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref int textureCount) : base(vaoId, vboId, shaderProgramId)
+        public Vector2 Position;
+        public float Rotation
         {
-            texture = new Texture(textureCount, embeddedTextureName);
+            set
+            {
+                rotation = new Vector3(0, 0, value);
+            }
+            get
+            {
+                return rotation.Z;
+            }
+        }
+        private Vector3 rotation;
+        public Vector2 Scale;
+
+        private TextVAO textVao;
+        private TextVBO textVbo;
+
+        public TextMesh(TextVAO vao, TextVBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        {
+            texture = new Texture(textureCount, embeddedTextureName, false, "nearest");
             textureCount++;
 
+            textVao = vao;
+            textVbo = vbo;
+
+            Position = Vector2.Zero;
+            Rotation = 0;
+            Scale = Vector2.One;
+
             this.windowSize = windowSize;
+            this.textGenerator = tg;
+
+            //tris = textGenerator.GetTriangles("test");
 
             SendUniforms();
         }
 
-        private TextVertex ConvertToNDC(Vector3 screenPos, Vec2d tex, Color4 color)
+        public void ChangeText(string text)
         {
-            float x = (2.0f * screenPos.X / windowSize.X) - 1.0f;
-            float y = (2.0f * screenPos.Y / windowSize.Y) - 1.0f;
+            tris = textGenerator.GetTriangles(text);
+        }
+
+        private TextVertex ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
+        {
+            Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
+
+            float x = (2.0f * v.X / windowSize.X) - 1.0f;
+            float y = (2.0f * v.Y / windowSize.Y) - 1.0f;
 
             return new TextVertex()
             {
-                Position = new Vector4(x, y, screenPos.Z, 1.0f),
-                Color = color,
-                Texture = new Vector2(tex.u, tex.v)
+                Position = new Vector4(x, y, -1.0f, 1.0f),
+                Color = tri.c[index],
+                Texture = new Vector2(tri.t[index].u, tri.t[index].v)
             };
         }
 
@@ -64,61 +96,33 @@ namespace Mario64
 
         public List<TextVertex> Draw()
         {
+            textVao.Bind();
+
             vertices = new List<TextVertex>();
+
+            Matrix4 s = Matrix4.CreateScale(new Vector3(Scale.X, Scale.Y, 1.0f));
+            Matrix4 t = Matrix4.CreateTranslation(new Vector3(Position.X, Position.Y, 0));
+            Matrix4 transformMatrix = s * t;
+
+            if (Rotation != 0)
+            {
+                Matrix4 toOrigin = Matrix4.CreateTranslation(-Scale.X / 2, -Scale.Y / 2, 0);
+                Matrix4 fromOrigin = Matrix4.CreateTranslation(Scale.X / 2, Scale.Y / 2, 0);
+                Matrix4 rZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotation.Z));
+                transformMatrix = s * toOrigin * rZ * fromOrigin * t;
+            }
 
             foreach (triangle tri in tris)
             {
-                vertices.Add(ConvertToNDC(tri.p[0], tri.t[0], tri.c[0]));
-                vertices.Add(ConvertToNDC(tri.p[1], tri.t[1], tri.c[0]));
-                vertices.Add(ConvertToNDC(tri.p[2], tri.t[2], tri.c[0]));
+                vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
+                vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
+                vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
             }
 
             SendUniforms();
             texture.Bind();
 
             return vertices;
-        }
-
-        private void LoadTexture(string embeddedResourceName)
-        {
-            // Load the image (using System.Drawing or another library)
-            Stream stream = GetResourceStreamByNameEnd(embeddedResourceName);
-            if (stream != null)
-            {
-                using (stream)
-                {
-                    Bitmap bitmap = new Bitmap(stream);
-                    //bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-                    bitmap.UnlockBits(data);
-
-                    // Texture settings
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-                }
-            }
-            else
-            {
-                throw new Exception("No texture was found");
-            }
-        }
-
-        private Stream GetResourceStreamByNameEnd(string nameEnd)
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            foreach (string resourceName in assembly.GetManifestResourceNames())
-            {
-                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly.GetManifestResourceStream(resourceName);
-                }
-            }
-            return null; // or throw an exception if the resource is not found
         }
     }
 }

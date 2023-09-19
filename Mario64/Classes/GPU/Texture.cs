@@ -15,13 +15,32 @@ namespace Mario64
         public int id;
         public int unit;
 
-        public Texture(int unit, string embeddedResourceName)
+        private TextureMinFilter tminf;
+        private TextureMagFilter tmagf;
+
+        public Texture(int unit, string embeddedResourceName, bool flipY = true, string textureFilter = "linear")
         {
             id = GL.GenTexture();
             this.unit = unit;
 
+            if(textureFilter == "linear")
+            {
+                tminf = TextureMinFilter.Linear;
+                tmagf = TextureMagFilter.Linear;
+            }
+            else if(textureFilter == "nearest")
+            {
+                tminf = TextureMinFilter.Nearest;
+                tmagf = TextureMagFilter.Nearest;
+            }
+            else
+            {
+                tminf = TextureMinFilter.Linear;
+                tmagf = TextureMagFilter.Linear;
+            }
+
             Bind();
-            LoadTexture(embeddedResourceName);
+            LoadTexture(embeddedResourceName, flipY);
 
             //int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
             //GL.Uniform1(textureLocation, textureUnit);  // 0 corresponds to TextureUnit.Texture0
@@ -37,7 +56,7 @@ namespace Mario64
         public void Unbind() { GL.BindTexture(TextureTarget.Texture2D, 0); }
         public void Delete() { GL.DeleteTexture(id); }
 
-        private void LoadTexture(string embeddedResourceName)
+        private void LoadTexture(string embeddedResourceName, bool flipY)
         {
             // Load the image (using System.Drawing or another library)
             Stream stream = GetResourceStreamByNameEnd(embeddedResourceName);
@@ -46,13 +65,14 @@ namespace Mario64
                 using (stream)
                 {
                     Bitmap bitmap = new Bitmap(stream);
-                    bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    if(flipY)
+                        bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                     BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
                     GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
                     GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)tminf);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)tmagf);
 
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 

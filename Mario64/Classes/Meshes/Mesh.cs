@@ -53,10 +53,16 @@ namespace Mario64
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        public Mesh(int vaoId, int vboId, int shaderProgramId, string embeddedModelName, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vaoId, vboId, shaderProgramId)
+        private MeshVAO meshVao;
+        private MeshVBO meshVbo;
+
+        public Mesh(MeshVAO vao, MeshVBO vbo, int shaderProgramId, string embeddedModelName, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
+
+            meshVao = vao;
+            meshVbo = vbo;
 
             this.windowSize = windowSize;
             this.frustum = frustum;
@@ -120,6 +126,8 @@ namespace Mario64
 
         public List<Vertex> Draw()
         {
+            meshVao.Bind();
+
             vertices = new List<Vertex>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);

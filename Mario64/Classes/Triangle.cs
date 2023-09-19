@@ -94,6 +94,13 @@ namespace Mario64
             return (p[0] + p[1] + p[2]) / 3;
         }
 
+        public void TransformPosition(Vector3 transform)
+        {
+            p[0] += transform;
+            p[1] += transform;
+            p[2] += transform;
+        }
+
         public void Color(Color4 c)
         {
             for (int i = 0; i < this.c.Length; i++)

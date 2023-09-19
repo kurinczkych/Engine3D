@@ -11,13 +11,12 @@ namespace Mario64
     public class MeshVBO : BaseVBO
     {
         int vertexSize;
-        public MeshVBO(List<Vertex> data)
+        public MeshVBO()
         {
             vertexSize = Marshal.SizeOf(typeof(Vertex));
             id = GL.GenBuffer();
-            Bind();
 
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Count * vertexSize, data.ToArray(), BufferUsageHint.DynamicDraw);
+            Buffer(new List<Vertex>());
         }
 
         public void Buffer(List<Vertex> data)

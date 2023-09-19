@@ -11,13 +11,12 @@ namespace Mario64
     public class TextVBO : BaseVBO
     {
         int vertexSize;
-        public TextVBO(List<TextVertex> data)
+        public TextVBO()
         {
             vertexSize = Marshal.SizeOf(typeof(TextVertex));
             id = GL.GenBuffer();
-            Bind();
 
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Count * vertexSize, data.ToArray(), BufferUsageHint.DynamicDraw);
+            Buffer(new List<TextVertex>());
         }
 
         public void Buffer(List<TextVertex> data)

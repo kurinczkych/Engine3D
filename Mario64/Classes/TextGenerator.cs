@@ -42,6 +42,9 @@ namespace Mario64
             public int xoffset { get; set; }
             public int y { get; set; }
             public int yoffset { get; set; }
+
+            public triangle t1;
+            public triangle t2;
         }
 
         private SortedDictionary<char, Symbol> symbols { get; set; }
@@ -54,135 +57,149 @@ namespace Mario64
             symbols = new SortedDictionary<char, Symbol>();
             foreach (Symbol s in font.symbols)
             {
+                var tris = Generate(s.c, s);
+                s.t1 = tris[0];
+                s.t2 = tris[1];
+
                 symbols.Add(s.c, s);
             }
         }
 
-        public TextMesh Generate(int vaoId, int vboId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, ref int textureCount)
+        private List<triangle> Generate(char c, Symbol s)
         {
-            TextMesh textMesh = new TextMesh(vaoId, vboId, shaderProgramId, "font.png", windowSize, ref textureCount);
-            textMesh.position = pos;
-            textMesh.color = color;
-            textMesh.sizeScale = sizeScale;
+            Vector2 start = Vector2.Zero;
 
-            Vector2 start = pos;
-            for (int i = 0; i < t.Length; i++)
-            {
-                Symbol s = symbols[t[i]];
+            float width = s.width;
+            float height = s.height;
 
-                float width = s.width * sizeScale.X;
-                float height = s.height * sizeScale.Y;
+            Color4 color = Color4.White;
 
-                Vector2 topleft = new Vector2(s.x / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
-                Vector2 topRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
-                Vector2 bottomLeft = new Vector2(s.x / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
-                Vector2 bottomRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+            Vector2 topleft = new Vector2(s.x / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+            Vector2 topRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+            Vector2 bottomLeft = new Vector2(s.x / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+            Vector2 bottomRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
 
-                triangle t1 = new triangle();
-                t1.p[0].X = start.X;
-                t1.p[0].Y = start.Y;
-                t1.t[0].u = topleft.X;
-                t1.t[0].v = topleft.Y;
-                t1.c[0] = color;
-                t1.p[1].X = start.X;
-                t1.p[1].Y = start.Y + height;
-                t1.t[1].u = bottomLeft.X;
-                t1.t[1].v = bottomLeft.Y;
-                t1.c[1] = color;
-                t1.p[2].X = start.X + width;
-                t1.p[2].Y = start.Y;
-                t1.t[2].u = topRight.X;
-                t1.t[2].v = topRight.Y;
-                t1.c[2] = color;
+            triangle t1 = new triangle();
+            t1.p[0].X = start.X;
+            t1.p[0].Y = start.Y;
+            t1.t[0].u = topleft.X;
+            t1.t[0].v = topleft.Y;
+            t1.c[0] = color;
+            t1.p[1].X = start.X;
+            t1.p[1].Y = start.Y + height;
+            t1.t[1].u = bottomLeft.X;
+            t1.t[1].v = bottomLeft.Y;
+            t1.c[1] = color;
+            t1.p[2].X = start.X + width;
+            t1.p[2].Y = start.Y;
+            t1.t[2].u = topRight.X;
+            t1.t[2].v = topRight.Y;
+            t1.c[2] = color;
 
-                triangle t2 = new triangle();
-                t2.p[0].X = start.X + width;
-                t2.p[0].Y = start.Y;
-                t2.t[0].u = topRight.X;
-                t2.t[0].v = topRight.Y;
-                t2.c[0] = color;
-                t2.p[1].X = start.X;
-                t2.p[1].Y = start.Y + height;
-                t2.t[1].u = bottomLeft.X;
-                t2.t[1].v = bottomLeft.Y;
-                t2.c[1] = color;
-                t2.p[2].X = start.X + width;
-                t2.p[2].Y = start.Y + height;
-                t2.t[2].u = bottomRight.X;
-                t2.t[2].v = bottomRight.Y;
-                t2.c[2] = color;
+            triangle t2 = new triangle();
+            t2.p[0].X = start.X + width;
+            t2.p[0].Y = start.Y;
+            t2.t[0].u = topRight.X;
+            t2.t[0].v = topRight.Y;
+            t2.c[0] = color;
+            t2.p[1].X = start.X;
+            t2.p[1].Y = start.Y + height;
+            t2.t[1].u = bottomLeft.X;
+            t2.t[1].v = bottomLeft.Y;
+            t2.c[1] = color;
+            t2.p[2].X = start.X + width;
+            t2.p[2].Y = start.Y + height;
+            t2.t[2].u = bottomRight.X;
+            t2.t[2].v = bottomRight.Y;
+            t2.c[2] = color;
 
-                textMesh.AddTriangle(t1);
-                textMesh.AddTriangle(t2);
-
-                start.X += width;
-            }
-
-            return textMesh;
+            return new List<triangle> { t1, t2 };
         }
 
-        public TextMesh Generate(int vaoId, int vboId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, int textureCount)
+        public List<triangle> GetTriangles(string t)
         {
-            TextMesh textMesh = new TextMesh(vaoId, vboId, shaderProgramId, "font.png", windowSize, ref textureCount);
-            textMesh.position = pos;
-            textMesh.color = color;
-            textMesh.sizeScale = sizeScale;
+            List<triangle> tris = new List<triangle>();
 
-            Vector2 start = pos;
-            for (int i = 0; i < t.Length; i++)
+            Vector2 currentPos = Vector2.Zero;
+            foreach(char c in t)
             {
-                Symbol s = symbols[t[i]];
+                Symbol s = symbols[c];
+                triangle t1 = s.t1.GetCopy();
+                triangle t2 = s.t2.GetCopy();
+                t1.TransformPosition(new Vector3(currentPos.X, currentPos.Y, 0));
+                t2.TransformPosition(new Vector3(currentPos.X, currentPos.Y, 0));
 
-                float width = s.width * sizeScale.X;
-                float height = s.height * sizeScale.Y;
+                tris.Add(t1);
+                tris.Add(t2);
 
-                Vector2 topleft = new Vector2(s.x / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
-                Vector2 topRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
-                Vector2 bottomLeft = new Vector2(s.x / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
-                Vector2 bottomRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
-
-                triangle t1 = new triangle();
-                t1.p[0].X = start.X;
-                t1.p[0].Y = start.Y;
-                t1.t[0].u = topleft.X;
-                t1.t[0].v = topleft.Y;
-                t1.c[0] = color;
-                t1.p[1].X = start.X;
-                t1.p[1].Y = start.Y + height;
-                t1.t[1].u = bottomLeft.X;
-                t1.t[1].v = bottomLeft.Y;
-                t1.c[1] = color;
-                t1.p[2].X = start.X + width;
-                t1.p[2].Y = start.Y;
-                t1.t[2].u = topRight.X;
-                t1.t[2].v = topRight.Y;
-                t1.c[2] = color;
-
-                triangle t2 = new triangle();
-                t2.p[0].X = start.X + width;
-                t2.p[0].Y = start.Y;
-                t2.t[0].u = topRight.X;
-                t2.t[0].v = topRight.Y;
-                t2.c[0] = color;
-                t2.p[1].X = start.X;
-                t2.p[1].Y = start.Y + height;
-                t2.t[1].u = bottomLeft.X;
-                t2.t[1].v = bottomLeft.Y;
-                t2.c[1] = color;
-                t2.p[2].X = start.X + width;
-                t2.p[2].Y = start.Y + height;
-                t2.t[2].u = bottomRight.X;
-                t2.t[2].v = bottomRight.Y;
-                t2.c[2] = color;
-
-                textMesh.AddTriangle(t1);
-                textMesh.AddTriangle(t2);
-
-                start.X += width;
+                currentPos.X += s.width;
             }
 
-            return textMesh;
+            return tris;
         }
+
+        //public TextMesh Generate(int vaoId, int vboId, int shaderProgramId, string t, Vector2 pos, Color4 color, Vector2 sizeScale, Vector2 windowSize, ref int textureCount)
+        //{
+        //    TextMesh textMesh = new TextMesh(vaoId, vboId, shaderProgramId, "font.png", windowSize, ref textureCount);
+        //    textMesh.position = pos;
+        //    textMesh.color = color;
+        //    textMesh.sizeScale = sizeScale;
+
+        //    Vector2 start = pos;
+        //    for (int i = 0; i < t.Length; i++)
+        //    {
+        //        Symbol s = symbols[t[i]];
+
+        //        float width = s.width * sizeScale.X;
+        //        float height = s.height * sizeScale.Y;
+
+        //        Vector2 topleft = new Vector2(s.x / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+        //        Vector2 topRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
+        //        Vector2 bottomLeft = new Vector2(s.x / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+        //        Vector2 bottomRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
+
+        //        triangle t1 = new triangle();
+        //        t1.p[0].X = start.X;
+        //        t1.p[0].Y = start.Y;
+        //        t1.t[0].u = topleft.X;
+        //        t1.t[0].v = topleft.Y;
+        //        t1.c[0] = color;
+        //        t1.p[1].X = start.X;
+        //        t1.p[1].Y = start.Y + height;
+        //        t1.t[1].u = bottomLeft.X;
+        //        t1.t[1].v = bottomLeft.Y;
+        //        t1.c[1] = color;
+        //        t1.p[2].X = start.X + width;
+        //        t1.p[2].Y = start.Y;
+        //        t1.t[2].u = topRight.X;
+        //        t1.t[2].v = topRight.Y;
+        //        t1.c[2] = color;
+
+        //        triangle t2 = new triangle();
+        //        t2.p[0].X = start.X + width;
+        //        t2.p[0].Y = start.Y;
+        //        t2.t[0].u = topRight.X;
+        //        t2.t[0].v = topRight.Y;
+        //        t2.c[0] = color;
+        //        t2.p[1].X = start.X;
+        //        t2.p[1].Y = start.Y + height;
+        //        t2.t[1].u = bottomLeft.X;
+        //        t2.t[1].v = bottomLeft.Y;
+        //        t2.c[1] = color;
+        //        t2.p[2].X = start.X + width;
+        //        t2.p[2].Y = start.Y + height;
+        //        t2.t[2].u = bottomRight.X;
+        //        t2.t[2].v = bottomRight.Y;
+        //        t2.c[2] = color;
+
+        //        textMesh.AddTriangle(t1);
+        //        textMesh.AddTriangle(t2);
+
+        //        start.X += width;
+        //    }
+
+        //    return textMesh;
+        //}
 
         private string GetFile(string embeddedResourceName)
         {

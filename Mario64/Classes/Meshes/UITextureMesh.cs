@@ -21,8 +21,7 @@ namespace Mario64
 
     public class UITextureMesh : BaseMesh
     {
-        private int textureId;
-        private int textureUnit;
+        private Texture texture;
 
         private Vector2 windowSize;
 
@@ -30,7 +29,12 @@ namespace Mario64
         private string? embeddedTextureName;
         private int vertexSize;
 
-        public Vector3 Position;
+        private Vector3 position;
+        public Vector2 Position
+        {
+            get { return new Vector2(position.X, position.Y); }
+            set { position = new Vector3(value.X, value.Y, 0); }
+        }
         public Vector3 Size;
         public float Rotation
         {
@@ -45,57 +49,36 @@ namespace Mario64
         }
         private Vector3 rotation;
 
-        public UITextureMesh(int vaoId, int shaderProgramId, string embeddedTextureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vaoId, 1, shaderProgramId)
+        private UITexVAO uiTexVao;
+        private UITexVBO uiTexVbo;
+
+        public UITextureMesh(UITexVAO vao, UITexVBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.windowSize = windowSize;
-            Position = new Vector3(position.X, position.Y, 0);
+            Position = new Vector2(position.X, position.Y);
             Size = new Vector3(size.X, size.Y, 0);
             rotation = Vector3.Zero;
 
-            textureUnit = textureCount;
+            texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
 
-            GL.GenBuffers(1, out vbo);
-
-            // Texture -----------------------------------------------
-            textureId = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
+            uiTexVao = vao;
+            uiTexVbo = vbo;
 
             OnlyQuad();
 
             this.embeddedTextureName = embeddedTextureName;
             LoadTexture(embeddedTextureName);
 
-            vertexSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(TextVertex));
-
-            // VAO creating
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, vertexSize, 0);
-            GL.EnableVertexArrayAttrib(vaoId, 0);
-
-            GL.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, vertexSize, 4 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 1);
-
-            GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, vertexSize, 8 * sizeof(float));
-            GL.EnableVertexArrayAttrib(vaoId, 2);
-
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.Uniform1(textureLocation, textureUnit);
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
-
             SendUniforms();
         }
 
         protected override void SendUniforms()
         {
+            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
             int windowSizeLocation = GL.GetUniformLocation(shaderProgramId, "windowSize");
             GL.Uniform2(windowSizeLocation, windowSize);
+            GL.Uniform1(textureLocation, texture.unit);
         }
 
         private UITextureVertex ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
@@ -113,25 +96,22 @@ namespace Mario64
             };
         }
 
-        public void Draw()
+        public List<UITextureVertex> Draw()
         {
-            SendUniforms();
+            uiTexVao.Bind();
             vertices = new List<UITextureVertex>();
 
             Matrix4 s = Matrix4.CreateScale(Size);
-            Matrix4 t = Matrix4.CreateTranslation(Position);
+            Matrix4 t = Matrix4.CreateTranslation(position);
             Matrix4 transformMatrix = s * t;
 
             if (rotation != Vector3.Zero)
             {
                 Matrix4 toOrigin = Matrix4.CreateTranslation(-Size.X / 2, -Size.Y / 2, 0);
                 Matrix4 fromOrigin = Matrix4.CreateTranslation(Size.X / 2, Size.Y / 2, 0);
-                Matrix4 rX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(rotation.X));
-                Matrix4 rY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(rotation.Y));
                 Matrix4 rZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(rotation.Z));
-                transformMatrix = s * toOrigin * rX * rY * rZ * fromOrigin * t;
+                transformMatrix = s * toOrigin * rZ * fromOrigin * t;
             }
-
 
             foreach (triangle tri in tris)
             {
@@ -140,19 +120,10 @@ namespace Mario64
                 vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
             }
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindVertexArray(vaoId);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Count * vertexSize, vertices.ToArray(), BufferUsageHint.DynamicDraw);
+            SendUniforms();
+            texture.Bind();
 
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            GL.ActiveTexture(TextureUnit.Texture0 + textureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, textureId);
-            GL.Uniform1(textureLocation, textureUnit);
-
-            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            GL.BindVertexArray(0); // Unbind the VAO
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0); // Unbind the VBO
+            return vertices;
         }
 
         private void OnlyQuad()

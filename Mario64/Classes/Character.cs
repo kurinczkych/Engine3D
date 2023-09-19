@@ -23,13 +23,13 @@ namespace Mario64
         public Vector3 Position;
         public string PStr
         {
-            get { return Position.X.ToString() + "," + Position.Y.ToString() + "," + Position.Z.ToString();}
+            get { return Math.Round(Position.X, 2).ToString() + "," + Math.Round(Position.Y, 2).ToString() + "," + Math.Round(Position.Z, 2).ToString(); }
         }
 
         public Vector3 Velocity;
         public string VStr
         {
-            get { return Velocity.X.ToString() + "," + Velocity.Y.ToString() + "," + Velocity.Z.ToString(); }
+            get { return Math.Round(Velocity.X, 2).ToString() + "," + Math.Round(Velocity.Y, 2).ToString() + "," + Math.Round(Velocity.Z, 2).ToString(); }
         }
 
         public Camera camera;
@@ -91,6 +91,7 @@ namespace Mario64
 
             camera.position = Position;
             Velocity *= 0.9f;
+            ZeroSmallVelocity();
 
             if (firstMove)
             {
@@ -107,6 +108,18 @@ namespace Mario64
                 camera.pitch -= deltaY * sensitivity * (float)args.Time;
             }
             camera.UpdateVectors();
+        }
+
+        private void ZeroSmallVelocity()
+        {
+            if (Velocity.X < 0.0001f && Velocity.X > -0.0001f)
+                Velocity.X = 0;
+
+            if (Velocity.Y < 0.0001f && Velocity.Y > -0.0001f)
+                Velocity.Y = 0;
+
+            if (Velocity.Z < 0.0001f && Velocity.Z > -0.0001f)
+                Velocity.Z = 0;
         }
     }
 }

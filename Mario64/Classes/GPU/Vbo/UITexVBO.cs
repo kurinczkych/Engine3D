@@ -11,13 +11,12 @@ namespace Mario64
     public class UITexVBO : BaseVBO
     {
         int vertexSize;
-        public UITexVBO(List<UITextureVertex> data)
+        public UITexVBO()
         {
             vertexSize = Marshal.SizeOf(typeof(UITextureVertex));
             id = GL.GenBuffer();
-            Bind();
 
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Count * vertexSize, data.ToArray(), BufferUsageHint.DynamicDraw);
+            Buffer(new List<UITextureVertex>());
         }
 
         public void Buffer(List<UITextureVertex> data)

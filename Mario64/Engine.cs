@@ -180,14 +180,12 @@ namespace Mario64
 
             double fps = DrawFps(args.Time);
 
-
             frustum = character.camera.GetFrustum();
 
             GL.Enable(EnableCap.DepthTest);
-            shaderProgram.Use();
-            meshVao.Bind();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
+            shaderProgram.Use();
+            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
             foreach (Mesh mesh in meshes)
             {
                 mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
@@ -208,41 +206,22 @@ namespace Mario64
             // Text rendering
             GL.Disable(EnableCap.DepthTest);
 
+            posTexShader.Use();
+            foreach (UITextureMesh mesh in uiTexMeshes)
+            {
+                List<UITextureVertex> vertices = mesh.Draw();
+                uiTexVbo.Buffer(vertices);
+                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            }
 
-            //textMeshes[0] = textGenerator.Generate(textVao, posTexShader.id,
-            //    "Position = (" + character.PStr + ")",
-            //    new Vector2(10, windowSize.Y - 35),
-            //    Color4.White,
-            //    new Vector2(10, 10),
-            //    windowSize,
-            //    textureCount);
-
-            //textMeshes[1] = textGenerator.Generate(textVao, posTexShader.id,
-            //    "Velocity = (" + character.VStr + ")",
-            //    new Vector2(10, windowSize.Y - 55),
-            //    Color4.White,
-            //    new Vector2(10, 10),
-            //    windowSize,
-            //    textureCount);
-
-            //textMeshes[0] = textGenerator.Generate(textVao.id, textVbo.id, posTexShader.id,
-            //    "test",
-            //    new Vector2(10, 10),
-            //    Color4.White,
-            //    new Vector2(10, 10),
-            //    windowSize,
-            //    textureCount);
-
-            //posTexShader.Use();
-            ////foreach(UITextureMesh mesh in uiTexMeshes)
-            ////{
-            ////    mesh.Draw();
-            ////}
-
-            //foreach (TextMesh textMesh in textMeshes)
-            //{
-            //    textMesh.Draw();
-            //}
+            textMeshes[0].ChangeText("Position = (" + character.PStr + ")");
+            textMeshes[1].ChangeText("Velocity = (" + character.VStr + ")");
+            foreach (TextMesh textMesh in textMeshes)
+            {
+                List<TextVertex> vertices = textMesh.Draw();
+                textVbo.Buffer(vertices);
+                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            }
 
             //GL.DisableVertexAttribArray(0);
 
@@ -271,22 +250,28 @@ namespace Mario64
 
 
             // OPENGL init
-            meshVbo = new MeshVBO(new List<Vertex>());
+            meshVbo = new MeshVBO();
             meshVao = new MeshVAO();
             meshVao.LinkToVAO(0, 4, 0, meshVbo);
             meshVao.LinkToVAO(1, 3, 4, meshVbo);
             meshVao.LinkToVAO(2, 2, 7, meshVbo);
 
-            textVbo = new TextVBO(new List<TextVertex>());
+            textVbo = new TextVBO();
             textVao = new TextVAO();
             textVao.LinkToVAO(0, 4, 0, textVbo);
             textVao.LinkToVAO(1, 4, 4, textVbo);
             textVao.LinkToVAO(2, 2, 8, textVbo);
 
-            noTexVbo = new NoTexVBO(new List<VertexNoTexture>());
+            noTexVbo = new NoTexVBO();
             noTexVao = new NoTexVAO();
             noTexVao.LinkToVAO(0, 4, 0, noTexVbo);
             noTexVao.LinkToVAO(1, 4, 4, noTexVbo);
+
+            uiTexVbo = new UITexVBO();
+            uiTexVao = new UITexVAO();
+            uiTexVao.LinkToVAO(0, 4, 0, uiTexVbo);
+            uiTexVao.LinkToVAO(1, 4, 4, uiTexVbo);
+            uiTexVao.LinkToVAO(2, 2, 8, uiTexVbo);
 
             // create the shader program
             shaderProgram = new Shader("Default.vert", "Default.frag");
@@ -302,7 +287,7 @@ namespace Mario64
 
             //Point Lights
             noTextureShaderProgram.Use();
-            pointLights.Add(new PointLight(new Vector3(0, 5, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao.id, noTexVbo.id, noTextureShaderProgram.id, pointLights.Count));
+            pointLights.Add(new PointLight(new Vector3(0, 5, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
 
 
             shaderProgram.Use();
@@ -312,42 +297,21 @@ namespace Mario64
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(meshVao.id,meshVbo.id, shaderProgram.id, "spiro.obj", "High.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
+            meshes.Add(new Mesh(meshVao,meshVbo, shaderProgram.id, "spiro.obj", "High.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
 
-            //meshes.Add(new Mesh(meshVao.id,meshVbo.id, shaderProgram.id, "spiro.obj", "High.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            //meshes.Last().Position.Y = 40;
-
-            //meshes.Add(new Mesh(vao, shaderProgram.id, "sphere.obj"));
-            //meshes.Last().TranslateRotateScale(new Vector3(7, -2.0f, 0), new Vector3(0, 0, 0), Vector3.One);
 
             posTexShader.Use();
 
-            //textMeshes.Add(textGenerator.Generate(textVao.id, textVbo.id, posTexShader.id,
-            //    "test",
-            //    new Vector2(10, 10),
-            //    Color4.White,
-            //    new Vector2(10, 10),
-            //    windowSize,
-            //    ref textureCount));
+            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
+            textMeshes[0].ChangeText("Position = (" + character.PStr + ")");
+            textMeshes[0].Position = new Vector2(10, windowSize.Y - 35);
+            textMeshes[0].Scale = new Vector2(1.5f, 1.5f);
+            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
+            textMeshes[1].ChangeText("Velocity = (" + character.VStr + ")");
+            textMeshes[1].Position = new Vector2(10, windowSize.Y - 60);
+            textMeshes[1].Scale = new Vector2(1.5f, 1.5f);
 
-            //uiTexMeshes.Add(new UITextureMesh(uiTextureVao, posTexShader.id, "bmp_24.bmp", new Vector2(10,10), new Vector2(100,100), windowSize, ref textureCount));
-
-            ////textMeshes.Add(textGenerator.Generate(textVao, posTexShader.id,
-            ////    "Position = (" + character.PStr + ")",
-            ////    new Vector2(10, windowSize.Y - 35),
-            ////    Color4.White,
-            ////    new Vector2(10, 10),
-            ////    windowSize,
-            ////    ref textureCount));
-
-            //textMeshes.Add(textGenerator.Generate(textVao, posTexShader.id,
-            //    "Velocity = (" + character.VStr + ")",
-            //    new Vector2(10, windowSize.Y - 55),
-            //    Color4.White,
-            //    new Vector2(10, 10),
-            //    windowSize,
-            //    ref textureCount));
-
+            //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
             if (textMeshes.Count > 0)
             {

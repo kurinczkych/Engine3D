@@ -21,6 +21,7 @@
     <None Remove="Textures\bmp_24.bmp" />
     <None Remove="Textures\font.json" />
     <None Remove="Textures\font.png" />
+    <None Remove="Textures\font2.PNG" />
     <None Remove="Textures\High.png" />
     <None Remove="Textures\High_red.png" />
   </ItemGroup>
@@ -45,6 +46,7 @@
     <EmbeddedResource Include="Textures\bmp_24.bmp" />
     <EmbeddedResource Include="Textures\font.json" />
     <EmbeddedResource Include="Textures\font.png" />
+    <EmbeddedResource Include="Textures\font2.PNG" />
     <EmbeddedResource Include="Textures\High.png" />
     <EmbeddedResource Include="Textures\High_red.png" />
   </ItemGroup>

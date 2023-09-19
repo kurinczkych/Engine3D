@@ -45,10 +45,16 @@ namespace Mario64
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        public NoTextureMesh(int vaoId, int vboId, int shaderProgramId, string embeddedModelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vaoId, vboId, shaderProgramId)
+        private NoTexVAO noTexVao;
+        private NoTexVBO noTexVbo;
+
+        public NoTextureMesh(NoTexVAO vao, NoTexVBO vbo, int shaderProgramId, string embeddedModelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.frustum = frustum;
             this.camera = camera;
+
+            noTexVao = vao;
+            noTexVbo = vbo;
 
             Position = Vector3.Zero;
             Rotation = Vector3.Zero;
@@ -99,6 +105,8 @@ namespace Mario64
 
         public List<VertexNoTexture> Draw()
         {
+            noTexVao.Bind();
+
             vertices = new List<VertexNoTexture>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);

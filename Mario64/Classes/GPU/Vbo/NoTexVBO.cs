@@ -11,13 +11,12 @@ namespace Mario64
     public class NoTexVBO : BaseVBO
     {
         int vertexSize;
-        public NoTexVBO(List<VertexNoTexture> data)
+        public NoTexVBO()
         {
             vertexSize = Marshal.SizeOf(typeof(VertexNoTexture));
             id = GL.GenBuffer();
-            Bind();
 
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Count * vertexSize, data.ToArray(), BufferUsageHint.DynamicDraw);
+            Buffer(new List<VertexNoTexture>());
         }
 
         public void Buffer(List<VertexNoTexture> data)
