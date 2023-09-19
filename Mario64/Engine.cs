@@ -184,8 +184,6 @@ namespace Mario64
                 mesh.Draw();
             }
 
-            //foreach (NoTextureMesh mesh in PointLight.GetMeshes(ref pointLights, vao, noTextureShaderProgram.id, ref frustum, ref camera))
-
             noTextureShaderProgram.Use();
             foreach (PointLight pl in pointLights)
             {
@@ -275,7 +273,7 @@ namespace Mario64
 
             posTexShader.Use();
 
-            uiTexMeshes.Add(new UITextureMesh(uiTextureVao, posTexShader.id, "bmp_24.bmp", new Vector2(10,10), new Vector2(100,100), windowSize, ref textureCount));
+            //uiTexMeshes.Add(new UITextureMesh(uiTextureVao, posTexShader.id, "bmp_24.bmp", new Vector2(10,10), new Vector2(100,100), windowSize, ref textureCount));
 
             textMeshes.Add(textGenerator.Generate(textVao, posTexShader.id,
                 "test",
