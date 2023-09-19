@@ -157,5 +157,31 @@ namespace Mario64
             else
                 return 0;
         }
+
+        public bool IsPointInTriangle(Vector3 p, out float distance)
+        {
+            Vector3 a = this.p[0];
+            Vector3 b = this.p[1];
+            Vector3 c = this.p[2];
+
+            Vector3 normal = Vector3.Cross(b - a, c - a).Normalized();
+            distance = Vector3.Dot(normal, p - a);
+
+            Vector3 u = b - a;
+            Vector3 v = c - a;
+            Vector3 w = p - a;
+
+            float uu = Vector3.Dot(u, u);
+            float uv = Vector3.Dot(u, v);
+            float vv = Vector3.Dot(v, v);
+            float wu = Vector3.Dot(w, u);
+            float wv = Vector3.Dot(w, v);
+            float denom = 1.0f / (uv * uv - uu * vv);
+
+            float s = (uv * wv - vv * wu) * denom;
+            float t = (uv * wu - uu * wv) * denom;
+
+            return s >= 0 && t >= 0 && (s + t) <= 1;
+        }
     }
 }

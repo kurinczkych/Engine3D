@@ -80,7 +80,7 @@ namespace Mario64
             if (ocTreeDepth != -1)
             {
                 CalculateBoundingBox();
-                Octree = new Octree(tris, BoundingBox, ocTreeDepth);
+                Octree = new Octree(new List<triangle>(tris), BoundingBox, ocTreeDepth);
             }
 
             this.embeddedTextureName = embeddedTextureName;

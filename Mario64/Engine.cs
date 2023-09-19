@@ -226,6 +226,7 @@ namespace Mario64
             base.OnUpdateFrame(args);
 
             camera.Update(KeyboardState, MouseState, args);
+            camera.UpdatePositionToGround(meshes[0].Octree.GetNearTriangles(camera.position));
         }
 
         protected override void OnLoad()
@@ -268,8 +269,6 @@ namespace Mario64
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
             meshes.Add(new Mesh(vao, shaderProgram.id, "spiro.obj", "High.png", 5, windowSize, ref frustum, ref camera, ref textureCount));
-
-            List<triangle> t = meshes[0].Octree.GetNearTriangles(camera.position);
 
             //meshes.Add(new Mesh(vao, shaderProgram.id, "sphere.obj"));
             //meshes.Last().TranslateRotateScale(new Vector3(7, -2.0f, 0), new Vector3(0, 0, 0), Vector3.One);

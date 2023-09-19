@@ -128,50 +128,34 @@ namespace Mario64
             frustum.planes[5].normal.Z = m.Row2[3] + m.Row2[2];
             frustum.planes[5].distance = m.Row3[3] + m.Row3[2];
 
-
-            //Normalize all plane normals
-            //for (int i = 0; i < 6; i++)
-            //    frustum.planes[i].normal.Normalize();
             for (int i = 0; i < 6; i++)
             {
                 float magnitude = frustum.planes[i].normal.Length;
                 frustum.planes[i].normal /= magnitude;
                 frustum.planes[i].distance /= magnitude;
             }
-            //--------------------------------------------------------------------------------------
-
-            //float tanHalfFOV = (float)Math.Tan(MathHelper.DegreesToRadians(fov) / 2.0);
-            //float nearHeight = 2.0f * tanHalfFOV * near;
-            //float nearWidth = nearHeight * aspectRatio;
-
-            //float farHeight = 2.0f * tanHalfFOV * far;
-            //float farWidth = farHeight * aspectRatio;
-
-            //// Near plane corners
-            //frustum.ntl = new Vector3(-nearWidth / 2.0f, nearHeight / 2.0f, -near);
-            //frustum.ntr = new Vector3(nearWidth / 2.0f, nearHeight / 2.0f, -near);
-            //frustum.nbl = new Vector3(-nearWidth / 2.0f, -nearHeight / 2.0f, -near);
-            //frustum.nbr = new Vector3(nearWidth / 2.0f, -nearHeight / 2.0f, -near);
-
-            //// Far plane corners
-            //frustum.ftl = new Vector3(-farWidth / 2.0f, farHeight / 2.0f, -far);
-            //frustum.ftr = new Vector3(farWidth / 2.0f, farHeight / 2.0f, -far);
-            //frustum.fbl = new Vector3(-farWidth / 2.0f, -farHeight / 2.0f, -far);
-            //frustum.fbr = new Vector3(farWidth / 2.0f, -farHeight / 2.0f, -far);
-
-            //Matrix4 viewInverse = Matrix4.Invert(GetViewMatrix());
-
-            //frustum.ntl = Vector3.TransformPosition(frustum.ntl, viewInverse);
-            //frustum.ntr = Vector3.TransformPosition(frustum.ntr, viewInverse);
-            //frustum.nbl = Vector3.TransformPosition(frustum.nbl, viewInverse);
-            //frustum.nbr = Vector3.TransformPosition(frustum.nbr, viewInverse);
-
-            //frustum.ftl = Vector3.TransformPosition(frustum.ftl, viewInverse);
-            //frustum.ftr = Vector3.TransformPosition(frustum.ftr, viewInverse);
-            //frustum.fbl = Vector3.TransformPosition(frustum.fbl, viewInverse);
-            //frustum.fbr = Vector3.TransformPosition(frustum.fbr, viewInverse);
 
             return frustum;
+        }
+
+        public void UpdatePositionToGround(List<triangle> groundTriangles)
+        {
+            float offsetHeight = 4f;
+
+            foreach (var triangle in groundTriangles)
+            {
+                // Check if character is above this triangle.
+                if (triangle.IsPointInTriangle(position, out float distanceToTriangle))
+                {
+                    // Compute the triangle's normal.
+                    Vector3 normal = Vector3.Cross(triangle.p[1] - triangle.p[0], triangle.p[2] - triangle.p[0]).Normalized();
+
+                    // Adjust the character's position based on the triangle's normal and the computed distance.
+                    position -= normal * (distanceToTriangle - offsetHeight);
+
+                    break; // Exit once the correct triangle is found.
+                }
+            }
         }
 
         public void UpdateVectors()
