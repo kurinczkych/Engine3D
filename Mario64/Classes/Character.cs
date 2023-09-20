@@ -18,11 +18,27 @@ namespace Mario64
         private float speed = 2f;
         //private float gravity = 0.7f;
         private float gravity = 120;
-        private float jumpForce = 0.5f;
+        private float jumpForce = 0.1f;
         private float terminalVelocity = -0.7f;
         private float characterHeight = 4f;
 
+        private float groundY;
+        public string groundYStr
+        {
+            get { return Math.Round(groundY, 2).ToString(); }
+        }
+
+        private float distToGround;
+        public string distToGroundStr
+        {
+            get { return Math.Round(distToGround, 2).ToString(); }
+        }
+
         private bool isOnGround = false;
+        public string isOnGroundStr
+        {
+            get { return isOnGround.ToString(); }
+        }
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -52,14 +68,14 @@ namespace Mario64
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, ref Octree octree, FrameEventArgs args)
         {
-            //Velocity.Y -= gravity * (float)args.Time;
-            Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
+            if(!isOnGround)
+                Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
+
             if (Velocity.Y < terminalVelocity)
                 Velocity.Y = terminalVelocity;
 
 
-            float groundY = 0;
-            float distToGround = GetGround(ref octree, out groundY);
+            GetGround(ref octree);
 
             if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
             {
@@ -87,19 +103,20 @@ namespace Mario64
                 Velocity += (camera.right * speed_) * (float)args.Time;
             }
 
-            if(distToGround > characterHeight)
+            // 3. Update Position
+            Position += Velocity;
+
+            // 4. Collision Detection / Ground Check
+            if (Position.Y - characterHeight <= groundY)
             {
-                Position += Velocity;
-                isOnGround = false;
-            }
-            else
-            {
-                Position += new Vector3(Velocity.X, 0, Velocity.Z);
                 Position.Y = groundY + characterHeight;
                 Velocity.Y = 0;
                 isOnGround = true;
             }
-
+            else
+            {
+                isOnGround = false;
+            }
 
             camera.position = Position;
             Velocity.Xz *= 0.9f;
@@ -122,7 +139,7 @@ namespace Mario64
             camera.UpdateVectors();
         }
 
-        private float GetGround(ref Octree octree, out float ground)
+        private void GetGround(ref Octree octree)
         {
             List<triangle> tris = octree.GetNearTriangles(Position);
             triangle closest = new triangle();
@@ -143,16 +160,13 @@ namespace Mario64
 
             Vector3 center = closest.GetMiddle();
             float distToCenter = Position.Y - center.Y;
-            ground = center.Y;
+            groundY = center.Y;
 
             if (pointAbove != Vector3.NegativeInfinity)
             {
                 distToCenter = Position.Y - pointAbove.Y;
-                ground = pointAbove.Y;
+                groundY = pointAbove.Y;
             }
-
-            return distToCenter;
-            //return Math.Round(Position.Y) == 0;
         }
 
         private void ZeroSmallVelocity()

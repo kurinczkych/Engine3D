@@ -232,6 +232,9 @@ namespace Mario64
 
             textMeshes[0].ChangeText("Position = (" + character.PStr + ")");
             textMeshes[1].ChangeText("Velocity = (" + character.VStr + ")");
+            textMeshes[2].ChangeText("GroundY = (" + character.groundYStr + ")");
+            textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
+            textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
             foreach (TextMesh textMesh in textMeshes)
             {
                 List<TextVertex> vertices = textMesh.Draw();
@@ -309,7 +312,7 @@ namespace Mario64
 
             //Point Lights
             noTextureShaderProgram.Use();
-            pointLights.Add(new PointLight(new Vector3(0, 5, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
+            pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
 
 
             shaderProgram.Use();
@@ -333,6 +336,18 @@ namespace Mario64
             textMeshes[1].ChangeText("Velocity = (" + character.VStr + ")");
             textMeshes[1].Position = new Vector2(10, windowSize.Y - 60);
             textMeshes[1].Scale = new Vector2(1.5f, 1.5f);
+            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
+            textMeshes[2].ChangeText("GroundY = (" + character.groundYStr + ")");
+            textMeshes[2].Position = new Vector2(10, windowSize.Y - 85);
+            textMeshes[2].Scale = new Vector2(1.5f, 1.5f);
+            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
+            textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
+            textMeshes[3].Position = new Vector2(10, windowSize.Y - 110);
+            textMeshes[3].Scale = new Vector2(1.5f, 1.5f);
+            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
+            textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
+            textMeshes[4].Position = new Vector2(10, windowSize.Y - 135);
+            textMeshes[4].Scale = new Vector2(1.5f, 1.5f);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
