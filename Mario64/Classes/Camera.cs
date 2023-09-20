@@ -82,6 +82,18 @@ namespace Mario64
 
         }
 
+        public bool IsLineClose(Line line)
+        {
+            float dist1 = (position - line.Start).Length;
+            float dist2 = (position - line.End).Length;
+            float dist = float.PositiveInfinity;
+            if (dist1 < dist) dist = dist1;
+            if (dist2 < dist) dist = dist2;
+
+            return dist < 15.0f;
+
+        }
+
         public Frustum GetFrustum()
         {
             Frustum frustum = new Frustum();

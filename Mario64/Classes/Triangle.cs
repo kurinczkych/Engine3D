@@ -180,6 +180,25 @@ namespace Mario64
             return normal;
         }
 
+        public float GetAngleToNormal(Vector3 dir)
+        {
+            Vector3 n = ComputeTriangleNormal();
+            float dotProduct = Vector3.Dot(n, dir);
+            float magnitudeA = n.Length;
+            float magnitudeB = dir.Length;
+
+            float angle = MathHelper.RadiansToDegrees((float)Math.Acos(dotProduct / (magnitudeA * magnitudeB)));
+
+            if (angle <= 180)
+            {
+                return 180 - angle;
+            }
+            else
+            {
+                return angle - 180;
+            }
+        }
+
         public triangle GetCopy()
         {
             triangle tri = new triangle();

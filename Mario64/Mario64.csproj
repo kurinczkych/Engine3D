@@ -24,7 +24,9 @@
     <None Remove="Textures\font2.PNG" />
     <None Remove="Textures\High.png" />
     <None Remove="Textures\High_red.png" />
+    <None Remove="Textures\High_test.png" />
     <None Remove="Textures\red.png" />
+    <None Remove="Textures\rred.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,7 +51,7 @@
     <EmbeddedResource Include="Textures\font.png" />
     <EmbeddedResource Include="Textures\font2.PNG" />
     <EmbeddedResource Include="Textures\High.png" />
-    <EmbeddedResource Include="Textures\High_red.png" />
+    <EmbeddedResource Include="Textures\High_test.png" />
     <EmbeddedResource Include="Textures\red.png" />
   </ItemGroup>
 

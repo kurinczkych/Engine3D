@@ -21,7 +21,10 @@ namespace Mario64
         private float jumpForce = 0.1f;
         private float terminalVelocity = -0.7f;
         private float characterHeight = 4f;
+        private float characterWidth = 2f;
 
+        private triangle groundTriangle;
+        public float angleOfGround;
         private float groundY;
         public string groundYStr
         {
@@ -43,6 +46,7 @@ namespace Mario64
         private bool firstMove = true;
         public Vector2 lastPos;
 
+        private Vector3 LastGoodPosition;
         public Vector3 Position;
         public string PStr
         {
@@ -103,6 +107,9 @@ namespace Mario64
                 Velocity += (camera.right * speed_) * (float)args.Time;
             }
 
+            angleOfGround = groundTriangle.GetAngleToNormal(new Vector3(0, -1, 0));
+
+
             // 3. Update Position
             Position += Velocity;
 
@@ -159,14 +166,54 @@ namespace Mario64
             Vector3 pointAbove = closest.GetPointAboveXZ(Position);
 
             Vector3 center = closest.GetMiddle();
-            float distToCenter = Position.Y - center.Y;
+            groundTriangle = closest;
+            distToGround = Position.Y - center.Y;
             groundY = center.Y;
 
             if (pointAbove != Vector3.NegativeInfinity)
             {
-                distToCenter = Position.Y - pointAbove.Y;
+                distToGround = Position.Y - pointAbove.Y;
                 groundY = pointAbove.Y;
             }
+        }
+
+        public List<Line> GetBoundLines()
+        {
+            Vector3 center = Position + new Vector3(0, characterHeight / 2, 0);
+
+            float halfWidth = characterWidth / 2;
+            float halfHeight = characterHeight / 2;
+            float halfDepth = halfWidth;  // Assuming depth is same as width
+
+            Vector3[] corners = new Vector3[8];
+            corners[0] = center + new Vector3(-halfWidth, -halfHeight, -halfDepth);
+            corners[1] = center + new Vector3(halfWidth, -halfHeight, -halfDepth);
+            corners[2] = center + new Vector3(-halfWidth, halfHeight, -halfDepth);
+            corners[3] = center + new Vector3(halfWidth, halfHeight, -halfDepth);
+            corners[4] = center + new Vector3(-halfWidth, -halfHeight, halfDepth);
+            corners[5] = center + new Vector3(halfWidth, -halfHeight, halfDepth);
+            corners[6] = center + new Vector3(-halfWidth, halfHeight, halfDepth);
+            corners[7] = center + new Vector3(halfWidth, halfHeight, halfDepth);
+
+            List<Line> lines = new List<Line>
+            {
+                new Line(corners[0], corners[1]),
+                new Line(corners[0], corners[2]),
+                new Line(corners[1], corners[3]),
+                new Line(corners[2], corners[3]),
+
+                new Line(corners[4], corners[5]),
+                new Line(corners[4], corners[6]),
+                new Line(corners[5], corners[7]),
+                new Line(corners[6], corners[7]),
+
+                new Line(corners[0], corners[4]),
+                new Line(corners[1], corners[5]),
+                new Line(corners[2], corners[6]),
+                new Line(corners[3], corners[7]),
+            };
+
+            return lines;
         }
 
         private void ZeroSmallVelocity()

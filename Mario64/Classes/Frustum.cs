@@ -48,6 +48,13 @@ namespace Mario64
             return a || b || c;
         }
 
+        public bool IsLineInside(Line line)
+        {
+            var a = IsInside(line.Start);
+            var b = IsInside(line.End);
+            return a || b;
+        }
+
         public List<triangle> GetTriangles()
         {
             List<triangle> triangles = new List<triangle>();

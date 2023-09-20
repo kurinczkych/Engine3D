@@ -123,6 +123,9 @@ namespace Mario64
         private UITexVAO uiTexVao;
         private UITexVBO uiTexVbo;
 
+        private WireVAO wireVao;
+        private WireVBO wireVbo;
+
         private Shader shaderProgram;
         private Shader posTexShader;
         private Shader noTextureShaderProgram;
@@ -139,6 +142,7 @@ namespace Mario64
         private List<TestMesh> testMeshes;
         private List<TextMesh> textMeshes;
         private List<UITextureMesh> uiTexMeshes;
+        private List<WireframeMesh> wireMeshes;
 
         private Character character;
         private Frustum frustum;
@@ -159,6 +163,7 @@ namespace Mario64
             shaderProgram = new Shader();
             posTexShader = new Shader();
             pointLights = new List<PointLight>();
+            wireMeshes = new List<WireframeMesh>();
         }
 
         private double DrawFps(double deltaTime)
@@ -219,6 +224,15 @@ namespace Mario64
                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             }
 
+            wireMeshes[0].lines = character.GetBoundLines();
+            foreach (WireframeMesh mesh in wireMeshes)
+            {
+                mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+                List<VertexLine> vertices = mesh.Draw();
+                wireVbo.Buffer(vertices);
+                GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            }
+
             // Text rendering
             GL.Disable(EnableCap.DepthTest);
 
@@ -235,6 +249,7 @@ namespace Mario64
             textMeshes[2].ChangeText("GroundY = (" + character.groundYStr + ")");
             textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
             textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
+            textMeshes[5].ChangeText("AngleToGround = (" + character.angleOfGround.ToString() + ")");
             foreach (TextMesh textMesh in textMeshes)
             {
                 List<TextVertex> vertices = textMesh.Draw();
@@ -298,6 +313,11 @@ namespace Mario64
             uiTexVao.LinkToVAO(1, 4, 4, uiTexVbo);
             uiTexVao.LinkToVAO(2, 2, 8, uiTexVbo);
 
+            wireVbo = new WireVBO();
+            wireVao = new WireVAO();
+            wireVao.LinkToVAO(0, 4, 0, wireVbo);
+            wireVao.LinkToVAO(1, 4, 4, wireVbo);
+
             // create the shader program
             shaderProgram = new Shader("Default.vert", "Default.frag");
             posTexShader = new Shader("postex.vert", "postex.frag");
@@ -313,7 +333,7 @@ namespace Mario64
             //Point Lights
             noTextureShaderProgram.Use();
             pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
-
+            wireMeshes.Add(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.Red));
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
@@ -322,8 +342,10 @@ namespace Mario64
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(meshVao,meshVbo, shaderProgram.id, "spiro.obj", "High.png", 6, windowSize, ref frustum, ref camera, ref textureCount));
-            //testMeshes.Add(new TestMesh(testVao,testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
+            meshes.Add(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 6, windowSize, ref frustum, ref camera, ref textureCount));
+            //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
+
+
 
 
             posTexShader.Use();
@@ -348,6 +370,10 @@ namespace Mario64
             textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
             textMeshes[4].Position = new Vector2(10, windowSize.Y - 135);
             textMeshes[4].Scale = new Vector2(1.5f, 1.5f);
+            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
+            textMeshes[5].ChangeText("AngleToGround = (" + character.angleOfGround.ToString() + ")");
+            textMeshes[5].Position = new Vector2(10, windowSize.Y - 160);
+            textMeshes[5].Scale = new Vector2(1.5f, 1.5f);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
