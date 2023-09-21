@@ -18,18 +18,6 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Mario64
 {
-    public class Line
-    {
-        public Line(Vector3 start, Vector3 end)
-        {
-            Start = start;
-            End = end;
-        }
-
-        public Vector3 Start;
-        public Vector3 End;
-        public Color4 Color;
-    }
 
     public class WireframeMesh : BaseMesh
     {

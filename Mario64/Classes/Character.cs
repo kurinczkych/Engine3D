@@ -7,16 +7,33 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Mario64
 {
+    public struct TriangleCollision
+    {
+        public TriangleCollision(triangle triangle, Vector3 penetration_normal, float penetration_depth)
+        {
+            this.triangle = triangle;
+            this.penetration_normal = penetration_normal;
+            this.penetration_depth = penetration_depth;
+        }
+
+        public triangle triangle;
+        public Vector3 penetration_normal;
+        public float penetration_depth;
+    }
+
     public class Character
     {
         private float sensitivity = 180f;
         private float speed = 2f;
         //private float gravity = 0.7f;
+        public bool applyGravity = true;
         private float gravity = 120;
         private float jumpForce = 0.1f;
         private float terminalVelocity = -0.7f;
@@ -46,7 +63,7 @@ namespace Mario64
         private bool firstMove = true;
         public Vector2 lastPos;
 
-        private Vector3 LastGoodPosition;
+        private Vector3 OrigPosition;
         public Vector3 Position;
         public string PStr
         {
@@ -63,7 +80,8 @@ namespace Mario64
 
         public Character(Vector3 position, Camera camera)
         {
-            this.Position = position;
+            OrigPosition = position;
+            Position = position;
             Velocity = Vector3.Zero;
 
             this.camera = camera;
@@ -72,7 +90,7 @@ namespace Mario64
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, ref Octree octree, FrameEventArgs args)
         {
-            if(!isOnGround)
+            if(applyGravity)
                 Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
 
             if (Velocity.Y < terminalVelocity)
@@ -84,6 +102,12 @@ namespace Mario64
             if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
             {
                 Velocity.Y += jumpForce;
+            }
+
+            if (keyboardState.IsKeyDown(Keys.Enter))
+            {
+                Position = OrigPosition;
+                Velocity = Vector3.Zero;
             }
 
             float speed_ = speed;
@@ -109,27 +133,80 @@ namespace Mario64
 
             angleOfGround = groundTriangle.GetAngleToNormal(new Vector3(0, -1, 0));
 
-
             // 3. Update Position
-            Position += Velocity;
+            //Position += Velocity;
+            Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
 
-            // 4. Collision Detection / Ground Check
-            if (Position.Y - characterHeight <= groundY)
+            int ccdMax = 5;
+            bool intersection = false;
+            Vector3 step = Velocity / ccdMax;
+            bool disabledGravity = false;
+
+            for (int i = 0; i < ccdMax; i++)
             {
-                Position.Y = groundY + characterHeight;
-                Velocity.Y = 0;
-                isOnGround = true;
+                Position += step;
+                foreach (triangle tri in octree.GetNearTriangles(Position))
+                {
+                    Vector3 penetration_normal = new Vector3();
+                    float penetration_depth = 0.0f;
+                    if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
+                        continue;
+
+                    if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
+                        continue;
+
+                    // Modify player velocity to slide on contact surface:
+                    float velocity_length = Velocity.Length;
+                    Vector3 velocity_normalized = Velocity.Normalized();
+                    Vector3 undesired_motion = penetration_normal * Vector3.Dot(velocity_normalized, penetration_normal);
+                    Vector3 desired_motion = velocity_normalized - undesired_motion;
+                    Velocity = desired_motion * velocity_length;
+
+                    // Remove penetration (penetration epsilon added to handle infinitely small penetration):
+                    Position += (penetration_normal * (penetration_depth + 0.0001f));
+
+                    intersection = true;
+
+                    if (Math.Abs(tri.GetAngleToNormal(new Vector3(0, -1, 0))) < 45)
+                    {
+                        applyGravity = false;
+                        Velocity.Y = 0;
+                        Velocity *= new Vector3(0.9f, 1, 0.9f);
+                        disabledGravity = true;
+                    }
+                    else if (!disabledGravity)
+                    {
+                        applyGravity = true;
+                    }
+                }
+
+                //if (intersection)
+                //    break;
             }
-            else
-            {
+
+            if (!intersection)
                 isOnGround = false;
-            }
+
+            if (float.IsNaN(Position.X) || float.IsNaN(Position.Y) || float.IsNaN(Position.Z))
+                ;
+
+            ZeroSmallVelocity();
+            //// 4. Collision Detection / Ground Check
+            //if (Position.Y - characterHeight <= groundY)
+            //{
+            //    Position.Y = groundY + characterHeight;
+            //    Velocity.Y = 0;
+            //    isOnGround = true;
+            //}
+            //else
+            //{
+            //    isOnGround = false;
+            //}
 
             camera.position = Position;
             camera.position.Y = 10;
             camera.position.X += 5;
-            Velocity.Xz *= 0.9f;
-            ZeroSmallVelocity();
+            camera.position.Z += 5;
 
             if (firstMove)
             {
@@ -181,57 +258,62 @@ namespace Mario64
 
         public List<Line> GetBoundLines()
         {
-            Vector3 center = Position + new Vector3(0, -characterHeight/2, 0);
-
-            float halfWidth = characterWidth / 2;
-            float halfDepth = halfWidth;  // Assuming depth is same as width
-
-            Dictionary<string, Vector3> corners = new Dictionary<string, Vector3>
-            {
-                { "LBL", new Vector3(-halfWidth, 0, -halfDepth) },                 // LBL  Left - Bottom Left
-                { "LBR", new Vector3(halfWidth, 0, -halfDepth) },                  // LBR  Left - Bottom Right
-                { "LTL", new Vector3(-halfWidth, characterHeight, -halfDepth) },   // LTL  Left - Top Left
-                { "LTR", new Vector3(halfWidth, characterHeight, -halfDepth) },    // LTR  Left - Top Right
-                { "RBR", new Vector3(-halfWidth, 0, halfDepth) },                  // RBR  Right - Bottom Left
-                { "RBL", new Vector3(halfWidth, 0, halfDepth) },                   // RBL  Right - Bottom Right
-                { "RTR", new Vector3(-halfWidth, characterHeight, halfDepth) },    // RTR  Right - Top Left
-                { "RTL", new Vector3(halfWidth, characterHeight, halfDepth) }     // RTL  Right - Top Right
-            };
-
-            Matrix4 rotY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(-camera.yaw));
-            foreach(string key in corners.Keys)
-            {
-                corners[key] = center + Vector3.TransformPosition(corners[key], rotY);
-            }
-
-            List<Line> lines = new List<Line>
-            {
-                //FRONT
-                new Line(corners["LBR"], corners["LTR"]),
-                new Line(corners["LBR"], corners["RBL"]),
-                new Line(corners["RTL"], corners["LTR"]),
-                new Line(corners["RTL"], corners["RBL"]),
-
-                //BACK
-                new Line(corners["LBL"], corners["LTL"]),
-                new Line(corners["LBL"], corners["RBR"]),
-                new Line(corners["RTR"], corners["LTL"]),
-                new Line(corners["RTR"], corners["RBR"]),
-
-                //LEFT
-                new Line(corners["LBL"], corners["LTL"]),
-                new Line(corners["LBL"], corners["LBR"]),
-                new Line(corners["LTR"], corners["LTL"]),
-                new Line(corners["LTR"], corners["LBR"]),
-
-                //LEFT
-                new Line(corners["RBL"], corners["RTL"]),
-                new Line(corners["RBL"], corners["RBR"]),
-                new Line(corners["RTR"], corners["RTL"]),
-                new Line(corners["RTR"], corners["RBR"])
-            };
+            Capsule c = new Capsule(characterWidth, characterHeight*2, Position - new Vector3(0, characterHeight, 0));
+            List<Line> lines = c.GetWireframe(10);
 
             return lines;
+
+            //Vector3 center = Position + new Vector3(0, -characterHeight/2, 0);
+
+            //float halfWidth = characterWidth / 2;
+            //float halfDepth = halfWidth;  // Assuming depth is same as width
+
+            //Dictionary<string, Vector3> corners = new Dictionary<string, Vector3>
+            //{
+            //    { "LBL", new Vector3(-halfWidth, 0, -halfDepth) },                 // LBL  Left - Bottom Left
+            //    { "LBR", new Vector3(halfWidth, 0, -halfDepth) },                  // LBR  Left - Bottom Right
+            //    { "LTL", new Vector3(-halfWidth, characterHeight, -halfDepth) },   // LTL  Left - Top Left
+            //    { "LTR", new Vector3(halfWidth, characterHeight, -halfDepth) },    // LTR  Left - Top Right
+            //    { "RBR", new Vector3(-halfWidth, 0, halfDepth) },                  // RBR  Right - Bottom Left
+            //    { "RBL", new Vector3(halfWidth, 0, halfDepth) },                   // RBL  Right - Bottom Right
+            //    { "RTR", new Vector3(-halfWidth, characterHeight, halfDepth) },    // RTR  Right - Top Left
+            //    { "RTL", new Vector3(halfWidth, characterHeight, halfDepth) }     // RTL  Right - Top Right
+            //};
+
+            //Matrix4 rotY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(-camera.yaw));
+            //foreach(string key in corners.Keys)
+            //{
+            //    corners[key] = center + Vector3.TransformPosition(corners[key], rotY);
+            //}
+
+            //List<Line> lines = new List<Line>
+            //{
+            //    //FRONT
+            //    new Line(corners["LBR"], corners["LTR"]),
+            //    new Line(corners["LBR"], corners["RBL"]),
+            //    new Line(corners["RTL"], corners["LTR"]),
+            //    new Line(corners["RTL"], corners["RBL"]),
+
+            //    //BACK
+            //    new Line(corners["LBL"], corners["LTL"]),
+            //    new Line(corners["LBL"], corners["RBR"]),
+            //    new Line(corners["RTR"], corners["LTL"]),
+            //    new Line(corners["RTR"], corners["RBR"]),
+
+            //    //LEFT
+            //    new Line(corners["LBL"], corners["LTL"]),
+            //    new Line(corners["LBL"], corners["LBR"]),
+            //    new Line(corners["LTR"], corners["LTL"]),
+            //    new Line(corners["LTR"], corners["LBR"]),
+
+            //    //LEFT
+            //    new Line(corners["RBL"], corners["RTL"]),
+            //    new Line(corners["RBL"], corners["RBR"]),
+            //    new Line(corners["RTR"], corners["RTL"]),
+            //    new Line(corners["RTR"], corners["RBR"])
+            //};
+
+            //return lines;
         }
 
         private List<Vector3> GetBoundRectangle(string side)
@@ -297,20 +379,18 @@ namespace Mario64
         {
             List<triangle> tris = octree.GetNearTriangles(Position);
 
-            List<triangle> collidedTris = new List<triangle>();
-            for (int i = tris.Count-1; i >= 0; i--)
+            Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
+            List<TriangleCollision> collidedTris = new List<TriangleCollision>();
+
+            foreach (triangle tri in octree.GetNearTriangles(Position))
             {
-                if (tris[i].IsRectInTriangle(GetBoundRectangle("front")))
-                    collidedTris.Add(tris[i]);
-                else if (tris[i].IsRectInTriangle(GetBoundRectangle("back")))
-                    collidedTris.Add(tris[i]);
-                else if (tris[i].IsRectInTriangle(GetBoundRectangle("left")))
-                    collidedTris.Add(tris[i]);
-                else if (tris[i].IsRectInTriangle(GetBoundRectangle("right")))
-                    collidedTris.Add(tris[i]);
+                Vector3 penetration_normal = new Vector3();
+                float penetration_depth = 0.0f;
+                if (tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
+                    collidedTris.Add(new TriangleCollision(tri, penetration_normal, penetration_depth));
             }
 
-            return collidedTris;
+            return collidedTris.Select(x => x.triangle).ToList();
         }
 
         private void ZeroSmallVelocity()

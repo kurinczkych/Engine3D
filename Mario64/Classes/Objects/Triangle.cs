@@ -2,8 +2,11 @@
 using OpenTK.Platform.Windows;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Mario64
@@ -355,6 +358,156 @@ namespace Mario64
         private bool IsOverlapping((float, float) a, (float, float) b)
         {
             return a.Item1 <= b.Item2 && b.Item1 <= a.Item2;
+        }
+
+        public bool IsSphereInTriangle(Sphere sphere, out Vector3 penetration_normal, out float penetration_depth)
+        {
+            penetration_normal = new Vector3();
+            penetration_depth = 0.0f;
+
+            Vector3 N = Vector3.Normalize(Vector3.Cross(p[1] - p[0], p[2] - p[0])); // plane normal
+            float dist = Vector3.Dot(sphere.Position - p[0], N); // signed distance between sphere and plane
+            if (dist < -sphere.Radius || dist > sphere.Radius)
+                return false;
+
+            Vector3 point0 = sphere.Position - N * dist; // projected sphere center on triangle plane
+
+            // Now determine whether point0 is inside all triangle edges: 
+            Vector3 c0 = Vector3.Cross(point0 - p[0], p[1] - p[0]);
+            Vector3 c1 = Vector3.Cross(point0 - p[1], p[2] - p[1]);
+            Vector3 c2 = Vector3.Cross(point0 - p[2], p[0] - p[2]);
+            bool inside = Vector3.Dot(c0, N) <= 0 && Vector3.Dot(c1, N) <= 0 && Vector3.Dot(c2, N) <= 0;
+
+            float radiussq = sphere.Radius * sphere.Radius; // sphere radius squared
+
+            // Edge 1:
+            Vector3 point1 = Line.ClosestPointOnLineSegment(p[0], p[1], sphere.Position);
+            Vector3 v1 = sphere.Position - point1;
+            float distsq1 = Vector3.Dot(v1, v1);
+            bool intersects = distsq1 < radiussq;
+
+            // Edge 2:
+            Vector3 point2 = Line.ClosestPointOnLineSegment(p[1], p[2], sphere.Position);
+            Vector3 v2 = sphere.Position - point2;
+            float distsq2 = Vector3.Dot(v2, v2);
+            intersects |= distsq2 < radiussq;
+
+            // Edge 3:
+            Vector3 point3 = Line.ClosestPointOnLineSegment(p[2], p[0], sphere.Position);
+            Vector3 v3 = sphere.Position - point3;
+            float distsq3 = Vector3.Dot(v3, v3);
+            intersects |= distsq3 < radiussq;
+
+            if (inside || intersects)
+            {
+                Vector3 best_point = point0;
+                Vector3 intersection_vec = new Vector3();
+
+                if (inside)
+                {
+                    intersection_vec = sphere.Position - point0;
+                }
+                else
+                {
+                    Vector3 d = sphere.Position - point1;
+                    float best_distsq = Vector3.Dot(d, d);
+                    best_point = point1;
+                    intersection_vec = d;
+
+                    d = sphere.Position - point2;
+                    float distsq = Vector3.Dot(d, d);
+                    if (distsq < best_distsq)
+                    {
+                        distsq = best_distsq;
+                        best_point = point2;
+                        intersection_vec = d;
+                    }
+
+                    d = sphere.Position - point3;
+                    distsq = Vector3.Dot(d, d);
+                    if (distsq < best_distsq)
+                    {
+                        distsq = best_distsq;
+                        best_point = point3;
+                        intersection_vec = d;
+                    }
+                }
+
+                float len = intersection_vec.Length;  // vector3 length calculation: 
+                penetration_normal = intersection_vec / len;  // normalize
+                penetration_depth = sphere.Radius - len; // radius = sphere radius
+                return true; // intersection success
+            }
+
+            return false;
+        }
+
+        public bool IsCapsuleInTriangle(Capsule capsule, out Vector3 penetration_normal, out float penetration_depth)
+        {
+            Vector3 aTip = capsule.Position + new Vector3(0, capsule.Height, 0);
+            Vector3 aBase = capsule.Position;
+
+            // Compute capsule line endpoints A, B like before in capsule-capsule case:
+            Vector3 CapsuleNormal = Vector3.Normalize(aTip - aBase);
+            Vector3 LineEndOffset = CapsuleNormal * capsule.Radius;
+            Vector3 A = aBase + LineEndOffset;
+            Vector3 B = aTip - LineEndOffset;
+
+            Vector3 N = Vector3.Normalize(Vector3.Cross(p[1] - p[0], p[2] - p[0])); // plane normal
+
+            // Then for each triangle, ray-plane intersection:
+            //  N is the triangle plane normal (it was computed in sphere – triangle intersection case)
+            float t = Vector3.Dot(N, (p[0] - aBase) / Math.Abs(Vector3.Dot(N, CapsuleNormal)));
+            Vector3 line_plane_intersection = aBase + CapsuleNormal * t;
+
+            Vector3 reference_point = new Vector3();
+
+            // Determine whether line_plane_intersection is inside all triangle edges: 
+            Vector3 c0 = Vector3.Cross(line_plane_intersection - p[0], p[1] - p[0]);
+            Vector3 c1 = Vector3.Cross(line_plane_intersection - p[1], p[2] - p[1]);
+            Vector3 c2 = Vector3.Cross(line_plane_intersection - p[2], p[0] - p[2]);
+            bool inside = Vector3.Dot(c0, N) <= 0 && Vector3.Dot(c1, N) <= 0 && Vector3.Dot(c2, N) <= 0;
+
+            if (inside)
+            {
+                reference_point = line_plane_intersection;
+            }
+            else
+            {
+                // Edge 1:
+                Vector3 point1 = Line.ClosestPointOnLineSegment(p[0], p[1], line_plane_intersection);
+                Vector3 v1 = line_plane_intersection - point1;
+                float distsq = Vector3.Dot(v1, v1);
+                float best_dist = distsq;
+                reference_point = point1;
+
+                // Edge 2:
+                Vector3 point2 = Line.ClosestPointOnLineSegment(p[1], p[2], line_plane_intersection);
+                Vector3 v2 = line_plane_intersection - point2;
+                distsq = Vector3.Dot(v2, v2);
+                if (distsq < best_dist)
+                {
+                    reference_point = point2;
+                    best_dist = distsq;
+                }
+
+                // Edge 3:
+                Vector3 point3 = Line.ClosestPointOnLineSegment(p[2], p[0], line_plane_intersection);
+                Vector3 v3 = line_plane_intersection - point3;
+                distsq = Vector3.Dot(v3, v3);
+                if (distsq < best_dist)
+                {
+                    reference_point = point3;
+                    best_dist = distsq;
+                }
+            }
+
+            // The center of the best sphere candidate:
+            Vector3 center = Line.ClosestPointOnLineSegment(A, B, reference_point);
+
+            bool intersects = IsSphereInTriangle(new Sphere(center, capsule.Radius), out penetration_normal, out penetration_depth);
+
+            return intersects;
         }
     }
 }

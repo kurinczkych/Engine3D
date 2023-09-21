@@ -250,6 +250,7 @@ namespace Mario64
             textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
             textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
             textMeshes[5].ChangeText("AngleToGround = (" + character.angleOfGround.ToString() + ")");
+            textMeshes[6].ChangeText("ApplyGravity = (" + character.applyGravity.ToString() + ")");
             foreach (TextMesh textMesh in textMeshes)
             {
                 List<float> vertices = textMesh.Draw();
@@ -332,8 +333,8 @@ namespace Mario64
 
             //Point Lights
             noTextureShaderProgram.Use();
-            pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
-            wireMeshes.Add(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.Red));
+            //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
+            wireMeshes.Add(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White));
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
@@ -374,6 +375,10 @@ namespace Mario64
             textMeshes[5].ChangeText("AngleToGround = (" + character.angleOfGround.ToString() + ")");
             textMeshes[5].Position = new Vector2(10, windowSize.Y - 160);
             textMeshes[5].Scale = new Vector2(1.5f, 1.5f);
+            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
+            textMeshes[6].ChangeText("ApplyGravity = (" + character.applyGravity.ToString() + ")");
+            textMeshes[6].Position = new Vector2(10, windowSize.Y - 185);
+            textMeshes[6].Scale = new Vector2(1.5f, 1.5f);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
