@@ -179,21 +179,27 @@ namespace Mario64
 
         public List<Line> GetBoundLines()
         {
-            Vector3 center = Position + new Vector3(0, characterHeight / 2, 0);
+            Vector3 center = Position + new Vector3(0, characterHeight/2, 0);
 
             float halfWidth = characterWidth / 2;
-            float halfHeight = characterHeight / 2;
+            float halfHeight = characterHeight;
             float halfDepth = halfWidth;  // Assuming depth is same as width
 
             Vector3[] corners = new Vector3[8];
-            corners[0] = center + new Vector3(-halfWidth, -halfHeight, -halfDepth);
-            corners[1] = center + new Vector3(halfWidth, -halfHeight, -halfDepth);
-            corners[2] = center + new Vector3(-halfWidth, halfHeight, -halfDepth);
-            corners[3] = center + new Vector3(halfWidth, halfHeight, -halfDepth);
-            corners[4] = center + new Vector3(-halfWidth, -halfHeight, halfDepth);
-            corners[5] = center + new Vector3(halfWidth, -halfHeight, halfDepth);
-            corners[6] = center + new Vector3(-halfWidth, halfHeight, halfDepth);
-            corners[7] = center + new Vector3(halfWidth, halfHeight, halfDepth);
+            corners[0] = new Vector3(-halfWidth, -halfHeight, -halfDepth);
+            corners[1] = new Vector3(halfWidth, -halfHeight, -halfDepth);
+            corners[2] = new Vector3(-halfWidth, halfHeight, -halfDepth);
+            corners[3] = new Vector3(halfWidth, halfHeight, -halfDepth);
+            corners[4] = new Vector3(-halfWidth, -halfHeight, halfDepth);
+            corners[5] = new Vector3(halfWidth, -halfHeight, halfDepth);
+            corners[6] = new Vector3(-halfWidth, halfHeight, halfDepth);
+            corners[7] = new Vector3(halfWidth, halfHeight, halfDepth);
+
+            Matrix4 rotY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(-camera.yaw));
+            for (int i = 0; i < corners.Length; i++)
+            {
+                corners[i] = center + Vector3.TransformPosition(corners[i], rotY);
+            }
 
             List<Line> lines = new List<Line>
             {
