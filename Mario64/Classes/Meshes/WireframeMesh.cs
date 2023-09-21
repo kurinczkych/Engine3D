@@ -18,12 +18,6 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Mario64
 {
-    public struct VertexLine
-    {
-        public Vector4 Position;
-        public Color4 Color;
-    }
-
     public class Line
     {
         public Line(Vector3 start, Vector3 end)
@@ -39,26 +33,29 @@ namespace Mario64
 
     public class WireframeMesh : BaseMesh
     {
-        private List<VertexLine> vertices = new List<VertexLine>();
+        public static int floatCount = 8;
+
+        private List<float> vertices = new List<float>();
 
         private Frustum frustum;
         private Camera camera;
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        private WireVAO wireVao;
-        private WireVBO wireVbo;
 
         public List<Line> lines;
         private Color4 color;
 
-        public WireframeMesh(WireVAO vao, WireVBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
+        private VAO Vao;
+        private VBO Vbo;
+
+        public WireframeMesh(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.frustum = frustum;
             this.camera = camera;
 
-            wireVao = vao;
-            wireVbo = vbo;
+            Vao = vao;
+            Vbo = vbo;
 
             lines = new List<Line>();
             this.color = color;
@@ -85,27 +82,29 @@ namespace Mario64
             GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
             GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
         }
-        private VertexLine ConvertToNDC(Vector3 point)
+        private List<float> ConvertToNDC(Vector3 point)
         {
-            return new VertexLine()
+            List<float> result = new List<float>()
             {
-                Position = new Vector4(point, 1.0f),
-                Color = color
+                point.X, point.Y, point.Z, 1.0f,
+                color.R, color.G, color.B, color.A
             };
+
+            return result;
         }
 
-        public List<VertexLine> Draw()
+        public List<float> Draw()
         {
-            wireVao.Bind();
+            Vao.Bind();
 
-            vertices = new List<VertexLine>();
+            vertices = new List<float>();
 
             foreach (Line line in lines)
             {
                 if (frustum.IsLineInside(line) || camera.IsLineClose(line))
                 {
-                    vertices.Add(ConvertToNDC(line.Start));
-                    vertices.Add(ConvertToNDC(line.End));
+                    vertices.AddRange(ConvertToNDC(line.Start));
+                    vertices.AddRange(ConvertToNDC(line.End));
                 }
             }
 

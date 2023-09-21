@@ -55,7 +55,7 @@ namespace Mario64
 
         public NoTextureMesh mesh;
 
-        public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Frustum frustum, ref Camera camera, NoTexVAO meshVao, NoTexVBO meshVbo, int meshShaderProgramId, int i)
+        public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Frustum frustum, ref Camera camera, VAO meshVao, VBO meshVbo, int meshShaderProgramId, int i)
         {
             Position = pos;
             this.color = color;
@@ -95,7 +95,7 @@ namespace Mario64
             return pl;
         }
 
-        public static NoTextureMesh GetMesh(PointLight pointLight, NoTexVAO vao, NoTexVBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
+        public static NoTextureMesh GetMesh(PointLight pointLight, VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
         {
             NoTextureMesh mesh = new NoTextureMesh(vao, vbo, shaderProgramId, "sphereSmall.obj", ref frustum, ref camera, pointLight.color);
             mesh.Position = pointLight.Position;

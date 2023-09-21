@@ -8,18 +8,19 @@ using System.Threading.Tasks;
 
 namespace Mario64
 {
-    public class UITexVAO : BaseVAO
+    public class VAO
     {
+        public int id;
         private int vertexSize;
 
-        public UITexVAO()
+        public VAO(int floatCount)
         {
-            vertexSize = Marshal.SizeOf(typeof(UITextureVertex));
+            vertexSize = sizeof(float)*floatCount;
             id = GL.GenVertexArray();
             Bind();
         } 
 
-        public void LinkToVAO(int location, int size, int offset, UITexVBO vbo)
+        public void LinkToVAO(int location, int size, int offset, VBO vbo)
         {
             Bind();
             vbo.Bind();
@@ -30,6 +31,19 @@ namespace Mario64
             Unbind();
         }
 
-        
+        public void Bind()
+        {
+            GL.BindVertexArray(id);
+        }
+
+        public void Unbind()
+        {
+            GL.BindVertexArray(0);
+        }
+
+        public void Delete()
+        {
+            GL.DeleteVertexArray(id);
+        }
     }
 }

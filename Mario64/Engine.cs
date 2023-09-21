@@ -108,23 +108,23 @@ namespace Mario64
         #endregion
 
         // OPENGL
-        private MeshVAO meshVao;
-        private MeshVBO meshVbo;
+        private VAO meshVao;
+        private VBO meshVbo;
 
-        private MeshVAO testVao;
-        private MeshVBO testVbo;
+        private VAO testVao;
+        private VBO testVbo;
 
-        private TextVAO textVao;
-        private TextVBO textVbo;
+        private VAO textVao;
+        private VBO textVbo;
 
-        private NoTexVAO noTexVao;
-        private NoTexVBO noTexVbo;
+        private VAO noTexVao;
+        private VBO noTexVbo;
 
-        private UITexVAO uiTexVao;
-        private UITexVBO uiTexVbo;
+        private VAO uiTexVao;
+        private VBO uiTexVbo;
 
-        private WireVAO wireVao;
-        private WireVBO wireVbo;
+        private VAO wireVao;
+        private VBO wireVbo;
 
         private Shader shaderProgram;
         private Shader posTexShader;
@@ -199,7 +199,7 @@ namespace Mario64
             foreach (Mesh mesh in meshes)
             {
                 mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                List<Vertex> vertices = mesh.Draw();
+                List<float> vertices = mesh.Draw();
                 meshVbo.Buffer(vertices);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             }
@@ -219,7 +219,7 @@ namespace Mario64
             foreach (PointLight pl in pointLights)
             {
                 pl.mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                List<VertexNoTexture> vertices = pl.mesh.Draw();
+                List<float> vertices = pl.mesh.Draw();
                 noTexVbo.Buffer(vertices);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             }
@@ -228,7 +228,7 @@ namespace Mario64
             foreach (WireframeMesh mesh in wireMeshes)
             {
                 mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                List<VertexLine> vertices = mesh.Draw();
+                List<float> vertices = mesh.Draw();
                 wireVbo.Buffer(vertices);
                 GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
             }
@@ -239,7 +239,7 @@ namespace Mario64
             posTexShader.Use();
             foreach (UITextureMesh mesh in uiTexMeshes)
             {
-                List<UITextureVertex> vertices = mesh.Draw();
+                List<float> vertices = mesh.Draw();
                 uiTexVbo.Buffer(vertices);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             }
@@ -252,7 +252,7 @@ namespace Mario64
             textMeshes[5].ChangeText("AngleToGround = (" + character.angleOfGround.ToString() + ")");
             foreach (TextMesh textMesh in textMeshes)
             {
-                List<TextVertex> vertices = textMesh.Draw();
+                List<float> vertices = textMesh.Draw();
                 textVbo.Buffer(vertices);
                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             }
@@ -284,37 +284,37 @@ namespace Mario64
 
 
             // OPENGL init
-            meshVbo = new MeshVBO();
-            meshVao = new MeshVAO();
+            meshVbo = new VBO();
+            meshVao = new VAO(Mesh.floatCount);
             meshVao.LinkToVAO(0, 4, 0, meshVbo);
             meshVao.LinkToVAO(1, 3, 4, meshVbo);
             meshVao.LinkToVAO(2, 2, 7, meshVbo);
 
-            testVbo = new MeshVBO();
-            testVao = new MeshVAO();
+            testVbo = new VBO();
+            testVao = new VAO(Mesh.floatCount);
             testVao.LinkToVAO(0, 4, 0, testVbo);
             testVao.LinkToVAO(1, 3, 4, testVbo);
             testVao.LinkToVAO(2, 2, 7, testVbo);
 
-            textVbo = new TextVBO();
-            textVao = new TextVAO();
+            textVbo = new VBO();
+            textVao = new VAO(TextMesh.floatCount);
             textVao.LinkToVAO(0, 4, 0, textVbo);
             textVao.LinkToVAO(1, 4, 4, textVbo);
             textVao.LinkToVAO(2, 2, 8, textVbo);
 
-            noTexVbo = new NoTexVBO();
-            noTexVao = new NoTexVAO();
+            noTexVbo = new VBO();
+            noTexVao = new VAO(NoTextureMesh.floatCount);
             noTexVao.LinkToVAO(0, 4, 0, noTexVbo);
             noTexVao.LinkToVAO(1, 4, 4, noTexVbo);
 
-            uiTexVbo = new UITexVBO();
-            uiTexVao = new UITexVAO();
+            uiTexVbo = new VBO();
+            uiTexVao = new VAO(UITextureMesh.floatCount);
             uiTexVao.LinkToVAO(0, 4, 0, uiTexVbo);
             uiTexVao.LinkToVAO(1, 4, 4, uiTexVbo);
             uiTexVao.LinkToVAO(2, 2, 8, uiTexVbo);
 
-            wireVbo = new WireVBO();
-            wireVao = new WireVAO();
+            wireVbo = new VBO();
+            wireVao = new VAO(WireframeMesh.floatCount);
             wireVao.LinkToVAO(0, 4, 0, wireVbo);
             wireVao.LinkToVAO(1, 4, 4, wireVbo);
 

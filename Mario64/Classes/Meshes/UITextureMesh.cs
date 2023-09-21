@@ -12,20 +12,16 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Mario64
 {
-    public struct UITextureVertex
-    {
-        public Vector4 Position;
-        public Color4 Color;
-        public Vector2 Texture;
-    }
 
     public class UITextureMesh : BaseMesh
     {
+        public static int floatCount = 10;
+
         private Texture texture;
 
         private Vector2 windowSize;
 
-        private List<UITextureVertex> vertices = new List<UITextureVertex>();
+        private List<float> vertices = new List<float>();
         private string? embeddedTextureName;
         private int vertexSize;
 
@@ -49,10 +45,10 @@ namespace Mario64
         }
         private Vector3 rotation;
 
-        private UITexVAO uiTexVao;
-        private UITexVBO uiTexVbo;
+        private VAO Vao;
+        private VBO Vbo;
 
-        public UITextureMesh(UITexVAO vao, UITexVBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public UITextureMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.windowSize = windowSize;
             Position = new Vector2(position.X, position.Y);
@@ -62,8 +58,8 @@ namespace Mario64
             texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
 
-            uiTexVao = vao;
-            uiTexVbo = vbo;
+            Vao = vao;
+            Vbo = vbo;
 
             OnlyQuad();
 
@@ -81,25 +77,27 @@ namespace Mario64
             GL.Uniform1(textureLocation, texture.unit);
         }
 
-        private UITextureVertex ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
+        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
         {
             Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
 
             float x = (2.0f * v.X / windowSize.X) - 1.0f;
             float y = (2.0f * v.Y / windowSize.Y) - 1.0f;
 
-            return new UITextureVertex()
+            List<float> result = new List<float>()
             {
-                Position = new Vector4(x, y, -1.0f, 1.0f),
-                Color = tri.c[index],
-                Texture = new Vector2(tri.t[index].u, tri.t[index].v)
+                x, y, -1.0f, 1.0f,
+                tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
+                tri.t[index].u, tri.t[index].v
             };
+
+            return result;
         }
 
-        public List<UITextureVertex> Draw()
+        public List<float> Draw()
         {
-            uiTexVao.Bind();
-            vertices = new List<UITextureVertex>();
+            Vao.Bind();
+            vertices = new List<float>();
 
             Matrix4 s = Matrix4.CreateScale(Size);
             Matrix4 t = Matrix4.CreateTranslation(position);
@@ -115,9 +113,9 @@ namespace Mario64
 
             foreach (triangle tri in tris)
             {
-                vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
-                vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
-                vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
+                vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+                vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+                vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
             }
 
             SendUniforms();

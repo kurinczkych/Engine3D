@@ -11,21 +11,16 @@ using System.Threading.Tasks;
 
 namespace Mario64
 {
-    public struct TextVertex
-    {
-        public Vector4 Position;
-        public Color4 Color;
-        public Vector2 Texture;
-    }
-
     public class TextMesh : BaseMesh
     {
+        public static int floatCount = 10;
+
         public Texture texture;
 
         private Vector2 windowSize;
         private TextGenerator textGenerator;
 
-        private List<TextVertex> vertices = new List<TextVertex>();
+        private List<float> vertices = new List<float>();
 
         // Text variables
         public Vector2 Position;
@@ -43,16 +38,16 @@ namespace Mario64
         private Vector3 rotation;
         public Vector2 Scale;
 
-        private TextVAO textVao;
-        private TextVBO textVbo;
+        private VAO Vao;
+        private VBO Vbo;
 
-        public TextMesh(TextVAO vao, TextVBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName, false, "nearest");
             textureCount++;
 
-            textVao = vao;
-            textVbo = vbo;
+            Vao = vao;
+            Vbo = vbo;
 
             Position = Vector2.Zero;
             Rotation = 0;
@@ -71,19 +66,21 @@ namespace Mario64
             tris = textGenerator.GetTriangles(text);
         }
 
-        private TextVertex ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
+        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
         {
             Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
 
             float x = (2.0f * v.X / windowSize.X) - 1.0f;
             float y = (2.0f * v.Y / windowSize.Y) - 1.0f;
 
-            return new TextVertex()
+            List<float> result = new List<float>()
             {
-                Position = new Vector4(x, y, -1.0f, 1.0f),
-                Color = tri.c[index],
-                Texture = new Vector2(tri.t[index].u, tri.t[index].v)
+                x, y, -1.0f, 1.0f,
+                tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
+                tri.t[index].u, tri.t[index].v
             };
+
+            return result;
         }
 
         protected override void SendUniforms()
@@ -94,11 +91,11 @@ namespace Mario64
             GL.Uniform1(textureLocation, texture.unit);
         }
 
-        public List<TextVertex> Draw()
+        public List<float> Draw()
         {
-            textVao.Bind();
+            Vao.Bind();
 
-            vertices = new List<TextVertex>();
+            vertices = new List<float>();
 
             Matrix4 s = Matrix4.CreateScale(new Vector3(Scale.X, Scale.Y, 1.0f));
             Matrix4 t = Matrix4.CreateTranslation(new Vector3(Position.X, Position.Y, 0));
@@ -114,9 +111,9 @@ namespace Mario64
 
             foreach (triangle tri in tris)
             {
-                vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
-                vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
-                vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
+                vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+                vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+                vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
             }
 
             SendUniforms();

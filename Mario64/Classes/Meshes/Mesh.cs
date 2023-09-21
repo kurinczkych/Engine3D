@@ -19,18 +19,13 @@ using static OpenTK.Graphics.OpenGL.GL;
 
 namespace Mario64
 {
-    public struct Vertex
-    {
-        public Vector4 Position;
-        public Vector3 Normal;
-        public Vector2 Texture;
-    }
-
     public class Mesh : BaseMesh
     {
+        public static int floatCount = 9;
+
         public Texture texture;
 
-        private List<Vertex> vertices = new List<Vertex>();
+        private List<float> vertices = new List<float>();
         private string? embeddedModelName;
 
         public BoundingBox BoundingBox;
@@ -53,16 +48,16 @@ namespace Mario64
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        private MeshVAO meshVao;
-        private MeshVBO meshVbo;
+        private VAO Vao;
+        private VBO Vbo;
 
-        public Mesh(MeshVAO vao, MeshVBO vbo, int shaderProgramId, string embeddedModelName, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedModelName, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
 
-            meshVao = vao;
-            meshVbo = vbo;
+            Vao = vao;
+            Vbo = vbo;
 
             this.windowSize = windowSize;
             this.frustum = frustum;
@@ -86,15 +81,17 @@ namespace Mario64
             SendUniforms();
         }
 
-        private Vertex ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
+        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
         {
             Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
-            return new Vertex()
+
+            List<float> result = new List<float>()
             {
-                Position = new Vector4(v.X, v.Y, v.Z, 1.0f),
-                Normal = new Vector3(tri.n[index].X, tri.n[index].Y, tri.n[index].Z),
-                Texture = new Vector2(tri.t[index].u, tri.t[index].v)
+                v.X, v.Y, v.Z, 1.0f,
+                tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
+                tri.t[index].u, tri.t[index].v
             };
+            return result;
         }
 
         public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
@@ -124,11 +121,11 @@ namespace Mario64
             GL.Uniform1(textureLocation, texture.unit);
         }
 
-        public List<Vertex> Draw()
+        public List<float> Draw()
         {
-            meshVao.Bind();
+            Vao.Bind();
 
-            vertices = new List<Vertex>();
+            vertices = new List<float>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);
             Matrix4 rX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(Rotation.X));
@@ -146,16 +143,16 @@ namespace Mario64
                 {
                     if (tri.gotPointNormals)
                     {
-                        vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
                     }
                     else
                     {
                         Vector3 normal = tri.ComputeTriangleNormal();
-                        vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
                     }
                 }
             }

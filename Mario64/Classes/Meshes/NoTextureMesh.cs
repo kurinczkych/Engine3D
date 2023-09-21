@@ -18,15 +18,12 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Mario64
 {
-    public struct VertexNoTexture
-    {
-        public Vector4 Position;
-        public Color4 Color;
-    }
 
     public class NoTextureMesh : BaseMesh
     {
-        private List<VertexNoTexture> vertices = new List<VertexNoTexture>();
+        public static int floatCount = 8;
+
+        private List<float> vertices = new List<float>();
         private string? embeddedModelName;
 
         public Vector3 Position;
@@ -45,16 +42,16 @@ namespace Mario64
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
-        private NoTexVAO noTexVao;
-        private NoTexVBO noTexVbo;
+        private VAO Vao;
+        private VBO Vbo;
 
-        public NoTextureMesh(NoTexVAO vao, NoTexVBO vbo, int shaderProgramId, string embeddedModelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
+        public NoTextureMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedModelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.frustum = frustum;
             this.camera = camera;
 
-            noTexVao = vao;
-            noTexVbo = vbo;
+            Vao = vao;
+            Vbo = vbo;
 
             Position = Vector3.Zero;
             Rotation = Vector3.Zero;
@@ -92,22 +89,24 @@ namespace Mario64
             GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
             GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
         }
-        private VertexNoTexture ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
+        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
         {
             Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
 
-            return new VertexNoTexture()
+            List<float> result = new List<float>()
             {
-                Position = new Vector4(v.X, v.Y, v.Z, 1.0f),
-                Color = tri.c[index]
+                v.X, v.Y, v.Z, 1.0f,
+                tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A
             };
+
+            return result;
         }
 
-        public List<VertexNoTexture> Draw()
+        public List<float> Draw()
         {
-            noTexVao.Bind();
+            Vao.Bind();
 
-            vertices = new List<VertexNoTexture>();
+            vertices = new List<float>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);
             Matrix4 rX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(Rotation.X));
@@ -125,16 +124,16 @@ namespace Mario64
                 {
                     if (tri.gotPointNormals)
                     {
-                        vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
                     }
                     else
                     {
                         Vector3 normal = tri.ComputeTriangleNormal();
-                        vertices.Add(ConvertToNDC(tri, 0, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 1, ref transformMatrix));
-                        vertices.Add(ConvertToNDC(tri, 2, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
                     }
                 }
             }
