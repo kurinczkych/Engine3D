@@ -126,6 +126,8 @@ namespace Mario64
             }
 
             camera.position = Position;
+            camera.position.Y = 10;
+            camera.position.X += 5;
             Velocity.Xz *= 0.9f;
             ZeroSmallVelocity();
 
@@ -179,47 +181,136 @@ namespace Mario64
 
         public List<Line> GetBoundLines()
         {
-            Vector3 center = Position + new Vector3(0, characterHeight/2, 0);
+            Vector3 center = Position + new Vector3(0, -characterHeight/2, 0);
 
             float halfWidth = characterWidth / 2;
-            float halfHeight = characterHeight;
             float halfDepth = halfWidth;  // Assuming depth is same as width
 
-            Vector3[] corners = new Vector3[8];
-            corners[0] = new Vector3(-halfWidth, -halfHeight, -halfDepth);
-            corners[1] = new Vector3(halfWidth, -halfHeight, -halfDepth);
-            corners[2] = new Vector3(-halfWidth, halfHeight, -halfDepth);
-            corners[3] = new Vector3(halfWidth, halfHeight, -halfDepth);
-            corners[4] = new Vector3(-halfWidth, -halfHeight, halfDepth);
-            corners[5] = new Vector3(halfWidth, -halfHeight, halfDepth);
-            corners[6] = new Vector3(-halfWidth, halfHeight, halfDepth);
-            corners[7] = new Vector3(halfWidth, halfHeight, halfDepth);
+            Dictionary<string, Vector3> corners = new Dictionary<string, Vector3>
+            {
+                { "LBL", new Vector3(-halfWidth, 0, -halfDepth) },                 // LBL  Left - Bottom Left
+                { "LBR", new Vector3(halfWidth, 0, -halfDepth) },                  // LBR  Left - Bottom Right
+                { "LTL", new Vector3(-halfWidth, characterHeight, -halfDepth) },   // LTL  Left - Top Left
+                { "LTR", new Vector3(halfWidth, characterHeight, -halfDepth) },    // LTR  Left - Top Right
+                { "RBR", new Vector3(-halfWidth, 0, halfDepth) },                  // RBR  Right - Bottom Left
+                { "RBL", new Vector3(halfWidth, 0, halfDepth) },                   // RBL  Right - Bottom Right
+                { "RTR", new Vector3(-halfWidth, characterHeight, halfDepth) },    // RTR  Right - Top Left
+                { "RTL", new Vector3(halfWidth, characterHeight, halfDepth) }     // RTL  Right - Top Right
+            };
 
             Matrix4 rotY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(-camera.yaw));
-            for (int i = 0; i < corners.Length; i++)
+            foreach(string key in corners.Keys)
             {
-                corners[i] = center + Vector3.TransformPosition(corners[i], rotY);
+                corners[key] = center + Vector3.TransformPosition(corners[key], rotY);
             }
 
             List<Line> lines = new List<Line>
             {
-                new Line(corners[0], corners[1]),
-                new Line(corners[0], corners[2]),
-                new Line(corners[1], corners[3]),
-                new Line(corners[2], corners[3]),
+                //FRONT
+                new Line(corners["LBR"], corners["LTR"]),
+                new Line(corners["LBR"], corners["RBL"]),
+                new Line(corners["RTL"], corners["LTR"]),
+                new Line(corners["RTL"], corners["RBL"]),
 
-                new Line(corners[4], corners[5]),
-                new Line(corners[4], corners[6]),
-                new Line(corners[5], corners[7]),
-                new Line(corners[6], corners[7]),
+                //BACK
+                new Line(corners["LBL"], corners["LTL"]),
+                new Line(corners["LBL"], corners["RBR"]),
+                new Line(corners["RTR"], corners["LTL"]),
+                new Line(corners["RTR"], corners["RBR"]),
 
-                new Line(corners[0], corners[4]),
-                new Line(corners[1], corners[5]),
-                new Line(corners[2], corners[6]),
-                new Line(corners[3], corners[7]),
+                //LEFT
+                new Line(corners["LBL"], corners["LTL"]),
+                new Line(corners["LBL"], corners["LBR"]),
+                new Line(corners["LTR"], corners["LTL"]),
+                new Line(corners["LTR"], corners["LBR"]),
+
+                //LEFT
+                new Line(corners["RBL"], corners["RTL"]),
+                new Line(corners["RBL"], corners["RBR"]),
+                new Line(corners["RTR"], corners["RTL"]),
+                new Line(corners["RTR"], corners["RBR"])
             };
 
             return lines;
+        }
+
+        private List<Vector3> GetBoundRectangle(string side)
+        {
+            Vector3 center = Position + new Vector3(0, -characterHeight / 2, 0);
+
+            float halfWidth = characterWidth / 2;
+            float halfDepth = halfWidth;  // Assuming depth is same as width
+
+            Dictionary<string, Vector3> corners = new Dictionary<string, Vector3>
+            {
+                { "LBL", new Vector3(-halfWidth, 0, -halfDepth) },                 // LBL  Left - Bottom Left
+                { "LBR", new Vector3(halfWidth, 0, -halfDepth) },                  // LBR  Left - Bottom Right
+                { "LTL", new Vector3(-halfWidth, characterHeight, -halfDepth) },   // LTL  Left - Top Left
+                { "LTR", new Vector3(halfWidth, characterHeight, -halfDepth) },    // LTR  Left - Top Right
+                { "RBR", new Vector3(-halfWidth, 0, halfDepth) },                  // RBR  Right - Bottom Left
+                { "RBL", new Vector3(halfWidth, 0, halfDepth) },                   // RBL  Right - Bottom Right
+                { "RTR", new Vector3(-halfWidth, characterHeight, halfDepth) },    // RTR  Right - Top Left
+                { "RTL", new Vector3(halfWidth, characterHeight, halfDepth) }     // RTL  Right - Top Right
+            };
+
+            Matrix4 rotY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(-camera.yaw));
+            foreach (string key in corners.Keys)
+            {
+                corners[key] = center + Vector3.TransformPosition(corners[key], rotY);
+            }
+
+            List<Vector3> rectCorners = new List<Vector3>();
+
+            if (side == "left")
+            {
+                rectCorners = new List<Vector3>()
+                {
+                    corners["LTR"],corners["LBR"], corners["LBL"], corners["LTL"]
+                };
+            }
+            else if (side == "right")
+            {
+                rectCorners = new List<Vector3>()
+                {
+                    corners["RTR"],corners["RBR"], corners["RBL"], corners["RTL"]
+                };
+            }
+            else if (side == "front")
+            {
+                rectCorners = new List<Vector3>()
+                {
+                    corners["LTR"],corners["RTL"], corners["RBL"], corners["LBR"]
+                };
+            }
+            else if (side == "back")
+            {
+                rectCorners = new List<Vector3>()
+                {
+                    corners["LTL"],corners["RTR"], corners["RBR"], corners["LBL"]
+                };
+            }
+
+            return rectCorners;
+        }
+
+        public List<triangle> GetTrianglesColliding(ref Octree octree)
+        {
+            List<triangle> tris = octree.GetNearTriangles(Position);
+
+            List<triangle> collidedTris = new List<triangle>();
+            for (int i = tris.Count-1; i >= 0; i--)
+            {
+                if (tris[i].IsRectInTriangle(GetBoundRectangle("front")))
+                    collidedTris.Add(tris[i]);
+                else if (tris[i].IsRectInTriangle(GetBoundRectangle("back")))
+                    collidedTris.Add(tris[i]);
+                else if (tris[i].IsRectInTriangle(GetBoundRectangle("left")))
+                    collidedTris.Add(tris[i]);
+                else if (tris[i].IsRectInTriangle(GetBoundRectangle("right")))
+                    collidedTris.Add(tris[i]);
+            }
+
+            return collidedTris;
         }
 
         private void ZeroSmallVelocity()

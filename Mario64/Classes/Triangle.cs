@@ -256,5 +256,105 @@ namespace Mario64
 
             return s >= 0 && t >= 0 && (s + t) <= 1;
         }
+
+        public bool IsLineInTriangle(Line line)
+        {
+            Vector3 normal = Vector3.Cross(p[1] - p[0], p[2] - p[0]);
+
+            // Find intersection of line and triangle's plane
+            float dotNumerator = Vector3.Dot(p[0] - line.Start, normal);
+            float dotDenominator = Vector3.Dot(line.End - line.Start, normal);
+
+            // Check if line and plane are parallel
+            if (Math.Abs(dotDenominator) < 0.000001f)
+            {
+                return false;  // They are parallel so they don't intersect!
+            }
+
+            float t = dotNumerator / dotDenominator;
+            Vector3 intersectionPoint = line.Start + t * (line.End - line.Start);
+
+            // Check if the intersection point lies within the triangle
+            return PointInTriangle(intersectionPoint, p[0], p[1], p[2]);
+        }
+
+        private bool PointInTriangle(Vector3 pt, Vector3 v1, Vector3 v2, Vector3 v3)
+        {
+            Vector3 d1 = pt - v1;
+            Vector3 d2 = pt - v2;
+            Vector3 d3 = pt - v3;
+
+            float area = Vector3.Dot(Vector3.Cross(v1 - v2, v1 - v3).Normalized(), Vector3.Cross(v2 - v3, v2 - v1).Normalized());
+            float area1 = Vector3.Dot(Vector3.Cross(d1, d2).Normalized(), Vector3.Cross(d1, d3).Normalized());
+
+            return (Math.Abs(area - area1) < 0.000001f);
+        }
+
+        public bool IsRectInTriangle(List<Vector3> rectangleVertices)
+        {
+            List<Vector3> potentialSeparatingAxes = GetPotentialSeparatingAxes(rectangleVertices);
+
+            foreach (Vector3 axis in potentialSeparatingAxes)
+            {
+                if (!IsOverlapping(Projection(rectangleVertices, axis), Projection(p.ToList(), axis)))
+                    return false; // Separating axis found
+            }
+
+            return true;  // All projections overlap
+        }
+
+        private List<Vector3> GetPotentialSeparatingAxes(List<Vector3> rectangleVertices)
+        {
+            List<Vector3> axes = new List<Vector3>();
+
+            // Triangle normal
+            Vector3 triangleNormal = Vector3.Cross(p[1] - p[0], p[2] - p[0]);
+            axes.Add(triangleNormal.Normalized());
+
+            // Rectangle normals (parallelogram)
+            Vector3 edge1 = rectangleVertices[1] - rectangleVertices[0];
+            Vector3 edge2 = rectangleVertices[2] - rectangleVertices[0];
+            axes.Add(Vector3.Cross(edge1, edge2).Normalized());
+
+            // Cross products of edges
+            Vector3 triangleEdge1 = p[1] - p[0];
+            Vector3 triangleEdge2 = p[2] - p[1];
+            Vector3 triangleEdge3 = p[0] - p[2];
+            Vector3[] triangleEdges = { triangleEdge1, triangleEdge2, triangleEdge3 };
+
+            for (int i = 0; i < triangleEdges.Length; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    Vector3 rectangleEdge = rectangleVertices[(j + 1) % 4] - rectangleVertices[j];
+                    Vector3 axis = Vector3.Cross(triangleEdges[i], rectangleEdge).Normalized();
+
+                    if (axis.LengthSquared > 0.0001f)  // Avoid nearly-zero vectors
+                        axes.Add(axis);
+                }
+            }
+
+            return axes;
+        }
+
+        private (float, float) Projection(List<Vector3> vertices, Vector3 axis)
+        {
+            float min = float.MaxValue;
+            float max = float.MinValue;
+
+            foreach (Vector3 vertex in vertices)
+            {
+                float dot = Vector3.Dot(vertex, axis);
+                if (dot < min) min = dot;
+                if (dot > max) max = dot;
+            }
+
+            return (min, max);
+        }
+
+        private bool IsOverlapping((float, float) a, (float, float) b)
+        {
+            return a.Item1 <= b.Item2 && b.Item1 <= a.Item2;
+        }
     }
 }
