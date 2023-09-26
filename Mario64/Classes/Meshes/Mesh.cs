@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
-using static OpenTK.Graphics.OpenGL.GL;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -22,6 +21,9 @@ namespace Mario64
     public class Mesh : BaseMesh
     {
         public static int floatCount = 9;
+
+        public bool drawNormals = true;
+        public WireframeMesh normalMesh;
 
         public Texture texture;
 
@@ -79,6 +81,19 @@ namespace Mario64
             ComputeVertexNormals(ref tris);
 
             SendUniforms();
+        }
+
+        public void CalculateNormalWireframe(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
+        {
+            List<Line> normalLines = new List<Line>();
+            foreach (triangle tri in tris)
+            {
+                Vector3 n1 = tri.GetMiddle();
+                Vector3 n2 = (tri.ComputeTriangleNormal() * 2.5f) + tri.GetMiddle();
+                normalLines.Add(new Line(n1, n2));
+            }
+            normalMesh = new WireframeMesh(vao, vbo, shaderProgramId, ref frustum, ref camera, Color4.Red);
+            normalMesh.lines = normalLines;
         }
 
         private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)

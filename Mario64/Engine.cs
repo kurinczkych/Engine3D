@@ -205,14 +205,14 @@ namespace Mario64
             }
 
             //-------------------------------TestMesh---------------------------------
-            testMeshes[0].tris = character.GetTrianglesColliding(ref meshes[0].Octree);
-            foreach (TestMesh mesh in testMeshes)
-            {
-                mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                List<float> vertices = mesh.Draw();
-                testVbo.Buffer(vertices);
-                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-            }
+            //testMeshes[0].tris = character.GetTrianglesColliding(ref meshes[0].Octree);
+            //foreach (TestMesh mesh in testMeshes)
+            //{
+            //    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //    List<float> vertices = mesh.Draw();
+            //    testVbo.Buffer(vertices);
+            //    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            //}
             //------------------------------------------------------------------------
 
             noTextureShaderProgram.Use();
@@ -231,6 +231,17 @@ namespace Mario64
                 List<float> vertices = mesh.Draw();
                 wireVbo.Buffer(vertices);
                 GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            }
+            foreach (Mesh mesh in meshes)
+            {
+                if(mesh.drawNormals)
+                {
+                    WireframeMesh m = mesh.normalMesh;
+                    m.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+                    List<float> vertices = m.Draw();
+                    wireVbo.Buffer(vertices);
+                    GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+                }
             }
 
             // Text rendering
@@ -344,7 +355,8 @@ namespace Mario64
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
             meshes.Add(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 6, windowSize, ref frustum, ref camera, ref textureCount));
-            testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
+            meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
+            //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
 
 

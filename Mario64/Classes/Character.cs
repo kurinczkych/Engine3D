@@ -31,7 +31,7 @@ namespace Mario64
     public class Character
     {
         private float sensitivity = 180f;
-        private float speed = 3f;
+        private float speed = 2f;
         //private float gravity = 0.7f;
         public bool applyGravity = true;
         private float gravity = 120;
@@ -140,10 +140,11 @@ namespace Mario64
             // 3. Update Position
             //Position += Velocity;
             Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
+            Sphere s = new Sphere(Position, characterHeight);
 
             List<Vector3> slideVelocities = new List<Vector3>();
 
-            int ccdMax = 5;
+            int ccdMax = 10;
             Vector3 step = Velocity / ccdMax;
 
             applyGravity = true;
@@ -154,15 +155,16 @@ namespace Mario64
 
             for (int i = 0; i < ccdMax; i++)
             {
-
-
                 Position += step;
                 foreach (triangle tri in octree.GetNearTriangles(Position))
                 {
                     Vector3 penetration_normal = new Vector3();
                     float penetration_depth = 0.0f;
-                    if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
+                    if (!tri.IsSphereInTriangle(s, out penetration_normal, out penetration_depth))
                         continue;
+
+                    //if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
+                    //    continue;
 
                     if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
                         continue;
@@ -181,12 +183,10 @@ namespace Mario64
                     Vector3 desired_motion = velocity_normalized - undesired_motion;
 
                     // Apply dynamic friction
-                    float dynamicFrictionCoefficient = 0.1f;
-                    desired_motion -= desired_motion * dynamicFrictionCoefficient;
+                    //float dynamicFrictionCoefficient = 0.1f;
+                    //desired_motion -= desired_motion * dynamicFrictionCoefficient;
 
-                    Velocity = desired_motion * velocity_length;
-
-                    intersection = true;
+                    //Velocity = desired_motion * velocity_length;
 
                     if (Vector3.Dot(penetration_normal, new Vector3(0, 1, 0)) > 0.3f)
                     {
@@ -211,8 +211,8 @@ namespace Mario64
                     break;
             }
 
-            Velocity.X *= 0.99f;
-            Velocity.Z *= 0.99f;
+            Velocity.X *= 0.9f;
+            Velocity.Z *= 0.9f;
             //if (slideVelocities.Count != 0)
             //{
             //    Vector3 sv = new Vector3();
@@ -295,6 +295,9 @@ namespace Mario64
         {
             Capsule c = new Capsule(characterWidth, characterHeight*2, Position - new Vector3(0, characterHeight, 0));
             List<Line> lines = c.GetWireframe(10);
+
+            Sphere s = new Sphere(Position, characterHeight);
+            lines = s.GetWireframe(20);
 
             return lines;
         }
