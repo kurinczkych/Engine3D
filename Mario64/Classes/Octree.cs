@@ -24,12 +24,13 @@ namespace Mario64
             var mid = Bounds.Min + half;
 
             // Define the bounds for the eight children ignoring Y component
-            BoundingBox[] childBounds = {
-        new BoundingBox(new Vector3(Bounds.Min.X, -float.MaxValue, Bounds.Min.Z), new Vector3(mid.X, float.MaxValue, mid.Z)),
-        new BoundingBox(new Vector3(mid.X, -float.MaxValue, Bounds.Min.Z), new Vector3(Bounds.Max.X, float.MaxValue, mid.Z)),
-        new BoundingBox(new Vector3(Bounds.Min.X, -float.MaxValue, mid.Z), new Vector3(mid.X, float.MaxValue, Bounds.Max.Z)),
-        new BoundingBox(new Vector3(mid.X, -float.MaxValue, mid.Z), new Vector3(Bounds.Max.X, float.MaxValue, Bounds.Max.Z))
-    };
+            BoundingBox[] childBounds = 
+            {
+                new BoundingBox(new Vector3(Bounds.Min.X, -float.MaxValue, Bounds.Min.Z), new Vector3(mid.X, float.MaxValue, mid.Z)),
+                new BoundingBox(new Vector3(mid.X, -float.MaxValue, Bounds.Min.Z), new Vector3(Bounds.Max.X, float.MaxValue, mid.Z)),
+                new BoundingBox(new Vector3(Bounds.Min.X, -float.MaxValue, mid.Z), new Vector3(mid.X, float.MaxValue, Bounds.Max.Z)),
+                new BoundingBox(new Vector3(mid.X, -float.MaxValue, mid.Z), new Vector3(Bounds.Max.X, float.MaxValue, Bounds.Max.Z))
+            };
 
             for (int i = 0; i < 4; i++)  // Note: Change from 8 to 4 since we now have 4 bounding boxes.
             {
@@ -111,6 +112,7 @@ namespace Mario64
         public OctreeNode Root { get; private set; }
 
         private int maxDepth;
+        private int searchRadius = 5;
 
         public Octree(List<triangle> triangles, BoundingBox bounds, int maxDepth)
         {
@@ -122,13 +124,16 @@ namespace Mario64
         public List<triangle> GetNearTriangles(Vector3 v)
         {
             List<triangle> result = new List<triangle>();
-            CollectNearTriangles(Root, v, result);
+            CollectNearTriangles(Root, v, searchRadius, result);
             return result;
         }
 
-        private void CollectNearTriangles(OctreeNode node, Vector3 v, List<triangle> result)
+        private void CollectNearTriangles(OctreeNode node, Vector3 v, float searchRadius, List<triangle> result)
         {
-            if (node == null || !node.Bounds.Contains(v)) return;
+            if (node == null) return;
+
+            // Check if the distance between the bounding box of the node and the point is less than the search radius
+            if (DistanceBetweenPointAndBox(v, node.Bounds) > searchRadius) return;
 
             // If it's a leaf node or has no children, collect its triangles
             if (node.Children == null || node.Children.Length == 0)
@@ -140,8 +145,17 @@ namespace Mario64
             // Otherwise, recursively check children
             foreach (var child in node.Children)
             {
-                CollectNearTriangles(child, v, result);
+                CollectNearTriangles(child, v, searchRadius, result);
             }
+        }
+
+        private float DistanceBetweenPointAndBox(Vector3 point, BoundingBox box)
+        {
+            float dx = Math.Max(box.Min.X - point.X, point.X - box.Max.X);
+            float dy = Math.Max(box.Min.Y - point.Y, point.Y - box.Max.Y);
+            float dz = Math.Max(box.Min.Z - point.Z, point.Z - box.Max.Z);
+
+            return Math.Max(dx, Math.Max(dy, dz));
         }
     }
 }

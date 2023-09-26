@@ -365,81 +365,73 @@ namespace Mario64
             penetration_normal = new Vector3();
             penetration_depth = 0.0f;
 
-            Vector3 N = Vector3.Normalize(Vector3.Cross(p[1] - p[0], p[2] - p[0])); // plane normal
-            float dist = Vector3.Dot(sphere.Position - p[0], N); // signed distance between sphere and plane
-            if (dist < -sphere.Radius || dist > sphere.Radius)
-                return false;
+            Vector3 normal = ComputeTriangleNormal();
+            float d = Vector3.Dot(normal, p[0]);
 
-            Vector3 point0 = sphere.Position - N * dist; // projected sphere center on triangle plane
+            // Project point onto triangle plane
+            float t = (Vector3.Dot(normal, sphere.Position) - d) / Vector3.Dot(normal, normal);
+            Vector3 projectedPoint = sphere.Position - t * normal;
 
-            // Now determine whether point0 is inside all triangle edges: 
-            Vector3 c0 = Vector3.Cross(point0 - p[0], p[1] - p[0]);
-            Vector3 c1 = Vector3.Cross(point0 - p[1], p[2] - p[1]);
-            Vector3 c2 = Vector3.Cross(point0 - p[2], p[0] - p[2]);
-            bool inside = Vector3.Dot(c0, N) <= 0 && Vector3.Dot(c1, N) <= 0 && Vector3.Dot(c2, N) <= 0;
-
-            float radiussq = sphere.Radius * sphere.Radius; // sphere radius squared
-
-            // Edge 1:
-            Vector3 point1 = Line.ClosestPointOnLineSegment(p[0], p[1], sphere.Position);
-            Vector3 v1 = sphere.Position - point1;
-            float distsq1 = Vector3.Dot(v1, v1);
-            bool intersects = distsq1 < radiussq;
-
-            // Edge 2:
-            Vector3 point2 = Line.ClosestPointOnLineSegment(p[1], p[2], sphere.Position);
-            Vector3 v2 = sphere.Position - point2;
-            float distsq2 = Vector3.Dot(v2, v2);
-            intersects |= distsq2 < radiussq;
-
-            // Edge 3:
-            Vector3 point3 = Line.ClosestPointOnLineSegment(p[2], p[0], sphere.Position);
-            Vector3 v3 = sphere.Position - point3;
-            float distsq3 = Vector3.Dot(v3, v3);
-            intersects |= distsq3 < radiussq;
-
-            if (inside || intersects)
+            float temp;
+            // If projected point is inside triangle, it's the closest point
+            if (IsPointInTriangle(projectedPoint, out temp))
             {
-                Vector3 best_point = point0;
-                Vector3 intersection_vec = new Vector3();
-
-                if (inside)
+                float l1 = (projectedPoint - sphere.Position).Length;
+                if (l1 < sphere.Radius)
                 {
-                    intersection_vec = sphere.Position - point0;
+                    penetration_normal = (sphere.Position - projectedPoint).Normalized();
+                    if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
+                        penetration_normal = Vector3.Zero;
+
+                    penetration_depth = sphere.Radius - l1;
+
+                    return true;
                 }
                 else
-                {
-                    Vector3 d = sphere.Position - point1;
-                    float best_distsq = Vector3.Dot(d, d);
-                    best_point = point1;
-                    intersection_vec = d;
-
-                    d = sphere.Position - point2;
-                    float distsq = Vector3.Dot(d, d);
-                    if (distsq < best_distsq)
-                    {
-                        distsq = best_distsq;
-                        best_point = point2;
-                        intersection_vec = d;
-                    }
-
-                    d = sphere.Position - point3;
-                    distsq = Vector3.Dot(d, d);
-                    if (distsq < best_distsq)
-                    {
-                        distsq = best_distsq;
-                        best_point = point3;
-                        intersection_vec = d;
-                    }
-                }
-
-                float len = intersection_vec.Length;  // vector3 length calculation: 
-                penetration_normal = intersection_vec / len;  // normalize
-                penetration_depth = sphere.Radius - len; // radius = sphere radius
-                return true; // intersection success
+                    return false;
             }
 
-            return false;
+            // Otherwise, find the closest point on each edge
+            Vector3 closestPoint = Vector3.Zero;
+            float minDistance = float.MaxValue;
+
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 segmentStart = p[i];
+                Vector3 segmentEnd = p[(i + 1) % 3];
+                Vector3 closestOnSegment = ClosestPointOnSegment(segmentStart, segmentEnd, sphere.Position);
+                float distance = (closestOnSegment - sphere.Position).LengthSquared;
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestPoint = closestOnSegment;
+                }
+            }
+
+            float l2 = (closestPoint - sphere.Position).Length;
+            if (l2 < sphere.Radius)
+            {
+                penetration_normal = (sphere.Position - closestPoint).Normalized();
+                if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
+                    penetration_normal = Vector3.Zero;
+
+                penetration_depth = sphere.Radius - l2;
+
+                return true;
+            }
+            else
+                return false;
+
+            //return closestPoint;
+        }
+
+        private Vector3 ClosestPointOnSegment(Vector3 a, Vector3 b, Vector3 point)
+        {
+            Vector3 ab = b - a;
+            float t = Vector3.Dot(point - a, ab) / Vector3.Dot(ab, ab);
+            t = Math.Clamp(t, 0f, 1f);
+            return a + t * ab;
         }
 
         public bool IsCapsuleInTriangle(Capsule capsule, out Vector3 penetration_normal, out float penetration_depth)

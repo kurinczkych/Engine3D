@@ -160,11 +160,9 @@ namespace Mario64
                 {
                     Vector3 penetration_normal = new Vector3();
                     float penetration_depth = 0.0f;
-                    if (!tri.IsSphereInTriangle(s, out penetration_normal, out penetration_depth))
-                        continue;
 
-                    //if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
-                    //    continue;
+                    if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
+                        continue;
 
                     if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
                         continue;
@@ -183,10 +181,10 @@ namespace Mario64
                     Vector3 desired_motion = velocity_normalized - undesired_motion;
 
                     // Apply dynamic friction
-                    //float dynamicFrictionCoefficient = 0.1f;
-                    //desired_motion -= desired_motion * dynamicFrictionCoefficient;
+                    float dynamicFrictionCoefficient = 0.1f;
+                    desired_motion -= desired_motion * dynamicFrictionCoefficient;
 
-                    //Velocity = desired_motion * velocity_length;
+                    Velocity = desired_motion * velocity_length;
 
                     if (Vector3.Dot(penetration_normal, new Vector3(0, 1, 0)) > 0.3f)
                     {
@@ -195,12 +193,12 @@ namespace Mario64
 
                         Velocity.Y *= 0.9f;
 
-                        // Apply static friction if character is on the ground and not intending to move much
-                        //float staticFrictionThreshold = 0.01f;
-                        //if (desired_motion.Length < staticFrictionThreshold)
-                        //{
-                        //    Velocity = Vector3.Zero;
-                        //}
+                        //Apply static friction if character is on the ground and not intending to move much
+                        float staticFrictionThreshold = 0.5f;
+                        if (desired_motion.Length < staticFrictionThreshold)
+                        {
+                            Velocity = Vector3.Zero;
+                        }
                     }
                 }
 
@@ -213,30 +211,11 @@ namespace Mario64
 
             Velocity.X *= 0.9f;
             Velocity.Z *= 0.9f;
-            //if (slideVelocities.Count != 0)
-            //{
-            //    Vector3 sv = new Vector3();
-            //    foreach (Vector3 v in slideVelocities)
-            //        sv += v;
-
-            //    Velocity = sv.Normalized();
-            //}
 
             if (float.IsNaN(Position.X) || float.IsNaN(Position.Y) || float.IsNaN(Position.Z))
                 ;
 
             ZeroSmallVelocity();
-            //// 4. Collision Detection / Ground Check
-            //if (Position.Y - characterHeight <= groundY)
-            //{
-            //    Position.Y = groundY + characterHeight;
-            //    Velocity.Y = 0;
-            //    isOnGround = true;
-            //}
-            //else
-            //{
-            //    isOnGround = false;
-            //}
 
             camera.position = Position;
             camera.position.Y += thirdY;
@@ -296,16 +275,11 @@ namespace Mario64
             Capsule c = new Capsule(characterWidth, characterHeight*2, Position - new Vector3(0, characterHeight, 0));
             List<Line> lines = c.GetWireframe(10);
 
-            Sphere s = new Sphere(Position, characterHeight);
-            lines = s.GetWireframe(20);
-
             return lines;
         }
 
         public List<triangle> GetTrianglesColliding(ref Octree octree)
         {
-            List<triangle> tris = octree.GetNearTriangles(Position);
-
             Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
             List<TriangleCollision> collidedTris = new List<TriangleCollision>();
 
