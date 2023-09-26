@@ -94,12 +94,12 @@ namespace Mario64
         {
             if(applyGravity)
                 Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
-
             if (Velocity.Y < terminalVelocity)
                 Velocity.Y = terminalVelocity;
 
+            List<triangle> trisNear = octree.GetNearTriangles(Position);
 
-            GetGround(ref octree);
+            GetGround(trisNear);
 
             if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
             {
@@ -138,13 +138,9 @@ namespace Mario64
             angleOfGround = groundTriangle.GetAngleToNormal(new Vector3(0, -1, 0));
 
             // 3. Update Position
-            //Position += Velocity;
             Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
-            Sphere s = new Sphere(Position, characterHeight);
 
-            List<Vector3> slideVelocities = new List<Vector3>();
-
-            int ccdMax = 10;
+            int ccdMax = 5;
             Vector3 step = Velocity / ccdMax;
 
             applyGravity = true;
@@ -156,7 +152,7 @@ namespace Mario64
             for (int i = 0; i < ccdMax; i++)
             {
                 Position += step;
-                foreach (triangle tri in octree.GetNearTriangles(Position))
+                foreach (triangle tri in trisNear)
                 {
                     Vector3 penetration_normal = new Vector3();
                     float penetration_depth = 0.0f;
@@ -209,6 +205,12 @@ namespace Mario64
                     break;
             }
 
+            if (distToGround <= characterHeight + 0.1)
+            {
+                isOnGround = true;
+                applyGravity = false;
+            }
+
             Velocity.X *= 0.9f;
             Velocity.Z *= 0.9f;
 
@@ -239,9 +241,8 @@ namespace Mario64
             camera.UpdateVectors();
         }
 
-        private void GetGround(ref Octree octree)
+        private void GetGround(List<triangle> tris)
         {
-            List<triangle> tris = octree.GetNearTriangles(Position);
             triangle closest = new triangle();
 
             Vector3 rayDir = new Vector3(0, -1, 0);

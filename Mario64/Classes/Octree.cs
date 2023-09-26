@@ -112,7 +112,7 @@ namespace Mario64
         public OctreeNode Root { get; private set; }
 
         private int maxDepth;
-        private int searchRadius = 5;
+        private int searchRadius = 3;
 
         public Octree(List<triangle> triangles, BoundingBox bounds, int maxDepth)
         {

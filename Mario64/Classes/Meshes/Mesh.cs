@@ -22,7 +22,7 @@ namespace Mario64
     {
         public static int floatCount = 9;
 
-        public bool drawNormals = true;
+        public bool drawNormals = false;
         public WireframeMesh normalMesh;
 
         public Texture texture;
