@@ -32,6 +32,7 @@ namespace Mario64
     {
         private float sensitivity = 180f;
         private float speed = 2f;
+        private float flySpeed = 10f;
         //private float gravity = 0.7f;
         public bool applyGravity = true;
         private float gravity = 120;
@@ -41,6 +42,8 @@ namespace Mario64
         private float characterWidth = 2f;
 
         private float thirdY = 10f;
+
+        private bool noClip = true;
 
         private triangle groundTriangle;
         public float angleOfGround;
@@ -92,18 +95,48 @@ namespace Mario64
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, ref Octree octree, FrameEventArgs args)
         {
-            if(applyGravity)
-                Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
-            if (Velocity.Y < terminalVelocity)
-                Velocity.Y = terminalVelocity;
-
-            List<triangle> trisNear = octree.GetNearTriangles(Position);
-
-            GetGround(trisNear);
-
-            if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
+            float speed_ = speed;
+            float flySpeed_ = flySpeed;
+            if (keyboardState.IsKeyDown(Keys.LeftShift))
             {
-                Velocity.Y += jumpForce;
+                speed_ *= 2;
+                flySpeed_ *= 2;
+            }
+
+            List<triangle> trisNear = new List<triangle>();
+            if (!noClip)
+            {
+                if (applyGravity)
+                    Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
+                if (Velocity.Y < terminalVelocity)
+                    Velocity.Y = terminalVelocity;
+
+                trisNear = octree.GetNearTriangles(Position);
+
+                GetGround(trisNear);
+            }
+
+
+            if (!noClip)
+            {
+                if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
+                {
+                    if (!noClip)
+                        Velocity.Y += jumpForce;
+                }
+            }
+            else
+            {
+                if (keyboardState.IsKeyDown(Keys.Space))
+                {
+                    Position.Y += flySpeed_ * 10 * (float)args.Time;
+                }
+            }
+
+            if (keyboardState.IsKeyDown(Keys.LeftControl))
+            {
+                if(noClip)
+                    Position.Y -= flySpeed_ * 10 * (float)args.Time;
             }
 
             if (keyboardState.IsKeyDown(Keys.Enter) || keyboardState.IsKeyDown(Keys.KeyPadEnter))
@@ -112,30 +145,40 @@ namespace Mario64
                 Velocity = Vector3.Zero;
             }
 
-            float speed_ = speed;
-            if (keyboardState.IsKeyDown(Keys.LeftShift))
-                speed_ *= 2;
 
             if (keyboardState.IsKeyDown(Keys.W))
             {
-                Velocity += (camera.frontClamped * speed_) * (float)args.Time;
+                if(!noClip)
+                    Velocity += (camera.frontClamped * speed_) * (float)args.Time;
+                else
+                    Velocity += (camera.frontClamped * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.S))
             {
-                Velocity -= (camera.frontClamped * speed_) * (float)args.Time;
+                if (!noClip)
+                    Velocity -= (camera.frontClamped * speed_) * (float)args.Time;
+                else
+                    Velocity -= (camera.frontClamped * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.A))
             {
-                Velocity -= (camera.right * speed_) * (float)args.Time;
+                if (!noClip)
+                    Velocity -= (camera.right * speed_) * (float)args.Time;
+                else
+                    Velocity -= (camera.right * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.D))
             {
-                Velocity += (camera.right * speed_) * (float)args.Time;
+                if (!noClip)
+                    Velocity += (camera.right * speed_) * (float)args.Time;
+                else
+                    Velocity += (camera.right * flySpeed_) * (float)args.Time;
             }
 
             thirdY -= mouseState.ScrollDelta.Y;
 
-            angleOfGround = groundTriangle.GetAngleToNormal(new Vector3(0, -1, 0));
+            if(!noClip)
+                angleOfGround = groundTriangle.GetAngleToNormal(new Vector3(0, -1, 0));
 
             // 3. Update Position
             Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
@@ -149,67 +192,73 @@ namespace Mario64
 
             Vector3 totalPenetration = Vector3.Zero;
 
-            for (int i = 0; i < ccdMax; i++)
+            if (!noClip)
             {
-                Position += step;
-                foreach (triangle tri in trisNear)
+                for (int i = 0; i < ccdMax; i++)
                 {
-                    Vector3 penetration_normal = new Vector3();
-                    float penetration_depth = 0.0f;
-
-                    if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
-                        continue;
-
-                    if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
-                        continue;
-
-                    intersection = true;
-
-                    // Remove penetration (penetration epsilon added to handle infinitely small penetration):
-                    totalPenetration += (penetration_normal * (penetration_depth + 0.0001f));
-
-                    // Modify player velocity to slide on contact surface:
-                    float velocity_length = Velocity.Length;
-                    Vector3 velocity_normalized = Vector3.Zero;
-                    if (Velocity != Vector3.Zero)
-                        velocity_normalized = Velocity.Normalized();
-                    Vector3 undesired_motion = penetration_normal * Vector3.Dot(velocity_normalized, penetration_normal);
-                    Vector3 desired_motion = velocity_normalized - undesired_motion;
-
-                    // Apply dynamic friction
-                    float dynamicFrictionCoefficient = 0.1f;
-                    desired_motion -= desired_motion * dynamicFrictionCoefficient;
-
-                    Velocity = desired_motion * velocity_length;
-
-                    if (Vector3.Dot(penetration_normal, new Vector3(0, 1, 0)) > 0.3f)
+                    Position += step;
+                    foreach (triangle tri in trisNear)
                     {
-                        isOnGround = true;
-                        applyGravity = false;
+                        Vector3 penetration_normal = new Vector3();
+                        float penetration_depth = 0.0f;
 
-                        Velocity.Y *= 0.9f;
+                        if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
+                            continue;
 
-                        //Apply static friction if character is on the ground and not intending to move much
-                        float staticFrictionThreshold = 0.5f;
-                        if (desired_motion.Length < staticFrictionThreshold)
+                        if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
+                            continue;
+
+                        intersection = true;
+
+                        // Remove penetration (penetration epsilon added to handle infinitely small penetration):
+                        totalPenetration += (penetration_normal * (penetration_depth + 0.0001f));
+
+                        // Modify player velocity to slide on contact surface:
+                        float velocity_length = Velocity.Length;
+                        Vector3 velocity_normalized = Vector3.Zero;
+                        if (Velocity != Vector3.Zero)
+                            velocity_normalized = Velocity.Normalized();
+                        Vector3 undesired_motion = penetration_normal * Vector3.Dot(velocity_normalized, penetration_normal);
+                        Vector3 desired_motion = velocity_normalized - undesired_motion;
+
+                        // Apply dynamic friction
+                        float dynamicFrictionCoefficient = 0.1f;
+                        desired_motion -= desired_motion * dynamicFrictionCoefficient;
+
+                        Velocity = desired_motion * velocity_length;
+
+                        if (Vector3.Dot(penetration_normal, new Vector3(0, 1, 0)) > 0.3f)
                         {
-                            Velocity = Vector3.Zero;
+                            isOnGround = true;
+                            applyGravity = false;
+
+                            Velocity.Y *= 0.9f;
+
+                            //Apply static friction if character is on the ground and not intending to move much
+                            float staticFrictionThreshold = 0.5f;
+                            if (desired_motion.Length < staticFrictionThreshold)
+                            {
+                                Velocity = Vector3.Zero;
+                            }
                         }
                     }
+
+                    Position += totalPenetration;
+
+
+                    if (intersection)
+                        break;
                 }
 
-                Position += totalPenetration;
+                if (distToGround <= characterHeight + 0.1)
+                {
+                    isOnGround = true;
+                    applyGravity = false;
+                }
 
-
-                if (intersection)
-                    break;
             }
-
-            if (distToGround <= characterHeight + 0.1)
-            {
-                isOnGround = true;
-                applyGravity = false;
-            }
+            else
+                Position += Velocity;
 
             Velocity.X *= 0.9f;
             Velocity.Z *= 0.9f;
