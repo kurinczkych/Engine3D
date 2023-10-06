@@ -1,6 +1,5 @@
 ﻿using MagicPhysX;
 using static MagicPhysX.NativeMethods;
-using MagicPhysX.Toolkit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,7 +48,8 @@ namespace Mario64
                     }
 
                     var sceneDesc = PxSceneDesc_new(&tolerancesScale);
-                    sceneDesc.gravity = new PxVec3 { x = 0.0f, y = -9.81f, z = 0.0f };
+                    //sceneDesc.gravity = new PxVec3 { x = 0.0f, y = -9.81f, z = 0.0f };
+                    sceneDesc.gravity = new PxVec3 { x = 0.0f, y = -20f, z = 0.0f };
 
                     dispatcher = phys_PxDefaultCpuDispatcherCreate(1, null, PxDefaultCpuDispatcherWaitForWorkMode.WaitForWork, 0);
                     sceneDesc.cpuDispatcher = (PxCpuDispatcher*)dispatcher;

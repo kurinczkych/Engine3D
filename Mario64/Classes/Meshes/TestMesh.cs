@@ -27,13 +27,13 @@ namespace Mario64
         private string? embeddedModelName;
 
         public Vector3 Position;
-        public Vector3 Rotation;
+        public Quaternion Rotation;
         public Vector3 Scale;
         private bool IsTransformed
         {
             get
             {
-                return !(Position == Vector3.Zero && Rotation == Vector3.Zero && Scale == Vector3.One);
+                return !(Position == Vector3.Zero && Rotation == Quaternion.Identity && Scale == Vector3.One);
             }
         }
 
@@ -59,7 +59,7 @@ namespace Mario64
             this.camera = camera;
 
             Position = Vector3.Zero;
-            Rotation = Vector3.Zero;
+            Rotation = Quaternion.Identity;
             Scale = Vector3.One;
 
             ComputeVertexNormals(ref tris);
@@ -115,14 +115,12 @@ namespace Mario64
             vertices = new List<float>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);
-            Matrix4 rX = Matrix4.CreateRotationX(MathHelper.DegreesToRadians(Rotation.X));
-            Matrix4 rY = Matrix4.CreateRotationY(MathHelper.DegreesToRadians(Rotation.Y));
-            Matrix4 rZ = Matrix4.CreateRotationZ(MathHelper.DegreesToRadians(Rotation.Z));
+            Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
             Matrix4 t = Matrix4.CreateTranslation(Position);
 
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
-                transformMatrix = s * rX * rY * rZ * t;
+                transformMatrix = s * r * t;
 
             foreach (triangle tri in tris)
             {

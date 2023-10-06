@@ -51,7 +51,25 @@ namespace Mario64
         {
             Position = pos;
             Scale = scale;
-            Rotation = rot;
+
+            Vector3 radRot = new Vector3(MathHelper.DegreesToRadians(rot.X),
+                                         MathHelper.DegreesToRadians(rot.Y),
+                                         MathHelper.DegreesToRadians(rot.Z));
+
+            Quaternion rotationX = Quaternion.FromAxisAngle(Vector3.UnitX, radRot.X);
+            Quaternion rotationY = Quaternion.FromAxisAngle(Vector3.UnitY, radRot.Y);
+            Quaternion rotationZ = Quaternion.FromAxisAngle(Vector3.UnitZ, radRot.Z);
+
+            // Combine the rotations in a roll-pitch - yaw(x - y - z) order.
+            //yaw-pitch-roll
+
+            Rotation = rotationZ * rotationY * rotationX;
+            Rotation.Normalize();
+
+            //TODO: here rot (90,0,0) gets translated to quat and to euler back and becames (0,0,0)
+            // this is not good
+            Vector3 a = new Vector3();
+            Rotation.ToEulerAngles(out a);
         }
 
         public void CollisionResponse()
@@ -59,17 +77,14 @@ namespace Mario64
             if (cubeDynamicCollider != null)
             {
                 PxTransform transform = PxRigidActor_getGlobalPose((PxRigidActor*)cubeDynamicCollider);
-                PxQuat quat = transform.q;
 
                 // Centered origin to corner origin
                 Position.X = transform.p.x - (Scale.X / 2f);
                 Position.Y = transform.p.y - (Scale.Y / 2f);
                 Position.Z = transform.p.z - (Scale.Z / 2f);
 
-                Vector3 rot = QuatHelper.ToRotation(QuatHelper.ToQuaternion(quat));
-                Rotation.X = rot.X;
-                Rotation.Y = rot.Y;
-                Rotation.Z = rot.Z;
+                Rotation = QuatHelper.PxToOpenTk(transform.q);
+                Rotation.Normalize();
             }
         }
 
@@ -77,7 +92,7 @@ namespace Mario64
         {
             var cubeGeo = PxBoxGeometry_new(Scale.X / 2f, Scale.Y / 2f , Scale.Z / 2f);
             PxVec3 vec3 = new PxVec3 { x = Center.X, y = Center.Y, z = Center.Z };
-            PxQuat quat = QuatHelper.ToQuaternion(Rotation).ToPxQuat();
+            PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
             var transform = PxTransform_new_5(&vec3, &quat);
             var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
             var material = physx.physics->CreateMaterialMut(0.5f, 0.5f, 0.1f);

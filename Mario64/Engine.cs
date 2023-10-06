@@ -137,6 +137,7 @@ namespace Mario64
         private Vector2 windowSize;
         private int frameCount;
         private double totalTime;
+        private int temp = -1;
 
         // Engine variables
         private List<Mesh> meshes;
@@ -287,6 +288,15 @@ namespace Mario64
 
             character.UpdatePosition(KeyboardState, MouseState, ref meshes[0].Octree, args);
 
+            //if(temp != Math.Round(totalTime) || temp == -1)
+            //{
+            //    meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount));
+            //    (meshes.Last() as Cube).Init(new Vector3(rnd.Next(-10,10) + (-25) + 25 - (7.5f / 2f), 50, rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
+            //    (meshes.Last() as Cube).AddCubeCollider(false, ref physx);
+            //    dynamicCubes.Add(meshes.Last() as Cube);
+            //    temp += 1;
+            //}
+
             if (totalTime > 0)
             {
                 physx.Simulate((float)args.Time);
@@ -387,17 +397,17 @@ namespace Mario64
             (meshes.Last() as Cube).AddCubeCollider(true, ref physx);
 
             meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            (meshes.Last() as Cube).Init(new Vector3((-25) + 25-(7.5f/2f),30,(-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
+            (meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f), 30, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(90, 0, 0));
             (meshes.Last() as Cube).AddCubeCollider(false, ref physx);
             dynamicCubes.Add(meshes.Last() as Cube);
 
             //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f/2f)-5,40, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
+            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f) - 5, 40, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
             //(meshes.Last() as Cube).AddCubeCollider(false, ref physx);
             //dynamicCubes.Add(meshes.Last() as Cube);
 
             //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f/2f)+10,50, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
+            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f) + 10, 50, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
             //(meshes.Last() as Cube).AddCubeCollider(false, ref physx);
             //dynamicCubes.Add(meshes.Last() as Cube);
 
