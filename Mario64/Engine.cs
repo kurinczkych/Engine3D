@@ -355,7 +355,7 @@ namespace Mario64
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount));
+            meshes.Add(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount));
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
