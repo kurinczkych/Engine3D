@@ -19,6 +19,7 @@ using System.ComponentModel.Design;
 using static System.Net.WebRequestMethods;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
+using Microsoft.VisualBasic.FileIO;
 
 #pragma warning disable CS0649
 
@@ -148,6 +149,9 @@ namespace Mario64
         private Frustum frustum;
         private List<PointLight> pointLights;
         private TextGenerator textGenerator;
+        private Physx physx;
+
+        private List<Cube> dynamicCubes = new List<Cube>();
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
@@ -176,8 +180,8 @@ namespace Mario64
 
             if (frameCount > 1000)
             {
-                frameCount = 0;
-                totalTime = 0;
+                //frameCount = 0;
+                //totalTime = 0;
             }
 
             return fps;
@@ -282,6 +286,15 @@ namespace Mario64
             base.OnUpdateFrame(args);
 
             character.UpdatePosition(KeyboardState, MouseState, ref meshes[0].Octree, args);
+
+            if (totalTime > 0)
+            {
+                physx.Simulate((float)args.Time);
+                foreach (Cube c in dynamicCubes)
+                {
+                    c.CollisionResponse();
+                }
+            }
             //camera.UpdatePositionToGround(meshes[0].Octree.GetNearTriangles(camera.position));
         }
 
@@ -331,14 +344,24 @@ namespace Mario64
             wireVao.LinkToVAO(0, 4, 0, wireVbo);
             wireVao.LinkToVAO(1, 4, 4, wireVbo);
 
-            // create the shader program
+            // Create the shader program
             shaderProgram = new Shader("Default.vert", "Default.frag");
             posTexShader = new Shader("postex.vert", "postex.frag");
             noTextureShaderProgram = new Shader("noTexture.vert", "noTexture.frag");
 
+            // Create Physx context
+            physx = new Physx(true);
+
             //Camera
             Camera camera = new Camera(windowSize);
             camera.UpdateVectors();
+
+            //TEMP---------------------------------------
+            camera.position.X = -6.97959471f;
+            camera.position.Z = -7.161373f;
+            camera.yaw = 45.73648f;
+            camera.pitch = -18.75002f;
+            //-------------------------------------------
 
             character = new Character(new Vector3(0, 10, 0), camera);
             frustum = character.camera.GetFrustum();
@@ -355,9 +378,28 @@ namespace Mario64
             //meshCube.OnlyCube();
             //meshCube.OnlyTriangle();
             //meshCube.ProcessObj("spiro.obj");
-            meshes.Add(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount));
+            //meshes.Add(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount));
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
+
+            meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
+            (meshes.Last() as Cube).Init(new Vector3(-25,0,-25), new Vector3(50, 1, 50), new Vector3());
+            (meshes.Last() as Cube).AddCubeCollider(true, ref physx);
+
+            meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
+            (meshes.Last() as Cube).Init(new Vector3((-25) + 25-(7.5f/2f),30,(-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
+            (meshes.Last() as Cube).AddCubeCollider(false, ref physx);
+            dynamicCubes.Add(meshes.Last() as Cube);
+
+            //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
+            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f/2f)-5,40, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
+            //(meshes.Last() as Cube).AddCubeCollider(false, ref physx);
+            //dynamicCubes.Add(meshes.Last() as Cube);
+
+            //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
+            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f/2f)+10,50, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
+            //(meshes.Last() as Cube).AddCubeCollider(false, ref physx);
+            //dynamicCubes.Add(meshes.Last() as Cube);
 
             posTexShader.Use();
 

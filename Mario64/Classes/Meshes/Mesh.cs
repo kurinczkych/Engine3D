@@ -18,6 +18,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Mario64
 {
+
     public class Mesh : BaseMesh
     {
         public static int floatCount = 9;
@@ -81,6 +82,23 @@ namespace Mario64
             ComputeVertexNormals(ref tris);
 
             SendUniforms();
+        }
+
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        {
+            texture = new Texture(textureCount, embeddedTextureName);
+            textureCount++;
+
+            Vao = vao;
+            Vbo = vbo;
+
+            this.windowSize = windowSize;
+            this.frustum = frustum;
+            this.camera = camera;
+
+            Position = Vector3.Zero;
+            Rotation = Vector3.Zero;
+            Scale = Vector3.One;
         }
 
         public void CalculateNormalWireframe(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
@@ -158,13 +176,14 @@ namespace Mario64
                 {
                     if (tri.gotPointNormals)
                     {
+                        tri.ComputeTriangleNormal(ref transformMatrix);
                         vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
                         vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
                         vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
                     }
                     else
                     {
-                        Vector3 normal = tri.ComputeTriangleNormal();
+                        tri.ComputeTriangleNormal(ref transformMatrix);
                         vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
                         vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
                         vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
@@ -338,25 +357,6 @@ namespace Mario64
                         break;
                 }
             }
-        }
-
-        public void OnlyCube()
-        {
-            tris = new List<triangle>
-                {
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(0.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(0.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) })
-                };
         }
 
         public void OnlyTriangle()

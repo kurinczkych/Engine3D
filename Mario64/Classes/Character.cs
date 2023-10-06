@@ -270,8 +270,8 @@ namespace Mario64
 
             camera.position = Position;
             camera.position.Y += thirdY;
-            camera.position.X -= (float)Math.Cos(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;
-            camera.position.Z -= (float)Math.Sin(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;
+            camera.position.X -= (float)Math.Cos(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-6.97959471
+            camera.position.Z -= (float)Math.Sin(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-7.161373
 
             if (firstMove)
             {
@@ -284,8 +284,8 @@ namespace Mario64
                 float deltaY = mouseState.Y - lastPos.Y;
                 lastPos = new Vector2(mouseState.X, mouseState.Y);
 
-                camera.yaw += deltaX * sensitivity * (float)args.Time;
-                camera.pitch -= deltaY * sensitivity * (float)args.Time;
+                camera.yaw += deltaX * sensitivity * (float)args.Time;//45.73648
+                camera.pitch -= deltaY * sensitivity * (float)args.Time;//-18.75002
             }
             camera.UpdateVectors();
         }

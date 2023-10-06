@@ -5,6 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -93,6 +94,7 @@
 
   <ItemGroup>
     <PackageReference Include="FontStashSharp" Version="1.2.8" />
+    <PackageReference Include="MagicPhysX" Version="1.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OpenTK" Version="4.8.0" />
     <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
@@ -177,6 +179,16 @@
     <EmbeddedResource Include="Textures\High.png" />
     <EmbeddedResource Include="Textures\High_test.png" />
     <EmbeddedResource Include="Textures\red.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Classes\Colliders\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="runtimes\win-x64\native\libmagicphysx.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -183,6 +183,23 @@ namespace Mario64
             return normal;
         }
 
+        public void ComputeTriangleNormal(ref Matrix4 transformMatrix)
+        {
+            Vector3 p0 = Vector3.TransformPosition(p[0], transformMatrix);
+            Vector3 p1 = Vector3.TransformPosition(p[1], transformMatrix);
+            Vector3 p2 = Vector3.TransformPosition(p[2], transformMatrix);
+
+            Vector3 normal, line1, line2;
+            line1 = p1 - p0;
+            line2 = p2 - p0;
+
+            normal = Vector3.Cross(line1, line2);
+            normal.Normalize();
+            n[0] = normal;
+            n[1] = normal;
+            n[2] = normal;
+        }
+
         public float GetAngleToNormal(Vector3 dir)
         {
             Vector3 n = ComputeTriangleNormal();
