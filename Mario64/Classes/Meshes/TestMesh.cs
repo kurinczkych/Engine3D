@@ -117,10 +117,14 @@ namespace Mario64
             Matrix4 s = Matrix4.CreateScale(Scale);
             Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
             Matrix4 t = Matrix4.CreateTranslation(Position);
+            Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale / 2f);
+            Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale / 2f);
 
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
-                transformMatrix = s * r * t;
+            {
+                transformMatrix = s * offsetTo * r * offsetFrom * t;
+            }
 
             foreach (triangle tri in tris)
             {

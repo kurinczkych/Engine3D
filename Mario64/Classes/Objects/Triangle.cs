@@ -46,6 +46,20 @@ namespace Mario64
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
         }
 
+        public triangle(Vector3 p1, Vector3 p2, Vector3 p3)
+        {
+            gotPointNormals = false;
+            p = new Vector3[] { p1, p2, p3 };
+            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
+            c = new Color4[p.Length];
+            for (int c_ = 0; c_ < p.Length; c_++)
+            {
+                c[c_] = Color4.White;
+            }
+
+            t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+        }
+
         public triangle(Vector3[] p, Vec2d[] t)
         {
             gotPointNormals = false;

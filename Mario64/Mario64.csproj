@@ -64,10 +64,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Classes\Colliders\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="runtimes\win-x64\native\libmagicphysx.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

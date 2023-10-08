@@ -101,6 +101,35 @@ namespace Mario64
             Scale = Vector3.One;
         }
 
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        {
+            texture = new Texture(textureCount, embeddedTextureName);
+            textureCount++;
+
+            Vao = vao;
+            Vbo = vbo;
+
+            this.windowSize = windowSize;
+            this.frustum = frustum;
+            this.camera = camera;
+
+            Position = Vector3.Zero;
+            Rotation = Quaternion.Identity;
+            Scale = Vector3.One;
+
+            this.tris = new List<triangle>(tris);
+
+            if (ocTreeDepth != -1)
+            {
+                CalculateBoundingBox();
+                Octree = new Octree(new List<triangle>(tris), BoundingBox, ocTreeDepth);
+            }
+
+            ComputeVertexNormals(ref tris);
+
+            SendUniforms();
+        }
+
         public void CalculateNormalWireframe(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
         {
             List<Line> normalLines = new List<Line>();
@@ -162,13 +191,20 @@ namespace Mario64
 
             Matrix4 s = Matrix4.CreateScale(Scale);
             Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
-            Vector3 a = new Vector3();
-            Rotation.ToEulerAngles(out a);
             Matrix4 t = Matrix4.CreateTranslation(Position);
+            Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale/2f);
+            Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale/2f);
 
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
-                transformMatrix = s * r * t;
+            {
+                if (this is SphereCollider)
+                    transformMatrix = s * r * t;
+                else if (this is CapsuleCollider)
+                    transformMatrix = r * t;
+                else
+                    transformMatrix = s * offsetTo * r * offsetFrom * t;
+            }
 
             foreach (triangle tri in tris)
             {

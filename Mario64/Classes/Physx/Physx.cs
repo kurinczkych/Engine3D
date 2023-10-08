@@ -29,6 +29,8 @@ namespace Mario64
 
                     pvd = phys_PxCreatePvd(foundation);
 
+                    phys_PxCookTriangleMesh();
+
                     var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
 
                     uint PX_PHYSICS_VERSION_MAJOR = 5;
@@ -49,7 +51,7 @@ namespace Mario64
 
                     var sceneDesc = PxSceneDesc_new(&tolerancesScale);
                     //sceneDesc.gravity = new PxVec3 { x = 0.0f, y = -9.81f, z = 0.0f };
-                    sceneDesc.gravity = new PxVec3 { x = 0.0f, y = -20f, z = 0.0f };
+                    sceneDesc.gravity = new PxVec3 { x = 0.0f, y = -30f, z = 0.0f };
 
                     dispatcher = phys_PxDefaultCpuDispatcherCreate(1, null, PxDefaultCpuDispatcherWaitForWorkMode.WaitForWork, 0);
                     sceneDesc.cpuDispatcher = (PxCpuDispatcher*)dispatcher;

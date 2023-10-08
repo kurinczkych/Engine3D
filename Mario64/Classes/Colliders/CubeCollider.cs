@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Mario64
 {
-    public unsafe class Cube : Mesh
+    public unsafe class CubeCollider : Mesh
     {
         PxRigidDynamic* cubeDynamicCollider;
         PxRigidStatic* cubeStaticCollider;
@@ -31,7 +31,7 @@ namespace Mario64
             }
         }
 
-        public Cube(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) :
+        public CubeCollider(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) :
             base(vao, vbo, shaderProgramId, embeddedTextureName, ocTreeDepth, windowSize, ref frustum, ref camera, ref textureCount)
         {
             OnlyCube();
@@ -60,16 +60,8 @@ namespace Mario64
             Quaternion rotationY = Quaternion.FromAxisAngle(Vector3.UnitY, radRot.Y);
             Quaternion rotationZ = Quaternion.FromAxisAngle(Vector3.UnitZ, radRot.Z);
 
-            // Combine the rotations in a roll-pitch - yaw(x - y - z) order.
-            //yaw-pitch-roll
-
-            Rotation = rotationZ * rotationY * rotationX;
+            Rotation = rotationX * rotationY * rotationZ;
             Rotation.Normalize();
-
-            //TODO: here rot (90,0,0) gets translated to quat and to euler back and becames (0,0,0)
-            // this is not good
-            Vector3 a = new Vector3();
-            Rotation.ToEulerAngles(out a);
         }
 
         public void CollisionResponse()
@@ -84,7 +76,6 @@ namespace Mario64
                 Position.Z = transform.p.z - (Scale.Z / 2f);
 
                 Rotation = QuatHelper.PxToOpenTk(transform.q);
-                Rotation.Normalize();
             }
         }
 
@@ -113,21 +104,41 @@ namespace Mario64
 
         private void OnlyCube()
         {
-            tris = new List<triangle>
-                {
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(0.0f, 0.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(0.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(0.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 1.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 1.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) }),
-                    new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(1.0f, 0.0f), new Vec2d(1.0f, 1.0f) })
-                };
+            float halfSize = 0.5f;
+
+            // Define cube vertices
+            Vector3 p1 = new Vector3(-halfSize, -halfSize, -halfSize);
+            Vector3 p2 = new Vector3(halfSize, -halfSize, -halfSize);
+            Vector3 p3 = new Vector3(halfSize, halfSize, -halfSize);
+            Vector3 p4 = new Vector3(-halfSize, halfSize, -halfSize);
+            Vector3 p5 = new Vector3(-halfSize, -halfSize, halfSize);
+            Vector3 p6 = new Vector3(halfSize, -halfSize, halfSize);
+            Vector3 p7 = new Vector3(halfSize, halfSize, halfSize);
+            Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
+
+            // Back face
+            tris.Add(new triangle(p1, p2, p3));
+            tris.Add(new triangle(p3, p4, p1));
+
+            // Front face
+            tris.Add(new triangle(p5, p6, p7));
+            tris.Add(new triangle(p7, p8, p5));
+
+            // Left face
+            tris.Add(new triangle(p1, p4, p8));
+            tris.Add(new triangle(p8, p5, p1));
+
+            // Right face
+            tris.Add(new triangle(p2, p3, p7));
+            tris.Add(new triangle(p7, p6, p2));
+
+            // Top face
+            tris.Add(new triangle(p4, p3, p7));
+            tris.Add(new triangle(p7, p8, p4));
+
+            // Bottom face
+            tris.Add(new triangle(p1, p2, p6));
+            tris.Add(new triangle(p6, p5, p1));
         }
     }
 }
