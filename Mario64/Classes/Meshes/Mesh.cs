@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
 using MagicPhysX;
+using System.Data;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -202,6 +203,20 @@ namespace Mario64
 
             vertices = new List<float>();
 
+            ObjectType type = parentObject.GetObjectType();
+            if (type == ObjectType.Sphere)
+            {
+                Scale = new Vector3(parentObject.Radius);
+            }
+            else if (type == ObjectType.Cube)
+            {
+                Scale = new Vector3(parentObject.Size);
+            }
+            else if (type == ObjectType.Capsule)
+            {
+                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
+            }
+
             Matrix4 s = Matrix4.CreateScale(Scale);
             Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
             Matrix4 t = Matrix4.CreateTranslation(Position);
@@ -211,12 +226,11 @@ namespace Mario64
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
             {
-                if (type == ObjectType.Sphere)
-                    transformMatrix = s * r * t;
-                else if (type == ObjectType.Capsule)
-                    transformMatrix = r * t;
-                else
-                    transformMatrix = s * offsetTo * r * offsetFrom * t;
+                transformMatrix = s * offsetTo * r * offsetFrom * t;
+                //if (type == ObjectType.Sphere || type == ObjectType.Capsule)
+                //    transformMatrix = s * r * t;
+                //else
+                //    transformMatrix = s * offsetTo * r * offsetFrom * t;
             }
 
             foreach (triangle tri in tris)
@@ -253,6 +267,20 @@ namespace Mario64
             verts = new PxVec3[vertCount];
             indices = new int[vertCount];
 
+            ObjectType type = parentObject.GetObjectType();
+            if (type == ObjectType.Sphere)
+            {
+                Scale = new Vector3(parentObject.Radius);
+            }
+            else if (type == ObjectType.Cube)
+            {
+                Scale = new Vector3(parentObject.Size);
+            }
+            else if (type == ObjectType.Capsule)
+            {
+                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
+            }
+
             Matrix4 s = Matrix4.CreateScale(Scale);
             Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
             Matrix4 t = Matrix4.CreateTranslation(Position);
@@ -262,12 +290,11 @@ namespace Mario64
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
             {
-                if (type == ObjectType.Sphere)
-                    transformMatrix = s * r * t;
-                else if (type == ObjectType.Capsule)
-                    transformMatrix = r * t;
-                else
-                    transformMatrix = s * offsetTo * r * offsetFrom * t;
+                transformMatrix = s * offsetTo * r * offsetFrom * t;
+                //if (type == ObjectType.Sphere || type == ObjectType.Capsule)
+                //    transformMatrix = s * r * t;
+                //else
+                //    transformMatrix = s * offsetTo * r * offsetFrom * t;
             }
 
             foreach (triangle tri in tris)

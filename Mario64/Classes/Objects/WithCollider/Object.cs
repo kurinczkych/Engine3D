@@ -54,7 +54,7 @@ namespace Mario64
             DynamicFriction = 0.5f;
             Restitution = 0.1f;
 
-            mesh.type = type;
+            mesh.parentObject = this;
 
             if (type == ObjectType.TriangleMesh)
             {

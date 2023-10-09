@@ -225,7 +225,10 @@ namespace Mario64
             else
                 return false;
 
-            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            if(prevMeshType == typeof(WireframeMesh))
+                GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            else
+                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             return true;
         }
 
@@ -555,7 +558,7 @@ namespace Mario64
 
             objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount) , ObjectType.Cube, ref physx));
             objects.Last().SetPosition(new Vector3(-25, 0, -25));
-            objects.Last().SetSize(new Vector3(-25, 0, -25));
+            objects.Last().SetSize(new Vector3(50, 10, 50));
             objects.Last().AddCubeCollider(true);
             mainMeshObject = objects.Last();
 
