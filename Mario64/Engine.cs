@@ -149,14 +149,13 @@ namespace Mario64
         private List<Object> objects;
 
         private Character character;
-        private int characterWireframeIndex = -1;
+        private Object characterWireframeObject;
+        private Object mainMeshObject;
 
         private Frustum frustum;
         private List<PointLight> pointLights;
         private TextGenerator textGenerator;
         private Physx physx;
-
-        private List<CapsuleCollider> dynamicCubes = new List<CapsuleCollider>();
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
@@ -203,23 +202,23 @@ namespace Mario64
             {
                 meshVbo.Buffer(vertices);
             }
-            if(prevMeshType == typeof(TestMesh) && prevMeshType != currentMeshType)
+            else if(prevMeshType == typeof(TestMesh) && prevMeshType != currentMeshType)
             {
                 testVbo.Buffer(vertices);
             }
-            if(prevMeshType == typeof(NoTextureMesh) && prevMeshType != currentMeshType)
+            else if(prevMeshType == typeof(NoTextureMesh) && prevMeshType != currentMeshType)
             {
                 noTexVbo.Buffer(vertices);
             }
-            if(prevMeshType == typeof(WireframeMesh) && prevMeshType != currentMeshType)
+            else if(prevMeshType == typeof(WireframeMesh) && prevMeshType != currentMeshType)
             {
                 wireVbo.Buffer(vertices);
             }
-            if(prevMeshType == typeof(UITextureMesh) && prevMeshType != currentMeshType)
+            else if(prevMeshType == typeof(UITextureMesh) && prevMeshType != currentMeshType)
             {
                 uiTexVbo.Buffer(vertices);
             }
-            if (prevMeshType == typeof(TextMesh) && prevMeshType != currentMeshType)
+            else if(prevMeshType == typeof(TextMesh) && prevMeshType != currentMeshType)
             {
                 textVbo.Buffer(vertices);
             }
@@ -239,8 +238,8 @@ namespace Mario64
 
             frustum = character.camera.GetFrustum();
 
-            if(characterWireframeIndex != -1)
-                ((WireframeMesh)objects[characterWireframeIndex].GetMesh()).lines = character.GetBoundLines();
+            if(characterWireframeObject != null)
+                ((WireframeMesh)characterWireframeObject.GetMesh()) .lines = character.GetBoundLines();
 
             GL.Enable(EnableCap.DepthTest);
             shaderProgram.Use();
@@ -258,13 +257,13 @@ namespace Mario64
                 {
                     Mesh mesh = (Mesh)o.GetMesh();
 
+                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(Mesh)))
+                        vertices = new List<float>();
+
                     if(currentMesh == null || currentMesh != mesh.GetType())
                     {
                         shaderProgram.Use();
                     }
-
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(Mesh)))
-                        vertices = new List<float>();
 
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
@@ -274,13 +273,13 @@ namespace Mario64
                 {
                     TestMesh mesh = (TestMesh)o.GetMesh();
 
+                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
+                        vertices = new List<float>();
+
                     if (currentMesh == null || currentMesh != mesh.GetType())
                     {
                         shaderProgram.Use();
                     }
-
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
-                        vertices = new List<float>();
 
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
@@ -290,13 +289,13 @@ namespace Mario64
                 {
                     NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
 
+                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(NoTextureMesh)))
+                        vertices = new List<float>();
+
                     if (currentMesh == null || currentMesh != mesh.GetType())
                     {
                         noTextureShaderProgram.Use();
                     }
-
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(NoTextureMesh)))
-                        vertices = new List<float>();
 
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
@@ -306,13 +305,13 @@ namespace Mario64
                 {
                     WireframeMesh mesh = (WireframeMesh)o.GetMesh();
 
+                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(WireframeMesh)))
+                        vertices = new List<float>();
+
                     if (currentMesh == null || currentMesh != mesh.GetType())
                     {
                         noTextureShaderProgram.Use();
                     }
-
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(WireframeMesh)))
-                        vertices = new List<float>();
 
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
@@ -322,14 +321,14 @@ namespace Mario64
                 {
                     UITextureMesh mesh = (UITextureMesh)o.GetMesh();
 
+                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
+                        vertices = new List<float>();
+
                     if (currentMesh == null || currentMesh != mesh.GetType())
                     {
                         GL.Disable(EnableCap.DepthTest);
                         posTexShader.Use();
                     }
-
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
-                        vertices = new List<float>();
 
                     vertices.AddRange(mesh.Draw());
                     currentMesh = typeof(UITextureMesh);
@@ -351,6 +350,10 @@ namespace Mario64
                     currentMesh = typeof(TextMesh);
                 }
             }
+
+
+            if (DrawCorrectMesh(ref vertices, currentMesh, typeof(int)))
+                vertices = new List<float>();
 
 
             //foreach (Mesh mesh in meshes)
@@ -441,16 +444,17 @@ namespace Mario64
         {
             base.OnUpdateFrame(args);
 
-            character.UpdatePosition(KeyboardState, MouseState, ref meshes[0].Octree, args);
+            Mesh mainMesh = (Mesh)mainMeshObject.GetMesh();
+            character.UpdatePosition(KeyboardState, MouseState, ref mainMesh.Octree, args);
 
-            if (temp != Math.Round(totalTime) || temp == -1)
-            {
-                objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
-                objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
-                objects.Last().SetSize(10);
-                objects.Last().AddSphereCollider(true);
-                temp += 1;
-            }
+            //if (temp != Math.Round(totalTime) || temp == -1)
+            //{
+            //    objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
+            //    objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
+            //    objects.Last().SetSize(10);
+            //    objects.Last().AddSphereCollider(true);
+            //    temp += 1;
+            //}
 
             if (totalTime > 0)
             {
@@ -534,8 +538,9 @@ namespace Mario64
             //Point Lights
             noTextureShaderProgram.Use();
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
+
             objects.Add(new Object(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ObjectType.Wireframe, ref physx));
-            characterWireframeIndex = objects.Count() - 1;
+            characterWireframeObject = objects.Last();
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
@@ -552,6 +557,7 @@ namespace Mario64
             objects.Last().SetPosition(new Vector3(-25, 0, -25));
             objects.Last().SetSize(new Vector3(-25, 0, -25));
             objects.Last().AddCubeCollider(true);
+            mainMeshObject = objects.Last();
 
             //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
             //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f), 30, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));

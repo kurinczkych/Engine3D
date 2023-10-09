@@ -31,8 +31,11 @@ namespace Mario64
         private ObjectType type;
         private Physx physx;
 
-        PxRigidDynamic* dynamicCollider;
-        PxRigidStatic* staticCollider;
+        private IntPtr dynamicColliderPtr;
+        private IntPtr staticColliderPtr;
+
+        public PxRigidDynamic* GetDynamicCollider() { return (PxRigidDynamic*)dynamicColliderPtr.ToPointer(); }
+        public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
 
         private Vector3 Position;
         public Quaternion Rotation { get; private set; }
@@ -50,6 +53,8 @@ namespace Mario64
             StaticFriction = 0.5f;
             DynamicFriction = 0.5f;
             Restitution = 0.1f;
+
+            mesh.type = type;
 
             if (type == ObjectType.TriangleMesh)
             {
@@ -80,7 +85,7 @@ namespace Mario64
                         meshDesc.triangles.stride = 3 * (sizeof(int));
                         meshDesc.triangles.data = indicesPointer;
 
-                        PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.physics);
+                        PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
                         PxTriangleMeshCookingResult result;
                         PxTriangleMesh* triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
 
@@ -96,16 +101,16 @@ namespace Mario64
                         PxMeshGeometryFlags flags = PxMeshGeometryFlags.DoubleSided;
 
                         PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &scale, flags);
-                        var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
-                        PxShape* shape = physx.physics->CreateShapeMut((PxGeometry*)&meshGeo, material, true, PxShapeFlags.SimulationShape);
+                        var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+                        PxShape* shape = physx.GetPhysics()->CreateShapeMut((PxGeometry*)&meshGeo, material, true, PxShapeFlags.SimulationShape);
 
                         PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
                         PxTransform transform = PxTransform_new_1(&position);
                         //PxRigidStatic* actor = PxPhysics_createRigidStatic_mut(physx.physics, &transform);
                         var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-                        staticCollider = physx.physics->PhysPxCreateStatic(&transform, (PxGeometry*)&shape, material, &identity);
+                        staticColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&shape, material, &identity));
 
-                        physx.scene->AddActorMut((PxActor*)staticCollider, null);
+                        physx.GetScene()->AddActorMut((PxActor*)GetStaticCollider(), null);
                     }
                 }
             }
@@ -165,9 +170,9 @@ namespace Mario64
         #region Collision management
         public void CollisionResponse()
         {
-            if (dynamicCollider != null)
+            if (dynamicColliderPtr != IntPtr.Zero)
             {
-                PxTransform transform = PxRigidActor_getGlobalPose((PxRigidActor*)dynamicCollider);
+                PxTransform transform = PxRigidActor_getGlobalPose((PxRigidActor*)GetDynamicCollider());
 
                 Position.X = transform.p.x;
                 Position.Y = transform.p.y;
@@ -183,31 +188,50 @@ namespace Mario64
         {
             Position = position;
 
-            PxVec3 vec = PxVec3_new_3(position.X, position.Y, position.Z);
-            ;
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
 
+            PxVec3 vec = PxVec3_new_3(position.X, position.Y, position.Z);
             PxTransform pose = PxTransform_new_1(&vec);
-            PxRigidActor_setGlobalPose_mut((PxRigidActor*)dynamicCollider, &pose, true);
+
+            if(dynamicColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
+            else if(staticColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
         }
         public void SetRotation(Quaternion rotation)
         {
             Rotation = rotation;
 
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
             PxQuat quat = QuatHelper.OpenTkToPx(rotation);
 
             PxTransform pose = PxTransform_new_3(&quat);
-            PxRigidActor_setGlobalPose_mut((PxRigidActor*)dynamicCollider, &pose, true);
+
+            if (dynamicColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
+            else if (staticColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
         }
         public void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
             Position = position;
             Rotation = rotation;
 
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
             PxVec3 vec = PxVec3_new_3(position.X, position.Y, position.Z);
             PxQuat quat = QuatHelper.OpenTkToPx(rotation);
 
             PxTransform pose = PxTransform_new_5(&vec, &quat);
-            PxRigidActor_setGlobalPose_mut((PxRigidActor*)dynamicCollider, &pose, true);
+
+            if (dynamicColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
+            else if (staticColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
         }
 
         public void SetSize(Vector3 size)
@@ -215,11 +239,15 @@ namespace Mario64
             if (type != ObjectType.Cube)
                 throw new Exception("Cannot change the size of a '" + type.ToString() + "'!");
 
+            Size = size;
+
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
             bool isStatic = true;
-            if (dynamicCollider != null)
+            if (dynamicColliderPtr == IntPtr.Zero)
                 isStatic = false;
 
-            Size = size;
             AddCubeCollider(isStatic, true);
         }
 
@@ -228,12 +256,16 @@ namespace Mario64
             if (type != ObjectType.Capsule)
                 throw new Exception("Cannot change the half height and radius of a '" + type.ToString() + "'!");
 
-            bool isStatic = true;
-            if (dynamicCollider != null)
-                isStatic = false;
-
             HalfHeight = halfHeight;
             Radius = radius;
+
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
+            bool isStatic = true;
+            if (dynamicColliderPtr == IntPtr.Zero)
+                isStatic = false;
+
             AddCapsuleCollider(isStatic, true);
         }
 
@@ -242,11 +274,15 @@ namespace Mario64
             if (type != ObjectType.Sphere)
                 throw new Exception("Cannot change the radius of a '" + type.ToString() + "'!");
 
+            Radius = radius;
+
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
             bool isStatic = true;
-            if (dynamicCollider != null)
+            if (dynamicColliderPtr == IntPtr.Zero)
                 isStatic = false;
 
-            Radius = radius;
             AddCapsuleCollider(isStatic, true);
         }
 
@@ -257,10 +293,10 @@ namespace Mario64
             Restitution = restiution;
 
             bool isStatic = true;
-            if (dynamicCollider != null)
+            if (dynamicColliderPtr == IntPtr.Zero)
                 isStatic = false;
 
-            if (dynamicCollider != null || staticCollider != null)
+            if (dynamicColliderPtr == IntPtr.Zero || staticColliderPtr == IntPtr.Zero)
             {
                 if(type == ObjectType.Cube)
                     AddCubeCollider(isStatic, true);
@@ -275,17 +311,17 @@ namespace Mario64
         #region Colliders
         public void RemoveCollider(bool deleteActorPointer=true)
         {
-            if(dynamicCollider != null)
+            if(GetDynamicCollider() != null)
             {
-                physx.scene->RemoveActorMut((PxActor*)dynamicCollider, true);
+                physx.GetScene()->RemoveActorMut((PxActor*)GetDynamicCollider(), true);
                 if(deleteActorPointer)
-                    dynamicCollider = null;
+                    dynamicColliderPtr = IntPtr.Zero;
             }
-            if(staticCollider != null)
+            if(GetStaticCollider() != null)
             {
-                physx.scene->RemoveActorMut((PxActor*)staticCollider, true);
+                physx.GetScene()->RemoveActorMut((PxActor*)GetStaticCollider(), true);
                 if(deleteActorPointer)
-                    staticCollider = null;
+                    staticColliderPtr = IntPtr.Zero;
             }
         }
 
@@ -294,11 +330,11 @@ namespace Mario64
             if (removeCollider)
                 RemoveCollider();
 
-            if(dynamicCollider != null || staticCollider != null)
+            if(GetDynamicCollider() != null || GetStaticCollider() != null)
                 throw new Exception("You can only add one collider. Remove collider first");
-            if(dynamicCollider != null && isStatic)
+            if(GetDynamicCollider() != null && isStatic)
                 throw new Exception("You can only add one type of collider. This object has a dynamic collider");
-            if(staticCollider != null && !isStatic)
+            if(GetStaticCollider() != null && !isStatic)
                 throw new Exception("You can only add one type of collider. This object has a static collider");
 
             PxCapsuleGeometry capsuleGeo = new PxCapsuleGeometry();
@@ -312,18 +348,18 @@ namespace Mario64
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
             var transform = PxTransform_new_5(&vec3, &quat);
             var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-            var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+            var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
 
             if (isStatic)
             {
-                staticCollider = physx.physics->PhysPxCreateStatic(&transform, (PxGeometry*)&capsuleGeo, material, &identity);
-                physx.scene->AddActorMut((PxActor*)staticCollider, null);
+                staticColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&capsuleGeo, material, &identity));
+                physx.GetScene()->AddActorMut((PxActor*)GetStaticCollider(), null);
             }
             else
             {
-                dynamicCollider = physx.physics->PhysPxCreateDynamic(&transform, (PxGeometry*)&capsuleGeo, material, 10.0f, &identity);
-                PxRigidBody_setAngularDamping_mut((PxRigidBody*)dynamicCollider, 0.5f);
-                physx.scene->AddActorMut((PxActor*)dynamicCollider, null);
+                dynamicColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateDynamic(&transform, (PxGeometry*)&capsuleGeo, material, 10.0f, &identity));
+                PxRigidBody_setAngularDamping_mut((PxRigidBody*)GetDynamicCollider(), 0.5f);
+                physx.GetScene()->AddActorMut((PxActor*)GetDynamicCollider(), null);
             }
         }
 
@@ -332,11 +368,11 @@ namespace Mario64
             if (removeCollider)
                 RemoveCollider();
 
-            if (dynamicCollider != null || staticCollider != null)
+            if (GetDynamicCollider() != null || GetStaticCollider() != null)
                 throw new Exception("You can only add one collider. Remove collider first");
-            if (dynamicCollider != null && isStatic)
+            if (GetDynamicCollider() != null && isStatic)
                 throw new Exception("You can only add one type of collider. This object has a dynamic collider");
-            if (staticCollider != null && !isStatic)
+            if (GetStaticCollider() != null && !isStatic)
                 throw new Exception("You can only add one type of collider. This object has a static collider");
 
             PxBoxGeometry cubeGeo = new PxBoxGeometry();
@@ -349,18 +385,18 @@ namespace Mario64
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
             var transform = PxTransform_new_5(&vec3, &quat);
             var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-            var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+            var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
 
             if (isStatic)
             {
-                staticCollider = physx.physics->PhysPxCreateStatic(&transform, (PxGeometry*)&cubeGeo, material, &identity);
-                physx.scene->AddActorMut((PxActor*)staticCollider, null);
+                staticColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&cubeGeo, material, &identity));
+                physx.GetScene()-> AddActorMut((PxActor*)GetStaticCollider(), null);
             }
             else
             {
-                dynamicCollider = physx.physics->PhysPxCreateDynamic(&transform, (PxGeometry*)&cubeGeo, material, 10.0f, &identity);
-                PxRigidBody_setAngularDamping_mut((PxRigidBody*)dynamicCollider, 0.5f);
-                physx.scene->AddActorMut((PxActor*)dynamicCollider, null);
+                dynamicColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateDynamic(&transform, (PxGeometry*)&cubeGeo, material, 10.0f, &identity));
+                PxRigidBody_setAngularDamping_mut((PxRigidBody*)GetDynamicCollider(), 0.5f);
+                physx.GetScene()->AddActorMut((PxActor*)GetDynamicCollider(), null);
             }
         }
 
@@ -369,11 +405,11 @@ namespace Mario64
             if (removeCollider)
                 RemoveCollider();
 
-            if (dynamicCollider != null || staticCollider != null)
+            if (GetDynamicCollider() != null || GetStaticCollider() != null)
                 throw new Exception("You can only add one collider. Remove collider first");
-            if (dynamicCollider != null && isStatic)
+            if (GetDynamicCollider() != null && isStatic)
                 throw new Exception("You can only add one type of collider. This object has a dynamic collider");
-            if (staticCollider != null && !isStatic)
+            if (GetStaticCollider() != null && !isStatic)
                 throw new Exception("You can only add one type of collider. This object has a static collider");
 
             PxSphereGeometry sphereGeo = new PxSphereGeometry();
@@ -386,18 +422,18 @@ namespace Mario64
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
             var transform = PxTransform_new_5(&vec3, &quat);
             var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-            var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+            var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
 
             if (isStatic)
             {
-                staticCollider = physx.physics->PhysPxCreateStatic(&transform, (PxGeometry*)&sphereGeo, material, &identity);
-                physx.scene->AddActorMut((PxActor*)staticCollider, null);
+                staticColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&sphereGeo, material, &identity));
+                physx.GetScene()->AddActorMut((PxActor*)GetStaticCollider(), null);
             }
             else
             {
-                dynamicCollider = physx.physics->PhysPxCreateDynamic(&transform, (PxGeometry*)&sphereGeo, material, 10.0f, &identity);
-                PxRigidBody_setAngularDamping_mut((PxRigidBody*)dynamicCollider, 0.5f);
-                physx.scene->AddActorMut((PxActor*)dynamicCollider, null);
+                dynamicColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateDynamic(&transform, (PxGeometry*)&sphereGeo, material, 10.0f, &identity));
+                PxRigidBody_setAngularDamping_mut((PxRigidBody*)GetDynamicCollider(), 0.5f);
+                physx.GetScene()->AddActorMut((PxActor*)GetDynamicCollider(), null);
             }
         }
         #endregion

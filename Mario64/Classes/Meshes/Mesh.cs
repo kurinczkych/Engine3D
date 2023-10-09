@@ -211,9 +211,9 @@ namespace Mario64
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
             {
-                if (this is SphereCollider)
+                if (type == ObjectType.Sphere)
                     transformMatrix = s * r * t;
-                else if (this is CapsuleCollider)
+                else if (type == ObjectType.Capsule)
                     transformMatrix = r * t;
                 else
                     transformMatrix = s * offsetTo * r * offsetFrom * t;
@@ -262,9 +262,9 @@ namespace Mario64
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
             {
-                if (this is SphereCollider)
+                if (type == ObjectType.Sphere)
                     transformMatrix = s * r * t;
-                else if (this is CapsuleCollider)
+                else if (type == ObjectType.Capsule)
                     transformMatrix = r * t;
                 else
                     transformMatrix = s * offsetTo * r * offsetFrom * t;

@@ -18,6 +18,7 @@ namespace Mario64
 
         public List<triangle> tris;
         public bool hasIndices = false;
+        public ObjectType type;
 
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
