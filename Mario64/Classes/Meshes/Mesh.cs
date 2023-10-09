@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
+using MagicPhysX;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -156,6 +157,18 @@ namespace Mario64
             return result;
         }
 
+        private PxVec3 ConvertToNDCPxVec3(triangle tri, int index, ref Matrix4 transformMatrix)
+        {
+            Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
+
+            PxVec3 vec = new PxVec3();
+            vec.x = v.X;
+            vec.y = v.Y;
+            vec.z = v.Z;
+
+            return vec;
+        }
+
         public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
         {
             this.frustum = frustum;
@@ -231,6 +244,44 @@ namespace Mario64
             texture.Bind();
 
             return vertices;
+        }
+
+        public void GetCookedData(out PxVec3[] verts, out int[] indices)
+        {
+            int vertCount = tris.Count() * 3;
+            int index = 0;
+            verts = new PxVec3[vertCount];
+            indices = new int[vertCount];
+
+            Matrix4 s = Matrix4.CreateScale(Scale);
+            Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
+            Matrix4 t = Matrix4.CreateTranslation(Position);
+            Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale / 2f);
+            Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale / 2f);
+
+            Matrix4 transformMatrix = Matrix4.Identity;
+            if (IsTransformed)
+            {
+                if (this is SphereCollider)
+                    transformMatrix = s * r * t;
+                else if (this is CapsuleCollider)
+                    transformMatrix = r * t;
+                else
+                    transformMatrix = s * offsetTo * r * offsetFrom * t;
+            }
+
+            foreach (triangle tri in tris)
+            {
+                verts[index] = ConvertToNDCPxVec3(tri, 0, ref transformMatrix);
+                indices[index] = tri.pi[0];
+                index++;
+                verts[index] = ConvertToNDCPxVec3(tri, 1, ref transformMatrix);
+                indices[index] = tri.pi[1];
+                index++;
+                verts[index] = ConvertToNDCPxVec3(tri, 2, ref transformMatrix);
+                indices[index] = tri.pi[2];
+                index++;
+            }
         }
 
         public void CalculateBoundingBox()
@@ -361,6 +412,12 @@ namespace Mario64
                                     tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
                                                           new Vector3[] { normals[n[0] - 1], normals[n[1] - 1], normals[n[2] - 1] },
                                                           new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
+
+                                    tris.Last().pi[0] = v[0] - 1;
+                                    tris.Last().pi[1] = v[1] - 1;
+                                    tris.Last().pi[2] = v[2] - 1;
+
+                                    hasIndices = true;
                                 }
                                 else if (fPerCount == 1)
                                 {
@@ -376,6 +433,12 @@ namespace Mario64
 
                                     tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
                                                           new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
+
+                                    tris.Last().pi[0] = v[0] - 1;
+                                    tris.Last().pi[1] = v[1] - 1;
+                                    tris.Last().pi[2] = v[2] - 1;
+
+                                    hasIndices = true;
                                 }
 
                             }
@@ -385,6 +448,12 @@ namespace Mario64
                                 int[] f = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
 
                                 tris.Add(new triangle(new Vector3[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
+
+                                tris.Last().pi[0] = f[0] - 1;
+                                tris.Last().pi[1] = f[1] - 1;
+                                tris.Last().pi[2] = f[2] - 1;
+
+                                hasIndices = true;
                             }
                         }
                     }

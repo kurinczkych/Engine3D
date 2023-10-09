@@ -17,6 +17,7 @@ namespace Mario64
         public Vector3[] n;
         public Color4[] c;
         public Vec2d[] t;
+        public int[] pi;
         public bool gotPointNormals;
 
         public triangle()
@@ -26,6 +27,7 @@ namespace Mario64
             n = new Vector3[3];
             c = new Color4[3];
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            pi = new int[3];
         }
 
         public triangle(Vector3[] p)
@@ -44,6 +46,7 @@ namespace Mario64
             }
 
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            pi = new int[3];
         }
 
         public triangle(Vector3 p1, Vector3 p2, Vector3 p3)
@@ -58,6 +61,7 @@ namespace Mario64
             }
 
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            pi = new int[3];
         }
 
         public triangle(Vector3[] p, Vec2d[] t)
@@ -79,6 +83,7 @@ namespace Mario64
             {
                 this.t[t_] = t[t_].GetCopy();
             }
+            pi = new int[3];
         }
 
         public triangle(Vector3[] p, Vector3[] n, Vec2d[] t)
@@ -104,6 +109,7 @@ namespace Mario64
             {
                 this.t[t_] = t[t_].GetCopy();
             }
+            pi = new int[3];
         }
 
         public Vector3 GetMiddle()

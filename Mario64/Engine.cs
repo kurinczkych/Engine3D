@@ -445,19 +445,19 @@ namespace Mario64
 
             if (temp != Math.Round(totalTime) || temp == -1)
             {
-                meshes.Add(new CapsuleCollider(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount));
-                (meshes.Last() as CapsuleCollider).Init(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f), 50, rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)), 5,2, new Vector3(0, 0, 0));
-                (meshes.Last() as CapsuleCollider).AddCapsuleCollider(false, ref physx);
-                dynamicCubes.Add(meshes.Last() as CapsuleCollider);
+                objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
+                objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
+                objects.Last().SetSize(10);
+                objects.Last().AddSphereCollider(true);
                 temp += 1;
             }
 
             if (totalTime > 0)
             {
                 physx.Simulate((float)args.Time);
-                foreach (CapsuleCollider c in dynamicCubes)
+                foreach (Object o in objects)
                 {
-                    c.CollisionResponse();
+                    o.CollisionResponse();
                 }
             }
             //camera.UpdatePositionToGround(meshes[0].Octree.GetNearTriangles(camera.position));
@@ -534,7 +534,7 @@ namespace Mario64
             //Point Lights
             noTextureShaderProgram.Use();
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
-            objects.Add(new Object(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ObjectType.Wireframe));
+            objects.Add(new Object(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ObjectType.Wireframe, ref physx));
             characterWireframeIndex = objects.Count() - 1;
 
             shaderProgram.Use();
@@ -548,12 +548,10 @@ namespace Mario64
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount) , ObjectType.Cube));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount) , ObjectType.Cube, ref physx));
             objects.Last().SetPosition(new Vector3(-25, 0, -25));
-
-            meshes.Add(new CubeCollider(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            (meshes.Last() as CubeCollider).Init(new Vector3(-25,0,-25), new Vector3(50, 1, 50), new Vector3());
-            (meshes.Last() as CubeCollider).AddCubeCollider(true, ref physx);
+            objects.Last().SetSize(new Vector3(-25, 0, -25));
+            objects.Last().AddCubeCollider(true);
 
             //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
             //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f), 30, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));

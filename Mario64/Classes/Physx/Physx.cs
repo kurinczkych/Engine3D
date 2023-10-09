@@ -29,8 +29,6 @@ namespace Mario64
 
                     pvd = phys_PxCreatePvd(foundation);
 
-                    phys_PxCookTriangleMesh();
-
                     var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
 
                     uint PX_PHYSICS_VERSION_MAJOR = 5;

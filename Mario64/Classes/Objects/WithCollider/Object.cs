@@ -41,15 +41,92 @@ namespace Mario64
         public float Radius { get; private set; }
         public float HalfHeight { get; private set; }
 
+        public float StaticFriction { get; private set; }
+        public float DynamicFriction { get; private set; }
+        public float Restitution { get; private set; }
+
         public Object(BaseMesh mesh, ObjectType type, ref Physx physx)
         {
+            StaticFriction = 0.5f;
+            DynamicFriction = 0.5f;
+            Restitution = 0.1f;
+
             if (type == ObjectType.TriangleMesh)
             {
-                throw new Exception("Triangle mesh can only be a static object.");
+                Type meshType = mesh.GetType();
+                if (meshType != typeof(Mesh))
+                    throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
+                if(!mesh.hasIndices)
+                    throw new Exception("The mesh doesn't have triangle indices!");
+                
+
+                PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
+                meshDesc.points.count = (uint)((Mesh)mesh).tris.Count()*3;
+                meshDesc.points.stride = (uint)sizeof(PxVec3);
+                PxVec3[] verts = new PxVec3[((Mesh)mesh).tris.Count() * 3];
+                int[] indices = new int[((Mesh)mesh).tris.Count() * 3];
+                ((Mesh)mesh).GetCookedData(out verts, out indices);
+
+                var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
+                PxCookingParams cookingParams = PxCookingParams_new(&tolerancesScale);
+
+                fixed (PxVec3* vertsPointer = &verts[0])
+                {
+                    fixed (int* indicesPointer = &indices[0])
+                    {
+                        meshDesc.points.data = vertsPointer;
+
+                        meshDesc.triangles.count = (uint)((Mesh)mesh).tris.Count();
+                        meshDesc.triangles.stride = 3 * (sizeof(int));
+                        meshDesc.triangles.data = indicesPointer;
+
+                        PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.physics);
+                        PxTriangleMeshCookingResult result;
+                        PxTriangleMesh* triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
+
+                        if(triMesh == null || &triMesh == null)
+                        {
+                            throw new Exception("TriangleMesh cooking didn't work!");
+                        }
+
+                        PxVec3 size = new PxVec3 { x = Size.X, y = Size.Y, z = Size.Z };
+                        PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
+
+                        PxMeshScale scale = PxMeshScale_new_3(&size, &quat);
+                        PxMeshGeometryFlags flags = PxMeshGeometryFlags.DoubleSided;
+
+                        PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &scale, flags);
+                        var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+                        PxShape* shape = physx.physics->CreateShapeMut((PxGeometry*)&meshGeo, material, true, PxShapeFlags.SimulationShape);
+
+                        PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
+                        PxTransform transform = PxTransform_new_1(&position);
+                        //PxRigidStatic* actor = PxPhysics_createRigidStatic_mut(physx.physics, &transform);
+                        var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
+                        staticCollider = physx.physics->PhysPxCreateStatic(&transform, (PxGeometry*)&shape, material, &identity);
+
+                        physx.scene->AddActorMut((PxActor*)staticCollider, null);
+                    }
+                }
+            }
+
+            if(type == ObjectType.Cube)
+            {
+                Size = new Vector3(5, 5, 5);
+            }
+            if (type == ObjectType.Sphere)
+            {
+                Radius = 5;
+            }
+            if (type == ObjectType.Capsule)
+            {
+                HalfHeight = 5;
+                Radius = 5;
             }
 
             this.mesh = mesh;
             this.type = type;
+            this.physx = physx;
         }
 
         public BaseMesh GetMesh()
@@ -138,16 +215,59 @@ namespace Mario64
             if (type != ObjectType.Cube)
                 throw new Exception("Cannot change the size of a '" + type.ToString() + "'!");
 
-            RemoveCollider(false);
-            PxShape shape = new PxShape();
+            bool isStatic = true;
             if (dynamicCollider != null)
-            {
-                capsuleGeo = PxCapsuleGeometry_new(HalfHeight, Radius);
-                //TODO
-            }
-            if (staticCollider != null)
-            {
+                isStatic = false;
 
+            Size = size;
+            AddCubeCollider(isStatic, true);
+        }
+
+        public void SetSize(float halfHeight, float radius)
+        {
+            if (type != ObjectType.Capsule)
+                throw new Exception("Cannot change the half height and radius of a '" + type.ToString() + "'!");
+
+            bool isStatic = true;
+            if (dynamicCollider != null)
+                isStatic = false;
+
+            HalfHeight = halfHeight;
+            Radius = radius;
+            AddCapsuleCollider(isStatic, true);
+        }
+
+        public void SetSize(float radius)
+        {
+            if (type != ObjectType.Sphere)
+                throw new Exception("Cannot change the radius of a '" + type.ToString() + "'!");
+
+            bool isStatic = true;
+            if (dynamicCollider != null)
+                isStatic = false;
+
+            Radius = radius;
+            AddCapsuleCollider(isStatic, true);
+        }
+
+        public void SetMaterial(float staticFriction, float dynamicFriction, float restiution)
+        {
+            StaticFriction = staticFriction;
+            DynamicFriction = dynamicFriction;
+            Restitution = restiution;
+
+            bool isStatic = true;
+            if (dynamicCollider != null)
+                isStatic = false;
+
+            if (dynamicCollider != null || staticCollider != null)
+            {
+                if(type == ObjectType.Cube)
+                    AddCubeCollider(isStatic, true);
+                if(type == ObjectType.Sphere)
+                    AddSphereCollider(isStatic, true);
+                if(type == ObjectType.Capsule)
+                    AddCapsuleCollider(isStatic, true);
             }
         }
         #endregion
@@ -186,13 +306,13 @@ namespace Mario64
             if(type == ObjectType.Capsule)
                 capsuleGeo = PxCapsuleGeometry_new(HalfHeight, Radius);
             else
-                capsuleGeo = PxCapsuleGeometry_new(10, 5);
+                capsuleGeo = PxCapsuleGeometry_new(5, 5);
 
             PxVec3 vec3 = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
             var transform = PxTransform_new_5(&vec3, &quat);
             var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-            var material = physx.physics->CreateMaterialMut(0.5f, 0.5f, 0.1f);
+            var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
 
             if (isStatic)
             {
@@ -229,7 +349,7 @@ namespace Mario64
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
             var transform = PxTransform_new_5(&vec3, &quat);
             var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-            var material = physx.physics->CreateMaterialMut(0.5f, 0.5f, 0.1f);
+            var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
 
             if (isStatic)
             {
@@ -266,7 +386,7 @@ namespace Mario64
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
             var transform = PxTransform_new_5(&vec3, &quat);
             var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-            var material = physx.physics->CreateMaterialMut(0.5f, 0.5f, 0.1f);
+            var material = physx.physics->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
 
             if (isStatic)
             {
