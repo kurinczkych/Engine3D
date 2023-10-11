@@ -54,6 +54,10 @@ namespace Mario64
             DynamicFriction = 0.5f;
             Restitution = 0.1f;
 
+            this.mesh = mesh;
+            this.type = type;
+            this.physx = physx;
+
             mesh.parentObject = this;
 
             if (type == ObjectType.TriangleMesh)
@@ -94,7 +98,7 @@ namespace Mario64
                             throw new Exception("TriangleMesh cooking didn't work!");
                         }
 
-                        PxVec3 size = new PxVec3 { x = Size.X, y = Size.Y, z = Size.Z };
+                        PxVec3 size = new PxVec3 { x = 1, y = 1, z = 1 };
                         PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
 
                         PxMeshScale scale = PxMeshScale_new_3(&size, &quat);
@@ -128,10 +132,6 @@ namespace Mario64
                 HalfHeight = 5;
                 Radius = 5;
             }
-
-            this.mesh = mesh;
-            this.type = type;
-            this.physx = physx;
         }
 
         public BaseMesh GetMesh()
@@ -456,28 +456,28 @@ namespace Mario64
             Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
 
             // Back face
-            tris.Add(new triangle(p1, p2, p3));
-            tris.Add(new triangle(p3, p4, p1));
+            tris.Add(new triangle(p1, p3, p2));
+            tris.Add(new triangle(p3, p1, p4));
 
             // Front face
-            tris.Add(new triangle(p5, p6, p7));
-            tris.Add(new triangle(p7, p8, p5));
+            tris.Add(new triangle(p5, p7, p6));
+            tris.Add(new triangle(p7, p5, p8));
 
             // Left face
-            tris.Add(new triangle(p1, p4, p8));
-            tris.Add(new triangle(p8, p5, p1));
+            tris.Add(new triangle(p1, p8, p4));
+            tris.Add(new triangle(p8, p1, p5));
 
             // Right face
-            tris.Add(new triangle(p2, p3, p7));
-            tris.Add(new triangle(p7, p6, p2));
+            tris.Add(new triangle(p2, p7, p3));
+            tris.Add(new triangle(p7, p2, p6));
 
             // Top face
-            tris.Add(new triangle(p4, p3, p7));
-            tris.Add(new triangle(p7, p8, p4));
+            tris.Add(new triangle(p4, p7, p3));
+            tris.Add(new triangle(p7, p4, p8));
 
             // Bottom face
-            tris.Add(new triangle(p1, p2, p6));
-            tris.Add(new triangle(p6, p5, p1));
+            tris.Add(new triangle(p1, p6, p2));
+            tris.Add(new triangle(p6, p1, p5));
 
             return tris;
         }

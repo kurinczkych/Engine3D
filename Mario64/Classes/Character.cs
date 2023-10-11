@@ -93,7 +93,7 @@ namespace Mario64
             camera.position = position;
         }
 
-        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, ref Octree octree, FrameEventArgs args)
+        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
         {
             float speed_ = speed;
             float flySpeed_ = flySpeed;
@@ -110,10 +110,6 @@ namespace Mario64
                     Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
                 if (Velocity.Y < terminalVelocity)
                     Velocity.Y = terminalVelocity;
-
-                trisNear = octree.GetNearTriangles(Position);
-
-                GetGround(trisNear);
             }
 
 
@@ -183,83 +179,8 @@ namespace Mario64
             // 3. Update Position
             Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
 
-            int ccdMax = 5;
-            Vector3 step = Velocity / ccdMax;
 
-            applyGravity = true;
-            isOnGround = false;
-            bool intersection = false;
-
-            Vector3 totalPenetration = Vector3.Zero;
-
-            if (!noClip)
-            {
-                for (int i = 0; i < ccdMax; i++)
-                {
-                    Position += step;
-                    foreach (triangle tri in trisNear)
-                    {
-                        Vector3 penetration_normal = new Vector3();
-                        float penetration_depth = 0.0f;
-
-                        if (!tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
-                            continue;
-
-                        if (float.IsNaN(penetration_normal.X) || float.IsNaN(penetration_normal.Y) || float.IsNaN(penetration_normal.Z))
-                            continue;
-
-                        intersection = true;
-
-                        // Remove penetration (penetration epsilon added to handle infinitely small penetration):
-                        totalPenetration += (penetration_normal * (penetration_depth + 0.0001f));
-
-                        // Modify player velocity to slide on contact surface:
-                        float velocity_length = Velocity.Length;
-                        Vector3 velocity_normalized = Vector3.Zero;
-                        if (Velocity != Vector3.Zero)
-                            velocity_normalized = Velocity.Normalized();
-                        Vector3 undesired_motion = penetration_normal * Vector3.Dot(velocity_normalized, penetration_normal);
-                        Vector3 desired_motion = velocity_normalized - undesired_motion;
-
-                        // Apply dynamic friction
-                        float dynamicFrictionCoefficient = 0.1f;
-                        desired_motion -= desired_motion * dynamicFrictionCoefficient;
-
-                        Velocity = desired_motion * velocity_length;
-
-                        if (Vector3.Dot(penetration_normal, new Vector3(0, 1, 0)) > 0.3f)
-                        {
-                            isOnGround = true;
-                            applyGravity = false;
-
-                            Velocity.Y *= 0.9f;
-
-                            //Apply static friction if character is on the ground and not intending to move much
-                            float staticFrictionThreshold = 0.5f;
-                            if (desired_motion.Length < staticFrictionThreshold)
-                            {
-                                Velocity = Vector3.Zero;
-                            }
-                        }
-                    }
-
-                    Position += totalPenetration;
-
-
-                    if (intersection)
-                        break;
-                }
-
-                if (distToGround <= characterHeight + 0.1)
-                {
-                    isOnGround = true;
-                    applyGravity = false;
-                }
-
-            }
-            else
-                Position += Velocity;
-
+            Position += Velocity;
             Velocity.X *= 0.9f;
             Velocity.Z *= 0.9f;
 

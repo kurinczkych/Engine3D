@@ -24,6 +24,7 @@
     <None Remove="Models\sphereSmall.obj" />
     <None Remove="Models\spiro.obj" />
     <None Remove="Models\spiro_scaled.obj" />
+    <None Remove="Models\spiro_small.obj" />
     <None Remove="Models\teapot.obj" />
     <None Remove="Textures\bmp_24.bmp" />
     <None Remove="Textures\font.json" />
@@ -53,6 +54,7 @@
     <EmbeddedResource Include="Models\sphereRounded.obj" />
     <EmbeddedResource Include="Models\sphereSmall.obj" />
     <EmbeddedResource Include="Models\spiro.obj" />
+    <EmbeddedResource Include="Models\spiro_small.obj" />
     <EmbeddedResource Include="Models\teapot.obj" />
     <EmbeddedResource Include="Textures\bmp_24.bmp" />
     <EmbeddedResource Include="Textures\font.json" />

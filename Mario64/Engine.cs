@@ -150,7 +150,6 @@ namespace Mario64
 
         private Character character;
         private Object characterWireframeObject;
-        private Object mainMeshObject;
 
         private Frustum frustum;
         private List<PointLight> pointLights;
@@ -447,15 +446,15 @@ namespace Mario64
         {
             base.OnUpdateFrame(args);
 
-            Mesh mainMesh = (Mesh)mainMeshObject.GetMesh();
-            character.UpdatePosition(KeyboardState, MouseState, ref mainMesh.Octree, args);
+            character.UpdatePosition(KeyboardState, MouseState, args);
 
             //if (temp != Math.Round(totalTime) || temp == -1)
             //{
             //    objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
-            //    objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
+            //    //objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
+            //    objects.Last().SetPosition(new Vector3(0, 100, 0));
             //    objects.Last().SetSize(10);
-            //    objects.Last().AddSphereCollider(true);
+            //    objects.Last().AddSphereCollider(false);
             //    temp += 1;
             //}
 
@@ -556,11 +555,17 @@ namespace Mario64
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount) , ObjectType.Cube, ref physx));
-            objects.Last().SetPosition(new Vector3(-25, 0, -25));
-            objects.Last().SetSize(new Vector3(50, 10, 50));
-            objects.Last().AddCubeCollider(true);
-            mainMeshObject = objects.Last();
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro_small.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
+            objects.Last().SetPosition(new Vector3(0, 100, 0));
+            objects.Last().SetSize(5);
+            objects.Last().AddSphereCollider(false);
+
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount) , ObjectType.Cube, ref physx));
+            //objects.Last().SetPosition(new Vector3(-25, 0, -25));
+            //objects.Last().SetSize(new Vector3(50, 10, 50));
+            //objects.Last().AddCubeCollider(true);
 
             //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
             //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f), 30, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
