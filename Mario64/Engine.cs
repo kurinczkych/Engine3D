@@ -460,15 +460,15 @@ namespace Mario64
 
             character.UpdatePosition(KeyboardState, MouseState, args);
 
-            //if (temp != Math.Round(totalTime) || temp == -1)
-            //{
-            //    objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
-            //    //objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
-            //    objects.Last().SetPosition(new Vector3(0, 100, 0));
-            //    objects.Last().SetSize(10);
-            //    objects.Last().AddSphereCollider(false);
-            //    temp += 1;
-            //}
+            if (temp != Math.Round(totalTime) || temp == -1)
+            {
+                objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
+                //objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
+                objects.Last().SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
+                objects.Last().SetSize(2);
+                objects.Last().AddSphereCollider(false);
+                temp += 1;
+            }
 
             if (totalTime > 0)
             {
