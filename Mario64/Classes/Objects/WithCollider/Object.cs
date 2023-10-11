@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using static System.Formats.Asn1.AsnWriter;
 using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime;
 
 #pragma warning disable CS8767
 
@@ -72,7 +73,6 @@ namespace Mario64
                 if(!mesh.hasIndices)
                     throw new Exception("The mesh doesn't have triangle indices!");
                 
-                
                 uint count = (uint)((Mesh)mesh).tris.Count() * 3;
                 PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
                 meshDesc.points.count = count;
@@ -103,7 +103,28 @@ namespace Mario64
 
                 PxTriangleMeshCookingResult result;
                 PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
-                PxTriangleMesh* triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
+
+                PxTriangleMesh triMeshPtr = new PxTriangleMesh();
+                PxTriangleMesh* triMesh = &triMeshPtr;
+                try
+                {
+                    // Establish a no GC region. The size parameter specifies how much memory
+                    // to reserve for the small object heap.
+                    if (GC.TryStartNoGCRegion(((Mesh)mesh).tris.Count() * 54))
+                    {
+                        triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
+                        
+                    }
+                }
+                finally
+                {
+                    // Always make sure to end the no GC region.
+                    if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion)
+                    {
+                        GC.EndNoGCRegion();
+                    }
+                }
+
                 ;
 
 
