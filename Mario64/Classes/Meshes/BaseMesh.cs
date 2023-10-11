@@ -17,12 +17,14 @@ namespace Mario64
         protected int shaderProgramId;
 
         public List<triangle> tris;
+        public List<Vector3> allVerts;
         public bool hasIndices = false;
         public Object parentObject;
 
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
             tris = new List<triangle>();
+            allVerts = new List<Vector3>();
 
             this.vaoId = vaoId;
             this.vboId = vboId;

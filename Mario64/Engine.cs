@@ -259,8 +259,8 @@ namespace Mario64
                 {
                     Mesh mesh = (Mesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(Mesh)))
-                        vertices = new List<float>();
+                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(Mesh)))
+                    //    vertices = new List<float>();
 
                     if(currentMesh == null || currentMesh != mesh.GetType())
                     {
@@ -270,13 +270,17 @@ namespace Mario64
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
                     currentMesh = typeof(Mesh);
+
+                    meshVbo.Buffer(vertices);
+                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                    vertices.Clear();
                 }
                 else if(objectType == ObjectType.TestMesh)
                 {
                     TestMesh mesh = (TestMesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
-                        vertices = new List<float>();
+                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
+                    //    vertices = new List<float>();
 
                     if (currentMesh == null || currentMesh != mesh.GetType())
                     {
@@ -286,6 +290,10 @@ namespace Mario64
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
                     currentMesh = typeof(TestMesh);
+
+                    testVbo.Buffer(vertices);
+                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                    vertices.Clear();
                 }
                 else if(objectType == ObjectType.NoTexture)
                 {
@@ -323,8 +331,8 @@ namespace Mario64
                 {
                     UITextureMesh mesh = (UITextureMesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
-                        vertices = new List<float>();
+                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
+                    //    vertices = new List<float>();
 
                     if (currentMesh == null || currentMesh != mesh.GetType())
                     {
@@ -334,6 +342,10 @@ namespace Mario64
 
                     vertices.AddRange(mesh.Draw());
                     currentMesh = typeof(UITextureMesh);
+
+                    uiTexVbo.Buffer(vertices);
+                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                    vertices.Clear();
                 }
                 else if(objectType == ObjectType.TextMesh)
                 {
@@ -555,11 +567,11 @@ namespace Mario64
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro_small.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
 
             objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
-            objects.Last().SetPosition(new Vector3(0, 100, 0));
-            objects.Last().SetSize(5);
+            objects.Last().SetPosition(new Vector3(0, 20, 0));
+            objects.Last().SetSize(2);
             objects.Last().AddSphereCollider(false);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount) , ObjectType.Cube, ref physx));

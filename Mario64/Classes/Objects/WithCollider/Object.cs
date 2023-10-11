@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Formats.Asn1.AsnWriter;
+using Newtonsoft.Json.Linq;
+using System.Runtime.InteropServices;
 
 #pragma warning disable CS8767
 
@@ -37,7 +39,7 @@ namespace Mario64
         public PxRigidDynamic* GetDynamicCollider() { return (PxRigidDynamic*)dynamicColliderPtr.ToPointer(); }
         public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
 
-        private Vector3 Position;
+        public Vector3 Position;
         public Quaternion Rotation { get; private set; }
 
         public Vector3 Size { get; private set; }
@@ -58,6 +60,8 @@ namespace Mario64
             this.type = type;
             this.physx = physx;
 
+            Rotation = Quaternion.Identity;
+
             mesh.parentObject = this;
 
             if (type == ObjectType.TriangleMesh)
@@ -68,55 +72,79 @@ namespace Mario64
                 if(!mesh.hasIndices)
                     throw new Exception("The mesh doesn't have triangle indices!");
                 
-
+                
+                uint count = (uint)((Mesh)mesh).tris.Count() * 3;
                 PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
-                meshDesc.points.count = (uint)((Mesh)mesh).tris.Count()*3;
+                meshDesc.points.count = count;
                 meshDesc.points.stride = (uint)sizeof(PxVec3);
-                PxVec3[] verts = new PxVec3[((Mesh)mesh).tris.Count() * 3];
-                int[] indices = new int[((Mesh)mesh).tris.Count() * 3];
+                PxVec3[] verts = new PxVec3[mesh.allVerts.Count()];
+                int[] indices = new int[count];
                 ((Mesh)mesh).GetCookedData(out verts, out indices);
+                GCHandle vertsHandle = GCHandle.Alloc(verts, GCHandleType.Pinned);
+                GCHandle indicesHandle = GCHandle.Alloc(indices, GCHandleType.Pinned);
 
                 var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
                 PxCookingParams cookingParams = PxCookingParams_new(&tolerancesScale);
+                //cookingParams.suppressTriangleMeshRemapTable = true;
+                //cookingParams.buildTriangleAdjacencies = false;
+                //cookingParams.meshPreprocessParams = PxMeshPreprocessingFlags.WeldVertices;
 
-                fixed (PxVec3* vertsPointer = &verts[0])
+                //fixed (PxVec3* vertsPointer = &verts[0])
+
+                bool valid = isValidMesh((PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer(), (int)count, (int*)indicesHandle.AddrOfPinnedObject().ToPointer(), (int)count);
+                if(!valid)
+                    throw new Exception("TriangleMesh cooking data is not right!");
+
+                meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
+
+                meshDesc.triangles.count = (uint)((Mesh)mesh).tris.Count();
+                meshDesc.triangles.stride = 3 * sizeof(int);
+                meshDesc.triangles.data = (int*)indicesHandle.AddrOfPinnedObject().ToPointer();
+
+                PxTriangleMeshCookingResult result;
+                PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
+                PxTriangleMesh* triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
+                ;
+
+
+                if(triMesh == null || &triMesh == null)
                 {
-                    fixed (int* indicesPointer = &indices[0])
-                    {
-                        meshDesc.points.data = vertsPointer;
-
-                        meshDesc.triangles.count = (uint)((Mesh)mesh).tris.Count();
-                        meshDesc.triangles.stride = 3 * (sizeof(int));
-                        meshDesc.triangles.data = indicesPointer;
-
-                        PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
-                        PxTriangleMeshCookingResult result;
-                        PxTriangleMesh* triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
-
-                        if(triMesh == null || &triMesh == null)
-                        {
-                            throw new Exception("TriangleMesh cooking didn't work!");
-                        }
-
-                        PxVec3 size = new PxVec3 { x = 1, y = 1, z = 1 };
-                        PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
-
-                        PxMeshScale scale = PxMeshScale_new_3(&size, &quat);
-                        PxMeshGeometryFlags flags = PxMeshGeometryFlags.DoubleSided;
-
-                        PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &scale, flags);
-                        var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
-                        PxShape* shape = physx.GetPhysics()->CreateShapeMut((PxGeometry*)&meshGeo, material, true, PxShapeFlags.SimulationShape);
-
-                        PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
-                        PxTransform transform = PxTransform_new_1(&position);
-                        //PxRigidStatic* actor = PxPhysics_createRigidStatic_mut(physx.physics, &transform);
-                        var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-                        staticColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&shape, material, &identity));
-
-                        physx.GetScene()->AddActorMut((PxActor*)GetStaticCollider(), null);
-                    }
+                    throw new Exception("TriangleMesh cooking didn't work!");
                 }
+
+                PxVec3 scale = new PxVec3 { x = 1, y = 1, z = 1 };
+                PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
+                PxMeshScale meshScale = PxMeshScale_new_3(&scale, &quat);
+                PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &meshScale, PxMeshGeometryFlags.DoubleSided);
+
+                var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+                PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
+                PxTransform transform = PxTransform_new_1(&position);
+                var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
+                PxRigidStatic* staticCollider = physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&meshGeo, material, &identity);
+                physx.GetScene()->AddActorMut((PxActor*)staticCollider, null);
+                staticColliderPtr = new IntPtr(staticCollider);
+
+                //PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
+
+                //PxMeshScale scale = PxMeshScale_new_3(&size, &quat);
+                //PxMeshGeometryFlags flags = PxMeshGeometryFlags.DoubleSided;
+
+                //PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &scale, flags);
+                //var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+                //PxShape* shape = physx.GetPhysics()->CreateShapeMut((PxGeometry*)&meshGeo, material, true, PxShapeFlags.Visualization);
+
+                //PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
+                //PxTransform transform = PxTransform_new_1(&position);
+                ////PxRigidStatic* actor = PxPhysics_createRigidStatic_mut(physx.physics, &transform);
+                //var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
+                //staticColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&shape, material, &identity));
+
+                //physx.GetScene()->AddActorMut((PxActor*)GetStaticCollider(), null);
+    
+
+                vertsHandle.Free();
+                indicesHandle.Free();
             }
 
             if(type == ObjectType.Cube)
@@ -132,6 +160,22 @@ namespace Mario64
                 HalfHeight = 5;
                 Radius = 5;
             }
+        }
+
+        bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)
+        {
+            if(numVertices == 0 || numIndices == 0 || numIndices % 3 != 0)
+                return false;
+
+            for(int i = 0; i<numIndices; ++i)
+            {
+                if(indices[i] >= numVertices)
+                    return false;
+            }
+
+            // Additional checks (e.g., degenerate triangles, manifoldness, etc.) would go here.
+
+            return true;
         }
 
         public BaseMesh GetMesh()
@@ -183,10 +227,16 @@ namespace Mario64
         }
         #endregion
 
+        public Vector3 GetPosition()
+        {
+            return Position;
+        }
+
         #region Setters
         public void SetPosition(Vector3 position)
         {
             Position = position;
+            
 
             if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
                 return;
@@ -283,7 +333,7 @@ namespace Mario64
             if (dynamicColliderPtr == IntPtr.Zero)
                 isStatic = false;
 
-            AddCapsuleCollider(isStatic, true);
+            AddSphereCollider(isStatic, true);
         }
 
         public void SetMaterial(float staticFriction, float dynamicFriction, float restiution)

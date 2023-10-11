@@ -170,6 +170,18 @@ namespace Mario64
             return vec;
         }
 
+        private PxVec3 ConvertToNDCPxVec3(int index, ref Matrix4 transformMatrix)
+        {
+            Vector3 v = Vector3.TransformPosition(allVerts[index], transformMatrix);
+
+            PxVec3 vec = new PxVec3();
+            vec.x = v.X;
+            vec.y = v.Y;
+            vec.z = v.Z;
+
+            return vec;
+        }
+
         public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
         {
             this.frustum = frustum;
@@ -218,15 +230,15 @@ namespace Mario64
             }
 
             Matrix4 s = Matrix4.CreateScale(Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(Position);
+            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+            Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
             Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale/2f);
             Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale/2f);
 
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
             {
-                transformMatrix = s * offsetTo * r * offsetFrom * t;
+                transformMatrix = s * r * t;
                 //if (type == ObjectType.Sphere || type == ObjectType.Capsule)
                 //    transformMatrix = s * r * t;
                 //else
@@ -264,7 +276,7 @@ namespace Mario64
         {
             int vertCount = tris.Count() * 3;
             int index = 0;
-            verts = new PxVec3[vertCount];
+            verts = new PxVec3[allVerts.Count()];
             indices = new int[vertCount];
 
             ObjectType type = parentObject.GetObjectType();
@@ -290,22 +302,24 @@ namespace Mario64
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
             {
-                transformMatrix = s * offsetTo * r * offsetFrom * t;
+                transformMatrix = s * r * t;
                 //if (type == ObjectType.Sphere || type == ObjectType.Capsule)
                 //    transformMatrix = s * r * t;
                 //else
                 //    transformMatrix = s * offsetTo * r * offsetFrom * t;
             }
 
+            for (int i = 0; i < allVerts.Count(); i++)
+            {
+                verts[i] = ConvertToNDCPxVec3(i, ref transformMatrix);
+            }
+
             foreach (triangle tri in tris)
             {
-                verts[index] = ConvertToNDCPxVec3(tri, 0, ref transformMatrix);
                 indices[index] = tri.pi[0];
                 index++;
-                verts[index] = ConvertToNDCPxVec3(tri, 1, ref transformMatrix);
                 indices[index] = tri.pi[1];
                 index++;
-                verts[index] = ConvertToNDCPxVec3(tri, 2, ref transformMatrix);
                 indices[index] = tri.pi[2];
                 index++;
             }
@@ -405,6 +419,7 @@ namespace Mario64
                                 var c = float.Parse(vStr[2]);
                                 Vector3 v = new Vector3(a, b, c);
                                 verts.Add(v);
+                                allVerts.Add(v);
                             }
                         }
                         else if (result[0] == 'f')
