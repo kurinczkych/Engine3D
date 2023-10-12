@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Data.Common;
 using MagicPhysX;
 
-namespace Mario64
+namespace Engine3D
 {
     //public class Quaternion
     //{

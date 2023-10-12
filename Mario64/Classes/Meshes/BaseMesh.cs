@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Mario64
+namespace Engine3D
 {
 
     public abstract class BaseMesh

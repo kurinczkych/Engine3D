@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "3DEngine", "Mario64\3DEngine.csproj", "{10BCE775-5FA2-4D27-AA2C-1322E6A705E3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Engine3D", "Mario64\Engine3D.csproj", "{10BCE775-5FA2-4D27-AA2C-1322E6A705E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

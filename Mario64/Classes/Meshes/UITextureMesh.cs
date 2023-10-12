@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Formats.Asn1.AsnWriter;
 
-namespace Mario64
+namespace Engine3D
 {
 
     public class UITextureMesh : BaseMesh

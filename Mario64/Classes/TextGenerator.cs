@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Mario64
+namespace Engine3D
 {
     public class TextGenerator
     {
