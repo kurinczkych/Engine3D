@@ -9,7 +9,7 @@ using static System.Formats.Asn1.AsnWriter;
 using System.Runtime.InteropServices;
 using System.Net;
 
-namespace Mario64
+namespace Engine3D
 {
     public unsafe class Physx
     {

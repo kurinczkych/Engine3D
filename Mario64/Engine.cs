@@ -23,7 +23,7 @@ using Microsoft.VisualBasic.FileIO;
 
 #pragma warning disable CS0649
 
-namespace Mario64
+namespace Engine3D
 {
 
     public class Engine : GameWindow
@@ -149,7 +149,6 @@ namespace Mario64
         private List<Object> objects;
 
         private Character character;
-        private Object characterWireframeObject;
 
         private Frustum frustum;
         private List<PointLight> pointLights;
@@ -191,6 +190,12 @@ namespace Mario64
 
             return fps;
         }
+
+        private void AddObject(Object obj)
+        {
+            objects.Add(obj);
+            objects.Sort();
+        }     
 
         private bool DrawCorrectMesh(ref List<float> vertices, Type prevMeshType, Type currentMeshType)
         {
@@ -240,8 +245,7 @@ namespace Mario64
 
             frustum = character.camera.GetFrustum();
 
-            if(characterWireframeObject != null)
-                ((WireframeMesh)characterWireframeObject.GetMesh()) .lines = character.GetBoundLines();
+            ((WireframeMesh)character.GetMesh()).lines = character.GetBoundLines();
 
             GL.Enable(EnableCap.DepthTest);
             shaderProgram.Use();
@@ -458,16 +462,19 @@ namespace Mario64
         {
             base.OnUpdateFrame(args);
 
+            if (KeyboardState.IsKeyDown(Keys.Escape))
+                Close();
+
             character.UpdatePosition(KeyboardState, MouseState, args);
 
             if (temp != Math.Round(totalTime) || temp == -1)
             {
-                objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
-                //objects.Last().SetPosition(new Vector3(rnd.Next(-10, 10) + (-25) + 25 - (7.5f / 2f)));
-                objects.Last().SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
-                objects.Last().SetSize(2);
-                objects.Last().AddSphereCollider(false);
+                Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
+                obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
+                obj.SetSize(2);
+                obj.AddSphereCollider(false);
                 temp += 1;
+                AddObject(obj);
             }
 
             if (totalTime > 0)
@@ -546,15 +553,14 @@ namespace Mario64
             camera.pitch = -18.75002f;
             //-------------------------------------------
 
-            character = new Character(new Vector3(0, 10, 0), camera);
+            noTextureShaderProgram.Use();
+            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ObjectType.Capsule, ref physx, new Vector3(0, 10, 0), camera);
             frustum = character.camera.GetFrustum();
 
             //Point Lights
-            noTextureShaderProgram.Use();
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
 
-            objects.Add(new Object(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ObjectType.Wireframe, ref physx));
-            characterWireframeObject = objects.Last();
+            objects.Add(character);
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
@@ -569,65 +575,22 @@ namespace Mario64
 
             objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
-            objects.Last().SetPosition(new Vector3(0, 20, 0));
-            objects.Last().SetSize(2);
-            objects.Last().AddSphereCollider(false);
-
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount) , ObjectType.Cube, ref physx));
-            //objects.Last().SetPosition(new Vector3(-25, 0, -25));
-            //objects.Last().SetSize(new Vector3(50, 10, 50));
-            //objects.Last().AddCubeCollider(true);
-
-            //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f), 30, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
-            //(meshes.Last() as Cube).AddCubeCollider(false, ref physx);
-            //dynamicCubes.Add(meshes.Last() as Cube);
-
-            //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f) - 5, 40, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
-            //(meshes.Last() as Cube).AddCubeCollider(false, ref physx);
-            //dynamicCubes.Add(meshes.Last() as Cube);
-
-            //meshes.Add(new Cube(meshVao, meshVbo, shaderProgram.id, "red.png", -1, windowSize, ref frustum, ref camera, ref textureCount));
-            //(meshes.Last() as Cube).Init(new Vector3((-25) + 25 - (7.5f / 2f) + 10, 50, (-25) + 25 - (7.5f / 2f)), new Vector3(7.5f, 7.5f, 7.5f), new Vector3(0, 0, 0));
-            //(meshes.Last() as Cube).AddCubeCollider(false, ref physx);
-            //dynamicCubes.Add(meshes.Last() as Cube);
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
+            //objects.Last().SetPosition(new Vector3(0, 20, 0));
+            //objects.Last().SetSize(2);
+            //objects.Last().AddSphereCollider(false);
 
             posTexShader.Use();
 
-            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
-            textMeshes[0].ChangeText("Position = (" + character.PStr + ")");
-            textMeshes[0].Position = new Vector2(10, windowSize.Y - 35);
-            textMeshes[0].Scale = new Vector2(1.5f, 1.5f);
-            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
-            textMeshes[1].ChangeText("Velocity = (" + character.VStr + ")");
-            textMeshes[1].Position = new Vector2(10, windowSize.Y - 60);
-            textMeshes[1].Scale = new Vector2(1.5f, 1.5f);
-            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
-            textMeshes[2].ChangeText("GroundY = (" + character.groundYStr + ")");
-            textMeshes[2].Position = new Vector2(10, windowSize.Y - 85);
-            textMeshes[2].Scale = new Vector2(1.5f, 1.5f);
-            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
-            textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
-            textMeshes[3].Position = new Vector2(10, windowSize.Y - 110);
-            textMeshes[3].Scale = new Vector2(1.5f, 1.5f);
-            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
-            textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
-            textMeshes[4].Position = new Vector2(10, windowSize.Y - 135);
-            textMeshes[4].Scale = new Vector2(1.5f, 1.5f);
-            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
-            textMeshes[5].ChangeText("AngleToGround = (" + character.angleOfGround.ToString() + ")");
-            textMeshes[5].Position = new Vector2(10, windowSize.Y - 160);
-            textMeshes[5].Scale = new Vector2(1.5f, 1.5f);
-            textMeshes.Add(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount));
-            textMeshes[6].ChangeText("ApplyGravity = (" + character.applyGravity.ToString() + ")");
-            textMeshes[6].Position = new Vector2(10, windowSize.Y - 185);
-            textMeshes[6].Scale = new Vector2(1.5f, 1.5f);
+            //objects.Add(new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx));
+            //((TextMesh)objects.Last().GetMesh()).ChangeText("Position = (" + character.PStr + ")");
+            //((TextMesh)objects.Last().GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
+            //((TextMesh)objects.Last().GetMesh()).Scale = new Vector2(1.5f, 1.5f);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
-            if (textMeshes.Count > 0)
+            // We have text on screen
+            if (false)
             {
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -641,13 +604,21 @@ namespace Mario64
             base.OnUnload();
 
             GL.DeleteVertexArray(meshVao.id);
-            foreach(Mesh mesh in meshes)
-                GL.DeleteBuffer(mesh.vbo);
-            foreach(TextMesh mesh in textMeshes)
-                GL.DeleteBuffer(mesh.vbo);
+            GL.DeleteVertexArray(testVao.id);
+            GL.DeleteVertexArray(textVao.id);
+            GL.DeleteVertexArray(noTexVao.id);
+            GL.DeleteVertexArray(uiTexVao.id);
+            GL.DeleteVertexArray(wireVao.id);
+
+            foreach(Object obj in objects)
+            {
+                BaseMesh mesh = obj.GetMesh();
+                GL.DeleteBuffer(mesh.vbo);               
+            }
+
             shaderProgram.Unload();
-            ////noTextureShaderProgram.Unload();
-            ////posTexShader.Unload();
+            noTextureShaderProgram.Unload();
+            posTexShader.Unload();
         }
 
         protected override void OnResize(ResizeEventArgs e)

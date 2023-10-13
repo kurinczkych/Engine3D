@@ -17,7 +17,7 @@ using static OpenTK.Graphics.OpenGL.GL;
 #pragma warning disable CS8604
 #pragma warning disable CS8603
 
-namespace Mario64
+namespace Engine3D
 {
     public class TestMesh : BaseMesh
     {

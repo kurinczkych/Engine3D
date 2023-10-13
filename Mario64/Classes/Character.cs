@@ -1,4 +1,5 @@
 ﻿using Cyotek.Drawing.BitmapFont;
+using MagicPhysX;
 using OpenTK.Audio.OpenAL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -12,7 +13,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Mario64
+namespace Engine3D
 {
     public struct TriangleCollision
     {
@@ -28,7 +29,7 @@ namespace Mario64
         public float penetration_depth;
     }
 
-    public class Character
+    public class Character : Object
     {
         private float sensitivity = 180f;
         private float speed = 2f;
@@ -45,52 +46,24 @@ namespace Mario64
 
         private bool noClip = true;
 
-        private triangle groundTriangle;
-        public float angleOfGround;
-        private float groundY;
-        public string groundYStr
-        {
-            get { return Math.Round(groundY, 2).ToString(); }
-        }
-
-        private float distToGround;
-        public string distToGroundStr
-        {
-            get { return Math.Round(distToGround, 2).ToString(); }
-        }
-
-        private bool isOnGround = false;
-        public string isOnGroundStr
-        {
-            get { return isOnGround.ToString(); }
-        }
-
         private bool firstMove = true;
         public Vector2 lastPos;
 
         private Vector3 OrigPosition;
-        public Vector3 Position;
-        public string PStr
-        {
-            get { return Math.Round(Position.X, 2).ToString() + "," + Math.Round(Position.Y, 2).ToString() + "," + Math.Round(Position.Z, 2).ToString(); }
-        }
-
-        public Vector3 Velocity;
-        public string VStr
-        {
-            get { return Math.Round(Velocity.X, 2).ToString() + "," + Math.Round(Velocity.Y, 2).ToString() + "," + Math.Round(Velocity.Z, 2).ToString(); }
-        }
 
         public Camera camera;
 
-        public Character(Vector3 position, Camera camera)
+        public Character(WireframeMesh mesh, ObjectType type, ref Physx physx, Vector3 position, Camera camera) : base(mesh, type, ref physx)
         {
             OrigPosition = position;
             Position = position;
-            Velocity = Vector3.Zero;
 
             this.camera = camera;
             camera.position = position;
+
+            SetPosition(Position);
+            SetSize(characterHeight, characterWidth);
+            AddCapsuleCollider(false);
         }
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
@@ -103,91 +76,73 @@ namespace Mario64
                 flySpeed_ *= 2;
             }
 
-            List<triangle> trisNear = new List<triangle>();
-            if (!noClip)
+            if(keyboardState.IsKeyReleased(Keys.N))
             {
-                if (applyGravity)
-                    Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
-                if (Velocity.Y < terminalVelocity)
-                    Velocity.Y = terminalVelocity;
+                noClip = !noClip;
+
+                SetGravity(noClip);
             }
 
+            bool isOnGround = IsOnGround();
 
             if (!noClip)
             {
                 if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
                 {
                     if (!noClip)
-                        Velocity.Y += jumpForce;
+                        AddLinearVelocity(0, jumpForce, 0);
                 }
             }
             else
             {
                 if (keyboardState.IsKeyDown(Keys.Space))
                 {
-                    Position.Y += flySpeed_ * 10 * (float)args.Time;
+                    AddPosition(0, flySpeed_ * 10 * (float)args.Time, 0);
                 }
             }
 
             if (keyboardState.IsKeyDown(Keys.LeftControl))
             {
                 if(noClip)
-                    Position.Y -= flySpeed_ * 10 * (float)args.Time;
+                    AddPosition(0, -1 * flySpeed_ * 10 * (float)args.Time, 0);
             }
 
             if (keyboardState.IsKeyDown(Keys.Enter) || keyboardState.IsKeyDown(Keys.KeyPadEnter))
             {
-                Position = OrigPosition;
-                Velocity = Vector3.Zero;
+                SetPosition(OrigPosition);
             }
 
 
             if (keyboardState.IsKeyDown(Keys.W))
             {
                 if(!noClip)
-                    Velocity += (camera.frontClamped * speed_) * (float)args.Time;
+                    AddLinearVelocity((camera.frontClamped * speed_) * (float)args.Time);
                 else
-                    Velocity += (camera.frontClamped * flySpeed_) * (float)args.Time;
+                    AddLinearVelocity((camera.frontClamped * flySpeed) * (float)args.Time);
             }
             if (keyboardState.IsKeyDown(Keys.S))
             {
                 if (!noClip)
-                    Velocity -= (camera.frontClamped * speed_) * (float)args.Time;
+                    AddLinearVelocity(-1 * (camera.frontClamped * speed_) * (float)args.Time);
                 else
-                    Velocity -= (camera.frontClamped * flySpeed_) * (float)args.Time;
+                    AddLinearVelocity(-1 * (camera.frontClamped * flySpeed) * (float)args.Time);
             }
             if (keyboardState.IsKeyDown(Keys.A))
             {
                 if (!noClip)
-                    Velocity -= (camera.right * speed_) * (float)args.Time;
+                    AddLinearVelocity(-1 * (camera.right * speed_) * (float)args.Time);
                 else
-                    Velocity -= (camera.right * flySpeed_) * (float)args.Time;
+                    AddLinearVelocity(-1 * (camera.right * flySpeed) * (float)args.Time);
             }
             if (keyboardState.IsKeyDown(Keys.D))
             {
                 if (!noClip)
-                    Velocity += (camera.right * speed_) * (float)args.Time;
+                    AddLinearVelocity((camera.right * speed_) * (float)args.Time);
                 else
-                    Velocity += (camera.right * flySpeed_) * (float)args.Time;
+                    AddLinearVelocity((camera.right * flySpeed) * (float)args.Time);
             }
 
-            thirdY -= mouseState.ScrollDelta.Y;
-
-            if(!noClip)
-                angleOfGround = groundTriangle.GetAngleToNormal(new Vector3(0, -1, 0));
-
-            // 3. Update Position
-            Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
-
-
-            Position += Velocity;
-            Velocity.X *= 0.9f;
-            Velocity.Z *= 0.9f;
-
-            if (float.IsNaN(Position.X) || float.IsNaN(Position.Y) || float.IsNaN(Position.Z))
-                ;
-
-            ZeroSmallVelocity();
+            //ZeroSmallVelocity();
 
             camera.position = Position;
             camera.position.Y += thirdY;
@@ -211,35 +166,6 @@ namespace Mario64
             camera.UpdateVectors();
         }
 
-        private void GetGround(List<triangle> tris)
-        {
-            triangle closest = new triangle();
-
-            Vector3 rayDir = new Vector3(0, -1, 0);
-            Vector3 intersect = new Vector3();
-
-            foreach (triangle triangle in tris)
-            {
-                if(triangle.RayIntersects(Position, rayDir, out intersect))
-                {
-                    closest = triangle;
-                    break;
-                }    
-            }
-
-            Vector3 pointAbove = closest.GetPointAboveXZ(Position);
-
-            Vector3 center = closest.GetMiddle();
-            groundTriangle = closest;
-            distToGround = Position.Y - center.Y;
-            groundY = center.Y;
-
-            if (pointAbove != Vector3.NegativeInfinity)
-            {
-                distToGround = Position.Y - pointAbove.Y;
-                groundY = pointAbove.Y;
-            }
-        }
 
         public List<Line> GetBoundLines()
         {
@@ -247,34 +173,6 @@ namespace Mario64
             List<Line> lines = c.GetWireframe(10);
 
             return lines;
-        }
-
-        public List<triangle> GetTrianglesColliding(ref Octree octree)
-        {
-            Capsule capsule = new Capsule(characterWidth, characterHeight * 2, Position - new Vector3(0, characterHeight, 0));
-            List<TriangleCollision> collidedTris = new List<TriangleCollision>();
-
-            foreach (triangle tri in octree.GetNearTriangles(Position))
-            {
-                Vector3 penetration_normal = new Vector3();
-                float penetration_depth = 0.0f;
-                if (tri.IsCapsuleInTriangle(capsule, out penetration_normal, out penetration_depth))
-                    collidedTris.Add(new TriangleCollision(tri, penetration_normal, penetration_depth));
-            }
-
-            return collidedTris.Select(x => x.triangle).ToList();
-        }
-
-        private void ZeroSmallVelocity()
-        {
-            if (Velocity.X < 0.0001f && Velocity.X > -0.0001f)
-                Velocity.X = 0;
-
-            if (Velocity.Y < 0.0001f && Velocity.Y > -0.0001f)
-                Velocity.Y = 0;
-
-            if (Velocity.Z < 0.0001f && Velocity.Z > -0.0001f)
-                Velocity.Z = 0;
         }
     }
 }

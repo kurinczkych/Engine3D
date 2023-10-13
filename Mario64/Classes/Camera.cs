@@ -8,7 +8,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using static System.Net.WebRequestMethods;
 
-namespace Mario64
+namespace Engine3D
 {
     public class Camera
     {

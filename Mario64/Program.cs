@@ -1,4 +1,4 @@
-﻿namespace Mario64
+﻿namespace Engine3D
 {
     internal class Program
     {

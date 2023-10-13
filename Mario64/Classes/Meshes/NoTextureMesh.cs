@@ -16,7 +16,7 @@ using static System.Net.Mime.MediaTypeNames;
 #pragma warning disable CS8604
 #pragma warning disable CS8603
 
-namespace Mario64
+namespace Engine3D
 {
 
     public class NoTextureMesh : BaseMesh

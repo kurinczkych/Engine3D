@@ -13,7 +13,7 @@ using System.Runtime;
 
 #pragma warning disable CS8767
 
-namespace Mario64
+namespace Engine3D
 {
     public enum ObjectType
     {
@@ -50,6 +50,58 @@ namespace Mario64
         public float StaticFriction { get; private set; }
         public float DynamicFriction { get; private set; }
         public float Restitution { get; private set; }
+
+        private PxVec3 linearVelocity;
+        public Vector3 LinearVelocity
+        {
+            get
+            {
+                if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                    throw new Exception("Cannot return linear velocity of a static collider!");
+                if (dynamicColliderPtr == IntPtr.Zero)
+                    throw new Exception("This object doesn't have a dynamic collider!");
+
+                return new Vector3(linearVelocity.x, linearVelocity.y, linearVelocity.z);
+            }
+            protected set
+            {
+                if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                    throw new Exception("Cannot set linear velocity of a static collider!");
+                if (dynamicColliderPtr == IntPtr.Zero)
+                    throw new Exception("This object doesn't have a dynamic collider!");
+
+                linearVelocity = new PxVec3() { x = value.X, y = value.Y, z = value.Z };
+
+                PxVec3 vec3 = new PxVec3() { x = linearVelocity.x, y = linearVelocity.y, z = linearVelocity.z };
+                GetDynamicCollider()->SetLinearVelocityMut(&vec3, true);
+            }
+        }
+
+        private PxVec3 angularVelocity;
+        public Vector3 AngularVelocity
+        {
+            get
+            {
+                if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                    throw new Exception("Cannot return angular velocity of a static collider!");
+                if (dynamicColliderPtr == IntPtr.Zero)
+                    throw new Exception("This object doesn't have a dynamic collider!");
+
+                return new Vector3(angularVelocity.x, angularVelocity.y, angularVelocity.z);
+            }
+            protected set
+            {
+                if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                    throw new Exception("Cannot set angular velocity of a static collider!");
+                if (dynamicColliderPtr == IntPtr.Zero)
+                    throw new Exception("This object doesn't have a dynamic collider!");
+
+                angularVelocity = new PxVec3() { x = value.X, y = value.Y, z = value.Z };
+
+                PxVec3 vec3 = new PxVec3() { x = angularVelocity.x, y = angularVelocity.y, z = angularVelocity.z };
+                GetDynamicCollider()->SetAngularVelocityMut(&vec3, true);
+            }
+        }
 
         public Object(BaseMesh mesh, ObjectType type, ref Physx physx)
         {
@@ -146,24 +198,6 @@ namespace Mario64
                 physx.GetScene()->AddActorMut((PxActor*)staticCollider, null);
                 staticColliderPtr = new IntPtr(staticCollider);
 
-                //PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
-
-                //PxMeshScale scale = PxMeshScale_new_3(&size, &quat);
-                //PxMeshGeometryFlags flags = PxMeshGeometryFlags.DoubleSided;
-
-                //PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &scale, flags);
-                //var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
-                //PxShape* shape = physx.GetPhysics()->CreateShapeMut((PxGeometry*)&meshGeo, material, true, PxShapeFlags.Visualization);
-
-                //PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
-                //PxTransform transform = PxTransform_new_1(&position);
-                ////PxRigidStatic* actor = PxPhysics_createRigidStatic_mut(physx.physics, &transform);
-                //var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-                //staticColliderPtr = new IntPtr(physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&shape, material, &identity));
-
-                //physx.GetScene()->AddActorMut((PxActor*)GetStaticCollider(), null);
-    
-
                 vertsHandle.Free();
                 indicesHandle.Free();
             }
@@ -232,11 +266,44 @@ namespace Mario64
             return thisOrderIndex.CompareTo(otherOrderIndex);
         }
 
+        public void SetGravity(bool doesAffect)
+        {
+            if(dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+            if(dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set gravity of a static collider!");
+
+            PxActor_setActorFlag_mut((PxActor*)GetDynamicCollider(), PxActorFlag.DisableGravity, doesAffect);
+        }
+        
+        public bool IsOnGround()
+        {
+            PxVec3 start = new PxVec3() { x = Position.X, y = Position.Y, z = Position.Z };
+            PxVec3 dir = new PxVec3() { x = 0, y = -1, z = 0 };
+
+            PxQueryHit hit;
+            PxQueryFilterData data = PxQueryFilterData_new();
+            PxQueryFilterCallback callback;
+            PxQueryCache cache = PxQueryCache_new();
+            //physx.GetScene()->QueryExtRaycastAny
+            if (PxSceneQueryExt_raycastAny(physx.GetScene(), &start, &dir, 0.1f, &hit, &data, &callback, &cache))
+                return true;
+            
+            
+            return false;
+        } 
+
         #region Collision management
         public void CollisionResponse()
         {
             if (dynamicColliderPtr != IntPtr.Zero)
             {
+                PxVec3 vec3lin = GetDynamicCollider()->GetLinearVelocity();
+                PxVec3 vec3ang = GetDynamicCollider()->GetAngularVelocity();
+
+                LinearVelocity = new Vector3(vec3lin.x, vec3lin.y, vec3lin.z);
+                AngularVelocity = new Vector3(vec3ang.x, vec3ang.y, vec3ang.z);
+
                 PxTransform transform = PxRigidActor_getGlobalPose((PxRigidActor*)GetDynamicCollider());
 
                 Position.X = transform.p.x;
@@ -248,12 +315,117 @@ namespace Mario64
         }
         #endregion
 
+        #region Getters
         public Vector3 GetPosition()
         {
             return Position;
         }
 
+        public Vector3 GetLinearVelocity()
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot return velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 velocity = GetDynamicCollider()->GetLinearVelocity();
+            return new Vector3(velocity.x, velocity.y, velocity.z);
+        }
+
+        public Vector3 GetAngularVelocity()
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot return velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 velocity = GetDynamicCollider()->GetAngularVelocity();
+            return new Vector3(velocity.x, velocity.y, velocity.z);
+        }
+        #endregion
+
         #region Setters
+        public void SetLinearVelocity(Vector3 velocity)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = velocity.X, y = velocity.Y, z = velocity.Z };
+            GetDynamicCollider()->SetLinearVelocityMut(&vec3, true);
+        }
+        public void SetAngularVelocity(Vector3 velocity)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = velocity.X, y = velocity.Y, z = velocity.Z };
+            GetDynamicCollider()->SetAngularVelocityMut(&vec3, true);
+        }
+        public void SetLinearVelocity(float x, float y, float z)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = x, y = y, z = z };
+            GetDynamicCollider()->SetLinearVelocityMut(&vec3, true);
+        }
+        public void SetAngularVelocity(float x, float y, float z)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = x, y = y, z = z };
+            GetDynamicCollider()->SetAngularVelocityMut(&vec3, true);
+        }
+        public void AddLinearVelocity(Vector3 velocity)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = LinearVelocity.X + velocity.X, y = LinearVelocity.Y + velocity.Y, z = LinearVelocity.Z + velocity.Z };
+            GetDynamicCollider()->SetLinearVelocityMut(&vec3, true);
+        }
+        public void AddAngularVelocity(Vector3 velocity)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = AngularVelocity.X + velocity.X, y = AngularVelocity.Y + velocity.Y, z = AngularVelocity.Z + velocity.Z };
+            GetDynamicCollider()->SetAngularVelocityMut(&vec3, true);
+        }
+        public void AddLinearVelocity(float x, float y, float z)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = LinearVelocity.X + x, y = LinearVelocity.Y + y, z = LinearVelocity.Z + z };
+            GetDynamicCollider()->SetLinearVelocityMut(&vec3, true);
+        }
+        public void AddAngularVelocity(float x, float y, float z)
+        {
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr != IntPtr.Zero)
+                throw new Exception("Cannot set velocity of a static collider");
+            if (dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            PxVec3 vec3 = new PxVec3() { x = AngularVelocity.X + x, y = AngularVelocity.Y + y, z = AngularVelocity.Z + z };
+            GetDynamicCollider()->SetAngularVelocityMut(&vec3, true);
+        }
+
         public void SetPosition(Vector3 position)
         {
             Position = position;
@@ -263,6 +435,57 @@ namespace Mario64
                 return;
 
             PxVec3 vec = PxVec3_new_3(position.X, position.Y, position.Z);
+            PxTransform pose = PxTransform_new_1(&vec);
+
+            if(dynamicColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
+            else if(staticColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
+        }
+
+        public void SetPosition(float x, float y, float z)
+        {
+            Position = new Vector3(x,y,z);
+            
+
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
+            PxVec3 vec = PxVec3_new_3(x, y, z);
+            PxTransform pose = PxTransform_new_1(&vec);
+
+            if(dynamicColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
+            else if(staticColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
+        }
+
+        public void AddPosition(Vector3 position)
+        {
+            Position += position;
+            
+
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
+            PxVec3 vec = PxVec3_new_3(Position.X, Position.Y, Position.Z);
+            PxTransform pose = PxTransform_new_1(&vec);
+
+            if(dynamicColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
+            else if(staticColliderPtr != IntPtr.Zero)
+                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
+        }
+
+        public void AddPosition(float x, float y, float z)
+        {
+            Position += new Vector3(x,y,z);
+            
+
+            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                return;
+
+            PxVec3 vec = PxVec3_new_3(Position.X, Position.Y, Position.Z);
             PxTransform pose = PxTransform_new_1(&vec);
 
             if(dynamicColliderPtr != IntPtr.Zero)
