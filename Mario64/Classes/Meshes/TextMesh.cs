@@ -58,8 +58,6 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.textGenerator = tg;
 
-            //tris = textGenerator.GetTriangles("test");
-
             SendUniforms();
         }
 

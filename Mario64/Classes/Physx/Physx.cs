@@ -95,23 +95,6 @@ namespace Engine3D
 
                     controllerManagerPtr = new IntPtr(phys_PxCreateControllerManager(GetScene(), true));
                 }
-                
-
-                //var material = physics->CreateMaterialMut(0.5f, 0.5f, 0.6f);
-
-                //var plane = PxPlane_new_1(0.0f, 1.0f, 0.0f, 0.0f);
-                //var groundPlane = physics->PhysPxCreatePlane(&plane, material);
-                //scene->AddActorMut((PxActor*)groundPlane, null);
-
-                //var sphereGeo = PxSphereGeometry_new(10.0f);
-                //var vec3 = new PxVec3 { x = 0.0f, y = 40.0f, z = 100.0f };
-                //var transform = PxTransform_new_1(&vec3);
-                //var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-                //var sphere = physics->PhysPxCreateDynamic(&transform, (PxGeometry*)&sphereGeo, material, 10.0f, &identity);
-                //PxRigidBody_setAngularDamping_mut((PxRigidBody*)sphere, 0.5f);
-                //scene->AddActorMut((PxActor*)sphere, null);
-
-
             }
         }
 

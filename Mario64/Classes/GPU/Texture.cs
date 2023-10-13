@@ -42,9 +42,6 @@ namespace Engine3D
             Bind();
             LoadTexture(embeddedResourceName, flipY);
 
-            //int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            //GL.Uniform1(textureLocation, textureUnit);  // 0 corresponds to TextureUnit.Texture0
-
             Unbind();
         }
 
