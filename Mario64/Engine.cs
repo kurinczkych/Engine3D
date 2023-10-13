@@ -468,15 +468,15 @@ namespace Engine3D
 
             character.UpdatePosition(KeyboardState, MouseState, args);
 
-            //if (temp != Math.Round(totalTime) || temp == -1)
-            //{
-            //    Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-            //    obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
-            //    obj.SetSize(2);
-            //    obj.AddSphereCollider(false);
-            //    temp += 1;
-            //    AddObject(obj);
-            //}
+            if (temp != Math.Round(totalTime) || temp == -1)
+            {
+                Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
+                obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
+                obj.SetSize(2);
+                obj.AddSphereCollider(false);
+                temp += 1;
+                AddObject(obj);
+            }
 
             if (totalTime > 0)
             {
@@ -572,7 +572,7 @@ namespace Engine3D
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
             //objects.Last().SetPosition(new Vector3(0, 20, 0));
