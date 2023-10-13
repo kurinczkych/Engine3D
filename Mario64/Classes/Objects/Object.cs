@@ -10,6 +10,7 @@ using static System.Formats.Asn1.AsnWriter;
 using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable CS8767
 
@@ -42,6 +43,11 @@ namespace Engine3D
 
         public Vector3 Position;
         public Quaternion Rotation { get; private set; }
+
+        public string PStr
+        {
+            get { return Math.Round(Position.X, 2).ToString() + "," + Math.Round(Position.Y, 2).ToString() + "," + Math.Round(Position.Z, 2).ToString(); }
+        }
 
         public Vector3 Size { get; private set; }
         public float Radius { get; private set; }
@@ -113,6 +119,7 @@ namespace Engine3D
             this.type = type;
             this.physx = physx;
 
+            Position = Vector3.Zero;
             Rotation = Quaternion.Identity;
 
             mesh.parentObject = this;
@@ -281,17 +288,25 @@ namespace Engine3D
             PxVec3 start = new PxVec3() { x = Position.X, y = Position.Y, z = Position.Z };
             PxVec3 dir = new PxVec3() { x = 0, y = -1, z = 0 };
 
-            PxQueryHit hit;
-            PxQueryFilterData data = PxQueryFilterData_new();
-            PxQueryFilterCallback callback;
-            PxQueryCache cache = PxQueryCache_new();
-            //physx.GetScene()->QueryExtRaycastAny
-            if (PxSceneQueryExt_raycastAny(physx.GetScene(), &start, &dir, 0.1f, &hit, &data, &callback, &cache))
+            PxHitFlags hitFlag = PxHitFlags.Default;
+            PxRaycastHit hit = new PxRaycastHit();
+            PxQueryFilterData filterData = PxQueryFilterData_new();
+
+            if (physx.GetScene()->QueryExtRaycastSingle(&start,&dir,0.1f,hitFlag,&hit,&filterData,null,null))
+            {
                 return true;
-            
-            
+            }
+
             return false;
         } 
+
+        public void Lock(PxRigidDynamicLockFlag flag, bool value)
+        {
+            if(dynamicColliderPtr == IntPtr.Zero)
+                throw new Exception("This object doesn't have a dynamic collider!");
+
+            GetDynamicCollider()->SetRigidDynamicLockFlagMut(flag, value);
+        }
 
         #region Collision management
         public void CollisionResponse()

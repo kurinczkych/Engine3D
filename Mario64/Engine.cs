@@ -138,13 +138,9 @@ namespace Engine3D
         private int frameCount;
         private double totalTime;
         private int temp = -1;
+        private bool haveText = false;
 
         // Engine variables
-        private List<Mesh> meshes;
-        private List<TestMesh> testMeshes;
-        private List<TextMesh> textMeshes;
-        private List<UITextureMesh> uiTexMeshes;
-        private List<WireframeMesh> wireMeshes;
 
         private List<Object> objects;
 
@@ -160,16 +156,11 @@ namespace Engine3D
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
 
             windowSize = new Vector2(width, height);
-            this.CenterWindow(new Vector2i(width, height));
-            meshes = new List<Mesh>();
-            testMeshes = new List<TestMesh>();
-            textMeshes = new List<TextMesh>();
-            uiTexMeshes = new List<UITextureMesh>();
+            CenterWindow(new Vector2i(width, height));
             frustum = new Frustum();
             shaderProgram = new Shader();
             posTexShader = new Shader();
             pointLights = new List<PointLight>();
-            wireMeshes = new List<WireframeMesh>();
 
             objects = new List<Object>();
         }
@@ -193,6 +184,8 @@ namespace Engine3D
 
         private void AddObject(Object obj)
         {
+            if (obj.GetObjectType() == ObjectType.TextMesh)
+                haveText = true;
             objects.Add(obj);
             objects.Sort();
         }     
@@ -244,8 +237,6 @@ namespace Engine3D
             double fps = DrawFps(args.Time);
 
             frustum = character.camera.GetFrustum();
-
-            ((WireframeMesh)character.GetMesh()).lines = character.GetBoundLines();
 
             GL.Enable(EnableCap.DepthTest);
             shaderProgram.Use();
@@ -373,6 +364,14 @@ namespace Engine3D
             if (DrawCorrectMesh(ref vertices, currentMesh, typeof(int)))
                 vertices = new List<float>();
 
+            //Drawing character wireframe
+            WireframeMesh characterWiremesh = character.mesh;
+            noTextureShaderProgram.Use();
+            characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            vertices.AddRange(characterWiremesh.Draw());
+            wireVbo.Buffer(vertices);
+            GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            vertices = new List<float>();
 
             //foreach (Mesh mesh in meshes)
             //{
@@ -436,8 +435,10 @@ namespace Engine3D
             //uiTexVbo.Buffer(vertices);
             //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
 
-            //textMeshes[0].ChangeText("Position = (" + character.PStr + ")");
-            //textMeshes[1].ChangeText("Velocity = (" + character.VStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
+                        .ChangeText("Position = (" + character.PStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
+                        .ChangeText("Velocity = (" + character.VStr + ")");
             //textMeshes[2].ChangeText("GroundY = (" + character.groundYStr + ")");
             //textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
             //textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
@@ -467,15 +468,15 @@ namespace Engine3D
 
             character.UpdatePosition(KeyboardState, MouseState, args);
 
-            if (temp != Math.Round(totalTime) || temp == -1)
-            {
-                Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-                obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
-                obj.SetSize(2);
-                obj.AddSphereCollider(false);
-                temp += 1;
-                AddObject(obj);
-            }
+            //if (temp != Math.Round(totalTime) || temp == -1)
+            //{
+            //    Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
+            //    obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
+            //    obj.SetSize(2);
+            //    obj.AddSphereCollider(false);
+            //    temp += 1;
+            //    AddObject(obj);
+            //}
 
             if (totalTime > 0)
             {
@@ -547,20 +548,18 @@ namespace Engine3D
             camera.UpdateVectors();
 
             //TEMP---------------------------------------
-            camera.position.X = -6.97959471f;
-            camera.position.Z = -7.161373f;
-            camera.yaw = 45.73648f;
-            camera.pitch = -18.75002f;
+            //camera.position.X = -6.97959471f;
+            //camera.position.Z = -7.161373f;
+            //camera.yaw = 45.73648f;
+            //camera.pitch = -18.75002f;
             //-------------------------------------------
 
             noTextureShaderProgram.Use();
-            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ObjectType.Capsule, ref physx, new Vector3(0, 10, 0), camera);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, new Vector3(0, 10, 0), camera);
             frustum = character.camera.GetFrustum();
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
-
-            objects.Add(character);
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
@@ -582,15 +581,22 @@ namespace Engine3D
 
             posTexShader.Use();
 
-            //objects.Add(new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx));
-            //((TextMesh)objects.Last().GetMesh()).ChangeText("Position = (" + character.PStr + ")");
-            //((TextMesh)objects.Last().GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
-            //((TextMesh)objects.Last().GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
+            ((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
+            ((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            AddObject(textObj1);
+
+            Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            ((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
+            ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
+            ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            AddObject(textObj2);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
             // We have text on screen
-            if (false)
+            if (haveText)
             {
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);

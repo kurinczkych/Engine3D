@@ -18,12 +18,14 @@ namespace Engine3D
         private IntPtr physicsPtr;
         private IntPtr scenePtr;
         private IntPtr dispatcherPtr;
+        private IntPtr controllerManagerPtr;
 
         public PxFoundation* GetFoundation() { return (PxFoundation*)foundationPtr.ToPointer(); }
         public PxPvd* GetPvd() { return (PxPvd*)pvdPtr.ToPointer(); }
         public PxPhysics* GetPhysics() { return (PxPhysics*)physicsPtr.ToPointer(); }
         public PxScene* GetScene() { return (PxScene*)scenePtr.ToPointer(); }
         public PxDefaultCpuDispatcher* GetDispatcher() { return (PxDefaultCpuDispatcher*)dispatcherPtr.ToPointer(); }
+        public PxControllerManager* GetControllerManager() { return (PxControllerManager*)controllerManagerPtr.ToPointer(); }
 
         public Physx(bool usePvd=false)
         {
@@ -63,6 +65,8 @@ namespace Engine3D
 
                     scenePtr = new IntPtr(GetPhysics()->CreateSceneMut(&sceneDesc));
 
+                    controllerManagerPtr = new IntPtr(phys_PxCreateControllerManager(GetScene(), true));
+
                     var pvdClient = GetScene()->GetScenePvdClientMut();
                     if (pvdClient != null)
                     {
@@ -82,8 +86,14 @@ namespace Engine3D
                     dispatcherPtr = new IntPtr(phys_PxDefaultCpuDispatcherCreate(1, null, PxDefaultCpuDispatcherWaitForWorkMode.WaitForWork, 0));
                     sceneDesc.cpuDispatcher = (PxCpuDispatcher*)GetDispatcher();
                     sceneDesc.filterShader = get_default_simulation_filter_shader();
+                    //phys_PxDefaultSimulationFilterShader;
+                    //PxFilterFlags f = phys_PxDefaultSimulationFilterShader()
+                    
+                    sceneDesc.flags |= PxSceneFlags.EnableCcd;
 
                     scenePtr = new IntPtr(GetPhysics()->CreateSceneMut(&sceneDesc));
+
+                    controllerManagerPtr = new IntPtr(phys_PxCreateControllerManager(GetScene(), true));
                 }
                 
 
@@ -116,6 +126,7 @@ namespace Engine3D
         {
             unsafe
             {
+                GetControllerManager()->ReleaseMut();
                 PxScene_release_mut(GetScene());
                 PxDefaultCpuDispatcher_release_mut(GetDispatcher());
                 PxPhysics_release_mut(GetPhysics());

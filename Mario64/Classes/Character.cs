@@ -1,5 +1,6 @@
 ﻿using Cyotek.Drawing.BitmapFont;
 using MagicPhysX;
+using static MagicPhysX.NativeMethods;
 using OpenTK.Audio.OpenAL;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -15,55 +16,96 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
-    public struct TriangleCollision
-    {
-        public TriangleCollision(triangle triangle, Vector3 penetration_normal, float penetration_depth)
-        {
-            this.triangle = triangle;
-            this.penetration_normal = penetration_normal;
-            this.penetration_depth = penetration_depth;
-        }
 
-        public triangle triangle;
-        public Vector3 penetration_normal;
-        public float penetration_depth;
-    }
-
-    public class Character : Object
+    public unsafe class Character
     {
         private float sensitivity = 180f;
         private float speed = 2f;
         private float flySpeed = 10f;
-        //private float gravity = 0.7f;
-        public bool applyGravity = true;
+        public bool isOnGround = false;
         private float gravity = 120;
-        private float jumpForce = 0.08f;
+        private float jumpForce = 0.20f;
         private float terminalVelocity = -0.7f;
         private float characterHeight = 4f;
         private float characterWidth = 2f;
 
+        //PxCapsuleControllerDesc
+        private float slopeLimit = 0.707f;
+        private float contactOffset = 0.2f;
+        private float stepOffset = 0.5f;
+        private float density = 0.5f;
+
+        private float StaticFriction = 0.5f;
+        private float DynamicFriction = 0.5f;
+        private float Restitution = 0.1f;
+
+        private IntPtr capsuleControllerDescPtr;
+        public PxCapsuleControllerDesc* GetCapsuleControllerDesc() { return (PxCapsuleControllerDesc*)capsuleControllerDescPtr.ToPointer(); }
+
+        private IntPtr capsuleControllerPtr;
+        public PxController* GetCapsuleController() { return (PxController*)capsuleControllerPtr.ToPointer(); }
+
+        //----------------------------------------------
         private float thirdY = 10f;
 
-        private bool noClip = true;
+        private bool noClip = false;
 
         private bool firstMove = true;
         public Vector2 lastPos;
 
+        private Vector3 Velocity;
+        private Vector3 Position;
         private Vector3 OrigPosition;
+
+        public string PStr
+        {
+            get { return Math.Round(Position.X, 2).ToString() + "," + Math.Round(Position.Y, 2).ToString() + "," + Math.Round(Position.Z, 2).ToString(); }
+        }
+
+        public string VStr
+        {
+            get { return Math.Round(Velocity.X, 2).ToString() + "," + Math.Round(Velocity.Y, 2).ToString() + "," + Math.Round(Velocity.Z, 2).ToString(); }
+        }
+
+        private Physx physx;
+        public WireframeMesh mesh;
 
         public Camera camera;
 
-        public Character(WireframeMesh mesh, ObjectType type, ref Physx physx, Vector3 position, Camera camera) : base(mesh, type, ref physx)
+
+        public Character(WireframeMesh mesh, ref Physx physx, Vector3 position, Camera camera)
         {
-            OrigPosition = position;
+            this.mesh = mesh;
+            this.physx = physx;
+
+            capsuleControllerDescPtr = new IntPtr(PxCapsuleControllerDesc_new_alloc());
+            GetCapsuleControllerDesc()->height = characterHeight;
+            GetCapsuleControllerDesc()->radius = characterWidth;
+            GetCapsuleControllerDesc()->position = new PxExtendedVec3() { x = position.X, y = position.Y, z = position.Z };
+            GetCapsuleControllerDesc()->upDirection = new PxVec3() { x = 0, y = 1, z = 0 };
+            GetCapsuleControllerDesc()->slopeLimit = slopeLimit;
+            GetCapsuleControllerDesc()->invisibleWallHeight = 0.0f;
+            GetCapsuleControllerDesc()->contactOffset = contactOffset;
+            GetCapsuleControllerDesc()->stepOffset = stepOffset;
+            GetCapsuleControllerDesc()->density = density;
+            GetCapsuleControllerDesc()->scaleCoeff = 1.0f;
+            GetCapsuleControllerDesc()->material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+
+            if (!PxCapsuleControllerDesc_isValid(GetCapsuleControllerDesc()))
+                throw new Exception("Capsule Controller Descriptor is not valid!");
+
+            capsuleControllerPtr = new IntPtr(physx.GetControllerManager()->CreateControllerMut((PxControllerDesc*)GetCapsuleControllerDesc()));
+
+            ((PxRigidBody*)GetCapsuleController()->GetActor())->SetRigidBodyFlagMut(PxRigidBodyFlag.EnableCcd, true);
+
+            mesh.lines = GetBoundLines();
+
+            Velocity = Vector3.Zero;
             Position = position;
+            OrigPosition = position;
 
             this.camera = camera;
             camera.position = position;
-
-            SetPosition(Position);
-            SetSize(characterHeight, characterWidth);
-            AddCapsuleCollider(false);
         }
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
@@ -76,78 +118,105 @@ namespace Engine3D
                 flySpeed_ *= 2;
             }
 
-            if(keyboardState.IsKeyReleased(Keys.N))
+            if (!noClip)
             {
-                noClip = !noClip;
-
-                SetGravity(noClip);
+                if (!isOnGround)
+                    Velocity.Y = Velocity.Y - gravity * (float)Math.Pow(args.Time, 2) / 2;
+                if (Velocity.Y < terminalVelocity)
+                    Velocity.Y = terminalVelocity;
             }
 
-            bool isOnGround = IsOnGround();
 
             if (!noClip)
             {
                 if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
                 {
                     if (!noClip)
-                        AddLinearVelocity(0, jumpForce, 0);
+                        Velocity.Y += jumpForce;
                 }
             }
             else
             {
+                //TODO NOCLIP
                 if (keyboardState.IsKeyDown(Keys.Space))
                 {
-                    AddPosition(0, flySpeed_ * 10 * (float)args.Time, 0);
+                    Position.Y += flySpeed_ * 10 * (float)args.Time;
                 }
             }
 
+            //TODO NOCLIP
             if (keyboardState.IsKeyDown(Keys.LeftControl))
             {
-                if(noClip)
-                    AddPosition(0, -1 * flySpeed_ * 10 * (float)args.Time, 0);
+                if (noClip)
+                    Position.Y -= flySpeed_ * 10 * (float)args.Time;
             }
 
             if (keyboardState.IsKeyDown(Keys.Enter) || keyboardState.IsKeyDown(Keys.KeyPadEnter))
             {
-                SetPosition(OrigPosition);
+                Position = OrigPosition;
+                Velocity = Vector3.Zero;
+
+                PxExtendedVec3 vec3 = new PxExtendedVec3() { x = Position.X, y = Position.Y, z = Position.Z };
+                GetCapsuleController()->SetPositionMut(&vec3);
             }
 
 
+            //TODO NOCLIP
             if (keyboardState.IsKeyDown(Keys.W))
             {
-                if(!noClip)
-                    AddLinearVelocity((camera.frontClamped * speed_) * (float)args.Time);
+                if (!noClip)
+                    Velocity += (camera.frontClamped * speed_) * (float)args.Time;
                 else
-                    AddLinearVelocity((camera.frontClamped * flySpeed) * (float)args.Time);
+                    Velocity += (camera.frontClamped * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.S))
             {
                 if (!noClip)
-                    AddLinearVelocity(-1 * (camera.frontClamped * speed_) * (float)args.Time);
+                    Velocity -= (camera.frontClamped * speed_) * (float)args.Time;
                 else
-                    AddLinearVelocity(-1 * (camera.frontClamped * flySpeed) * (float)args.Time);
+                    Velocity -= (camera.frontClamped * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.A))
             {
                 if (!noClip)
-                    AddLinearVelocity(-1 * (camera.right * speed_) * (float)args.Time);
+                    Velocity -= (camera.right * speed_) * (float)args.Time;
                 else
-                    AddLinearVelocity(-1 * (camera.right * flySpeed) * (float)args.Time);
+                    Velocity -= (camera.right * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.D))
             {
                 if (!noClip)
-                    AddLinearVelocity((camera.right * speed_) * (float)args.Time);
+                    Velocity += (camera.right * speed_) * (float)args.Time;
                 else
-                    AddLinearVelocity((camera.right * flySpeed) * (float)args.Time);
+                    Velocity += (camera.right * flySpeed_) * (float)args.Time;
             }
 
-            //ZeroSmallVelocity();
+            PxVec3 disp = new PxVec3() { x = Velocity.X, y = Velocity.Y, z = Velocity.Z };
+
+            PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
+            PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
+            PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
+            isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
+
+            PxExtendedVec3* PxPos = GetCapsuleController()->GetPosition();
+            mesh.Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z);
+            Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z); ;
+
+            Velocity.X *= 0.9f;
+            Velocity.Z *= 0.9f;
+
+            ZeroSmallVelocity();
+            thirdY -= mouseState.ScrollDelta.Y;
 
             camera.position = Position;
-            camera.position.Y += thirdY;
             camera.position.X -= (float)Math.Cos(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-6.97959471
+            camera.position.Y += thirdY;
             camera.position.Z -= (float)Math.Sin(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-7.161373
+
+            thirdY = 0;
+            //camera.position.X = Position.X;
+            //camera.position.Y = Position.Y + characterHeight;
+            //camera.position.Z = Position.Z;
 
             if (firstMove)
             {
@@ -169,10 +238,22 @@ namespace Engine3D
 
         public List<Line> GetBoundLines()
         {
-            Capsule c = new Capsule(characterWidth, characterHeight*2, Position - new Vector3(0, characterHeight, 0));
+            Capsule c = new Capsule(characterWidth, characterHeight*2, new Vector3(0, -(characterWidth+characterWidth), 0));
             List<Line> lines = c.GetWireframe(10);
 
             return lines;
+        }
+
+        private void ZeroSmallVelocity()
+        {
+            if (Velocity.X < 0.0001f && Velocity.X > -0.0001f)
+                Velocity.X = 0;
+
+            if (Velocity.Y < 0.0001f && Velocity.Y > -0.0001f)
+                Velocity.Y = 0;
+
+            if (Velocity.Z < 0.0001f && Velocity.Z > -0.0001f)
+                Velocity.Z = 0;
         }
     }
 }

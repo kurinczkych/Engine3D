@@ -26,14 +26,12 @@ namespace Engine3D
         private List<float> vertices = new List<float>();
         private string? embeddedModelName;
 
-        public Vector3 Position;
-        public Quaternion Rotation;
         public Vector3 Scale;
         private bool IsTransformed
         {
             get
             {
-                return !(Position == Vector3.Zero && Rotation == Quaternion.Identity && Scale == Vector3.One);
+                return !(parentObject.Position == Vector3.Zero && parentObject.Rotation == Quaternion.Identity && Scale == Vector3.One);
             }
         }
 
@@ -58,8 +56,6 @@ namespace Engine3D
             this.frustum = frustum;
             this.camera = camera;
 
-            Position = Vector3.Zero;
-            Rotation = Quaternion.Identity;
             Scale = Vector3.One;
 
             ComputeVertexNormals(ref tris);
@@ -115,8 +111,8 @@ namespace Engine3D
             vertices = new List<float>();
 
             Matrix4 s = Matrix4.CreateScale(Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(Position);
+            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+            Matrix4 t = Matrix4.CreateTranslation(parentObject.Position);
             Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale / 2f);
             Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale / 2f);
 

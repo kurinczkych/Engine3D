@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Formats.Asn1.AsnWriter;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -30,9 +31,22 @@ namespace Engine3D
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
+        private bool IsTransformed
+        {
+            get
+            {
+                if(parentObject == null)
+                    return !(Position == Vector3.Zero && Rotation == Quaternion.Identity);
+                else
+                    return !(parentObject.Position == Vector3.Zero && parentObject.Rotation == Quaternion.Identity);
+            }
+        }
 
         public List<Line> lines;
         private Color4 color;
+
+        public Vector3 Position;
+        public Quaternion Rotation;
 
         private VAO Vao;
         private VBO Vbo;
@@ -44,6 +58,9 @@ namespace Engine3D
 
             Vao = vao;
             Vbo = vbo;
+
+            Position = Vector3.Zero;
+            Rotation = Quaternion.Identity;
 
             lines = new List<Line>();
             this.color = color;
@@ -70,11 +87,13 @@ namespace Engine3D
             GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
             GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
         }
-        private List<float> ConvertToNDC(Vector3 point)
+        private List<float> ConvertToNDC(Vector3 point, ref Matrix4 transformMatrix)
         {
+            Vector3 v = Vector3.TransformPosition(point, transformMatrix);
+
             List<float> result = new List<float>()
             {
-                point.X, point.Y, point.Z, 1.0f,
+                v.X, v.Y, v.Z, 1.0f,
                 color.R, color.G, color.B, color.A
             };
 
@@ -87,12 +106,32 @@ namespace Engine3D
 
             vertices = new List<float>();
 
+            Matrix4 r = Matrix4.Identity;
+            Matrix4 t = Matrix4.Identity;
+
+            if(parentObject == null)
+            {
+                r = Matrix4.CreateFromQuaternion(Rotation);
+                t = Matrix4.CreateTranslation(Position);
+            }
+            else
+            {
+                r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+                t = Matrix4.CreateTranslation(parentObject.Position);
+            }
+
+            Matrix4 transformMatrix = Matrix4.Identity;
+            if (IsTransformed)
+            {
+                transformMatrix = r * t;
+            }
+
             foreach (Line line in lines)
             {
+                    vertices.AddRange(ConvertToNDC(line.Start, ref transformMatrix));
+                    vertices.AddRange(ConvertToNDC(line.End, ref transformMatrix));
                 if (frustum.IsLineInside(line) || camera.IsLineClose(line))
                 {
-                    vertices.AddRange(ConvertToNDC(line.Start));
-                    vertices.AddRange(ConvertToNDC(line.End));
                 }
             }
 

@@ -41,6 +41,8 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
+        public string currentText = "";
+
         public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName, false, "nearest");
@@ -63,6 +65,7 @@ namespace Engine3D
 
         public void ChangeText(string text)
         {
+            currentText = text;
             tris = textGenerator.GetTriangles(text);
         }
 

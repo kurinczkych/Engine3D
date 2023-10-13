@@ -34,16 +34,14 @@ namespace Engine3D
         private string? embeddedModelName;
 
         public BoundingBox BoundingBox;
-        public Octree Octree;
 
-        public Vector3 Position;
-        public Quaternion Rotation;
+
         public Vector3 Scale;
         private bool IsTransformed
         {
             get
             {
-                return !(Position == Vector3.Zero && Rotation == Quaternion.Identity && Scale == Vector3.One);
+                return !(parentObject.Position == Vector3.Zero && parentObject.Rotation == Quaternion.Identity && Scale == Vector3.One);
             }
         }
 
@@ -68,25 +66,17 @@ namespace Engine3D
             this.frustum = frustum;
             this.camera = camera;
 
-            Position = Vector3.Zero;
-            Rotation = Quaternion.Identity;
             Scale = Vector3.One;
 
             this.embeddedModelName = embeddedModelName;
             ProcessObj(embeddedModelName);
-
-            if (ocTreeDepth != -1)
-            {
-                CalculateBoundingBox();
-                Octree = new Octree(new List<triangle>(tris), BoundingBox, ocTreeDepth);
-            }
 
             ComputeVertexNormals(ref tris);
 
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
@@ -98,12 +88,10 @@ namespace Engine3D
             this.frustum = frustum;
             this.camera = camera;
 
-            Position = Vector3.Zero;
-            Rotation = Quaternion.Identity;
             Scale = Vector3.One;
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string embeddedTextureName, int ocTreeDepth, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName);
             textureCount++;
@@ -115,17 +103,9 @@ namespace Engine3D
             this.frustum = frustum;
             this.camera = camera;
 
-            Position = Vector3.Zero;
-            Rotation = Quaternion.Identity;
             Scale = Vector3.One;
 
             this.tris = new List<triangle>(tris);
-
-            if (ocTreeDepth != -1)
-            {
-                CalculateBoundingBox();
-                Octree = new Octree(new List<triangle>(tris), BoundingBox, ocTreeDepth);
-            }
 
             ComputeVertexNormals(ref tris);
 
@@ -232,17 +212,11 @@ namespace Engine3D
             Matrix4 s = Matrix4.CreateScale(Scale);
             Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
             Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
-            Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale/2f);
-            Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale/2f);
 
             Matrix4 transformMatrix = Matrix4.Identity;
             if (IsTransformed)
             {
                 transformMatrix = s * r * t;
-                //if (type == ObjectType.Sphere || type == ObjectType.Capsule)
-                //    transformMatrix = s * r * t;
-                //else
-                //    transformMatrix = s * offsetTo * r * offsetFrom * t;
             }
 
             foreach (triangle tri in tris)
@@ -251,7 +225,6 @@ namespace Engine3D
                 {
                     if (tri.gotPointNormals)
                     {
-                        tri.ComputeTriangleNormal(ref transformMatrix);
                         vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
                         vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
                         vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
@@ -294,8 +267,8 @@ namespace Engine3D
             }
 
             Matrix4 s = Matrix4.CreateScale(Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(Position);
+            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+            Matrix4 t = Matrix4.CreateTranslation(parentObject.Position);
             Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale / 2f);
             Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale / 2f);
 
