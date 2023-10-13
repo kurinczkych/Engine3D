@@ -92,7 +92,7 @@ namespace Engine3D
             totalTime += deltaTime;
 
             double fps = (double)frameCount / totalTime;
-            Title = "Mario 64    |    FPS: " + Math.Round(fps, 4).ToString();
+            Title = "3D Engine    |    FPS: " + Math.Round(fps, 4).ToString();
 
             if (frameCount > 1000)
             {
