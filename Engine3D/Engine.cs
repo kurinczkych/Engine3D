@@ -476,7 +476,8 @@ namespace Engine3D
             //-------------------------------------------
 
             noTextureShaderProgram.Use();
-            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, new Vector3(0, 10, 0), camera);
+            Vector3 characterPos = new Vector3(0, 20, 0);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
             frustum = character.camera.GetFrustum();
 
             //Point Lights

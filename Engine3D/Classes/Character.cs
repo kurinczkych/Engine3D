@@ -197,10 +197,31 @@ namespace Engine3D
             PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
             PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
             isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
+            PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
 
-            PxExtendedVec3* PxPos = GetCapsuleController()->GetPosition();
-            mesh.Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z);
-            Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z); ;
+            Vector3 predictedPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
+            PxVec3 predictedPosPx = pxPos->PhysToVec3();
+            PxTransform pxTrans = PxTransform_new_1(&predictedPosPx);
+
+            PxCapsuleGeometry capsuleGeo = PxCapsuleGeometry_new(characterWidth, characterHeight/2f);
+            PxVec3 dir = new PxVec3() { x = 0, y = -1, z = 0 };
+
+            PxHitFlags hitFlag = PxHitFlags.Default;
+            PxSweepHit hit = new PxSweepHit();
+            PxQueryFilterData queryFilterData = PxQueryFilterData_new();
+
+            if(physx.GetScene()->QueryExtSweepSingle((PxGeometry*)&capsuleGeo, &pxTrans, &dir, 0.1f, hitFlag, &hit, &queryFilterData, null, null, 0.1f))
+            {
+                
+                ;
+            }
+
+
+            mesh.Position = predictedPos;
+            Position = predictedPos;
+
+            //mesh.Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z);
+            //Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z);
 
             Velocity.X *= 0.9f;
             Velocity.Z *= 0.9f;
