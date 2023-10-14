@@ -192,57 +192,65 @@ namespace Engine3D
             }
 
 
-            int index = -1;
-            int hitBufferSize = 2;
-            PxSweepHit[] hits = new PxSweepHit[hitBufferSize];
-            if (Velocity.Y < 0)
-            {
-                PxVec3 currentPos = new PxVec3() { x = Position.X, y = Position.Y, z = Position.Z };
-                float dist = Math.Abs((Position.Y + Velocity.Y) - Position.Y + characterHeight / 2 + characterWidth);
-                PxTransform pxTrans = PxTransform_new_1(&currentPos);
-
-                PxCapsuleGeometry capsuleGeo = PxCapsuleGeometry_new(characterWidth, characterHeight / 2f);
-                PxVec3 dir = new PxVec3() { x = 0, y = -1, z = 0 };
-
-                PxHitFlags hitFlag = PxHitFlags.Default;
-
-                PxQueryFilterData queryFilterData = PxQueryFilterData_new();
-                bool blockingHit = false;
-
-                fixed (PxSweepHit* hit_ = &hits[0])
-                {
-                    physx.GetScene()->QueryExtSweepMultiple((PxGeometry*)&capsuleGeo, &pxTrans, &dir, dist, hitFlag, hit_, 2, &blockingHit, &queryFilterData, null, null, 0.1f);
-                    for (int i = 0; i < hitBufferSize; i++)
-                    {
-                        if (hits[i].distance != 0)
-                        {
-                            index = i;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (Velocity.Y > 0)
-                ;
-
-            if (index != -1)
-            {
-                PxSweepHit newHit = hits[index];
-                float newDist = newHit.distance - characterHeight / 2 - characterWidth;
-                Velocity.Y = -newDist;
-            }
-
             PxVec3 disp = new PxVec3() { x = Velocity.X, y = Velocity.Y, z = Velocity.Z };
             PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
             PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
             PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
-            isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown) | index!=-1;
+            isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
+            if (isOnGround)
+                ;
             PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
             Vector3 newPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
+            PxVec3 pos = new PxVec3() { x = newPos.X, y = newPos.Y, z = newPos.Z };
 
-            if (index != -1)
-                Velocity.Y = 0;
+            PxCapsuleGeometry capsuleGeo = PxCapsuleGeometry_new(characterWidth, characterHeight);
+            PxTransform trans = PxTransform_new_1(&pos);
+            uint hitBufferSize = 2;
+            PxOverlapHit[] hits = new PxOverlapHit[hitBufferSize];
+            PxQueryFilterData queryFilterData = PxQueryFilterData_new();
+
+            PxRigidDynamic* actor = GetCapsuleController()->GetActor();
+
+            fixed (PxOverlapHit* hit_ = &hits[0])
+            {
+                int found = physx.GetScene()->QueryExtOverlapMultiple((PxGeometry*)&capsuleGeo, &trans, hit_, hitBufferSize, &queryFilterData, null);
+
+                if(found == -1)
+                {
+                    throw new Exception("Fail");
+                }
+
+                if(found >= 2)
+                {
+                    for (int i = 0; i < found-1; i++)
+                    {
+                        PxOverlapHit hit = hits[i];
+                        if (hit.actor != actor)
+                        {
+                            Vector3 offsetPos = new Vector3();
+
+                            PxTransform offsetTrans = PxRigidActor_getGlobalPose(hit.actor);
+
+                            PxExtendedVec3 vec3 = new PxExtendedVec3() { x = Position.X, y = Position.Y, z = Position.Z };
+                            GetCapsuleController()->SetPositionMut(&vec3);
+                            break;
+                        }
+                    }
+                }
+                //for (int i = 0; i < hitBufferSize; i++)
+                //{
+                //    if (hits[i].distance != 0)
+                //    {
+                //        index = i;
+                //        break;
+                //    }
+                //}
+            }
+
+            //if(physx.GetScene()->QueryExtOverlapAny((PxGeometry*)&capsuleGeo, &trans, &hit, &queryFilterData, null))
+            //{
+            //    ;
+            //}
 
             //PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
             //PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
