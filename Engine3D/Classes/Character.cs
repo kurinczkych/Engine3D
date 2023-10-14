@@ -191,34 +191,101 @@ namespace Engine3D
                     Velocity += (camera.right * flySpeed_) * (float)args.Time;
             }
 
-            PxVec3 disp = new PxVec3() { x = Velocity.X, y = Velocity.Y, z = Velocity.Z };
 
+            int index = -1;
+            int hitBufferSize = 2;
+            PxSweepHit[] hits = new PxSweepHit[hitBufferSize];
+            if (Velocity.Y < 0)
+            {
+                PxVec3 currentPos = new PxVec3() { x = Position.X, y = Position.Y, z = Position.Z };
+                float dist = Math.Abs((Position.Y + Velocity.Y) - Position.Y + characterHeight / 2 + characterWidth);
+                PxTransform pxTrans = PxTransform_new_1(&currentPos);
+
+                PxCapsuleGeometry capsuleGeo = PxCapsuleGeometry_new(characterWidth, characterHeight / 2f);
+                PxVec3 dir = new PxVec3() { x = 0, y = -1, z = 0 };
+
+                PxHitFlags hitFlag = PxHitFlags.Default;
+
+                PxQueryFilterData queryFilterData = PxQueryFilterData_new();
+                bool blockingHit = false;
+
+                fixed (PxSweepHit* hit_ = &hits[0])
+                {
+                    physx.GetScene()->QueryExtSweepMultiple((PxGeometry*)&capsuleGeo, &pxTrans, &dir, dist, hitFlag, hit_, 2, &blockingHit, &queryFilterData, null, null, 0.1f);
+                    for (int i = 0; i < hitBufferSize; i++)
+                    {
+                        if (hits[i].distance != 0)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (Velocity.Y > 0)
+                ;
+
+            if (index != -1)
+            {
+                PxSweepHit newHit = hits[index];
+                float newDist = newHit.distance - characterHeight / 2 - characterWidth;
+                Velocity.Y = -newDist;
+            }
+
+            PxVec3 disp = new PxVec3() { x = Velocity.X, y = Velocity.Y, z = Velocity.Z };
             PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
             PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
             PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
-            isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
+            isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown) | index!=-1;
             PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
+            Vector3 newPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
 
-            Vector3 predictedPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
-            PxVec3 predictedPosPx = pxPos->PhysToVec3();
-            PxTransform pxTrans = PxTransform_new_1(&predictedPosPx);
+            if (index != -1)
+                Velocity.Y = 0;
 
-            PxCapsuleGeometry capsuleGeo = PxCapsuleGeometry_new(characterWidth, characterHeight/2f);
-            PxVec3 dir = new PxVec3() { x = 0, y = -1, z = 0 };
+            //PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
+            //PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
+            //PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
+            //isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
+            //PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
 
-            PxHitFlags hitFlag = PxHitFlags.Default;
-            PxSweepHit hit = new PxSweepHit();
-            PxQueryFilterData queryFilterData = PxQueryFilterData_new();
+            //Vector3 predictedPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
+            //PxVec3 predictedPosPx = pxPos->PhysToVec3();
+            //PxTransform pxTrans = PxTransform_new_1(&predictedPosPx);
 
-            if(physx.GetScene()->QueryExtSweepSingle((PxGeometry*)&capsuleGeo, &pxTrans, &dir, 0.1f, hitFlag, &hit, &queryFilterData, null, null, 0.1f))
-            {
-                
-                ;
-            }
+            //PxCapsuleGeometry capsuleGeo = PxCapsuleGeometry_new(characterWidth, characterHeight/2f);
+            //PxVec3 dir = new PxVec3() { x = 0, y = -1, z = 0 };
 
+            //PxHitFlags hitFlag = PxHitFlags.Default;
 
-            mesh.Position = predictedPos;
-            Position = predictedPos;
+            //int hitBufferSize = 2;
+            //PxSweepHit[] hits = new PxSweepHit[hitBufferSize]; 
+
+            //PxQueryFilterData queryFilterData = PxQueryFilterData_new();
+            //bool blockingHit = false;
+            //int index = -1;
+
+            //fixed(PxSweepHit* hit_ = &hits[0])
+            //{
+            //    physx.GetScene()->QueryExtSweepMultiple((PxGeometry*)&capsuleGeo, &pxTrans, &dir, 30, hitFlag, hit_, 2, &blockingHit, &queryFilterData, null, null, 0.1f);
+            //    for (int i = 0; i < hitBufferSize; i++)
+            //    {
+            //        if (hits[i].distance != 0)
+            //        {
+            //            index = i;
+            //            break;
+            //        }
+            //    }
+            //}
+
+            //if (index != -1)
+            //{
+            //    var a = hits[index];
+            //}
+
+            mesh.Position = newPos;
+            Position = newPos;
 
             //mesh.Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z);
             //Position = new Vector3((float)PxPos->x, (float)PxPos->y, (float)PxPos->z);

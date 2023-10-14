@@ -360,6 +360,8 @@ namespace Engine3D
                         .ChangeText("Position = (" + character.PStr + ")");
             ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
                         .ChangeText("Velocity = (" + character.VStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
+                        .ChangeText("IsOnGround = " + character.isOnGround.ToString());
             //textMeshes[2].ChangeText("GroundY = (" + character.groundYStr + ")");
             //textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
             //textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
@@ -514,6 +516,12 @@ namespace Engine3D
             ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
             ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
             AddObject(textObj2);
+
+            Object textObj3 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            ((TextMesh)textObj3.GetMesh()).ChangeText("IsOnGround = " + character.isOnGround.ToString());
+            ((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
+            ((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            AddObject(textObj3);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
