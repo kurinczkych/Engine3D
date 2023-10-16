@@ -56,7 +56,6 @@
     <EmbeddedResource Include="Models\sphereSmall.obj" />
     <EmbeddedResource Include="Models\spiro.obj" />
     <EmbeddedResource Include="Models\spiro_small.obj" />
-    <EmbeddedResource Include="Models\spiro_small2.obj" />
     <EmbeddedResource Include="Models\teapot.obj" />
     <EmbeddedResource Include="Textures\bmp_24.bmp" />
     <EmbeddedResource Include="Textures\font.json" />

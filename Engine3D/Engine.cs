@@ -20,6 +20,7 @@ using static System.Net.WebRequestMethods;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
+using System.Diagnostics;
 
 #pragma warning disable CS0649
 
@@ -72,9 +73,14 @@ namespace Engine3D
         private TextGenerator textGenerator;
         private Physx physx;
 
+        // Frame limiting
+        private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
+        private Stopwatch stopwatch;
+
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
+            
 
             windowSize = new Vector2(width, height);
             CenterWindow(new Vector2i(width, height));
@@ -380,6 +386,14 @@ namespace Engine3D
             Context.SwapBuffers();
 
             base.OnRenderFrame(args);
+
+            double elapsed = stopwatch.Elapsed.TotalSeconds;
+            if (elapsed < TargetDeltaTime)
+            {
+                double sleepTime = TargetDeltaTime - elapsed;
+                Thread.Sleep((int)(sleepTime * 1000));
+            }
+            stopwatch.Restart();
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
@@ -389,21 +403,33 @@ namespace Engine3D
             if (KeyboardState.IsKeyDown(Keys.Escape))
                 Close();
 
-            character.UpdatePosition(KeyboardState, MouseState, args);
-
-            if (temp != Math.Round(totalTime) || temp == -1)
+            if (KeyboardState.IsKeyDown(Keys.Space))
             {
-                Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-                obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
-                obj.SetSize(2);
-                obj.AddSphereCollider(false);
-                temp += 1;
-                AddObject(obj);
+                var a = character.VStr;
+                ;
             }
+
+            character.CalculateVelocity(KeyboardState, MouseState, args);
+            int ccd = 5;
+            for (int i = 0; i < ccd; i++)
+            {
+                character.UpdatePosition(KeyboardState, MouseState, args, ccd);
+                physx.Simulate((float)args.Time/ccd);
+            }
+            character.AfterUpdate(MouseState, args);
+
+            //if (temp != Math.Round(totalTime) || temp == -1)
+            //{
+            //    Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
+            //    obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
+            //    obj.SetSize(2);
+            //    obj.AddSphereCollider(false);
+            //    temp += 1;
+            //    AddObject(obj);
+            //}
 
             if (totalTime > 0)
             {
-                physx.Simulate((float)args.Time);
                 foreach (Object o in objects)
                 {
                     o.CollisionResponse();
@@ -416,6 +442,7 @@ namespace Engine3D
         {
             base.OnLoad();
             CursorState = CursorState.Grabbed;
+            stopwatch = Stopwatch.StartNew();
 
             textGenerator = new TextGenerator();
 
@@ -496,7 +523,10 @@ namespace Engine3D
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro_small.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
+            objects.Last().SetSize(new Vector3(10, 2, 10));
+            objects.Last().AddCubeCollider(true);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
             //objects.Last().SetPosition(new Vector3(0, 20, 0));
