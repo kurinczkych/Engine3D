@@ -192,7 +192,7 @@ namespace Engine3D
             }
         }
 
-        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args, int ccd)
+        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args, int ccd, ref bool stopccd)
         {
             PxVec3 disp = new PxVec3() { x = Velocity.X / (float)ccd, y = Velocity.Y / (float)ccd, z = Velocity.Z / (float)ccd };
             //GetCapsuleController()->GetActor()->SetLinearVelocityMut(&disp, true);
@@ -204,6 +204,7 @@ namespace Engine3D
             {
                 Velocity.Y = 0;
                 disp.y = 0;
+                stopccd = true;
             }
             PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
             Vector3 newPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);

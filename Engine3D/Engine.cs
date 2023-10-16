@@ -409,12 +409,15 @@ namespace Engine3D
                 ;
             }
 
-            character.CalculateVelocity(KeyboardState, MouseState, args);
             int ccd = 5;
+            bool stopccd = false;
+            character.CalculateVelocity(KeyboardState, MouseState, args);
             for (int i = 0; i < ccd; i++)
             {
-                character.UpdatePosition(KeyboardState, MouseState, args, ccd);
-                physx.Simulate((float)args.Time/ccd);
+                character.UpdatePosition(KeyboardState, MouseState, args, ccd, ref stopccd);
+                physx.Simulate((float)args.Time / ccd);
+                if (stopccd)
+                    break;
             }
             character.AfterUpdate(MouseState, args);
 
