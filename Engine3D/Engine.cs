@@ -302,88 +302,12 @@ namespace Engine3D
             GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
             vertices = new List<float>();
 
-            //foreach (Mesh mesh in meshes)
-            //{
-            //    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //    vertices.AddRange(mesh.Draw());
-            //}
-            //meshVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            ////-------------------------------TestMesh---------------------------------
-            ////testMeshes[0].tris = character.GetTrianglesColliding(ref meshes[0].Octree);
-            ////testMeshes[0].tris = meshes[0].Octree.GetNearTriangles(character.Position);
-            //vertices = new List<float>();
-            //foreach (TestMesh mesh in testMeshes)
-            //{
-            //    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //    vertices.AddRange(mesh.Draw());
-            //}
-            //testVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-            ////------------------------------------------------------------------------
-
-            //noTextureShaderProgram.Use();
-            //vertices = new List<float>();
-            //foreach (PointLight pl in pointLights)
-            //{
-            //    pl.mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //    vertices.AddRange(pl.mesh.Draw());
-            //}
-            //noTexVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            //wireMeshes[0].lines = character.GetBoundLines();
-            //vertices = new List<float>();
-            //foreach (WireframeMesh mesh in wireMeshes)
-            //{
-            //    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //    vertices.AddRange(mesh.Draw());
-            //}
-            //foreach (Mesh mesh in meshes)
-            //{
-            //    if(mesh.drawNormals)
-            //    {
-            //        WireframeMesh m = mesh.normalMesh;
-            //        m.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //        vertices.AddRange(m.Draw());
-            //    }
-            //}
-            //wireVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
-
-            //// Text rendering
-            //GL.Disable(EnableCap.DepthTest);
-
-            //posTexShader.Use();
-            //vertices = new List<float>();
-            //foreach (UITextureMesh mesh in uiTexMeshes)
-            //{
-            //    vertices.AddRange(mesh.Draw());
-            //}
-            //uiTexVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
-                        .ChangeText("Position = (" + character.PStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
-                        .ChangeText("Velocity = (" + character.VStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
-                        .ChangeText("IsOnGround = " + character.isOnGround.ToString());
-            //textMeshes[2].ChangeText("GroundY = (" + character.groundYStr + ")");
-            //textMeshes[3].ChangeText("DistToGround = (" + character.distToGroundStr + ")");
-            //textMeshes[4].ChangeText("IsOnGround = (" + character.isOnGroundStr + ")");
-            //textMeshes[5].ChangeText("AngleToGround = (" + character.angleOfGround.ToString() + ")");
-            //textMeshes[6].ChangeText("ApplyGravity = (" + character.applyGravity.ToString() + ")");
-            //vertices = new List<float>();
-            //foreach (TextMesh textMesh in textMeshes)
-            //{
-            //    vertices.AddRange(textMesh.Draw());
-            //}
-            //textVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-            //GL.DisableVertexAttribArray(0);
+            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
+            //            .ChangeText("Position = (" + character.PStr + ")");
+            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
+            //            .ChangeText("Velocity = (" + character.VStr + ")");
+            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
+            //            .ChangeText("IsOnGround = " + character.isOnGround.ToString());
 
             Context.SwapBuffers();
 
@@ -444,7 +368,6 @@ namespace Engine3D
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
-
 
             // OPENGL init
             meshVbo = new VBO();

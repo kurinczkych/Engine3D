@@ -90,16 +90,16 @@ namespace Engine3D
             t1.t[0].u = topleft.X;
             t1.t[0].v = topleft.Y;
             t1.c[0] = color;
-            t1.p[1].X = start.X;
-            t1.p[1].Y = start.Y + height;
-            t1.t[1].u = bottomLeft.X;
-            t1.t[1].v = bottomLeft.Y;
-            t1.c[1] = color;
-            t1.p[2].X = start.X + width;
-            t1.p[2].Y = start.Y;
-            t1.t[2].u = topRight.X;
-            t1.t[2].v = topRight.Y;
+            t1.p[2].X = start.X;
+            t1.p[2].Y = start.Y + height;
+            t1.t[2].u = bottomLeft.X;
+            t1.t[2].v = bottomLeft.Y;
             t1.c[2] = color;
+            t1.p[1].X = start.X + width;
+            t1.p[1].Y = start.Y;
+            t1.t[1].u = topRight.X;
+            t1.t[1].v = topRight.Y;
+            t1.c[1] = color;
 
             triangle t2 = new triangle();
             t2.p[0].X = start.X + width;
@@ -107,16 +107,16 @@ namespace Engine3D
             t2.t[0].u = topRight.X;
             t2.t[0].v = topRight.Y;
             t2.c[0] = color;
-            t2.p[1].X = start.X;
-            t2.p[1].Y = start.Y + height;
-            t2.t[1].u = bottomLeft.X;
-            t2.t[1].v = bottomLeft.Y;
-            t2.c[1] = color;
-            t2.p[2].X = start.X + width;
+            t2.p[2].X = start.X;
             t2.p[2].Y = start.Y + height;
-            t2.t[2].u = bottomRight.X;
-            t2.t[2].v = bottomRight.Y;
+            t2.t[2].u = bottomLeft.X;
+            t2.t[2].v = bottomLeft.Y;
             t2.c[2] = color;
+            t2.p[1].X = start.X + width;
+            t2.p[1].Y = start.Y + height;
+            t2.t[1].u = bottomRight.X;
+            t2.t[1].v = bottomRight.Y;
+            t2.c[1] = color;
 
             return new List<triangle> { t1, t2 };
         }
