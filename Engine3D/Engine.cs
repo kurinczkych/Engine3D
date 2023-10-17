@@ -442,7 +442,7 @@ namespace Engine3D
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));
             //objects.Last().AddCubeCollider(true);

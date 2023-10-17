@@ -140,7 +140,7 @@ namespace Engine3D
                 //TODO NOCLIP
                 if (keyboardState.IsKeyDown(Keys.Space))
                 {
-                    Position.Y += flySpeed_ * 10 * (float)args.Time;
+                    Velocity.Y += flySpeed_ * 10 * (float)args.Time;
                 }
             }
 
@@ -148,7 +148,7 @@ namespace Engine3D
             if (keyboardState.IsKeyDown(Keys.LeftControl))
             {
                 if (noClip)
-                    Position.Y -= flySpeed_ * 10 * (float)args.Time;
+                    Velocity.Y -= flySpeed_ * 10 * (float)args.Time;
             }
 
             if (keyboardState.IsKeyDown(Keys.Enter) || keyboardState.IsKeyDown(Keys.KeyPadEnter))
@@ -216,6 +216,9 @@ namespace Engine3D
         {
             Velocity.X *= 0.9f;
             Velocity.Z *= 0.9f;
+
+            if (noClip)
+                Velocity.Y *= 0.9f;
 
             ZeroSmallVelocity();
             thirdY -= mouseState.ScrollDelta.Y;
