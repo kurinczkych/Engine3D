@@ -72,6 +72,7 @@ namespace Engine3D
             ProcessObj(embeddedModelName);
 
             ComputeVertexNormals(ref tris);
+            triFloats = triangle.GetData(tris);
 
             GetUniformLocations();
             SendUniforms();
@@ -107,6 +108,7 @@ namespace Engine3D
             Scale = Vector3.One;
 
             this.tris = new List<triangle>(tris);
+            triFloats = triangle.GetData(tris);
 
             ComputeVertexNormals(ref tris);
 
@@ -114,41 +116,43 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public void CalculateNormalWireframe(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
-        {
-            List<Line> normalLines = new List<Line>();
-            foreach (triangle tri in tris)
-            {
-                Vector3 n1 = tri.GetMiddle();
-                Vector3 n2 = (tri.ComputeTriangleNormal() * 2.5f) + tri.GetMiddle();
-                normalLines.Add(new Line(n1, n2));
-            }
-            normalMesh = new WireframeMesh(vao, vbo, shaderProgramId, ref frustum, ref camera, Color4.Red);
-            normalMesh.lines = normalLines;
-        }
+        //public void CalculateNormalWireframe(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
+        //{
+        //    List<Line> normalLines = new List<Line>();
+        //    foreach (triangle tri in tris)
+        //    {
+        //        Vector3 n1 = tri.GetMiddle();
+        //        Vector3 n2 = (tri.ComputeTriangleNormal() * 2.5f) + tri.GetMiddle();
+        //        normalLines.Add(new Line(n1, n2));
+        //    }
+        //    normalMesh = new WireframeMesh(vao, vbo, shaderProgramId, ref frustum, ref camera, Color4.Red);
+        //    normalMesh.lines = normalLines;
+        //}
 
-        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
+        private List<float> ConvertToNDC(int index, int triIndex, ref Matrix4 transformMatrix, bool isTransformed)
         {
             List<float> result = new List<float>();
             if (isTransformed)
             {
-                Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
+                Vector3 PIndex = new Vector3(triFloats[index + triangle.FLOATCOUNTTRI * triIndex], 
+                                             triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 1], 
+                                             triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 2]);
+                Vector3 v = Vector3.TransformPosition(PIndex, transformMatrix);
 
                 result = new List<float>()
                 {
                     v.X, v.Y, v.Z, 1.0f,
-                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v
+                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 3], 
+                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 3 + 1], 
+                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 3 + 2],
+                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 6],
+                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 6 + 1]
                 };
             }
             else
             {
-                result = new List<float>()
-                {
-                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
-                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v
-                };
+                result = triFloats.GetRange(index + triangle.FLOATCOUNTTRI * triIndex, triangle.FLOATCOUNTTRI);
+                ;
             }
             return result;
         }
@@ -226,22 +230,30 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
-            foreach (triangle tri in tris)
+            for (int i = 0; i < triFloats.Count; i += triangle.FLOATCOUNT)
             {
-                if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                // || camera.IsTriangleClose(tri)
+                if (frustum.IsTriangleInside(triFloats[i + triangle.P0X], triFloats[i + triangle.P0Y], triFloats[i + triangle.P0Z],
+                                             triFloats[i + triangle.P1X], triFloats[i + triangle.P1Y], triFloats[i + triangle.P1Z],
+                                             triFloats[i + triangle.P2X], triFloats[i + triangle.P2Y], triFloats[i + triangle.P2Z]))
                 {
-                    if (tri.gotPointNormals)
+                    if (Convert.ToBoolean(triFloats[i + triangle.PN]))
                     {
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(i, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(i, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(i, 2, ref transformMatrix, isTransformed));
                     }
                     else
                     {
-                        tri.ComputeTriangleNormal(ref transformMatrix);
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
+
+                        triangle.ComputeTriangleNormal(triFloats[i + triangle.P0X], triFloats[i + triangle.P0Y], triFloats[i + triangle.P0Z],
+                                                       triFloats[i + triangle.P1X], triFloats[i + triangle.P1Y], triFloats[i + triangle.P1Z],
+                                                       triFloats[i + triangle.P2X], triFloats[i + triangle.P2Y], triFloats[i + triangle.P2Z], 
+                                                       ref transformMatrix);
+
+                        vertices.AddRange(ConvertToNDC(i, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(i, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(i, 2, ref transformMatrix, isTransformed));
                     }
                 }
             }
@@ -254,7 +266,7 @@ namespace Engine3D
 
         public void GetCookedData(out PxVec3[] verts, out int[] indices)
         {
-            int vertCount = tris.Count() * 3;
+            int vertCount = triFloats.Count() / triangle.FLOATCOUNT * 3;
             int index = 0;
             verts = new PxVec3[allVerts.Count()];
             indices = new int[vertCount];
@@ -305,40 +317,9 @@ namespace Engine3D
             }
         }
 
-        public void CalculateBoundingBox()
-        {
-            if (tris == null || tris.Count == 0)
-            {
-                throw new InvalidOperationException("Mesh contains no triangles.");
-            }
-
-            // Initialize with the first vertex of the first triangle
-            Vector3 min = tris[0].p[0];
-            Vector3 max = tris[0].p[0];
-
-            foreach (var triangle in tris)
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    Vector3 vertex = triangle.p[i];
-
-                    // Check for a new min
-                    if (vertex.X < min.X) min.X = vertex.X;
-                    if (vertex.Y < min.Y) min.Y = vertex.Y;
-                    if (vertex.Z < min.Z) min.Z = vertex.Z;
-
-                    // Check for a new max
-                    if (vertex.X > max.X) max.X = vertex.X;
-                    if (vertex.Y > max.Y) max.Y = vertex.Y;
-                    if (vertex.Z > max.Z) max.Z = vertex.Z;
-                }
-            }
-
-            BoundingBox = new BoundingBox(min, max);
-        }
-
         public void ProcessObj(string filename)
         {
+            triFloats = new List<float>();
             tris = new List<triangle>();
 
             var assembly = Assembly.GetExecutingAssembly();
@@ -418,13 +399,16 @@ namespace Engine3D
                                         n[i] = int.Parse(fStr[2]);
                                     }
 
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vector3[] { normals[n[0] - 1], normals[n[1] - 1], normals[n[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
+                                    triangle tri = new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
+                                                                new Vector3[] { normals[n[0] - 1], normals[n[1] - 1], normals[n[2] - 1] },
+                                                                new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] });
 
-                                    tris.Last().pi[0] = v[0] - 1;
-                                    tris.Last().pi[1] = v[1] - 1;
-                                    tris.Last().pi[2] = v[2] - 1;
+                                    tri.pi[0] = v[0] - 1;
+                                    tri.pi[1] = v[1] - 1;
+                                    tri.pi[2] = v[2] - 1;
+
+                                    triFloats.AddRange(tri.GetData());
+                                    tris.Add(tri);
 
                                     hasIndices = true;
                                 }
@@ -440,12 +424,15 @@ namespace Engine3D
                                         uv[i] = int.Parse(fStr[1]);
                                     }
 
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
+                                    triangle tri = new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
+                                                                new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] });
 
-                                    tris.Last().pi[0] = v[0] - 1;
-                                    tris.Last().pi[1] = v[1] - 1;
-                                    tris.Last().pi[2] = v[2] - 1;
+                                    tri.pi[0] = v[0] - 1;
+                                    tri.pi[1] = v[1] - 1;
+                                    tri.pi[2] = v[2] - 1;
+
+                                    triFloats.AddRange(tri.GetData());
+                                    tris.Add(tri);
 
                                     hasIndices = true;
                                 }
@@ -456,11 +443,14 @@ namespace Engine3D
                                 string[] vStr = result.Substring(2).Split(" ");
                                 int[] f = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
 
-                                tris.Add(new triangle(new Vector3[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
+                                triangle tri = new triangle(new Vector3[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
 
-                                tris.Last().pi[0] = f[0] - 1;
-                                tris.Last().pi[1] = f[1] - 1;
-                                tris.Last().pi[2] = f[2] - 1;
+                                tri.pi[0] = f[0] - 1;
+                                tri.pi[1] = f[1] - 1;
+                                tri.pi[2] = f[2] - 1;
+
+                                triFloats.AddRange(tri.GetData());
+                                tris.Add(tri);
 
                                 hasIndices = true;
                             }
@@ -475,10 +465,13 @@ namespace Engine3D
 
         public void OnlyTriangle()
         {
-            tris = new List<triangle>
-                {
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) })
-                };
+            List<triangle> trisNew = new List<triangle>
+            {
+                new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) })
+            };
+
+            triFloats = triangle.GetData(trisNew);
+            tris = trisNew;
         }
     }
 }

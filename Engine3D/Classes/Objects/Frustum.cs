@@ -48,6 +48,16 @@ namespace Engine3D
             return a || b || c;
         }
 
+        public bool IsTriangleInside(float p0x, float p0y, float p0z,
+                                     float p1x, float p1y, float p1z,
+                                     float p2x, float p2y, float p2z)
+        {
+            var a = IsInside(new Vector3(p0x, p0y, p0z));
+            var b = IsInside(new Vector3(p1x, p1y, p1z));
+            var c = IsInside(new Vector3(p2x, p2y, p2z));
+            return a || b || c;
+        }
+
         public bool IsLineInside(Line line)
         {
             var a = IsInside(line.Start);

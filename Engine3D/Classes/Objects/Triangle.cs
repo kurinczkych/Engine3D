@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using OpenTK.Graphics.ES20;
+using OpenTK.Mathematics;
 using OpenTK.Platform.Windows;
 using System;
 using System.Collections.Generic;
@@ -15,10 +16,27 @@ namespace Engine3D
     {
         public Vector3[] p;
         public Vector3[] n;
-        public Color4[] c;
         public Vec2d[] t;
         public int[] pi;
+        public Color4[] c;
         public bool gotPointNormals;
+
+        public const int FLOATCOUNT = 43;
+        public const int FLOATCOUNTTRI = 9;
+        public const int P0X = 0; public const int P0Y = 1; public const int P0Z = 2; public const int P0W = 3;
+        public const int N0X = 4; public const int N0Y = 5; public const int N0Z = 6;
+        public const int T0U = 7; public const int T0V = 8;
+        public const int P1X = 9; public const int P1Y = 10; public const int P1Z = 11; public const int P1W = 12;
+        public const int N1X = 13; public const int N1Y = 14; public const int N1Z = 15;
+        public const int T1U = 16; public const int T1V = 17;
+        public const int P2X = 18; public const int P2Y = 19; public const int P2Z = 20; public const int P2W = 21;
+        public const int N2X = 22; public const int N2Y = 23; public const int N2Z = 24;
+        public const int T2U = 25; public const int T2V = 26;
+        public const int P0 = 27; public const int P1 = 28; public const int P2 = 29;
+        public const int C0R = 30; public const int C0G = 31; public const int C0B = 32; public const int C0A = 33;
+        public const int C1R = 34; public const int C1G = 35; public const int C1B = 36; public const int C1A = 37;
+        public const int C2R = 38; public const int C2G = 39; public const int C2B = 40; public const int C2A = 41;
+        public const int PN = 42;
 
         public triangle()
         {
@@ -112,6 +130,39 @@ namespace Engine3D
             pi = new int[3];
         }
 
+        public static List<float> GetData(List<triangle> tris)
+        {
+            List<float> floats = new List<float>();
+
+            foreach (triangle tri in tris)
+                floats.AddRange(tri.GetData());
+
+            return floats;
+        }
+
+        public List<float> GetData()
+        {
+            List<float> floats = new List<float>()
+            {
+                p[0].X, p[0].Y, p[0].Z, 1.0f,
+                n[0].X, n[0].Y, n[0].Z,
+                t[0].u, t[0].v,
+                p[1].X, p[1].Y, p[1].Z, 1.0f,
+                n[1].X, n[1].Y, n[1].Z,
+                t[1].u, t[1].v,
+                p[2].X, p[2].Y, p[2].Z, 1.0f,
+                n[2].X, n[2].Y, n[2].Z,
+                t[2].u, t[2].v,
+                pi[0], pi[1], pi[2],
+                c[0].R, c[0].G, c[0].B, c[0].A,
+                c[1].R, c[1].G, c[1].B, c[1].A,
+                c[2].R, c[2].G, c[2].B, c[2].A,
+                Convert.ToInt32(gotPointNormals)
+            };
+
+            return floats;
+        }
+
         public Vector3 GetMiddle()
         {
             return (p[0] + p[1] + p[2]) / 3;
@@ -203,6 +254,22 @@ namespace Engine3D
             return normal;
         }
 
+        public static Vector3 ComputeTriangleNormal(float p0x, float p0y, float p0z,
+                                                    float p1x, float p1y, float p1z,
+                                                    float p2x, float p2y, float p2z)
+        {
+            Vector3 p0 = new Vector3(p0x, p0y, p0z);
+            Vector3 p1 = new Vector3(p1x, p1y, p1z);
+            Vector3 p2 = new Vector3(p2x, p2y, p2z);
+            Vector3 normal, line1, line2;
+            line1 = p1 - p0;
+            line2 = p2 - p0;
+
+            normal = Vector3.Cross(line1, line2);
+            normal.Normalize();
+            return normal;
+        }
+
         public void ComputeTriangleNormal(ref Matrix4 transformMatrix)
         {
             Vector3 p0 = Vector3.TransformPosition(p[0], transformMatrix);
@@ -218,6 +285,28 @@ namespace Engine3D
             n[0] = normal;
             n[1] = normal;
             n[2] = normal;
+        }
+
+        public static Vector3 ComputeTriangleNormal(float p0x, float p0y, float p0z,
+                                                    float p1x, float p1y, float p1z,
+                                                    float p2x, float p2y, float p2z, 
+                                                    ref Matrix4 transformMatrix)
+        {
+            Vector3 p0 = new Vector3(p0x, p0y, p0z);
+            Vector3 p1 = new Vector3(p1x, p1y, p1z);
+            Vector3 p2 = new Vector3(p2x, p2y, p2z);
+
+            Vector3 p0_ = Vector3.TransformPosition(p0, transformMatrix);
+            Vector3 p1_ = Vector3.TransformPosition(p1, transformMatrix);
+            Vector3 p2_ = Vector3.TransformPosition(p2, transformMatrix);
+
+            Vector3 normal, line1, line2;
+            line1 = p1_ - p0_;
+            line2 = p2_ - p0_;
+
+            normal = Vector3.Cross(line1, line2);
+            normal.Normalize();
+            return normal;
         }
 
         public float GetAngleToNormal(Vector3 dir)

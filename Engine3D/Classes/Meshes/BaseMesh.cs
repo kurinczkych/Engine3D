@@ -17,6 +17,7 @@ namespace Engine3D
         protected int shaderProgramId;
 
         public List<triangle> tris;
+        public List<float> triFloats;
         public List<Vector3> allVerts;
         public bool hasIndices = false;
         public Object parentObject;
@@ -26,6 +27,7 @@ namespace Engine3D
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
             tris = new List<triangle>();
+            triFloats = new List<float>();
             allVerts = new List<Vector3>();
 
             this.vaoId = vaoId;
@@ -33,10 +35,6 @@ namespace Engine3D
             this.shaderProgramId = shaderProgramId;
 
             uniformLocations = new Dictionary<string, int>();
-        }
-        public void AddTriangle(triangle tri)
-        {
-            tris.Add(tri);
         }
         protected abstract void SendUniforms();
 
