@@ -64,6 +64,9 @@ namespace Engine3D
 
             lines = new List<Line>();
             this.color = color;
+
+            GetUniformLocations();
+            SendUniforms();
         }
 
 
@@ -73,19 +76,24 @@ namespace Engine3D
             this.camera = camera;
         }
 
+
+        private void GetUniformLocations()
+        {
+            uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
+            uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
+            uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
+
+        }
+
         protected override void SendUniforms()
         {
-            int modelMatrixLocation = GL.GetUniformLocation(shaderProgramId, "modelMatrix");
-            int viewMatrixLocation = GL.GetUniformLocation(shaderProgramId, "viewMatrix");
-            int projectionMatrixLocation = GL.GetUniformLocation(shaderProgramId, "projectionMatrix");
-
             modelMatrix = Matrix4.Identity;
             projectionMatrix = camera.GetProjectionMatrix();
             viewMatrix = camera.GetViewMatrix();
 
-            GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
-            GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
-            GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
+            GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
+            GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
+            GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
         }
         private List<float> ConvertToNDC(Vector3 point, ref Matrix4 transformMatrix)
         {

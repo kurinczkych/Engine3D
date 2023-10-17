@@ -60,6 +60,7 @@ namespace Engine3D
 
             ComputeVertexNormals(ref tris);
 
+            GetUniformLocations();
             SendUniforms();
         }
 
@@ -83,25 +84,28 @@ namespace Engine3D
             this.camera = camera;
         }
 
+        private void GetUniformLocations()
+        {
+            uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
+            uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
+            uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
+            uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
+            uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
+            uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
+        }
+
         protected override void SendUniforms()
         {
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            int windowSizeLocation = GL.GetUniformLocation(shaderProgramId, "windowSize");
-            int modelMatrixLocation = GL.GetUniformLocation(shaderProgramId, "modelMatrix");
-            int viewMatrixLocation = GL.GetUniformLocation(shaderProgramId, "viewMatrix");
-            int projectionMatrixLocation = GL.GetUniformLocation(shaderProgramId, "projectionMatrix");
-            int cameraPositionLocation = GL.GetUniformLocation(shaderProgramId, "cameraPosition");
-
             modelMatrix = Matrix4.Identity;
             projectionMatrix = camera.GetProjectionMatrix();
             viewMatrix = camera.GetViewMatrix();
 
-            GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
-            GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
-            GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
-            GL.Uniform2(windowSizeLocation, windowSize);
-            GL.Uniform3(cameraPositionLocation, camera.position);
-            GL.Uniform1(textureLocation, texture.unit);
+            GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
+            GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
+            GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
+            GL.Uniform2(uniformLocations["windowSize"], windowSize);
+            GL.Uniform3(uniformLocations["cameraPosition"], camera.position);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
         }
 
         public List<float> Draw()

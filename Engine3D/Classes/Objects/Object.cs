@@ -270,7 +270,21 @@ namespace Engine3D
             int otherOrderIndex = Array.IndexOf(customOrder, other.type);
 
             // Comparing the indices.
-            return thisOrderIndex.CompareTo(otherOrderIndex);
+            int orderComparison = thisOrderIndex.CompareTo(otherOrderIndex);
+
+            if (orderComparison == 0 && type == ObjectType.TriangleMesh)
+            {
+                // Assuming the camera (or any reference point) is at a fixed position.
+                Vector3 cameraPosition = new Vector3(0, 0, 0); // Modify this as needed.
+
+                float thisDistance = (Position - cameraPosition).LengthSquared;
+                float otherDistance = (other.Position - cameraPosition).LengthSquared;
+
+                // Comparing the distances (squared) for TriangleMesh objects.
+                return thisDistance.CompareTo(otherDistance);
+            }
+
+            return orderComparison;
         }
 
         public void SetGravity(bool doesAffect)

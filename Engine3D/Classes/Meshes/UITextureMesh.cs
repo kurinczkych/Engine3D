@@ -23,7 +23,7 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
         private string? embeddedTextureName;
-        private int vertexSize;
+        //private int vertexSize;
 
         private Vector3 position;
         public Vector2 Position
@@ -64,17 +64,22 @@ namespace Engine3D
             OnlyQuad();
 
             this.embeddedTextureName = embeddedTextureName;
-            LoadTexture(embeddedTextureName);
+            Helper.LoadTexture(embeddedTextureName, false, TextureMinFilter.Nearest, TextureMagFilter.Nearest);
 
+            GetUniformLocations();
             SendUniforms();
+        }
+
+        private void GetUniformLocations()
+        {
+            uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
+            uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
         }
 
         protected override void SendUniforms()
         {
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            int windowSizeLocation = GL.GetUniformLocation(shaderProgramId, "windowSize");
-            GL.Uniform2(windowSizeLocation, windowSize);
-            GL.Uniform1(textureLocation, texture.unit);
+            GL.Uniform2(uniformLocations["windowSize"], windowSize);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
         }
 
         private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
@@ -133,48 +138,6 @@ namespace Engine3D
                 new triangle(new Vector3[] { new Vector3(1, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0) },
                                   new Vec2d[] { new Vec2d(1, 0), new Vec2d(0, 1), new Vec2d(1, 1) })
             };
-        }
-
-        private void LoadTexture(string embeddedResourceName)
-        {
-            // Load the image (using System.Drawing or another library)
-            Stream stream = GetResourceStreamByNameEnd(embeddedResourceName);
-            if (stream != null)
-            {
-                using (stream)
-                {
-                    Bitmap bitmap = new Bitmap(stream);
-                    //bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
-                    bitmap.UnlockBits(data);
-
-                    // Texture settings
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-                }
-            }
-            else
-            {
-                throw new Exception("No texture was found");
-            }
-        }
-
-        private Stream GetResourceStreamByNameEnd(string nameEnd)
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            foreach (string resourceName in assembly.GetManifestResourceNames())
-            {
-                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly.GetManifestResourceStream(resourceName);
-                }
-            }
-            return null; // or throw an exception if the resource is not found
         }
     }
 }

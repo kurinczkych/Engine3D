@@ -73,6 +73,7 @@ namespace Engine3D
 
             ComputeVertexNormals(ref tris);
 
+            GetUniformLocations();
             SendUniforms();
         }
 
@@ -109,6 +110,7 @@ namespace Engine3D
 
             ComputeVertexNormals(ref tris);
 
+            GetUniformLocations();
             SendUniforms();
         }
 
@@ -125,29 +127,30 @@ namespace Engine3D
             normalMesh.lines = normalLines;
         }
 
-        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
+        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
         {
-            Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
-
-            List<float> result = new List<float>()
+            List<float> result = new List<float>();
+            if (isTransformed)
             {
-                v.X, v.Y, v.Z, 1.0f,
-                tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                tri.t[index].u, tri.t[index].v
-            };
+                Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
+
+                result = new List<float>()
+                {
+                    v.X, v.Y, v.Z, 1.0f,
+                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
+                    tri.t[index].u, tri.t[index].v
+                };
+            }
+            else
+            {
+                result = new List<float>()
+                {
+                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
+                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
+                    tri.t[index].u, tri.t[index].v
+                };
+            }
             return result;
-        }
-
-        private PxVec3 ConvertToNDCPxVec3(triangle tri, int index, ref Matrix4 transformMatrix)
-        {
-            Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
-
-            PxVec3 vec = new PxVec3();
-            vec.x = v.X;
-            vec.y = v.Y;
-            vec.z = v.Z;
-
-            return vec;
         }
 
         private PxVec3 ConvertToNDCPxVec3(int index, ref Matrix4 transformMatrix)
@@ -168,25 +171,28 @@ namespace Engine3D
             this.camera = camera;
         }
 
+        private void GetUniformLocations()
+        {
+            uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
+            uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
+            uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
+            uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
+            uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
+            uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
+        }
+
         protected override void SendUniforms()
         {
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            int windowSizeLocation = GL.GetUniformLocation(shaderProgramId, "windowSize");
-            int modelMatrixLocation = GL.GetUniformLocation(shaderProgramId, "modelMatrix");
-            int viewMatrixLocation = GL.GetUniformLocation(shaderProgramId, "viewMatrix");
-            int projectionMatrixLocation = GL.GetUniformLocation(shaderProgramId, "projectionMatrix");
-            int cameraPositionLocation = GL.GetUniformLocation(shaderProgramId, "cameraPosition");
-
             modelMatrix = Matrix4.Identity;
             projectionMatrix = camera.GetProjectionMatrix();
             viewMatrix = camera.GetViewMatrix();
 
-            GL.UniformMatrix4(modelMatrixLocation, true, ref modelMatrix);
-            GL.UniformMatrix4(viewMatrixLocation, true, ref viewMatrix);
-            GL.UniformMatrix4(projectionMatrixLocation, true, ref projectionMatrix);
-            GL.Uniform2(windowSizeLocation, windowSize);
-            GL.Uniform3(cameraPositionLocation, camera.position);
-            GL.Uniform1(textureLocation, texture.unit);
+            GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
+            GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
+            GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
+            GL.Uniform2(uniformLocations["windowSize"], windowSize);
+            GL.Uniform3(uniformLocations["cameraPosition"], camera.position);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
         }
 
         public List<float> Draw()
@@ -214,7 +220,8 @@ namespace Engine3D
             Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
 
             Matrix4 transformMatrix = Matrix4.Identity;
-            if (IsTransformed)
+            bool isTransformed = IsTransformed;
+            if (isTransformed)
             {
                 transformMatrix = s * r * t;
             }
@@ -225,16 +232,16 @@ namespace Engine3D
                 {
                     if (tri.gotPointNormals)
                     {
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
                     }
                     else
                     {
                         tri.ComputeTriangleNormal(ref transformMatrix);
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
                     }
                 }
             }
@@ -328,19 +335,6 @@ namespace Engine3D
             }
 
             BoundingBox = new BoundingBox(min, max);
-        }
-
-        private Stream GetResourceStreamByNameEnd(string nameEnd)
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            foreach (string resourceName in assembly.GetManifestResourceNames())
-            {
-                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly.GetManifestResourceStream(resourceName);
-                }
-            }
-            return null; // or throw an exception if the resource is not found
         }
 
         public void ProcessObj(string filename)

@@ -23,6 +23,7 @@ using Microsoft.VisualBasic.FileIO;
 using System.Diagnostics;
 
 #pragma warning disable CS0649
+#pragma warning disable CS8618
 
 namespace Engine3D
 {
@@ -74,6 +75,7 @@ namespace Engine3D
         private Physx physx;
 
         // Frame limiting
+        private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
         private Stopwatch stopwatch;
 
@@ -169,7 +171,7 @@ namespace Engine3D
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
-            Type currentMesh = null;
+            Type? currentMesh = null;
             List<float> vertices = new List<float>();
             foreach(Object o in objects)
             {
@@ -221,7 +223,7 @@ namespace Engine3D
                 {
                     NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(NoTextureMesh)))
+                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(NoTextureMesh) : currentMesh, typeof(NoTextureMesh)))
                         vertices = new List<float>();
 
                     if (currentMesh == null || currentMesh != mesh.GetType())
@@ -237,7 +239,7 @@ namespace Engine3D
                 {
                     WireframeMesh mesh = (WireframeMesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(WireframeMesh)))
+                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(WireframeMesh) : currentMesh, typeof(WireframeMesh)))
                         vertices = new List<float>();
 
                     if (currentMesh == null || currentMesh != mesh.GetType())
@@ -279,7 +281,7 @@ namespace Engine3D
                         posTexShader.Use();
                     }
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TextMesh)))
+                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(TextMesh) : currentMesh, typeof(TextMesh)))
                         vertices = new List<float>();
 
                     vertices.AddRange(mesh.Draw());
@@ -288,7 +290,7 @@ namespace Engine3D
             }
 
 
-            if (DrawCorrectMesh(ref vertices, currentMesh, typeof(int)))
+            if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(int) : currentMesh, typeof(int)))
                 vertices = new List<float>();
 
             //Drawing character wireframe
@@ -387,13 +389,16 @@ namespace Engine3D
 
             base.OnRenderFrame(args);
 
-            //double elapsed = stopwatch.Elapsed.TotalSeconds;
-            //if (elapsed < TargetDeltaTime)
-            //{
-            //    double sleepTime = TargetDeltaTime - elapsed;
-            //    Thread.Sleep((int)(sleepTime * 1000));
-            //}
-            //stopwatch.Restart();
+            if (limitFps)
+            {
+                double elapsed = stopwatch.Elapsed.TotalSeconds;
+                if (elapsed < TargetDeltaTime)
+                {
+                    double sleepTime = TargetDeltaTime - elapsed;
+                    Thread.Sleep((int)(sleepTime * 1000));
+                }
+                stopwatch.Restart();
+            }
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
@@ -403,48 +408,42 @@ namespace Engine3D
             if (KeyboardState.IsKeyDown(Keys.Escape))
                 Close();
 
-            if (KeyboardState.IsKeyDown(Keys.Space))
-            {
-                var a = character.VStr;
-                ;
-            }
-
-            int ccd = 1;
             character.CalculateVelocity(KeyboardState, MouseState, args);
             character.UpdatePosition(KeyboardState, MouseState, args);
             character.AfterUpdate(MouseState, args);
 
-            if (temp != Math.Round(totalTime) || temp == -1)
-            {
-                Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-                obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
-                obj.SetSize(2);
-                obj.AddSphereCollider(false);
-                temp += 1;
-                AddObject(obj);
-            }
+            //if (temp != Math.Round(totalTime) || temp == -1)
+            //{
+            //    Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
+            //    obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
+            //    obj.SetSize(2);
+            //    obj.AddSphereCollider(false);
+            //    temp += 1;
+            //    AddObject(obj);
+            //}
 
             if (totalTime > 0)
             {
-                physx.Simulate((float)args.Time / ccd);
+                physx.Simulate((float)args.Time);
                 foreach (Object o in objects)
                 {
                     o.CollisionResponse();
                 }
             }
-            //camera.UpdatePositionToGround(meshes[0].Octree.GetNearTriangles(camera.position));
         }
 
         protected override void OnLoad()
         {
             base.OnLoad();
             CursorState = CursorState.Grabbed;
-            //stopwatch = Stopwatch.StartNew();
+
+            if(limitFps)
+                stopwatch = Stopwatch.StartNew();
 
             textGenerator = new TextGenerator();
 
             GL.Enable(EnableCap.DepthTest);
-            //GL.Disable(EnableCap.CullFace);
+            GL.Enable(EnableCap.CullFace);
 
 
             // OPENGL init

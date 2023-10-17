@@ -48,11 +48,13 @@ namespace Engine3D
         }
 
         private SortedDictionary<char, Symbol> symbols { get; set; }
-        private Root font;
+        private Root? font;
 
         public TextGenerator()
         {
             font = JsonConvert.DeserializeObject<Root>(GetFile("font.json"));
+            if (font == null)
+                throw new Exception("Can't find font.json!");
 
             symbols = new SortedDictionary<char, Symbol>();
             foreach (Symbol s in font.symbols)
@@ -73,6 +75,9 @@ namespace Engine3D
             float height = s.height;
 
             Color4 color = Color4.White;
+
+            if (font == null)
+                throw new Exception("Font dictionary is null!");
 
             Vector2 topleft = new Vector2(s.x / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
             Vector2 topRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, s.y / (float)font.config.textureHeight);
@@ -204,7 +209,7 @@ namespace Engine3D
         private string GetFile(string embeddedResourceName)
         {
             // Load the image (using System.Drawing or another library)
-            Stream stream = GetResourceStreamByNameEnd(embeddedResourceName);
+            Stream stream = Helper.GetResourceStreamByNameEnd(embeddedResourceName);
             if (stream != null)
             {
                 using (stream)
@@ -217,19 +222,6 @@ namespace Engine3D
             {
                 throw new Exception("No file was found");
             }
-        }
-
-        private Stream GetResourceStreamByNameEnd(string nameEnd)
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            foreach (string resourceName in assembly.GetManifestResourceNames())
-            {
-                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
-                {
-                    return assembly.GetManifestResourceStream(resourceName);
-                }
-            }
-            return null; // or throw an exception if the resource is not found
         }
     }
 }

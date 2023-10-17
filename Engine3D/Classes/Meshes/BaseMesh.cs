@@ -21,6 +21,8 @@ namespace Engine3D
         public bool hasIndices = false;
         public Object parentObject;
 
+        protected Dictionary<string, int> uniformLocations;
+
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
             tris = new List<triangle>();
@@ -30,6 +32,7 @@ namespace Engine3D
             this.vboId = vboId;
             this.shaderProgramId = shaderProgramId;
 
+            uniformLocations = new Dictionary<string, int>();
         }
         public void AddTriangle(triangle tri)
         {

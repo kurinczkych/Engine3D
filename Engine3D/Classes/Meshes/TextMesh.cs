@@ -58,6 +58,7 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.textGenerator = tg;
 
+            GetUniformLocations();
             SendUniforms();
         }
 
@@ -84,12 +85,16 @@ namespace Engine3D
             return result;
         }
 
+        private void GetUniformLocations()
+        {
+            uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
+            uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
+        }
+
         protected override void SendUniforms()
         {
-            int textureLocation = GL.GetUniformLocation(shaderProgramId, "textureSampler");
-            int windowSizeLocation = GL.GetUniformLocation(shaderProgramId, "windowSize");
-            GL.Uniform2(windowSizeLocation, windowSize);
-            GL.Uniform1(textureLocation, texture.unit);
+            GL.Uniform2(uniformLocations["windowSize"], windowSize);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
         }
 
         public List<float> Draw()
