@@ -192,19 +192,17 @@ namespace Engine3D
             }
         }
 
-        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args, int ccd, ref bool stopccd)
+        public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
         {
-            PxVec3 disp = new PxVec3() { x = Velocity.X / (float)ccd, y = Velocity.Y / (float)ccd, z = Velocity.Z / (float)ccd };
-            //GetCapsuleController()->GetActor()->SetLinearVelocityMut(&disp, true);
+            PxVec3 disp = new PxVec3() { x = Velocity.X, y = Velocity.Y, z = Velocity.Z };
             PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
             PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
-            PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time/(float)ccd, &filter, null);
+            PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
             isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
             if (isOnGround)
             {
                 Velocity.Y = 0;
                 disp.y = 0;
-                stopccd = true;
             }
             PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
             Vector3 newPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
@@ -223,11 +221,11 @@ namespace Engine3D
             thirdY -= mouseState.ScrollDelta.Y;
 
             camera.position = Position;
-            camera.position.X -= (float)Math.Cos(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-6.97959471
-            camera.position.Y += thirdY;
-            camera.position.Z -= (float)Math.Sin(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-7.161373
+            //camera.position.X -= (float)Math.Cos(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-6.97959471
+            //camera.position.Y += thirdY;
+            //camera.position.Z -= (float)Math.Sin(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-7.161373
 
-            thirdY = 0;
+            //thirdY = 0;
             //camera.position.X = Position.X;
             //camera.position.Y = Position.Y + characterHeight;
             //camera.position.Z = Position.Z;

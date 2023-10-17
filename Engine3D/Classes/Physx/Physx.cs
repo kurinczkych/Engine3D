@@ -66,6 +66,7 @@ namespace Engine3D
                     scenePtr = new IntPtr(GetPhysics()->CreateSceneMut(&sceneDesc));
 
                     controllerManagerPtr = new IntPtr(phys_PxCreateControllerManager(GetScene(), true));
+                    GetControllerManager()->SetOverlapRecoveryModuleMut(true);
 
                     var pvdClient = GetScene()->GetScenePvdClientMut();
                     if (pvdClient != null)
