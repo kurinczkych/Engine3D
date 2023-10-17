@@ -129,7 +129,7 @@ namespace Engine3D
         //    normalMesh.lines = normalLines;
         //}
 
-        private List<float> ConvertToNDC(int index, int triIndex, ref Matrix4 transformMatrix, bool isTransformed)
+        private List<float> ConvertToNDC(int index, int triIndex, ref Matrix4 transformMatrix, bool isTransformed, object n)
         {
             List<float> result = new List<float>();
             if (isTransformed)
@@ -142,9 +142,9 @@ namespace Engine3D
                 result = new List<float>()
                 {
                     v.X, v.Y, v.Z, 1.0f,
-                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 3], 
-                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 3 + 1], 
-                    triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 3 + 2],
+                    ((Vector3)n).X,
+                    ((Vector3)n).Y,
+                    ((Vector3)n).Z,
                     triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 6],
                     triFloats[index + triangle.FLOATCOUNTTRI * triIndex + 6 + 1]
                 };
@@ -239,21 +239,21 @@ namespace Engine3D
                 {
                     if (Convert.ToBoolean(triFloats[i + triangle.PN]))
                     {
-                        vertices.AddRange(ConvertToNDC(i, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(i, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(i, 2, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(i, 0, ref transformMatrix, isTransformed, null));
+                        vertices.AddRange(ConvertToNDC(i, 1, ref transformMatrix, isTransformed, null));
+                        vertices.AddRange(ConvertToNDC(i, 2, ref transformMatrix, isTransformed, null));
                     }
                     else
                     {
 
-                        triangle.ComputeTriangleNormal(triFloats[i + triangle.P0X], triFloats[i + triangle.P0Y], triFloats[i + triangle.P0Z],
+                        Vector3 n = triangle.ComputeTriangleNormal(triFloats[i + triangle.P0X], triFloats[i + triangle.P0Y], triFloats[i + triangle.P0Z],
                                                        triFloats[i + triangle.P1X], triFloats[i + triangle.P1Y], triFloats[i + triangle.P1Z],
                                                        triFloats[i + triangle.P2X], triFloats[i + triangle.P2Y], triFloats[i + triangle.P2Z], 
                                                        ref transformMatrix);
 
-                        vertices.AddRange(ConvertToNDC(i, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(i, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(i, 2, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(i, 0, ref transformMatrix, isTransformed, n));
+                        vertices.AddRange(ConvertToNDC(i, 1, ref transformMatrix, isTransformed, n));
+                        vertices.AddRange(ConvertToNDC(i, 2, ref transformMatrix, isTransformed, n));
                     }
                 }
             }
