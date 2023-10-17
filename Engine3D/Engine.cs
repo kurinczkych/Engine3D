@@ -529,38 +529,6 @@ namespace Engine3D
             //objects.Last().SetSize(2);
             //objects.Last().AddSphereCollider(false);
 
-
-
-            Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-            obj.SetPosition(new Vector3(-20, 50, -20));
-            obj.SetSize(2);
-            obj.AddSphereCollider(false);
-            AddObject(obj);
-
-            Object obj1 = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-            obj1.SetPosition(new Vector3(20, 50, -20));
-            obj1.SetSize(2);
-            obj1.AddSphereCollider(false);
-            AddObject(obj1);
-
-            Object obj2 = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-            obj2.SetPosition(new Vector3(-20, 50, 20));
-            obj2.SetSize(2);
-            obj2.AddSphereCollider(false);
-            AddObject(obj2);
-
-            Object obj3 = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-            obj3.SetPosition(new Vector3(-20, 50, 20));
-            obj3.SetSize(2);
-            obj3.AddSphereCollider(false);
-            AddObject(obj3);
-
-            Object obj4 = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-            obj4.SetPosition(new Vector3(0, 50, 0));
-            obj4.SetSize(2);
-            obj4.AddSphereCollider(false);
-            AddObject(obj4);
-
             posTexShader.Use();
 
             Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
