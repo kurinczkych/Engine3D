@@ -153,6 +153,28 @@ namespace Engine3D
             return result;
         }
 
+        private List<float> ConvertToNDCOnlyPos(triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
+        {
+            List<float> result = new List<float>();
+            if (isTransformed)
+            {
+                Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
+
+                result = new List<float>()
+                {
+                    v.X, v.Y, v.Z
+                };
+            }
+            else
+            {
+                result = new List<float>()
+                {
+                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+                };
+            }
+            return result;
+        }
+
         private PxVec3 ConvertToNDCPxVec3(int index, ref Matrix4 transformMatrix)
         {
             Vector3 v = Vector3.TransformPosition(allVerts[index], transformMatrix);
@@ -193,6 +215,21 @@ namespace Engine3D
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.position);
             GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
+        }
+
+        protected void SendUniformsOnlyPos(Shader shader)
+        {
+            int modelLoc = GL.GetUniformLocation(shader.id, "modelMatrix");
+            int viewLoc = GL.GetUniformLocation(shader.id, "viewMatrix");
+            int projLoc = GL.GetUniformLocation(shader.id, "projectionMatrix");
+
+            modelMatrix = Matrix4.Identity;
+            projectionMatrix = camera.GetProjectionMatrix();
+            viewMatrix = camera.GetViewMatrix();
+
+            GL.UniformMatrix4(modelLoc, true, ref modelMatrix);
+            GL.UniformMatrix4(viewLoc, true, ref viewMatrix);
+            GL.UniformMatrix4(projLoc, true, ref projectionMatrix);
         }
 
         public List<float> Draw()
@@ -248,6 +285,62 @@ namespace Engine3D
 
             SendUniforms();
             texture.Bind();
+
+            return vertices;
+        }
+        
+        public List<float> DrawOnlyPos(VAO aabbVao, Shader shader)
+        {
+            aabbVao.Bind();
+
+            vertices = new List<float>();
+
+            ObjectType type = parentObject.GetObjectType();
+            if (type == ObjectType.Sphere)
+            {
+                Scale = new Vector3(parentObject.Radius);
+            }
+            else if (type == ObjectType.Cube)
+            {
+                Scale = new Vector3(parentObject.Size);
+            }
+            else if (type == ObjectType.Capsule)
+            {
+                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
+            }
+
+            Matrix4 s = Matrix4.CreateScale(Scale);
+            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+            Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
+
+            Matrix4 transformMatrix = Matrix4.Identity;
+            bool isTransformed = IsTransformed;
+            if (isTransformed)
+            {
+                transformMatrix = s * r * t;
+            }
+
+            foreach (triangle tri in tris)
+            {
+                if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                {
+                    if (tri.gotPointNormals)
+                    {
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 2, ref transformMatrix, isTransformed));
+                    }
+                    else
+                    {
+                        tri.ComputeTriangleNormal(ref transformMatrix);
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 2, ref transformMatrix, isTransformed));
+                    }
+                }
+            }
+
+            SendUniformsOnlyPos(shader);
 
             return vertices;
         }

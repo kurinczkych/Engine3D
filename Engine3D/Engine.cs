@@ -21,6 +21,7 @@ using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
 using System.Diagnostics;
+using System.Xml.Schema;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -50,10 +51,16 @@ namespace Engine3D
         private VAO wireVao;
         private VBO wireVbo;
 
+        private VAO aabbVao;
+        private VBO aabbVbo;
+
         private Shader shaderProgram;
         private Shader posTexShader;
         private Shader noTextureShaderProgram;
+        private Shader aabbShaderProgram;
         private int textureCount = 0;
+
+        private int occlusionQuery;
 
         // Program variables
         private Random rnd = new Random((int)DateTime.Now.Ticks);
@@ -117,7 +124,8 @@ namespace Engine3D
                 haveText = true;
             objects.Add(obj);
             objects.Sort();
-        }     
+        }
+
 
         private bool DrawCorrectMesh(ref List<float> vertices, Type prevMeshType, Type currentMeshType)
         {
@@ -160,7 +168,6 @@ namespace Engine3D
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.ClearColor(Color4.Cyan);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             double fps = DrawFps(args.Time);
@@ -168,6 +175,37 @@ namespace Engine3D
             frustum = character.camera.GetFrustum();
 
             GL.Enable(EnableCap.DepthTest);
+
+            //Occlusion
+            GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
+            List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
+            aabbShaderProgram.Use();
+            List<float> posVertices = new List<float>();
+            foreach(Object obj in triangleMeshObjects)
+            {
+                posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
+            }
+            aabbVbo.Buffer(posVertices);
+            GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
+
+            foreach (Object obj in triangleMeshObjects)
+            {
+                GLHelper.PerformOcclusionQueriesForBVH(obj.BVHStruct.Root, occlusionQuery, aabbVbo, aabbVao, aabbShaderProgram, character.camera);
+                int asd;
+                GL.GetQueryObject(occlusionQuery, GetQueryObjectParam.QueryResultAvailable, out asd);
+                if (asd != 0)
+                    ;
+
+                GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
+            }
+            ;
+
+            
+            //------------------------------------------------------------
+            GL.ColorMask(true, true, true, true); 
+            GL.ClearColor(Color4.Cyan);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
@@ -302,12 +340,12 @@ namespace Engine3D
             GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
             vertices = new List<float>();
 
-            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
-            //            .ChangeText("Position = (" + character.PStr + ")");
-            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
-            //            .ChangeText("Velocity = (" + character.VStr + ")");
-            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
-            //            .ChangeText("IsOnGround = " + character.isOnGround.ToString());
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
+                        .ChangeText("Position = (" + character.PStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
+                        .ChangeText("Velocity = (" + character.VStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
+                        .ChangeText("IsOnGround = " + character.isOnGround.ToString());
 
             Context.SwapBuffers();
 
@@ -404,10 +442,18 @@ namespace Engine3D
             wireVao.LinkToVAO(0, 4, 0, wireVbo);
             wireVao.LinkToVAO(1, 4, 4, wireVbo);
 
+            aabbVbo = new VBO();
+            aabbVao = new VAO(3);
+            aabbVao.LinkToVAO(0, 3, 0, aabbVbo);
+
             // Create the shader program
             shaderProgram = new Shader("Default.vert", "Default.frag");
             posTexShader = new Shader("postex.vert", "postex.frag");
             noTextureShaderProgram = new Shader("noTexture.vert", "noTexture.frag");
+            aabbShaderProgram = new Shader("aabb.vert", "aabb.frag");
+
+            // Occlusion
+            GL.GenQueries(1, out occlusionQuery);
 
             // Create Physx context
             physx = new Physx(true);

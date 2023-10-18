@@ -38,6 +38,8 @@ namespace Engine3D
         private IntPtr dynamicColliderPtr;
         private IntPtr staticColliderPtr;
 
+        public BVH BVHStruct { get; private set; }
+
         public PxRigidDynamic* GetDynamicCollider() { return (PxRigidDynamic*)dynamicColliderPtr.ToPointer(); }
         public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
 
@@ -131,7 +133,10 @@ namespace Engine3D
                     throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
                 if(!mesh.hasIndices)
                     throw new Exception("The mesh doesn't have triangle indices!");
-                
+
+                //Calculating bounding volume hiearchy
+                BVHStruct = new BVH(((Mesh)mesh).tris);
+
                 uint count = (uint)((Mesh)mesh).tris.Count() * 3;
                 PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
                 meshDesc.points.count = count;

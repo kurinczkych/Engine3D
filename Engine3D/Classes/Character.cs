@@ -48,7 +48,7 @@ namespace Engine3D
         //----------------------------------------------
         private float thirdY = 10f;
 
-        private bool noClip = false;
+        private bool noClip = true;
 
         private bool firstMove = true;
         public Vector2 lastPos;
