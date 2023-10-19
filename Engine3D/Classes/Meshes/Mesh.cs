@@ -289,6 +289,63 @@ namespace Engine3D
             return vertices;
         }
         
+        public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
+        {
+            Vao.Bind();
+
+            vertices = new List<float>();
+
+            ObjectType type = parentObject.GetObjectType();
+            if (type == ObjectType.Sphere)
+            {
+                Scale = new Vector3(parentObject.Radius);
+            }
+            else if (type == ObjectType.Cube)
+            {
+                Scale = new Vector3(parentObject.Size);
+            }
+            else if (type == ObjectType.Capsule)
+            {
+                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
+            }
+
+            Matrix4 s = Matrix4.CreateScale(Scale);
+            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+            Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
+
+            Matrix4 transformMatrix = Matrix4.Identity;
+            bool isTransformed = IsTransformed;
+            if (isTransformed)
+            {
+                transformMatrix = s * r * t;
+            }
+
+            foreach (triangle tri in notOccludedTris)
+            {
+                if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                {
+                    if (tri.gotPointNormals)
+                    {
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
+                    }
+                    else
+                    {
+                        tri.ComputeTriangleNormal(ref transformMatrix);
+                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
+                    }
+                }
+            }
+
+            SendUniforms();
+            texture.Bind();
+
+            return vertices;
+        }
+        
         public List<float> DrawOnlyPos(VAO aabbVao, Shader shader)
         {
             aabbVao.Bind();
