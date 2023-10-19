@@ -58,9 +58,8 @@ namespace Engine3D
         private Shader posTexShader;
         private Shader noTextureShaderProgram;
         private Shader aabbShaderProgram;
+        private Shader depthShaderProgram;
         private int textureCount = 0;
-
-        private int occlusionQuery;
 
         // Program variables
         private Random rnd = new Random((int)DateTime.Now.Ticks);
@@ -176,177 +175,183 @@ namespace Engine3D
 
             GL.Enable(EnableCap.DepthTest);
 
+
             //Occlusion
             GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
+            GL.Clear(ClearBufferMask.DepthBufferBit);
+            GL.ClearDepth(1.0);
             List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
             aabbShaderProgram.Use();
             List<float> posVertices = new List<float>();
-            foreach(Object obj in triangleMeshObjects)
+            foreach (Object obj in triangleMeshObjects)
             {
                 posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
             }
             aabbVbo.Buffer(posVertices);
             GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
 
+            //GL.ColorMask(true, true, true, true);
+            //depthShaderProgram.Use();
+            //GL.DrawArrays(PrimitiveType.Triangles, 0, 6);  // Drawing the fullscreen quad
+
+            GL.ColorMask(true, true, true, true);
+            GL.ClearColor(Color4.Cyan);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             foreach (Object obj in triangleMeshObjects)
             {
-                GLHelper.PerformOcclusionQueriesForBVH(obj.BVHStruct.Root, occlusionQuery, aabbVbo, aabbVao, aabbShaderProgram, character.camera);
-                int asd;
-                GL.GetQueryObject(occlusionQuery, GetQueryObjectParam.QueryResultAvailable, out asd);
-                if (asd != 0)
-                    ;
-
+                GLHelper.PerformOcclusionQueriesForBVH(obj.BVHStruct.Root, aabbVbo, aabbVao, aabbShaderProgram, character.camera);
                 GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
             }
             ;
 
-            
+
             //------------------------------------------------------------
-            GL.ColorMask(true, true, true, true); 
-            GL.ClearColor(Color4.Cyan);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
+            //GL.ColorMask(true, true, true, true); 
+            //GL.ClearColor(Color4.Cyan);
+            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            Type? currentMesh = null;
-            List<float> vertices = new List<float>();
-            foreach(Object o in objects)
-            {
-                ObjectType objectType = o.GetObjectType();
-                if(objectType == ObjectType.Cube ||
-                   objectType == ObjectType.Sphere ||
-                   objectType == ObjectType.Capsule ||
-                   objectType == ObjectType.TriangleMesh)
-                {
-                    Mesh mesh = (Mesh)o.GetMesh();
+            //shaderProgram.Use();
+            //PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(Mesh)))
-                    //    vertices = new List<float>();
+            //Type? currentMesh = null;
+            //List<float> vertices = new List<float>();
+            //foreach(Object o in objects)
+            //{
+            //    ObjectType objectType = o.GetObjectType();
+            //    if(objectType == ObjectType.Cube ||
+            //       objectType == ObjectType.Sphere ||
+            //       objectType == ObjectType.Capsule ||
+            //       objectType == ObjectType.TriangleMesh)
+            //    {
+            //        Mesh mesh = (Mesh)o.GetMesh();
 
-                    if(currentMesh == null || currentMesh != mesh.GetType())
-                    {
-                        shaderProgram.Use();
-                    }
+            //        //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(Mesh)))
+            //        //    vertices = new List<float>();
 
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(Mesh);
+            //        if(currentMesh == null || currentMesh != mesh.GetType())
+            //        {
+            //            shaderProgram.Use();
+            //        }
 
-                    meshVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
-                }
-                else if(objectType == ObjectType.TestMesh)
-                {
-                    TestMesh mesh = (TestMesh)o.GetMesh();
+            //        mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //        vertices.AddRange(mesh.Draw());
+            //        currentMesh = typeof(Mesh);
 
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
-                    //    vertices = new List<float>();
+            //        meshVbo.Buffer(vertices);
+            //        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            //        vertices.Clear();
+            //    }
+            //    else if(objectType == ObjectType.TestMesh)
+            //    {
+            //        TestMesh mesh = (TestMesh)o.GetMesh();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
-                    {
-                        shaderProgram.Use();
-                    }
+            //        //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
+            //        //    vertices = new List<float>();
 
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(TestMesh);
+            //        if (currentMesh == null || currentMesh != mesh.GetType())
+            //        {
+            //            shaderProgram.Use();
+            //        }
 
-                    testVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
-                }
-                else if(objectType == ObjectType.NoTexture)
-                {
-                    NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
+            //        mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //        vertices.AddRange(mesh.Draw());
+            //        currentMesh = typeof(TestMesh);
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(NoTextureMesh) : currentMesh, typeof(NoTextureMesh)))
-                        vertices = new List<float>();
+            //        testVbo.Buffer(vertices);
+            //        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            //        vertices.Clear();
+            //    }
+            //    else if(objectType == ObjectType.NoTexture)
+            //    {
+            //        NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
-                    {
-                        noTextureShaderProgram.Use();
-                    }
+            //        if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(NoTextureMesh) : currentMesh, typeof(NoTextureMesh)))
+            //            vertices = new List<float>();
 
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(NoTextureMesh);
-                }
-                else if(objectType == ObjectType.Wireframe)
-                {
-                    WireframeMesh mesh = (WireframeMesh)o.GetMesh();
+            //        if (currentMesh == null || currentMesh != mesh.GetType())
+            //        {
+            //            noTextureShaderProgram.Use();
+            //        }
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(WireframeMesh) : currentMesh, typeof(WireframeMesh)))
-                        vertices = new List<float>();
+            //        mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //        vertices.AddRange(mesh.Draw());
+            //        currentMesh = typeof(NoTextureMesh);
+            //    }
+            //    else if(objectType == ObjectType.Wireframe)
+            //    {
+            //        WireframeMesh mesh = (WireframeMesh)o.GetMesh();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
-                    {
-                        noTextureShaderProgram.Use();
-                    }
+            //        if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(WireframeMesh) : currentMesh, typeof(WireframeMesh)))
+            //            vertices = new List<float>();
 
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(WireframeMesh);
-                }
-                else if(objectType == ObjectType.UIMesh)
-                {
-                    UITextureMesh mesh = (UITextureMesh)o.GetMesh();
+            //        if (currentMesh == null || currentMesh != mesh.GetType())
+            //        {
+            //            noTextureShaderProgram.Use();
+            //        }
 
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
-                    //    vertices = new List<float>();
+            //        mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //        vertices.AddRange(mesh.Draw());
+            //        currentMesh = typeof(WireframeMesh);
+            //    }
+            //    else if(objectType == ObjectType.UIMesh)
+            //    {
+            //        UITextureMesh mesh = (UITextureMesh)o.GetMesh();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
-                    {
-                        GL.Disable(EnableCap.DepthTest);
-                        posTexShader.Use();
-                    }
+            //        //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
+            //        //    vertices = new List<float>();
 
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(UITextureMesh);
+            //        if (currentMesh == null || currentMesh != mesh.GetType())
+            //        {
+            //            GL.Disable(EnableCap.DepthTest);
+            //            posTexShader.Use();
+            //        }
 
-                    uiTexVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
-                }
-                else if(objectType == ObjectType.TextMesh)
-                {
-                    TextMesh mesh = (TextMesh)o.GetMesh();
+            //        vertices.AddRange(mesh.Draw());
+            //        currentMesh = typeof(UITextureMesh);
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
-                    {
-                        GL.Disable(EnableCap.DepthTest);
-                        posTexShader.Use();
-                    }
+            //        uiTexVbo.Buffer(vertices);
+            //        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            //        vertices.Clear();
+            //    }
+            //    else if(objectType == ObjectType.TextMesh)
+            //    {
+            //        TextMesh mesh = (TextMesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(TextMesh) : currentMesh, typeof(TextMesh)))
-                        vertices = new List<float>();
+            //        if (currentMesh == null || currentMesh != mesh.GetType())
+            //        {
+            //            GL.Disable(EnableCap.DepthTest);
+            //            posTexShader.Use();
+            //        }
 
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(TextMesh);
-                }
-            }
+            //        if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(TextMesh) : currentMesh, typeof(TextMesh)))
+            //            vertices = new List<float>();
+
+            //        vertices.AddRange(mesh.Draw());
+            //        currentMesh = typeof(TextMesh);
+            //    }
+            //}
 
 
-            if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(int) : currentMesh, typeof(int)))
-                vertices = new List<float>();
+            //if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(int) : currentMesh, typeof(int)))
+            //    vertices = new List<float>();
 
-            //Drawing character wireframe
-            WireframeMesh characterWiremesh = character.mesh;
-            noTextureShaderProgram.Use();
-            characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            vertices.AddRange(characterWiremesh.Draw());
-            wireVbo.Buffer(vertices);
-            GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
-            vertices = new List<float>();
+            ////Drawing character wireframe
+            //WireframeMesh characterWiremesh = character.mesh;
+            //noTextureShaderProgram.Use();
+            //characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //vertices.AddRange(characterWiremesh.Draw());
+            //wireVbo.Buffer(vertices);
+            //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            //vertices = new List<float>();
 
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
-                        .ChangeText("Position = (" + character.PStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
-                        .ChangeText("Velocity = (" + character.VStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
-                        .ChangeText("IsOnGround = " + character.isOnGround.ToString());
-
+            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
+            //            .ChangeText("Position = (" + character.PStr + ")");
+            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
+            //            .ChangeText("Velocity = (" + character.VStr + ")");
+            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
+            //            .ChangeText("IsOnGround = " + character.isOnGround.ToString());
+            
             Context.SwapBuffers();
 
             base.OnRenderFrame(args);
@@ -451,9 +456,7 @@ namespace Engine3D
             posTexShader = new Shader("postex.vert", "postex.frag");
             noTextureShaderProgram = new Shader("noTexture.vert", "noTexture.frag");
             aabbShaderProgram = new Shader("aabb.vert", "aabb.frag");
-
-            // Occlusion
-            GL.GenQueries(1, out occlusionQuery);
+            depthShaderProgram = new Shader("depth.vert", "depth.frag");
 
             // Create Physx context
             physx = new Physx(true);
@@ -488,7 +491,7 @@ namespace Engine3D
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));
             //objects.Last().AddCubeCollider(true);

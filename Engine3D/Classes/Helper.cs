@@ -247,12 +247,15 @@ namespace Engine3D
             aabbVbo.Unbind();
         }
 
-        public static void PerformOcclusionQueriesForBVH(BVHNode node, int occlusionQuery, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera)
+        public static void PerformOcclusionQueriesForBVH(BVHNode node, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera)
         {
             if (node == null) return;
 
+            int query;
+            GL.GenQueries(1, out query);
+
             // 1. Initiate occlusion query
-            GL.BeginQuery(QueryTarget.SamplesPassed, occlusionQuery);
+            GL.BeginQuery(QueryTarget.SamplesPassed, query);
 
             // 2. Render the AABB of the current BVH node
             RenderAABB(node.Bounds, aabbVbo, aabbVao, shader, camera);
@@ -262,10 +265,11 @@ namespace Engine3D
 
             // 4. Fetch the results
             int samplesPassed;
-            GL.GetQueryObject(occlusionQuery, GetQueryObjectParam.QueryResult, out samplesPassed);
+            GL.GetQueryObject(query, GetQueryObjectParam.QueryResult, out samplesPassed);
 
             // 5. Cleanup the query object
-            GL.DeleteQueries(1, ref occlusionQuery);
+            GL.DeleteQueries(1, ref query);
+
 
             // 6. If there are samples passed, then mark the node as visible
             if (samplesPassed > 0)
@@ -275,8 +279,8 @@ namespace Engine3D
                 // Optionally, if you want to cull aggressively, you can stop here
                 // and not process the children of this node since its bounding box is visible.
                 // However, if you want more granular visibility checks, continue traversing the BVH.
-                PerformOcclusionQueriesForBVH(node.Left, occlusionQuery, aabbVbo, aabbVao, shader, camera);
-                PerformOcclusionQueriesForBVH(node.Right, occlusionQuery, aabbVbo, aabbVao, shader, camera);
+                PerformOcclusionQueriesForBVH(node.Left, aabbVbo, aabbVao, shader, camera);
+                PerformOcclusionQueriesForBVH(node.Right, aabbVbo, aabbVao, shader, camera);
             }
             else
             {
