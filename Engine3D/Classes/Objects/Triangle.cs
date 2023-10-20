@@ -171,7 +171,7 @@ namespace Engine3D
             return Vector3.NegativeInfinity;
         }
 
-        public void Color(Color4 c)
+        public void SetColor(Color4 c)
         {
             for (int i = 0; i < this.c.Length; i++)
             {
@@ -179,7 +179,7 @@ namespace Engine3D
             }
         }
 
-        public void Color(triangle t)
+        public void SetColor(triangle t)
         {
             for (int i = 0; i < this.c.Length; i++)
             {

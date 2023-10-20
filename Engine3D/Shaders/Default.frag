@@ -24,10 +24,10 @@ struct DirLight {
     float specularPow;
 };  
 
-//in vec4 fragColor;
 in vec3 fragPos;
 in vec3 normal;
 in vec2 fragTexCoord;
+in vec4 fragColor;
 
 uniform vec3 cameraPosition;
 
@@ -112,7 +112,8 @@ void main()
     for(int i = 0; i < actualNumOfLights; i++)
         result += CalcPointLight(pointLights[i], normal, fragPos, viewDir);
 
-    FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0);
+//    FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
+    FragColor = fragColor;
 //    FragColor = vec4(result, 1.0);
 }
 

@@ -12,6 +12,7 @@ using MagicPhysX;
 using static Engine3D.TextGenerator;
 using System.IO;
 using Cyotek.Drawing.BitmapFont;
+using System.Security.Cryptography;
 
 namespace Engine3D
 {
@@ -76,125 +77,7 @@ namespace Engine3D
         }
 
     }
-    public class AABB
-    {
-        public Vector3 Min;
-        public Vector3 Max;
-
-        public Vector3 Center
-        {
-            get
-            {
-                return new Vector3(
-                (Min.X + Max.X) * 0.5f,
-                (Min.Y + Max.Y) * 0.5f,
-                (Min.Z + Max.Z) * 0.5f);
-            }
-        }
-
-        public AABB()
-        {
-            Min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
-            Max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
-        }
-
-        public void Enclose(triangle tri)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                Min = Helper.Vector3Min(Min, tri.p[i]);
-                Max = Helper.Vector3Max(Max, tri.p[i]);
-            }
-        }
-    }
-    public class BVHNode
-    {
-        public AABB bounds;
-        public BVHNode left;
-        public BVHNode right;
-        public List<triangle> triangles;
-
-        public bool isVisible = false;
-    }
-
-    public class BVH
-    {
-        public BVHNode Root;
-
-        public BVH(List<triangle> triangles)
-        {
-            Root = BuildBVH(triangles);
-        }
-
-        private BVHNode BuildBVH(List<triangle> triangles)
-        {
-            BVHNode node = new BVHNode();
-            node.bounds = ComputeBounds(triangles);
-            node.triangles = new List<triangle>();
-
-            if (triangles.Count <= 3)  // leaf node
-            {
-                node.triangles.AddRange(triangles);
-                return node;
-            }
-
-            // Split triangles into two groups
-            var axis = node.bounds.Max - node.bounds.Min;
-            int splitAxis = axis.X > axis.Y ? (axis.X > axis.Z ? 0 : 2) : (axis.Y > axis.Z ? 1 : 2);
-
-            triangles.Sort((a, b) => a.p[0][splitAxis].CompareTo(b.p[0][splitAxis]));
-            var half = triangles.Count / 2;
-
-            node.left = BuildBVH(triangles.GetRange(0, half));
-            node.right = BuildBVH(triangles.GetRange(half, triangles.Count - half));
-
-            return node;
-        }
-
-        private AABB ComputeBounds(List<triangle> triangles)
-        {
-            AABB box = new AABB();
-
-            foreach (var tri in triangles)
-            {
-                box.Enclose(tri);
-            }
-
-            return box;
-        }
-
-        public void WriteBVHToFile(string file)
-        {
-            using (StreamWriter writer = new StreamWriter(file))
-            {
-                WriteNode(writer, Root, 0);  // Start at depth 0
-            }
-        }
-
-
-        private void WriteNode(StreamWriter writer, BVHNode node, int depth)
-        {
-            if (node == null) return;
-
-            string indent = new string(' ', depth * 2);  // Indentation for visualization
-            writer.WriteLine($"{indent}Node Bounds: {node.bounds.Min} to {node.bounds.Max}");
-
-            writer.WriteLine($"{indent}  Triangle: {node.triangles.Count.ToString()}");  // Assuming your triangle has a simple representation
-            writer.WriteLine($"{indent}  IsVisible: {node.isVisible}");  // Assuming your triangle has a simple representation
-            if (node.triangles != null && node.triangles.Count > 0)  // It's a leaf node
-            {
-                writer.WriteLine($"{indent}  LEAFLEAFLEAFLEAFLEAFLEAF");  // Assuming your triangle has a simple representation
-            }
-            else
-            {
-                writer.WriteLine($"{indent}Left Child:");
-                WriteNode(writer, node.left, depth + 1);
-
-                writer.WriteLine($"{indent}Right Child:");
-                WriteNode(writer, node.right, depth + 1);
-            }
-        }
-    }
+    
 
     public static class GLHelper
     {
@@ -202,59 +85,43 @@ namespace Engine3D
         {
             List<float> vertices = new List<float>()
             {
-                // Front face
-                bounds.Min.X, bounds.Min.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Min.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Max.Y, bounds.Min.Z,
-
-                bounds.Max.X, bounds.Max.Y, bounds.Min.Z,
-                bounds.Min.X, bounds.Max.Y, bounds.Min.Z,
-                bounds.Min.X, bounds.Min.Y, bounds.Min.Z,
-
-                // Back face
-                bounds.Min.X, bounds.Min.Y, bounds.Max.Z,
-                bounds.Max.X, bounds.Min.Y, bounds.Max.Z,
-                bounds.Max.X, bounds.Max.Y, bounds.Max.Z,
-
-                bounds.Max.X, bounds.Max.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Max.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Min.Y, bounds.Max.Z,
-
-                // Bottom face
-                bounds.Min.X, bounds.Min.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Min.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Min.Y, bounds.Max.Z,
-
-                bounds.Max.X, bounds.Min.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Min.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Min.Y, bounds.Min.Z,
-
-                // Top face
-                bounds.Min.X, bounds.Max.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Max.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Max.Y, bounds.Max.Z,
-
-                bounds.Max.X, bounds.Max.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Max.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Max.Y, bounds.Min.Z,
-
-                // Left face
-                bounds.Min.X, bounds.Min.Y, bounds.Min.Z,
-                bounds.Min.X, bounds.Max.Y, bounds.Min.Z,
-                bounds.Min.X, bounds.Max.Y, bounds.Max.Z,
-
-                bounds.Min.X, bounds.Max.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Min.Y, bounds.Max.Z,
-                bounds.Min.X, bounds.Min.Y, bounds.Min.Z,
-
-                // Right face
-                bounds.Max.X, bounds.Min.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Max.Y, bounds.Min.Z,
-                bounds.Max.X, bounds.Max.Y, bounds.Max.Z,
-
-                bounds.Max.X, bounds.Max.Y, bounds.Max.Z,
-                bounds.Max.X, bounds.Min.Y, bounds.Max.Z,
-                bounds.Max.X, bounds.Min.Y, bounds.Min.Z,
+                
+                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,// Front face
+                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
+                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,// Back face
+                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,// Bottom face
+                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,
+                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
+                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,
+                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,// Top face
+                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,// Left face
+                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,
+                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,
+                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,
+                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,// Right face
+                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
+                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
+                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,
             }; 
             aabbVao.Bind();
 
@@ -322,29 +189,29 @@ namespace Engine3D
                 BVHNode firstChild = node.left;
                 BVHNode secondChild = node.right;
 
-                PerformOcclusionQueriesForBVHRecursive(firstChild, aabbVbo, aabbVao, shader, camera);
-                PerformOcclusionQueriesForBVHRecursive(secondChild, aabbVbo, aabbVao, shader, camera);
+                //PerformOcclusionQueriesForBVHRecursive(firstChild, aabbVbo, aabbVao, shader, camera);
+                //PerformOcclusionQueriesForBVHRecursive(secondChild, aabbVbo, aabbVao, shader, camera);
 
 
-                //if (firstChild == null)
-                //    PerformOcclusionQueriesForBVH(secondChild, aabbVbo, aabbVao, shader, camera);
-                //else if (secondChild == null)
-                //    PerformOcclusionQueriesForBVH(firstChild, aabbVbo, aabbVao, shader, camera);
-                //else
-                //{
-                //    // Assuming your AABB has a method to compute its center
-                //    float distanceToLeft = (node.left.bounds.Center - camera.position).Length;
-                //    float distanceToRight = (node.right.bounds.Center - camera.position).Length;
+                if (firstChild == null)
+                    PerformOcclusionQueriesForBVH(secondChild, aabbVbo, aabbVao, shader, camera);
+                else if (secondChild == null)
+                    PerformOcclusionQueriesForBVH(firstChild, aabbVbo, aabbVao, shader, camera);
+                else
+                {
+                    // Assuming your AABB has a method to compute its center
+                    float distanceToLeft = (node.left.bounds.Center - camera.position).Length;
+                    float distanceToRight = (node.right.bounds.Center - camera.position).Length;
 
-                //    if (distanceToRight < distanceToLeft)
-                //    {
-                //        firstChild = node.right;
-                //        secondChild = node.left;
-                //    }
+                    if (distanceToRight < distanceToLeft)
+                    {
+                        firstChild = node.right;
+                        secondChild = node.left;
+                    }
 
-                //    PerformOcclusionQueriesForBVH(firstChild, aabbVbo, aabbVao, shader, camera);
-                //    PerformOcclusionQueriesForBVH(secondChild, aabbVbo, aabbVao, shader, camera);
-                //}
+                    PerformOcclusionQueriesForBVH(firstChild, aabbVbo, aabbVao, shader, camera);
+                    PerformOcclusionQueriesForBVH(secondChild, aabbVbo, aabbVao, shader, camera);
+                }
             }
             else
             {
@@ -352,7 +219,24 @@ namespace Engine3D
             }
         }
 
-        public static void TraverseBVHNode(BVHNode node, ref List<triangle> notOccludedTris)
+        public static double GTRandom(int index)
+        {
+            byte[] hash;
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                // Compute hash from the index
+                hash = sha256.ComputeHash(BitConverter.GetBytes(index));
+            }
+
+            // Convert the hash bytes to an int seed (we'll just use the first 4 bytes)
+            int seed = BitConverter.ToInt32(hash, 0);
+
+            // Use the seed to get a random number
+            Random random = new Random(seed);
+            return random.NextDouble();
+        }
+
+        public static void TraverseBVHNode(BVHNode node, ref List<triangle> notOccludedTris, ref int i)
         {
             if (node == null)
                 return;
@@ -362,15 +246,26 @@ namespace Engine3D
             //If it's a leaf node (i.e., no children but has triangles)
             if (node.left == null && node.right == null && node.triangles != null)
             {
+
+                //Color4 c = new Color4((float)GTRandom(i), (float)GTRandom(i+1), (float)GTRandom(i+2), 1.0f);
+                //i += 3;
+                //List<triangle> colorTris = new List<triangle>(node.triangles);
+                //colorTris.ForEach(x => x.SetColor(c));
+                //notOccludedTris.AddRange(colorTris);
+
                 if (node.isVisible)
                 {
-                    notOccludedTris.AddRange(node.triangles);
+                    Color4 c = new Color4((float)GTRandom(i), (float)GTRandom(i + 1), (float)GTRandom(i + 2), 1.0f);
+                    i += 3;
+                    List<triangle> colorTris = new List<triangle>(node.triangles);
+                    colorTris.ForEach(x => x.SetColor(c));
+                    notOccludedTris.AddRange(colorTris);
                 }
             }
             else
             {
-                TraverseBVHNode(node.left, ref notOccludedTris);
-                TraverseBVHNode(node.right, ref notOccludedTris);
+                TraverseBVHNode(node.left, ref notOccludedTris, ref i);
+                TraverseBVHNode(node.right, ref notOccludedTris, ref i);
             }
         }
 

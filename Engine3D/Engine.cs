@@ -62,7 +62,7 @@ namespace Engine3D
         private int textureCount = 0;
 
         // Program variables
-        private Random rnd = new Random((int)DateTime.Now.Ticks);
+        public static Random rnd = new Random((int)DateTime.Now.Ticks);
         private Vector2 windowSize;
         private int frameCount;
         private double totalTime;
@@ -202,7 +202,6 @@ namespace Engine3D
             }
             ;
 
-
             //------------------------------------------------------------
 
 
@@ -231,16 +230,17 @@ namespace Engine3D
 
                     if (objectType == ObjectType.TriangleMesh)
                     {
-                        List<triangle> notOccludedTris = new List<triangle>();
-                        GLHelper.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris);
-                        ;
+                        //List<triangle> notOccludedTris = new List<triangle>();
+                        //Random rnd_ = new Random();
+                        //int i = 0;
+                        //GLHelper.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i);
 
-                        vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
-                        currentMesh = typeof(Mesh);
+                        //vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
+                        //currentMesh = typeof(Mesh);
 
-                        meshVbo.Buffer(vertices);
-                        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                        vertices.Clear();
+                        //meshVbo.Buffer(vertices);
+                        //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                        //vertices.Clear();
                     }
                     else
                     {
@@ -428,12 +428,14 @@ namespace Engine3D
             meshVao.LinkToVAO(0, 4, 0, meshVbo);
             meshVao.LinkToVAO(1, 3, 4, meshVbo);
             meshVao.LinkToVAO(2, 2, 7, meshVbo);
+            meshVao.LinkToVAO(3, 4, 9, meshVbo);
 
             testVbo = new VBO();
             testVao = new VAO(Mesh.floatCount);
             testVao.LinkToVAO(0, 4, 0, testVbo);
             testVao.LinkToVAO(1, 3, 4, testVbo);
             testVao.LinkToVAO(2, 2, 7, testVbo);
+            testVao.LinkToVAO(3, 4, 9, testVbo);
 
             textVbo = new VBO();
             textVao = new VAO(TextMesh.floatCount);
@@ -510,6 +512,15 @@ namespace Engine3D
             //objects.Last().SetPosition(new Vector3(0, 20, 0));
             //objects.Last().SetSize(2);
             //objects.Last().AddSphereCollider(false);
+
+
+            noTextureShaderProgram.Use();
+            List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
+            foreach(WireframeMesh mesh in aabbs)
+            {
+                Object aabbO = new Object(mesh, ObjectType.Wireframe, ref physx);
+                AddObject(aabbO);
+            }
 
             posTexShader.Use();
 

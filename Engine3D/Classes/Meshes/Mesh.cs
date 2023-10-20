@@ -23,7 +23,7 @@ namespace Engine3D
 
     public class Mesh : BaseMesh
     {
-        public static int floatCount = 9;
+        public static int floatCount = 13;
 
         public bool drawNormals = false;
         public WireframeMesh normalMesh;
@@ -138,7 +138,8 @@ namespace Engine3D
                 {
                     v.X, v.Y, v.Z, 1.0f,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v
+                    tri.t[index].u, tri.t[index].v,
+                    tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A
                 };
             }
             else
@@ -147,7 +148,8 @@ namespace Engine3D
                 {
                     tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v
+                    tri.t[index].u, tri.t[index].v,
+                    tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A
                 };
             }
             return result;
