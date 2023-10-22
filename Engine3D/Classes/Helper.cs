@@ -128,10 +128,10 @@ namespace Engine3D
             // 1. Initiate occlusion query
             GL.BeginQuery(QueryTarget.SamplesPassed, query);
 
-            //GL.DepthMask(false);
+            GL.DepthMask(false);
             // 2. Render the AABB of the current BVH node
             RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
-            //GL.DepthMask(true);
+            GL.DepthMask(true);
 
             // 3. End occlusion query
             GL.EndQuery(QueryTarget.SamplesPassed);

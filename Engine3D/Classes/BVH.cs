@@ -146,6 +146,8 @@ namespace Engine3D
         private const float TRAVERSAL_COST = 1.0f;  // cost of traversing a BVH node
         private const float TRIANGLE_COST = 1.0f;   // cost of intersecting a triangle
 
+        public int number_of_leaves = 0;
+
         private BVHNode BuildBVH(List<triangle> triangles)
         {
             BVHNode node = new BVHNode();
@@ -155,6 +157,7 @@ namespace Engine3D
             if (triangles.Count <= 75)  // leaf node
             {
                 node.triangles.AddRange(triangles);
+                number_of_leaves++;
                 return node;
             }
 

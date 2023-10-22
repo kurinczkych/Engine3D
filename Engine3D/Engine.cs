@@ -199,7 +199,7 @@ namespace Engine3D
             foreach (Object obj in triangleMeshObjects)
             {
                 GLHelper.PerformOcclusionQueriesForBVH(obj.BVHStruct.Root, aabbVbo, aabbVao, aabbShaderProgram, character.camera);
-                //GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
+                GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
                 //obj.BVHStruct.WriteBVHToFile("asd.txt");
             }
             GL.Enable(EnableCap.CullFace);
