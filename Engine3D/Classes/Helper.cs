@@ -83,46 +83,9 @@ namespace Engine3D
     {
         private static void RenderAABB(AABB bounds, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera)
         {
-            List<float> vertices = new List<float>()
-            {
-                
-                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,// Front face
-                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
-                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,// Back face
-                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,// Bottom face
-                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,
-                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
-                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,
-                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,// Top face
-                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,// Left face
-                bounds.Min.X, bounds.Max.Z, bounds.Min.Y,
-                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Max.Y,
-                bounds.Min.X, bounds.Min.Z, bounds.Min.Y,
-                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,// Right face
-                bounds.Max.X, bounds.Max.Z, bounds.Min.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Max.X, bounds.Max.Z, bounds.Max.Y,
-                bounds.Max.X, bounds.Min.Z, bounds.Max.Y,
-                bounds.Max.X, bounds.Min.Z, bounds.Min.Y,
-            }; 
+
+            List<float> vertices = bounds.GetTriangleVertices();
+
             aabbVao.Bind();
 
             aabbVbo.Buffer(vertices);

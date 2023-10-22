@@ -194,12 +194,15 @@ namespace Engine3D
             //GL.ColorMask(true, true, true, true);
             //GL.ClearColor(Color4.Cyan);
             //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            GL.Disable(EnableCap.CullFace);
             foreach (Object obj in triangleMeshObjects)
             {
                 GLHelper.PerformOcclusionQueriesForBVH(obj.BVHStruct.Root, aabbVbo, aabbVao, aabbShaderProgram, character.camera);
                 //GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
                 //obj.BVHStruct.WriteBVHToFile("asd.txt");
             }
+            GL.Enable(EnableCap.CullFace);
             ;
 
             //------------------------------------------------------------
@@ -514,13 +517,13 @@ namespace Engine3D
             //objects.Last().AddSphereCollider(false);
 
 
-            noTextureShaderProgram.Use();
-            List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
-            foreach (WireframeMesh mesh in aabbs)
-            {
-                Object aabbO = new Object(mesh, ObjectType.Wireframe, ref physx);
-                AddObject(aabbO);
-            }
+            //noTextureShaderProgram.Use();
+            //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
+            //foreach (WireframeMesh mesh in aabbs)
+            //{
+            //    Object aabbO = new Object(mesh, ObjectType.Wireframe, ref physx);
+            //    AddObject(aabbO);
+            //}
 
             posTexShader.Use();
 

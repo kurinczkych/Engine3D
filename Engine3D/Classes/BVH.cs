@@ -64,6 +64,58 @@ namespace Engine3D
             return new AABB { Min = newMin, Max = newMax };
         }
 
+        public List<float> GetTriangleVertices()
+        {
+            // Define the 8 vertices of the AABB
+            Vector3 v0 = new Vector3(Min.X, Min.Y, Min.Z);
+            Vector3 v1 = new Vector3(Max.X, Min.Y, Min.Z);
+            Vector3 v2 = new Vector3(Max.X, Min.Y, Max.Z);
+            Vector3 v3 = new Vector3(Min.X, Min.Y, Max.Z);
+            Vector3 v4 = new Vector3(Min.X, Max.Y, Min.Z);
+            Vector3 v5 = new Vector3(Max.X, Max.Y, Min.Z);
+            Vector3 v6 = new Vector3(Max.X, Max.Y, Max.Z);
+            Vector3 v7 = new Vector3(Min.X, Max.Y, Max.Z);
+
+            // Define the 12 triangles using the vertices in counterclockwise order
+            List<Vector3> triangleVertices = new List<Vector3>
+            {
+                // Bottom
+                v0, v1, v2,
+                v0, v2, v3,
+
+                // Top
+                v4, v7, v6,
+                v4, v6, v5,
+
+                // Front
+                v0, v4, v5,
+                v0, v5, v1,
+
+                // Back
+                v2, v6, v7,
+                v2, v7, v3,
+
+                // Left
+                v0, v3, v7,
+                v0, v7, v4,
+
+                // Right
+                v1, v5, v6,
+                v1, v6, v2
+            };
+
+            // Convert to List<float> for use in OpenGL or other rendering systems
+            List<float> vertices = new List<float>();
+            foreach (Vector3 vertex in triangleVertices)
+            {
+                vertices.Add(vertex.X);
+                vertices.Add(vertex.Y);
+                vertices.Add(vertex.Z);
+            }
+
+            return vertices;
+        }
+
     }
     public class BVHNode
     {
