@@ -219,12 +219,15 @@ namespace Engine3D
                 return meshes;
             }
 
-            //WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White
-            WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref frustum, ref camera, Color4.Red);
-            AABB box = node.bounds;
+            if (node.left == null && node.right == null && node.triangles != null)
+            {
 
-            // Create lines for each edge of the bounding box
-            Vector3[] corners = {
+                //WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White
+                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref frustum, ref camera, Color4.Red);
+                AABB box = node.bounds;
+
+                // Create lines for each edge of the bounding box
+                Vector3[] corners = {
                 new Vector3(box.Min.X, box.Min.Y, box.Min.Z),
                 new Vector3(box.Max.X, box.Min.Y, box.Min.Z),
                 new Vector3(box.Max.X, box.Max.Y, box.Min.Z),
@@ -233,28 +236,34 @@ namespace Engine3D
                 new Vector3(box.Max.X, box.Min.Y, box.Max.Z),
                 new Vector3(box.Max.X, box.Max.Y, box.Max.Z),
                 new Vector3(box.Min.X, box.Max.Y, box.Max.Z)
-            };
+                };
 
-            int[,] edgePairs = {
-                {0, 1}, {1, 2}, {2, 3}, {3, 0},
-                {4, 5}, {5, 6}, {6, 7}, {7, 4},
-                {0, 4}, {1, 5}, {2, 6}, {3, 7}
-            };
+                    int[,] edgePairs = {
+                    {0, 1}, {1, 2}, {2, 3}, {3, 0},
+                    {4, 5}, {5, 6}, {6, 7}, {7, 4},
+                    {0, 4}, {1, 5}, {2, 6}, {3, 7}
+                };
 
-            for (int i = 0; i < 12; i++)
+                for (int i = 0; i < 12; i++)
+                {
+                    currentMesh.lines.Add(new Line
+                    (
+                        corners[edgePairs[i, 0]],
+                        corners[edgePairs[i, 1]]
+                    ));
+                }
+
+                meshes.Add(currentMesh);
+            }
+            else
             {
-                currentMesh.lines.Add(new Line
-                (
-                    corners[edgePairs[i, 0]],
-                    corners[edgePairs[i, 1]]
-                ));
+                meshes.AddRange(ExtractWireframes(node.left, wireVao, wireVbo, shaderId, ref frustum, ref camera));
+                meshes.AddRange(ExtractWireframes(node.right, wireVao, wireVbo, shaderId, ref frustum, ref camera));
             }
 
-            meshes.Add(currentMesh);
+            
 
             // Recursively extract from children
-            meshes.AddRange(ExtractWireframes(node.left, wireVao, wireVbo, shaderId, ref frustum, ref camera));
-            meshes.AddRange(ExtractWireframes(node.right, wireVao, wireVbo, shaderId, ref frustum, ref camera));
 
             return meshes;
         }

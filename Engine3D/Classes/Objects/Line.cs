@@ -17,6 +17,7 @@ namespace Engine3D
         {
             Start = start;
             End = end;
+            Color = new Color4(1, 1, 1, 1f);
         }
 
         public static Vector3 ClosestPointOnLineSegment(Vector3 A, Vector3 B, Vector3 Point)

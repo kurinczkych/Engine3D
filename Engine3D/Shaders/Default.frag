@@ -112,8 +112,8 @@ void main()
     for(int i = 0; i < actualNumOfLights; i++)
         result += CalcPointLight(pointLights[i], normal, fragPos, viewDir);
 
-//    FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
-    FragColor = fragColor;
+    FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
+//    FragColor = fragColor;
 //    FragColor = vec4(result, 1.0);
 }
 

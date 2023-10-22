@@ -230,17 +230,17 @@ namespace Engine3D
 
                     if (objectType == ObjectType.TriangleMesh)
                     {
-                        //List<triangle> notOccludedTris = new List<triangle>();
-                        //Random rnd_ = new Random();
-                        //int i = 0;
-                        //GLHelper.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i);
+                        List<triangle> notOccludedTris = new List<triangle>();
+                        Random rnd_ = new Random();
+                        int i = 0;
+                        GLHelper.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i);
 
-                        //vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
-                        //currentMesh = typeof(Mesh);
+                        vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
+                        currentMesh = typeof(Mesh);
 
-                        //meshVbo.Buffer(vertices);
-                        //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                        //vertices.Clear();
+                        meshVbo.Buffer(vertices);
+                        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                        vertices.Clear();
                     }
                     else
                     {
@@ -516,7 +516,7 @@ namespace Engine3D
 
             noTextureShaderProgram.Use();
             List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
-            foreach(WireframeMesh mesh in aabbs)
+            foreach (WireframeMesh mesh in aabbs)
             {
                 Object aabbO = new Object(mesh, ObjectType.Wireframe, ref physx);
                 AddObject(aabbO);
@@ -524,23 +524,23 @@ namespace Engine3D
 
             posTexShader.Use();
 
-            Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
-            ((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
-            ((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj1);
+            //Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            //((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
+            //((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
+            //((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddObject(textObj1);
 
-            Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            ((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
-            ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
-            ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj2);
+            //Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            //((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
+            //((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
+            //((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddObject(textObj2);
 
-            Object textObj3 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            ((TextMesh)textObj3.GetMesh()).ChangeText("IsOnGround = " + character.isOnGround.ToString());
-            ((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
-            ((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj3);
+            //Object textObj3 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            //((TextMesh)textObj3.GetMesh()).ChangeText("IsOnGround = " + character.isOnGround.ToString());
+            //((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
+            //((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddObject(textObj3);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
