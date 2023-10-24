@@ -97,14 +97,14 @@ namespace Engine3D
         protected override void SendUniforms()
         {
             modelMatrix = Matrix4.Identity;
-            projectionMatrix = camera.GetProjectionMatrix();
-            viewMatrix = camera.GetViewMatrix();
+            projectionMatrix = camera.projectionMatrix;
+            viewMatrix = camera.viewMatrix;
 
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
-            GL.Uniform3(uniformLocations["cameraPosition"], camera.position);
+            GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
         }
 

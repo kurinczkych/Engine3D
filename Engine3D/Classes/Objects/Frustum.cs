@@ -40,6 +40,36 @@ namespace Engine3D
             return true;
         }
 
+        public bool IsAABBInside(AABB aabb)
+        {
+            // For each plane of the frustum
+            for (int i = 0; i < 6; i++)
+            {
+                Plane plane = planes[i];
+
+                // Check box points against the plane
+                // Start by assuming all points are outside the plane (behind it)
+                int outCount = 0;
+
+                // Check all 8 corners of the AABB
+                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
+                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
+                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
+                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
+                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
+                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
+                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
+                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
+
+                // If none of the points were in front of the plane, the box is outside of the frustum
+                if (outCount == 0)
+                    return false;
+            }
+
+            // If we get here, the box is in the frustum
+            return true;
+        }
+
         public bool IsTriangleInside(triangle tri)
         {
             var a = IsInside(tri.p[0]);

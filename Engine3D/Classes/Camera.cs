@@ -19,17 +19,21 @@ namespace Engine3D
         public float fov;
         public float aspectRatio;
 
-        public Vector3 position;
-        public Vector3 up = Vector3.UnitY;
-        public Vector3 front = -Vector3.UnitZ;
-        public Vector3 frontClamped = -Vector3.UnitZ;
-        public Vector3 right = Vector3.UnitX;
+        private Vector3 position;
 
-        public float yaw;
+        public Vector3 up { get; private set; } = Vector3.UnitY;
+        public Vector3 front { get; private set; } = -Vector3.UnitZ;
+        public Vector3 frontClamped { get; private set; } = -Vector3.UnitZ;
+        public Vector3 right { get; private set; } = Vector3.UnitX;
+
+        private float yaw;
         //private float pitch = -90.0f;
-        public float pitch = 0f;
+        private float pitch = 0f;
 
-        public Camera() { }
+        public Matrix4 viewMatrix;
+        public Matrix4 projectionMatrix;
+        public Matrix4 projectionMatrixBigger;
+        public Frustum frustum;
 
         public Camera(Vector2 screenSize)
         {
@@ -40,22 +44,56 @@ namespace Engine3D
             far = 1000.0f;
             fov = 90.0f;
             aspectRatio = screenSize.X / screenSize.Y;
+
+            viewMatrix = GetViewMatrix();
+            projectionMatrix = GetProjectionMatrix();
+            projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
         }
+
+        #region Setters and getters
+        public Vector3 GetPosition()
+        {
+            return position;
+        }
+        public void SetPosition(Vector3 position)
+        {
+            if (this.position != position)
+            {
+                this.position = position;
+                UpdateVectors();
+            }
+        }
+
+        public float GetYaw()
+        {
+            return yaw;
+        }
+        public void SetYaw(float yaw)
+        {
+            if (this.yaw != yaw)
+            {
+                this.yaw = yaw;
+                UpdateVectors();
+            }
+        }
+
+        public float GetPitch()
+        {
+            return pitch;
+        }
+        public void SetPitch(float pitch)
+        {
+            if (this.pitch != pitch)
+            {
+                this.pitch = pitch;
+                UpdateVectors();
+            }
+        }
+        #endregion
 
         public Matrix4 GetViewMatrix()
         {
             return Matrix4.LookAt(position, position + front, up);
-        }
-
-        public Matrix4 GetViewMatrixa()
-        {
-            Vector3 v = new Vector3(0, 0, -100) + position;
-            return Matrix4.LookAt(v, v + front, up);
-        }
-
-        public Matrix4 GetViewMatrixb()
-        {
-            return Matrix4.LookAt(new Vector3(0,0,0), new Vector3(0,0,0) + front, up);
         }
 
         public Matrix4 GetProjectionMatrix()
@@ -94,11 +132,11 @@ namespace Engine3D
 
         }
 
-        public Frustum GetFrustum()
+        private Frustum GetFrustum()
         {
             Frustum frustum = new Frustum();
-            Matrix4 m = GetViewMatrix();
-            m = m * GetProjectionMatrixBigger(1.3f);
+            Matrix4 m = viewMatrix;
+            m = m * projectionMatrixBigger;
 
             //right
             frustum.planes[0].normal.X = m.Row0[3] - m.Row0[0];
@@ -174,9 +212,13 @@ namespace Engine3D
             if (pitch < -89f)
                 pitch = -89f;
 
-            front.X = MathF.Cos(MathHelper.DegreesToRadians(pitch)) * MathF.Cos(MathHelper.DegreesToRadians(yaw));
-            front.Y = MathF.Sin(MathHelper.DegreesToRadians(pitch));
-            front.Z = MathF.Cos(MathHelper.DegreesToRadians(pitch)) * MathF.Sin(MathHelper.DegreesToRadians(yaw));
+            Vector3 front_ = new Vector3()
+            {
+                X = MathF.Cos(MathHelper.DegreesToRadians(pitch)) * MathF.Cos(MathHelper.DegreesToRadians(yaw)),
+                Y = MathF.Sin(MathHelper.DegreesToRadians(pitch)),
+                Z = MathF.Cos(MathHelper.DegreesToRadians(pitch)) * MathF.Sin(MathHelper.DegreesToRadians(yaw)),
+            };
+            front = front_;
 
             frontClamped = new Vector3(front.X, 0, front.Z);
 
@@ -185,6 +227,11 @@ namespace Engine3D
 
             right = Vector3.Normalize(Vector3.Cross(front, Vector3.UnitY));
             up = Vector3.Normalize(Vector3.Cross(right, front));
+
+            viewMatrix = GetViewMatrix();
+            projectionMatrix = GetProjectionMatrix();
+            projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
+            frustum = GetFrustum();
         }
     }
 }

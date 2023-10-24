@@ -105,7 +105,7 @@ namespace Engine3D
             OrigPosition = position;
 
             this.camera = camera;
-            camera.position = position;
+            camera.SetPosition(position);
         }
 
         public void CalculateVelocity(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
@@ -223,7 +223,7 @@ namespace Engine3D
             ZeroSmallVelocity();
             thirdY -= mouseState.ScrollDelta.Y;
 
-            camera.position = Position;
+            camera.SetPosition(Position);
             //camera.position.X -= (float)Math.Cos(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-6.97959471
             //camera.position.Y += thirdY;
             //camera.position.Z -= (float)Math.Sin(MathHelper.DegreesToRadians(camera.yaw)) * thirdY;//-7.161373
@@ -242,12 +242,15 @@ namespace Engine3D
             {
                 float deltaX = mouseState.X - lastPos.X;
                 float deltaY = mouseState.Y - lastPos.Y;
-                lastPos = new Vector2(mouseState.X, mouseState.Y);
 
-                camera.yaw += deltaX * sensitivity * (float)args.Time;//45.73648
-                camera.pitch -= deltaY * sensitivity * (float)args.Time;//-18.75002
+                if (deltaX != 0 || deltaY != 0)
+                {
+                    lastPos = new Vector2(mouseState.X, mouseState.Y);
+
+                    camera.SetYaw(camera.GetYaw() + deltaX * sensitivity * (float)args.Time);//45.73648
+                    camera.SetPitch(camera.GetPitch() - deltaY * sensitivity * (float)args.Time);//-18.75002
+                }
             }
-            camera.UpdateVectors();
         }
 
 

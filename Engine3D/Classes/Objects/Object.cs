@@ -134,9 +134,6 @@ namespace Engine3D
                 if(!mesh.hasIndices)
                     throw new Exception("The mesh doesn't have triangle indices!");
 
-                //Calculating bounding volume hiearchy
-                BVHStruct = new BVH(((Mesh)mesh).tris);
-
                 uint count = (uint)((Mesh)mesh).tris.Count() * 3;
                 PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
                 meshDesc.points.count = count;
@@ -229,7 +226,15 @@ namespace Engine3D
             }
         }
 
-        bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)
+        public void BuildBVH(Shader currentShader, Shader BVHShader)
+        {
+            //Calculating bounding volume hiearchy
+            BVHShader.Use();
+            BVHStruct = new BVH(((Mesh)mesh).tris, BVHShader.id);
+            currentShader.Use();
+        }
+
+        private bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)
         {
             if(numVertices == 0 || numIndices == 0 || numIndices % 3 != 0)
                 return false;

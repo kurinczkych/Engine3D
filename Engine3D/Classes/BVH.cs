@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -137,9 +138,11 @@ namespace Engine3D
     {
         public BVHNode Root;
 
-        public BVH(List<triangle> triangles)
+        public BVH(List<triangle> triangles, int shaderId)
         {
             Root = BuildBVH(triangles);
+            uniformLocations = new Dictionary<string, int>();
+            GetUniformLocations(shaderId);
         }
 
         private const int NUM_BINS = 12;  // for instance, you can adjust this
@@ -147,14 +150,18 @@ namespace Engine3D
         private const float TRIANGLE_COST = 1.0f;   // cost of intersecting a triangle
 
         public int number_of_leaves = 0;
+        public int number_of_nodes = 0;
+
+        public Dictionary<string, int> uniformLocations;
 
         private BVHNode BuildBVH(List<triangle> triangles)
         {
             BVHNode node = new BVHNode();
+            number_of_nodes++;
             node.bounds = ComputeBounds(triangles);
             node.triangles = new List<triangle>();
 
-            if (triangles.Count <= 75)  // leaf node
+            if (triangles.Count <= 45)  // leaf node
             {
                 node.triangles.AddRange(triangles);
                 number_of_leaves++;
@@ -263,6 +270,13 @@ namespace Engine3D
             node.right = BuildBVH(rightTriangles);
 
             return node;
+        }
+
+        private void GetUniformLocations(int shaderProgramId)
+        {
+            uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
+            uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
+            uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
         }
 
         public List<WireframeMesh> ExtractWireframes(BVHNode node, VAO wireVao, VBO wireVbo, int shaderId, ref Frustum frustum, ref Camera camera)

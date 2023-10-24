@@ -64,15 +64,12 @@ namespace Engine3D
         // Program variables
         public static Random rnd = new Random((int)DateTime.Now.Ticks);
         private Vector2 windowSize;
-        private int frameCount;
-        private double totalTime;
         private int temp = -1;
         private bool haveText = false;
 
         // Engine variables
 
         private List<Object> objects;
-
         private Character character;
 
         private Frustum frustum;
@@ -80,7 +77,14 @@ namespace Engine3D
         private TextGenerator textGenerator;
         private Physx physx;
 
-        // Frame limiting
+        private QueryPool queryPool;
+        private Dictionary<int, BVHNode> pendingQueries;
+
+        // FPS and Frame limiting
+        private double totalTime;
+        private const int SAMPLE_SIZE = 30;
+        private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
+
         private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
         private Stopwatch stopwatch;
@@ -98,21 +102,26 @@ namespace Engine3D
             pointLights = new List<PointLight>();
 
             objects = new List<Object>();
+            queryPool = new QueryPool(1000);
+            pendingQueries = new Dictionary<int, BVHNode>();
         }
 
         private double DrawFps(double deltaTime)
         {
-            frameCount += 1;
+            if (sampleTimes.Count >= SAMPLE_SIZE)
+            {
+                // Remove the oldest time (from the front of the queue)
+                totalTime -= sampleTimes.Dequeue();
+            }
+
+            // Add the newest time (to the back of the queue)
+            sampleTimes.Enqueue(deltaTime);
             totalTime += deltaTime;
 
-            double fps = (double)frameCount / totalTime;
-            Title = "3D Engine    |    FPS: " + Math.Round(fps, 4).ToString();
+            double averageDeltaTime = totalTime / sampleTimes.Count;
+            double fps = 1.0 / averageDeltaTime;
 
-            if (frameCount > 1000)
-            {
-                //frameCount = 0;
-                //totalTime = 0;
-            }
+            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString();
 
             return fps;
         }
@@ -171,7 +180,7 @@ namespace Engine3D
 
             double fps = DrawFps(args.Time);
 
-            frustum = character.camera.GetFrustum();
+            frustum = character.camera.frustum;
 
             GL.Enable(EnableCap.DepthTest);
 
@@ -198,8 +207,8 @@ namespace Engine3D
             GL.Disable(EnableCap.CullFace);
             foreach (Object obj in triangleMeshObjects)
             {
-                GLHelper.PerformOcclusionQueriesForBVH(obj.BVHStruct.Root, aabbVbo, aabbVao, aabbShaderProgram, character.camera);
-                GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
+                OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries);
+                //GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
                 //obj.BVHStruct.WriteBVHToFile("asd.txt");
             }
             GL.Enable(EnableCap.CullFace);
@@ -236,7 +245,7 @@ namespace Engine3D
                         List<triangle> notOccludedTris = new List<triangle>();
                         Random rnd_ = new Random();
                         int i = 0;
-                        GLHelper.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i);
+                        OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i);
 
                         vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
                         currentMesh = typeof(Mesh);
@@ -490,7 +499,7 @@ namespace Engine3D
             noTextureShaderProgram.Use();
             Vector3 characterPos = new Vector3(0, 20, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
-            frustum = character.camera.GetFrustum();
+            frustum = character.camera.frustum;
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
@@ -507,6 +516,7 @@ namespace Engine3D
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
             objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));
             //objects.Last().AddCubeCollider(true);
@@ -560,6 +570,8 @@ namespace Engine3D
         protected override void OnUnload()
         {
             base.OnUnload();
+
+            queryPool.DeleteQueries();
 
             GL.DeleteVertexArray(meshVao.id);
             GL.DeleteVertexArray(testVao.id);
