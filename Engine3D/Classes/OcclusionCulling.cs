@@ -121,7 +121,7 @@ namespace Engine3D
             }
 
             // 5. Cleanup the query object
-            queryPool.ReturnQuery(query);
+            //queryPool.ReturnQuery(query);
 
 
             // 6. If there are samples passed, then mark the node as visible

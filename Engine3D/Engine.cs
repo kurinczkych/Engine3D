@@ -205,11 +205,16 @@ namespace Engine3D
             //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             GL.Disable(EnableCap.CullFace);
-            foreach (Object obj in triangleMeshObjects)
+            if (pendingQueries.Count() == 0)
             {
-                OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries);
-                //GLHelper.TraverseBVHNode(obj.BVHStruct.Root);
-                //obj.BVHStruct.WriteBVHToFile("asd.txt");
+                foreach (Object obj in triangleMeshObjects)
+                {
+                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries);
+                }
+            }
+            else
+            {
+
             }
             GL.Enable(EnableCap.CullFace);
             ;
