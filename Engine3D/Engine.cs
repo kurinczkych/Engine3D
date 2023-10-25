@@ -89,6 +89,9 @@ namespace Engine3D
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
         private Stopwatch stopwatch;
 
+        private int triCount = 0;
+        private int occludedTriCount = 0;
+
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
@@ -103,7 +106,7 @@ namespace Engine3D
 
             objects = new List<Object>();
             queryPool = new QueryPool(1000);
-            pendingQueries = new Dictionary<int, BVHNode>();
+            pendingQueries = new Dictionary<int,BVHNode>();
         }
 
         private double DrawFps(double deltaTime)
@@ -121,7 +124,7 @@ namespace Engine3D
             double averageDeltaTime = totalTime / sampleTimes.Count;
             double fps = 1.0 / averageDeltaTime;
 
-            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString();
+            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() + "    " + occludedTriCount.ToString() + " / " + triCount.ToString();
 
             return fps;
         }
@@ -209,18 +212,23 @@ namespace Engine3D
             {
                 foreach (Object obj in triangleMeshObjects)
                 {
-                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries);
+                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
                 }
             }
             else
             {
-
+                foreach (Object obj in triangleMeshObjects)
+                {
+                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
+                }
             }
             GL.Enable(EnableCap.CullFace);
             ;
 
             //------------------------------------------------------------
 
+            //character.camera.SetPosition(character.camera.GetPosition() + 
+            //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw()))*8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw())))*8);
 
             GL.ColorMask(true, true, true, true);
             GL.ClearColor(Color4.Cyan);
@@ -252,7 +260,10 @@ namespace Engine3D
                         int i = 0;
                         OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i);
 
-                        vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
+                        occludedTriCount = 0;
+                        List<float> a = mesh.DrawNotOccluded(notOccludedTris, out occludedTriCount);
+                        triCount = mesh.tris.Count;
+                        vertices.AddRange(a);
                         currentMesh = typeof(Mesh);
 
                         meshVbo.Buffer(vertices);
@@ -563,7 +574,8 @@ namespace Engine3D
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
             // We have text on screen
-            if (haveText)
+            //if (haveText)
+            if (true)
             {
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);

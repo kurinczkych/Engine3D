@@ -1,6 +1,7 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -70,8 +71,21 @@ namespace Engine3D
             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count / 3);
         }
 
+        private static void ManageVisibility(BVHNode node, bool value)
+        {
+            if (node.visibility.Count == BVHNode.VisCount)
+            {
+                node.visibility.Insert(0, value);
+                node.visibility.RemoveAt(node.visibility.Count - 1);
+            }
+            else
+            {
+                node.visibility.Insert(0, value);
+            }
+        }
+
         public static void PerformOcclusionQueriesForBVH(BVH node, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera, 
-                                                         ref QueryPool queryPool, Dictionary<int, BVHNode> pendingQueries)
+                                                         ref QueryPool queryPool, ref Dictionary<int, BVHNode> pendingQueries, bool first)
         {
             Frustum frustum = camera.frustum;
 
@@ -83,8 +97,20 @@ namespace Engine3D
             GL.UniformMatrix4(node.uniformLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(node.uniformLocations["projectionMatrix"], true, ref projectionMatrix);
 
+            if (!first)
+            {
+                foreach (KeyValuePair<int, BVHNode> keyValuePair in pendingQueries)
+                {
+                    int samplesPassed;
+                    GL.GetQueryObject(keyValuePair.Key, GetQueryObjectParam.QueryResult, out samplesPassed);
+                    keyValuePair.Value.samplesPassedPrevFrame = samplesPassed;
+                    queryPool.ReturnQuery(keyValuePair.Key);
+                }
+                pendingQueries.Clear();
+            }
+
             GL.DepthMask(false);
-            PerformOcclusionQueriesForBVHRecursive(node.Root, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries);
+            PerformOcclusionQueriesForBVHRecursive(node.Root, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
             GL.DepthMask(true);
 
             aabbVbo.Unbind();
@@ -94,30 +120,80 @@ namespace Engine3D
 
 
         public static void PerformOcclusionQueriesForBVHRecursive(BVHNode node, ref VBO aabbVbo, ref VAO aabbVao, ref Shader shader, ref Camera camera,
-                                                                  ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, BVHNode> pendingQueries)
+                                                                  ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, BVHNode> pendingQueries,
+                                                                  bool first)
         {
-            if (node == null) return;
-            if (!frustum.IsAABBInside(node.bounds))
+
+            if (first)
             {
-                node.isVisible = false;
-                return;
+                if (node == null) return;
+                if (!frustum.IsAABBInside(node.bounds))
+                {
+                    ManageVisibility(node, false);
+
+                    return;
+                }
+
+                int query = queryPool.GetQuery();
+
+                // 1. Initiate occlusion query
+                GL.BeginQuery(QueryTarget.SamplesPassed, query);
+
+                // 2. Render the AABB of the current BVH node
+                RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
+
+                // 3. End occlusion query
+                GL.EndQuery(QueryTarget.SamplesPassed);
+
+                // 4. Buffer the pending results
+                if (!pendingQueries.ContainsKey(query))
+                {
+                    pendingQueries.Add(query, node);
+                }
+
+                PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
             }
-
-            int query = queryPool.GetQuery();
-
-            // 1. Initiate occlusion query
-            GL.BeginQuery(QueryTarget.SamplesPassed, query);
-
-            // 2. Render the AABB of the current BVH node
-            RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
-
-            // 3. End occlusion query
-            GL.EndQuery(QueryTarget.SamplesPassed);
-
-            // 4. Buffer the pending results
-            if (!pendingQueries.ContainsKey(query))
+            else
             {
-                pendingQueries.Add(query, node);
+                if (node == null) return;
+                if (!frustum.IsAABBInside(node.bounds))
+                {
+                    ManageVisibility(node, false);
+
+                    return;
+                }
+
+                int query = queryPool.GetQuery();
+
+                // 1. Initiate occlusion query
+                GL.BeginQuery(QueryTarget.SamplesPassed, query);
+
+                // 2. Render the AABB of the current BVH node
+                RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
+
+                // 3. End occlusion query
+                GL.EndQuery(QueryTarget.SamplesPassed);
+
+                // 4. Buffer the pending results
+                if (!pendingQueries.ContainsKey(query))
+                {
+                    pendingQueries.Add(query, node);
+                }
+
+                if(node.samplesPassedPrevFrame > 0)
+                {
+                    ManageVisibility(node, true);
+
+                    PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                    PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                }
+                else
+                {
+                    ManageVisibility(node, false);
+
+                    return;
+                }
             }
 
             // 5. Cleanup the query object
@@ -174,12 +250,12 @@ namespace Engine3D
                 //colorTris.ForEach(x => x.SetColor(c));
                 //notOccludedTris.AddRange(colorTris);
 
-                if (node.isVisible)
+                if (node.visibility.Any(x => x == true))
                 {
                     Color4 c = new Color4((float)GTRandom(i), (float)GTRandom(i + 1), (float)GTRandom(i + 2), 1.0f);
                     i += 3;
                     List<triangle> colorTris = new List<triangle>(node.triangles);
-                    colorTris.ForEach(x => x.SetColor(c));
+                    //colorTris.ForEach(x => x.SetColor(c));
                     notOccludedTris.AddRange(colorTris);
                 }
             }
@@ -200,7 +276,7 @@ namespace Engine3D
             // If it's a leaf node (i.e., no children but has triangles)
             if (node.left == null && node.right == null && node.triangles != null)
             {
-                if (node.isVisible)
+                if (node.visibility.First())
                 {
                     ;
                 }

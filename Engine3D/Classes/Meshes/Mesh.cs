@@ -291,10 +291,11 @@ namespace Engine3D
             return vertices;
         }
         
-        public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
+        public List<float> DrawNotOccluded(List<triangle> notOccludedTris, out int trisDrew)
         {
             Vao.Bind();
 
+            trisDrew = 0;
             vertices = new List<float>();
 
             ObjectType type = parentObject.GetObjectType();
@@ -326,6 +327,7 @@ namespace Engine3D
             {
                 if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
                 {
+                    trisDrew++;
                     if (tri.gotPointNormals)
                     {
                         vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));

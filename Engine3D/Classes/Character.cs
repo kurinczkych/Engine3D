@@ -48,7 +48,7 @@ namespace Engine3D
         //----------------------------------------------
         private float thirdY = 10f;
 
-        private bool noClip = true;
+        private bool noClip = false;
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -218,7 +218,7 @@ namespace Engine3D
             Velocity.Z *= 0.9f;
 
             if (noClip)
-                Velocity.Y *= 0.9f;
+                Velocity.Y *= 0.1f;
 
             ZeroSmallVelocity();
             thirdY -= mouseState.ScrollDelta.Y;

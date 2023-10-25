@@ -120,12 +120,23 @@ namespace Engine3D
     }
     public class BVHNode
     {
+        public BVHNode()
+        {
+            visibility = new List<bool>();
+        }
+
         public AABB bounds;
         public BVHNode left;
         public BVHNode right;
         public List<triangle> triangles;
 
-        public bool isVisible = false;
+        public List<bool> visibility;
+        public int samplesPassedPrevFrame = 1;
+
+        public int pendingQuery = -1;
+        public int key;
+
+        public const int VisCount = 5;
     }
 
     public class Bin
@@ -140,7 +151,8 @@ namespace Engine3D
 
         public BVH(List<triangle> triangles, int shaderId)
         {
-            Root = BuildBVH(triangles);
+            int index = 0;
+            Root = BuildBVH(triangles, ref index);
             uniformLocations = new Dictionary<string, int>();
             GetUniformLocations(shaderId);
         }
@@ -152,16 +164,20 @@ namespace Engine3D
         public int number_of_leaves = 0;
         public int number_of_nodes = 0;
 
+        private const int leafLimit = 30;
+
         public Dictionary<string, int> uniformLocations;
 
-        private BVHNode BuildBVH(List<triangle> triangles)
+        private BVHNode BuildBVH(List<triangle> triangles, ref int index)
         {
             BVHNode node = new BVHNode();
             number_of_nodes++;
             node.bounds = ComputeBounds(triangles);
             node.triangles = new List<triangle>();
+            node.key = index;
+            index++;
 
-            if (triangles.Count <= 45)  // leaf node
+            if (triangles.Count <= leafLimit)  // leaf node
             {
                 node.triangles.AddRange(triangles);
                 number_of_leaves++;
@@ -266,8 +282,8 @@ namespace Engine3D
                     rightTriangles.Add(tri);
             }
 
-            node.left = BuildBVH(leftTriangles);
-            node.right = BuildBVH(rightTriangles);
+            node.left = BuildBVH(leftTriangles, ref index);
+            node.right = BuildBVH(rightTriangles, ref index);
 
             return node;
         }
@@ -366,7 +382,7 @@ namespace Engine3D
             writer.WriteLine($"{indent}Node Bounds: {node.bounds.Min} to {node.bounds.Max}");
 
             writer.WriteLine($"{indent}  Triangle: {node.triangles.Count.ToString()}");  // Assuming your triangle has a simple representation
-            writer.WriteLine($"{indent}  IsVisible: {node.isVisible}");  // Assuming your triangle has a simple representation
+            writer.WriteLine($"{indent}  IsVisible: {node.visibility.Any(x => x == true)}");  // Assuming your triangle has a simple representation
             if (node.triangles != null && node.triangles.Count > 0)  // It's a leaf node
             {
                 writer.WriteLine($"{indent}  LEAFLEAFLEAFLEAFLEAFLEAF");  // Assuming your triangle has a simple representation
