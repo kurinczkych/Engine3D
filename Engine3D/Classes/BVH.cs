@@ -129,6 +129,7 @@ namespace Engine3D
         public BVHNode left;
         public BVHNode right;
         public List<triangle> triangles;
+        public bool frustumVisibility = false;
 
         public List<bool> visibility;
         public int samplesPassedPrevFrame = 1;
@@ -293,6 +294,41 @@ namespace Engine3D
             uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
             uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
+        }
+
+        public void GetFrustumVisibleTriangles(ref Frustum frustum, ref Camera camera)
+        {
+            GetFrustumVisibleTrianglesRec(ref frustum, ref camera, Root);
+        }
+
+        private void GetFrustumVisibleTrianglesRec(ref Frustum frustum, ref Camera camera, BVHNode node)
+        {
+            if (node == null)
+                return;
+
+            if (node.left == null && node.right == null && node.triangles != null)
+            {
+                if (frustum.IsAABBInside(node.bounds))
+                {
+                    node.triangles.ForEach(x => x.visibile = true);
+                    node.frustumVisibility = true;
+
+                    return;
+                }
+                else
+                {
+                    node.triangles.ForEach(x => x.visibile = false);
+                    node.frustumVisibility = false;
+                }
+            }
+
+            if (!frustum.IsAABBInside(node.bounds))
+            {
+                return;
+            }
+
+            GetFrustumVisibleTrianglesRec(ref frustum, ref camera, node.left);
+            GetFrustumVisibleTrianglesRec(ref frustum, ref camera, node.right);
         }
 
         public List<WireframeMesh> ExtractWireframes(BVHNode node, VAO wireVao, VBO wireVbo, int shaderId, ref Frustum frustum, ref Camera camera)

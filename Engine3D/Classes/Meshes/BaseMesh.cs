@@ -17,6 +17,7 @@ namespace Engine3D
         protected int shaderProgramId;
 
         public List<triangle> tris;
+        public List<triangle> visibleTris;
         public List<Vector3> allVerts;
         public bool hasIndices = false;
         public Object parentObject;
@@ -39,6 +40,24 @@ namespace Engine3D
             tris.Add(tri);
         }
         protected abstract void SendUniforms();
+
+        public void CalculateFrustumVisibility(ref Frustum frustum, ref Camera camera, BVH bvh)
+        {
+            if (bvh != null)
+            {
+                //bvh.GetFrustumVisibleTriangles(ref frustum, ref camera);
+            }
+            else
+            {
+                foreach (triangle tri in tris)
+                {
+                    if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                        tri.visibile = true;
+                    else
+                        tri.visibile = false;
+                }
+            }
+        }
 
         protected static Vector3 ComputeFaceNormal(triangle triangle)
         {

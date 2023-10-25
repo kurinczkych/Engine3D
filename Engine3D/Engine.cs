@@ -187,11 +187,17 @@ namespace Engine3D
 
             GL.Enable(EnableCap.DepthTest);
 
+            // Triangle frustum visibility calculation
+            foreach (Object obj in objects)
+            {
+                obj.GetMesh().CalculateFrustumVisibility(ref frustum, ref character.camera, obj.BVHStruct);
+            }
 
             //Occlusion
             GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
             GL.Clear(ClearBufferMask.DepthBufferBit);
             GL.ClearDepth(1.0);
+
             List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
             aabbShaderProgram.Use();
             List<float> posVertices = new List<float>();
@@ -227,8 +233,9 @@ namespace Engine3D
 
             //------------------------------------------------------------
 
-            //character.camera.SetPosition(character.camera.GetPosition() + 
-            //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw()))*8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw())))*8);
+            //character.camera.SetPosition(character.camera.GetPosition() +
+            //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
+
 
             GL.ColorMask(true, true, true, true);
             GL.ClearColor(Color4.Cyan);
@@ -258,7 +265,7 @@ namespace Engine3D
                         List<triangle> notOccludedTris = new List<triangle>();
                         Random rnd_ = new Random();
                         int i = 0;
-                        OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i);
+                        OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i, ref frustum);
 
                         occludedTriCount = 0;
                         List<float> a = mesh.DrawNotOccluded(notOccludedTris, out occludedTriCount);
@@ -531,7 +538,7 @@ namespace Engine3D
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));
@@ -543,11 +550,12 @@ namespace Engine3D
             //objects.Last().AddSphereCollider(false);
 
 
-            //noTextureShaderProgram.Use();
+            noTextureShaderProgram.Use();
             //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
             //foreach (WireframeMesh mesh in aabbs)
             //{
             //    Object aabbO = new Object(mesh, ObjectType.Wireframe, ref physx);
+            //    aabbsToChange.Add(aabbO);
             //    AddObject(aabbO);
             //}
 

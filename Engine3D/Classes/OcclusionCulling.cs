@@ -233,7 +233,7 @@ namespace Engine3D
             return random.NextDouble();
         }
 
-        public static void TraverseBVHNode(BVHNode node, ref List<triangle> notOccludedTris, ref int i)
+        public static void TraverseBVHNode(BVHNode node, ref List<triangle> notOccludedTris, ref int i, ref Frustum frustum)
         {
             if (node == null)
                 return;
@@ -249,20 +249,25 @@ namespace Engine3D
                 //List<triangle> colorTris = new List<triangle>(node.triangles);
                 //colorTris.ForEach(x => x.SetColor(c));
                 //notOccludedTris.AddRange(colorTris);
-
-                if (node.visibility.Any(x => x == true))
+                if (frustum.IsAABBInside(node.bounds))
                 {
-                    Color4 c = new Color4((float)GTRandom(i), (float)GTRandom(i + 1), (float)GTRandom(i + 2), 1.0f);
-                    i += 3;
-                    List<triangle> colorTris = new List<triangle>(node.triangles);
-                    //colorTris.ForEach(x => x.SetColor(c));
-                    notOccludedTris.AddRange(colorTris);
+                    if (node.visibility.Any(x => x == true))
+                    {
+                        //Color4 c = new Color4((float)GTRandom(i), (float)GTRandom(i + 1), (float)GTRandom(i + 2), 1.0f);
+                        //i += 3;
+                        //List<triangle> colorTris = new List<triangle>(node.triangles);
+                        //colorTris.ForEach(x => x.SetColor(c));
+                        //notOccludedTris.AddRange(colorTris);
+                        node.triangles.ForEach(x => x.visibile = true);
+
+                        notOccludedTris.AddRange(node.triangles);
+                    }
                 }
             }
             else
             {
-                TraverseBVHNode(node.left, ref notOccludedTris, ref i);
-                TraverseBVHNode(node.right, ref notOccludedTris, ref i);
+                TraverseBVHNode(node.left, ref notOccludedTris, ref i, ref frustum);
+                TraverseBVHNode(node.right, ref notOccludedTris, ref i, ref frustum);
             }
         }
 

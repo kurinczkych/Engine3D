@@ -20,6 +20,8 @@ namespace Engine3D
         public int[] pi;
         public bool gotPointNormals;
 
+        public bool visibile = false;
+
         public triangle()
         {
             gotPointNormals = false;

@@ -48,7 +48,7 @@ namespace Engine3D
         //----------------------------------------------
         private float thirdY = 10f;
 
-        private bool noClip = false;
+        private bool noClip = true;
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -137,14 +137,12 @@ namespace Engine3D
             }
             else
             {
-                //TODO NOCLIP
                 if (keyboardState.IsKeyDown(Keys.Space))
                 {
                     Velocity.Y += flySpeed_ * 10 * (float)args.Time;
                 }
             }
 
-            //TODO NOCLIP
             if (keyboardState.IsKeyDown(Keys.LeftControl))
             {
                 if (noClip)
@@ -161,7 +159,6 @@ namespace Engine3D
             }
 
 
-            //TODO NOCLIP
             if (keyboardState.IsKeyDown(Keys.W))
             {
                 if (!noClip)
@@ -194,19 +191,26 @@ namespace Engine3D
 
         public void UpdatePosition(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
         {
-            PxVec3 disp = new PxVec3() { x = Velocity.X, y = Velocity.Y, z = Velocity.Z };
-            PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
-            PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
-            PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
-            isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
-            if (isOnGround)
+            Vector3 newPos = new Vector3();
+            if (noClip)
             {
-                Velocity.Y = 0;
-                disp.y = 0;
+                newPos = Position + Velocity;
             }
-            PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
-            Vector3 newPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
-            PxVec3 pos = new PxVec3() { x = newPos.X, y = newPos.Y, z = newPos.Z };
+            else
+            {
+                PxVec3 disp = new PxVec3() { x = Velocity.X, y = Velocity.Y, z = Velocity.Z };
+                PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
+                PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
+                PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
+                isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
+                if (isOnGround)
+                {
+                    Velocity.Y = 0;
+                    disp.y = 0;
+                }
+                PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
+                newPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);
+            }
 
             mesh.Position = newPos;
             Position = newPos;

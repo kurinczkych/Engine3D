@@ -267,7 +267,7 @@ namespace Engine3D
 
             foreach (triangle tri in tris)
             {
-                if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                if (tri.visibile)
                 {
                     if (tri.gotPointNormals)
                     {
@@ -290,7 +290,7 @@ namespace Engine3D
 
             return vertices;
         }
-        
+
         public List<float> DrawNotOccluded(List<triangle> notOccludedTris, out int trisDrew)
         {
             Vao.Bind();
@@ -325,7 +325,7 @@ namespace Engine3D
 
             foreach (triangle tri in notOccludedTris)
             {
-                if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                if (tri.visibile)
                 {
                     trisDrew++;
                     if (tri.gotPointNormals)
@@ -337,9 +337,9 @@ namespace Engine3D
                     else
                     {
                         tri.ComputeTriangleNormal(ref transformMatrix);
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 0, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 1, ref transformMatrix, isTransformed));
+                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 2, ref transformMatrix, isTransformed));
                     }
                 }
             }
@@ -349,6 +349,7 @@ namespace Engine3D
 
             return vertices;
         }
+
         
         public List<float> DrawOnlyPos(VAO aabbVao, Shader shader)
         {
@@ -381,9 +382,10 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
+
             foreach (triangle tri in tris)
             {
-                if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                if (tri.visibile)
                 {
                     if (tri.gotPointNormals)
                     {

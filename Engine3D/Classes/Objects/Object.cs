@@ -171,7 +171,7 @@ namespace Engine3D
                 {
                     // Establish a no GC region. The size parameter specifies how much memory
                     // to reserve for the small object heap.
-                    if (GC.TryStartNoGCRegion(((Mesh)mesh).tris.Count() * 54))
+                    if (GC.TryStartNoGCRegion(((Mesh)mesh).tris.Count() * 60))
                     {
                         triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
                         

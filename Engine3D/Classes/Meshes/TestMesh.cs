@@ -128,7 +128,7 @@ namespace Engine3D
 
             foreach (triangle tri in tris)
             {
-                if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
+                if (tri.visibile)
                 {
                     if (tri.gotPointNormals)
                     {
