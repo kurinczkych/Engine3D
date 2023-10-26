@@ -55,7 +55,7 @@ namespace Engine3D
         public Vector2 lastPos;
 
         private Vector3 Velocity;
-        private Vector3 Position;
+        public Vector3 Position;
         private Vector3 OrigPosition;
 
         public string PStr
@@ -71,10 +71,9 @@ namespace Engine3D
         private Physx physx;
         public WireframeMesh mesh;
 
-        public Camera camera;
+        private Camera camera;
 
-
-        public Character(WireframeMesh mesh, ref Physx physx, Vector3 position, Camera camera)
+        public Character(WireframeMesh mesh, ref Physx physx, Vector3 position, ref Camera camera)
         {
             this.mesh = mesh;
             this.physx = physx;
@@ -106,7 +105,6 @@ namespace Engine3D
             OrigPosition = position;
 
             this.camera = camera;
-            camera.SetPosition(position);
         }
 
         public void CalculateVelocity(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)

@@ -26,9 +26,6 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
 
-        private Frustum frustum;
-        private Camera camera;
-
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
         private bool IsTransformed
@@ -67,13 +64,6 @@ namespace Engine3D
 
             GetUniformLocations();
             SendUniforms();
-        }
-
-
-        public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
-        {
-            this.frustum = frustum;
-            this.camera = camera;
         }
 
 

@@ -34,9 +34,7 @@ namespace Engine3D
                 return !(parentObject.Position == Vector3.Zero && parentObject.Rotation == Quaternion.Identity && Scale == Vector3.One);
             }
         }
-
-        private Frustum frustum;
-        private Camera camera;
+        
         private Vector2 windowSize;
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
@@ -78,11 +76,7 @@ namespace Engine3D
             return result;
         }
 
-        public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
-        {
-            this.frustum = frustum;
-            this.camera = camera;
-        }
+        
 
         private void GetUniformLocations()
         {

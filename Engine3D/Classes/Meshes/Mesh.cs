@@ -45,8 +45,6 @@ namespace Engine3D
             }
         }
 
-        private Frustum frustum;
-        private Camera camera;
         private Vector2 windowSize;
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
@@ -187,12 +185,6 @@ namespace Engine3D
             vec.z = v.Z;
 
             return vec;
-        }
-
-        public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
-        {
-            this.frustum = frustum;
-            this.camera = camera;
         }
 
         private void GetUniformLocations()

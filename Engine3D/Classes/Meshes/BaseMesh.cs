@@ -22,6 +22,9 @@ namespace Engine3D
         public bool hasIndices = false;
         public Object parentObject;
 
+        protected Camera camera;
+        protected Frustum frustum;
+
         protected Dictionary<string, int> uniformLocations;
 
         protected int threadSize;
@@ -47,13 +50,19 @@ namespace Engine3D
         }
         protected abstract void SendUniforms();
 
-        public void CalculateFrustumVisibility(Frustum frustum, Camera camera)
+        public void CalculateFrustumVisibility(Camera camera)
         {
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
             Parallel.ForEach(tris, parallelOptions, tri =>
             {
-                tri.visibile = frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
+                tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
             });
+        }
+
+        public void UpdateFrustumAndCamera(ref Camera camera)
+        {
+            this.frustum = camera.frustum;
+            this.camera = camera;
         }
 
         protected static Vector3 ComputeFaceNormal(triangle triangle)

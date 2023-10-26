@@ -37,9 +37,6 @@ namespace Engine3D
             }
         }
 
-        private Frustum frustum;
-        private Camera camera;
-
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
         private VAO Vao;
@@ -71,12 +68,6 @@ namespace Engine3D
             SendUniforms();
         }
 
-
-        public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
-        {
-            this.frustum = frustum;
-            this.camera = camera;
-        }
 
         private void GetUniformLocations()
         {

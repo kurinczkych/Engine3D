@@ -33,7 +33,7 @@ namespace Engine3D
     public class Engine : GameWindow
     {
 
-        // OPENGL
+        #region OPENGL
         private VAO meshVao;
         private VBO meshVbo;
 
@@ -61,28 +61,36 @@ namespace Engine3D
         private Shader aabbShaderProgram;
         private Shader depthShaderProgram;
         private int textureCount = 0;
+        #endregion
 
-        // Program variables
+        #region Program variables
         public static Random rnd = new Random((int)DateTime.Now.Ticks);
-        private Vector2 windowSize;
-        private int temp = -1;
         private bool haveText = false;
 
-        // Engine variables
+        private Vector2 windowSize;
+        private Vector2 gameWindowPos;
+        private Vector2 gameWindowSize;
 
+        private TextGenerator textGenerator;
+        private SoundManager soundManager;
+
+
+        #endregion
+
+        #region Engine variables
         private List<Object> objects;
         private Character character;
+        private Camera camera;
 
         private Frustum frustum;
         private List<PointLight> pointLights;
-        private TextGenerator textGenerator;
         private Physx physx;
-        private SoundManager soundManager;
 
         private QueryPool queryPool;
         private Dictionary<int, BVHNode> pendingQueries;
+        #endregion
 
-        // FPS and Frame limiting
+        #region FPS and Frame limiting
         private double totalTime;
         private const int SAMPLE_SIZE = 30;
         private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
@@ -90,15 +98,18 @@ namespace Engine3D
         private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
         private Stopwatch stopwatch;
+        #endregion
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
-            
 
             windowSize = new Vector2(width, height);
             CenterWindow(new Vector2i(width, height));
-            frustum = new Frustum();
+
+            gameWindowSize = new Vector2(width*0.6f, height * 0.6f);
+            gameWindowPos = new Vector2((windowSize.X - gameWindowSize.X) / 2, (windowSize.Y - gameWindowSize.Y) / 2);
+
             shaderProgram = new Shader();
             posTexShader = new Shader();
             pointLights = new List<PointLight>();
@@ -178,221 +189,232 @@ namespace Engine3D
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
+            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             double fps = DrawFps(args.Time);
 
-            frustum = character.camera.frustum;
-
-            GL.Enable(EnableCap.DepthTest);
-
-            // Triangle frustum visibility calculation
-            foreach (Object obj in objects)
-            {
-                obj.GetMesh().CalculateFrustumVisibility(frustum, character.camera);
-            }
-
-            //Occlusion
-            GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
-            GL.Clear(ClearBufferMask.DepthBufferBit);
-            GL.ClearDepth(1.0);
-
-            List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
-            aabbShaderProgram.Use();
-            List<float> posVertices = new List<float>();
-            foreach (Object obj in triangleMeshObjects)
-            {
-                posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
-            }
-            aabbVbo.Buffer(posVertices);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
+            // Editor drawing
 
 
-            //GL.ColorMask(true, true, true, true);
-            //GL.ClearColor(Color4.Cyan);
-            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            GL.Disable(EnableCap.CullFace);
-            if (pendingQueries.Count() == 0)
-            {
-                foreach (Object obj in triangleMeshObjects)
-                {
-                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
-                }
-            }
-            else
-            {
-                foreach (Object obj in triangleMeshObjects)
-                {
-                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
-                }
-            }
-            GL.Enable(EnableCap.CullFace);
-            ;
-
-            //------------------------------------------------------------
-
-            //character.camera.SetPosition(character.camera.GetPosition() +
-            //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
-
+            GL.Enable(EnableCap.ScissorTest);
+            GL.Scissor((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
 
             GL.ColorMask(true, true, true, true);
             GL.ClearColor(Color4.Cyan);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
-
-            Type? currentMesh = null;
-            List<float> vertices = new List<float>();
-            foreach (Object o in objects)
+            if (camera != null)
             {
-                ObjectType objectType = o.GetObjectType();
-                if (objectType == ObjectType.Cube ||
-                   objectType == ObjectType.Sphere ||
-                   objectType == ObjectType.Capsule ||
-                   objectType == ObjectType.TriangleMesh)
+
+                GL.Enable(EnableCap.DepthTest);
+
+                // Triangle frustum visibility calculation
+                foreach (Object obj in objects)
                 {
-                    Mesh mesh = (Mesh)o.GetMesh();
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    obj.GetMesh().CalculateFrustumVisibility(camera);
+                }
+
+                //Occlusion
+                GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
+                GL.Clear(ClearBufferMask.DepthBufferBit);
+                GL.ClearDepth(1.0);
+
+                List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
+                aabbShaderProgram.Use();
+                List<float> posVertices = new List<float>();
+                foreach (Object obj in triangleMeshObjects)
+                {
+                    posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
+                }
+                aabbVbo.Buffer(posVertices);
+                GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
+
+
+                //GL.ColorMask(true, true, true, true);
+                //GL.ClearColor(Color4.Cyan);
+                //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+                GL.Disable(EnableCap.CullFace);
+                if (pendingQueries.Count() == 0)
+                {
+                    foreach (Object obj in triangleMeshObjects)
                     {
-                        shaderProgram.Use();
+                        OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, camera, ref queryPool, ref pendingQueries, true);
                     }
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-
-                    if (objectType == ObjectType.TriangleMesh)
+                }
+                else
+                {
+                    foreach (Object obj in triangleMeshObjects)
                     {
-                        List<triangle> notOccludedTris = new List<triangle>();
-                        OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
+                        OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, camera, ref queryPool, ref pendingQueries, false);
+                    }
+                }
+                GL.Enable(EnableCap.CullFace);
+                ;
 
-                        List<float> a = mesh.DrawNotOccluded(notOccludedTris);
-                        vertices.AddRange(a);
-                        currentMesh = typeof(Mesh);
+                //------------------------------------------------------------
 
-                        if (vertices.Count > 0)
+                //character.camera.SetPosition(character.camera.GetPosition() +
+                //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
+
+
+                GL.ColorMask(true, true, true, true);
+                GL.ClearColor(Color4.Cyan);
+                GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+                shaderProgram.Use();
+                PointLight.SendToGPU(ref pointLights, shaderProgram.id);
+
+                Type? currentMesh = null;
+                List<float> vertices = new List<float>();
+                foreach (Object o in objects)
+                {
+                    ObjectType objectType = o.GetObjectType();
+                    if (objectType == ObjectType.Cube ||
+                       objectType == ObjectType.Sphere ||
+                       objectType == ObjectType.Capsule ||
+                       objectType == ObjectType.TriangleMesh)
+                    {
+                        Mesh mesh = (Mesh)o.GetMesh();
+                        if (currentMesh == null || currentMesh != mesh.GetType())
                         {
+                            shaderProgram.Use();
+                        }
+                        mesh.UpdateFrustumAndCamera(ref camera);
+
+                        if (objectType == ObjectType.TriangleMesh)
+                        {
+                            List<triangle> notOccludedTris = new List<triangle>();
+                            OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
+
+                            List<float> a = mesh.DrawNotOccluded(notOccludedTris);
+                            vertices.AddRange(a);
+                            currentMesh = typeof(Mesh);
+
+                            if (vertices.Count > 0)
+                            {
+                                meshVbo.Buffer(vertices);
+                                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                                vertices.Clear();
+                            }
+                        }
+                        else
+                        {
+                            vertices.AddRange(mesh.Draw());
+                            currentMesh = typeof(Mesh);
+
                             meshVbo.Buffer(vertices);
                             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                             vertices.Clear();
                         }
                     }
-                    else
+                    else if (objectType == ObjectType.TestMesh)
                     {
-                        vertices.AddRange(mesh.Draw());
-                        currentMesh = typeof(Mesh);
+                        TestMesh mesh = (TestMesh)o.GetMesh();
 
-                        meshVbo.Buffer(vertices);
+                        //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
+                        //    vertices = new List<float>();
+
+                        if (currentMesh == null || currentMesh != mesh.GetType())
+                        {
+                            shaderProgram.Use();
+                        }
+
+                        mesh.UpdateFrustumAndCamera(ref camera);
+                        vertices.AddRange(mesh.Draw());
+                        currentMesh = typeof(TestMesh);
+
+                        testVbo.Buffer(vertices);
                         GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                         vertices.Clear();
                     }
-                }
-                else if (objectType == ObjectType.TestMesh)
-                {
-                    TestMesh mesh = (TestMesh)o.GetMesh();
-
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
-                    //    vertices = new List<float>();
-
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    else if (objectType == ObjectType.NoTexture)
                     {
-                        shaderProgram.Use();
+                        NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
+
+                        if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(NoTextureMesh) : currentMesh, typeof(NoTextureMesh)))
+                            vertices = new List<float>();
+
+                        if (currentMesh == null || currentMesh != mesh.GetType())
+                        {
+                            noTextureShaderProgram.Use();
+                        }
+
+                        mesh.UpdateFrustumAndCamera(ref camera);
+                        vertices.AddRange(mesh.Draw());
+                        currentMesh = typeof(NoTextureMesh);
                     }
-
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(TestMesh);
-
-                    testVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
-                }
-                else if (objectType == ObjectType.NoTexture)
-                {
-                    NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
-
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(NoTextureMesh) : currentMesh, typeof(NoTextureMesh)))
-                        vertices = new List<float>();
-
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    else if (objectType == ObjectType.Wireframe)
                     {
-                        noTextureShaderProgram.Use();
+                        WireframeMesh mesh = (WireframeMesh)o.GetMesh();
+
+                        if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(WireframeMesh) : currentMesh, typeof(WireframeMesh)))
+                            vertices = new List<float>();
+
+                        if (currentMesh == null || currentMesh != mesh.GetType())
+                        {
+                            noTextureShaderProgram.Use();
+                        }
+
+                        mesh.UpdateFrustumAndCamera(ref camera);
+                        vertices.AddRange(mesh.Draw());
+                        currentMesh = typeof(WireframeMesh);
                     }
-
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(NoTextureMesh);
-                }
-                else if (objectType == ObjectType.Wireframe)
-                {
-                    WireframeMesh mesh = (WireframeMesh)o.GetMesh();
-
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(WireframeMesh) : currentMesh, typeof(WireframeMesh)))
-                        vertices = new List<float>();
-
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    else if (objectType == ObjectType.UIMesh)
                     {
-                        noTextureShaderProgram.Use();
+                        UITextureMesh mesh = (UITextureMesh)o.GetMesh();
+
+                        //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
+                        //    vertices = new List<float>();
+
+                        if (currentMesh == null || currentMesh != mesh.GetType())
+                        {
+                            GL.Disable(EnableCap.DepthTest);
+                            posTexShader.Use();
+                        }
+
+                        vertices.AddRange(mesh.Draw());
+                        currentMesh = typeof(UITextureMesh);
+
+                        uiTexVbo.Buffer(vertices);
+                        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                        vertices.Clear();
                     }
-
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(WireframeMesh);
-                }
-                else if (objectType == ObjectType.UIMesh)
-                {
-                    UITextureMesh mesh = (UITextureMesh)o.GetMesh();
-
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
-                    //    vertices = new List<float>();
-
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    else if (objectType == ObjectType.TextMesh)
                     {
-                        GL.Disable(EnableCap.DepthTest);
-                        posTexShader.Use();
+                        TextMesh mesh = (TextMesh)o.GetMesh();
+
+                        if (currentMesh == null || currentMesh != mesh.GetType())
+                        {
+                            GL.Disable(EnableCap.DepthTest);
+                            posTexShader.Use();
+                        }
+
+                        if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(TextMesh) : currentMesh, typeof(TextMesh)))
+                            vertices = new List<float>();
+
+                        vertices.AddRange(mesh.Draw());
+                        currentMesh = typeof(TextMesh);
                     }
-
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(UITextureMesh);
-
-                    uiTexVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
                 }
-                else if (objectType == ObjectType.TextMesh)
-                {
-                    TextMesh mesh = (TextMesh)o.GetMesh();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
-                    {
-                        GL.Disable(EnableCap.DepthTest);
-                        posTexShader.Use();
-                    }
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(TextMesh) : currentMesh, typeof(TextMesh)))
-                        vertices = new List<float>();
+                if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(int) : currentMesh, typeof(int)))
+                    vertices = new List<float>();
 
-                    vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(TextMesh);
-                }
+                //Drawing character wireframe
+                //WireframeMesh characterWiremesh = character.mesh;
+                //noTextureShaderProgram.Use();
+                //characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+                //vertices.AddRange(characterWiremesh.Draw());
+                //wireVbo.Buffer(vertices);
+                //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+                //vertices = new List<float>();
+
+                ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
+                            .ChangeText("Position = (" + character.PStr + ")");
+                ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
+                            .ChangeText("Velocity = (" + character.VStr + ")");
             }
 
-
-            if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(int) : currentMesh, typeof(int)))
-                vertices = new List<float>();
-
-            //Drawing character wireframe
-            //WireframeMesh characterWiremesh = character.mesh;
-            //noTextureShaderProgram.Use();
-            //characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //vertices.AddRange(characterWiremesh.Draw());
-            //wireVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
-            //vertices = new List<float>();
-
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
-                        .ChangeText("Position = (" + character.PStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
-                        .ChangeText("Velocity = (" + character.VStr + ")");
-
+            GL.Disable(EnableCap.ScissorTest);
             Context.SwapBuffers();
 
             base.OnRenderFrame(args);
@@ -416,11 +438,17 @@ namespace Engine3D
             if (KeyboardState.IsKeyDown(Keys.Escape))
                 Close();
 
-            character.CalculateVelocity(KeyboardState, MouseState, args);
-            character.UpdatePosition(KeyboardState, MouseState, args);
-            character.AfterUpdate(MouseState, args);
+            if(character != null)
+            {
+                character.CalculateVelocity(KeyboardState, MouseState, args);
+                character.UpdatePosition(KeyboardState, MouseState, args);
+                character.AfterUpdate(MouseState, args);
 
-            soundManager.SetListener(character.camera.GetPosition());
+                // TODO
+                //camera.SetPosition(character.Position);
+
+                soundManager.SetListener(camera.GetPosition());
+            }
 
             
             //if (temp != Math.Round(totalTime) || temp == -1)
@@ -446,9 +474,10 @@ namespace Engine3D
         protected override void OnLoad()
         {
             base.OnLoad();
-            CursorState = CursorState.Grabbed;
+            //CursorState = CursorState.Grabbed;
+            CursorState = CursorState.Normal;
 
-            if(limitFps)
+            if (limitFps)
                 stopwatch = Stopwatch.StartNew();
 
             textGenerator = new TextGenerator();
@@ -516,8 +545,8 @@ namespace Engine3D
             //soundManager.CreateSoundEmitter("example.ogg", Vector3.Zero);
 
             //Camera
-            Camera camera = new Camera(windowSize);
-            camera.UpdateVectors();
+            //Camera camera = new Camera(windowSize);
+            //camera.UpdateVectors();
 
             //TEMP---------------------------------------
             //camera.position.X = -6.97959471f;
@@ -526,21 +555,21 @@ namespace Engine3D
             //camera.pitch = -18.75002f;
             //-------------------------------------------
 
-            noTextureShaderProgram.Use();
-            Vector3 characterPos = new Vector3(0, 20, 0);
-            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
-            frustum = character.camera.frustum;
+            //noTextureShaderProgram.Use();
+            //Vector3 characterPos = new Vector3(0, 20, 0);
+            //character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
+            //frustum = character.camera.frustum;
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
 
-            shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
+            //shaderProgram.Use();
+            //PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
             // Projection matrix and mesh loading
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "wall.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));
@@ -552,7 +581,7 @@ namespace Engine3D
             //objects.Last().AddSphereCollider(false);
 
 
-            noTextureShaderProgram.Use();
+            //noTextureShaderProgram.Use();
             //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
             //foreach (WireframeMesh mesh in aabbs)
             //{
@@ -561,19 +590,19 @@ namespace Engine3D
             //    AddObject(aabbO);
             //}
 
-            posTexShader.Use();
+            //posTexShader.Use();
 
-            Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
-            ((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
-            ((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj1);
+            //Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            //((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
+            //((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
+            //((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddObject(textObj1);
 
-            Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            ((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
-            ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
-            ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj2);
+            //Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            //((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
+            //((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
+            //((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddObject(textObj2);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
