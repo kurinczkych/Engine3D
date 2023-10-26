@@ -11,12 +11,14 @@ using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
 using MagicPhysX;
+using System.Threading.Tasks;
 using System.Data;
+using System.Diagnostics;
+using System.Diagnostics.SymbolStore;
 
 #pragma warning disable CS8600
-#pragma warning disable CA1416
 #pragma warning disable CS8604
-#pragma warning disable CS8603
+#pragma warning disable CS0728
 
 namespace Engine3D
 {
@@ -32,8 +34,6 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
         private string? embeddedModelName;
-
-        public BoundingBox BoundingBox;
 
 
         public Vector3 Scale;
@@ -127,54 +127,50 @@ namespace Engine3D
             normalMesh.lines = normalLines;
         }
 
-        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
+        private void ConvertToNDC(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
         {
-            List<float> result = new List<float>();
             if (isTransformed)
             {
                 Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
 
-                result = new List<float>()
+                vertices.AddRange(new float[]
                 {
                     v.X, v.Y, v.Z, 1.0f,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
                     tri.t[index].u, tri.t[index].v,
                     tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A
-                };
+                });
             }
             else
             {
-                result = new List<float>()
+                vertices.AddRange(new float[]
                 {
                     tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
                     tri.t[index].u, tri.t[index].v,
                     tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A
-                };
+                });
             }
-            return result;
         }
 
-        private List<float> ConvertToNDCOnlyPos(triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
+        private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
         {
-            List<float> result = new List<float>();
             if (isTransformed)
             {
                 Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
 
-                result = new List<float>()
+                vertices.AddRange(new float[] // Setting initial capacity to 3
                 {
                     v.X, v.Y, v.Z
-                };
+                });
             }
             else
             {
-                result = new List<float>()
+                vertices.AddRange(new float[] // Setting initial capacity to 3
                 {
                     tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-                };
+                });
             }
-            return result;
         }
 
         private PxVec3 ConvertToNDCPxVec3(int index, ref Matrix4 transformMatrix)
@@ -234,6 +230,26 @@ namespace Engine3D
             GL.UniformMatrix4(projLoc, true, ref projectionMatrix);
         }
 
+        private void AddVertices(List<float> vertices, triangle tri, ref Matrix4 transformMatrix, bool isTransformed)
+        {
+            lock (vertices) // Lock to ensure thread-safety when modifying the list
+            {
+                ConvertToNDC(ref vertices, tri, 0, ref transformMatrix, isTransformed);
+                ConvertToNDC(ref vertices, tri, 1, ref transformMatrix, isTransformed);
+                ConvertToNDC(ref vertices, tri, 2, ref transformMatrix, isTransformed);
+            }
+        }
+
+        private void AddVerticesOnlyPos(List<float> vertices, triangle tri, ref Matrix4 transformMatrix, bool isTransformed)
+        {
+            lock (vertices) // Lock to ensure thread-safety when modifying the list
+            {
+                ConvertToNDCOnlyPos(ref vertices, tri, 0, ref transformMatrix, isTransformed);
+                ConvertToNDCOnlyPos(ref vertices, tri, 1, ref transformMatrix, isTransformed);
+                ConvertToNDCOnlyPos(ref vertices, tri, 2, ref transformMatrix, isTransformed);
+            }
+        }
+
         public List<float> Draw()
         {
             Vao.Bind();
@@ -265,25 +281,24 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
-            foreach (triangle tri in tris)
-            {
-                if (tri.visibile)
-                {
-                    if (tri.gotPointNormals)
-                    {
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
-                    }
-                    else
-                    {
-                        tri.ComputeTriangleNormal(ref transformMatrix);
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
-                    }
-                }
-            }
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(tris, parallelOptions,
+                 () => new List<float>(),
+                 (tri, loopState, localVertices) =>
+                 {
+                     if (tri.visibile)
+                     {
+                         AddVertices(localVertices, tri, ref transformMatrix, isTransformed);
+                     }
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (vertices)
+                     {
+                         vertices.AddRange(localVertices);
+                     }
+                 });
 
             SendUniforms();
             texture.Bind();
@@ -291,11 +306,10 @@ namespace Engine3D
             return vertices;
         }
 
-        public List<float> DrawNotOccluded(List<triangle> notOccludedTris, out int trisDrew)
+        public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
         {
             Vao.Bind();
 
-            trisDrew = 0;
             vertices = new List<float>();
 
             ObjectType type = parentObject.GetObjectType();
@@ -323,26 +337,24 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
-            foreach (triangle tri in notOccludedTris)
-            {
-                if (tri.visibile)
-                {
-                    trisDrew++;
-                    if (tri.gotPointNormals)
-                    {
-                        vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix, isTransformed));
-                    }
-                    else
-                    {
-                        tri.ComputeTriangleNormal(ref transformMatrix);
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 2, ref transformMatrix, isTransformed));
-                    }
-                }
-            }
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(notOccludedTris, parallelOptions,
+                 () => new List<float>(),
+                 (tri, loopState, localVertices) =>
+                 {
+                     if (tri.visibile)
+                     {
+                         AddVertices(localVertices, tri, ref transformMatrix, isTransformed);
+                     }
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (vertices)
+                     {
+                         vertices.AddRange(localVertices);
+                     }
+                 });
 
             SendUniforms();
             texture.Bind();
@@ -382,26 +394,24 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
-
-            foreach (triangle tri in tris)
-            {
-                if (tri.visibile)
-                {
-                    if (tri.gotPointNormals)
-                    {
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 2, ref transformMatrix, isTransformed));
-                    }
-                    else
-                    {
-                        tri.ComputeTriangleNormal(ref transformMatrix);
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 0, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 1, ref transformMatrix, isTransformed));
-                        vertices.AddRange(ConvertToNDCOnlyPos(tri, 2, ref transformMatrix, isTransformed));
-                    }
-                }
-            }
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(tris, parallelOptions,
+                 () => new List<float>(),
+                 (tri, loopState, localVertices) =>
+                 {
+                     if (tri.visibile)
+                     {
+                         AddVerticesOnlyPos(localVertices, tri, ref transformMatrix, isTransformed);
+                     }
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (vertices)
+                     {
+                         vertices.AddRange(localVertices);
+                     }
+                 });
 
             SendUniformsOnlyPos(shader);
 
@@ -459,38 +469,6 @@ namespace Engine3D
                 indices[index] = tri.pi[2];
                 index++;
             }
-        }
-
-        public void CalculateBoundingBox()
-        {
-            if (tris == null || tris.Count == 0)
-            {
-                throw new InvalidOperationException("Mesh contains no triangles.");
-            }
-
-            // Initialize with the first vertex of the first triangle
-            Vector3 min = tris[0].p[0];
-            Vector3 max = tris[0].p[0];
-
-            foreach (var triangle in tris)
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    Vector3 vertex = triangle.p[i];
-
-                    // Check for a new min
-                    if (vertex.X < min.X) min.X = vertex.X;
-                    if (vertex.Y < min.Y) min.Y = vertex.Y;
-                    if (vertex.Z < min.Z) min.Z = vertex.Z;
-
-                    // Check for a new max
-                    if (vertex.X > max.X) max.X = vertex.X;
-                    if (vertex.Y > max.Y) max.Y = vertex.Y;
-                    if (vertex.Z > max.Z) max.Z = vertex.Z;
-                }
-            }
-
-            BoundingBox = new BoundingBox(min, max);
         }
 
         public void ProcessObj(string filename)

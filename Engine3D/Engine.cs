@@ -22,6 +22,7 @@ using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.FileIO;
 using System.Diagnostics;
 using System.Xml.Schema;
+using OpenTK.Audio.OpenAL;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -76,6 +77,7 @@ namespace Engine3D
         private List<PointLight> pointLights;
         private TextGenerator textGenerator;
         private Physx physx;
+        private SoundManager soundManager;
 
         private QueryPool queryPool;
         private Dictionary<int, BVHNode> pendingQueries;
@@ -88,9 +90,6 @@ namespace Engine3D
         private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
         private Stopwatch stopwatch;
-
-        private int triCount = 0;
-        private int occludedTriCount = 0;
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
@@ -124,7 +123,7 @@ namespace Engine3D
             double averageDeltaTime = totalTime / sampleTimes.Count;
             double fps = 1.0 / averageDeltaTime;
 
-            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() + "    " + occludedTriCount.ToString() + " / " + triCount.ToString();
+            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString();
 
             return fps;
         }
@@ -190,7 +189,7 @@ namespace Engine3D
             // Triangle frustum visibility calculation
             foreach (Object obj in objects)
             {
-                obj.GetMesh().CalculateFrustumVisibility(ref frustum, ref character.camera, obj.BVHStruct);
+                obj.GetMesh().CalculateFrustumVisibility(frustum, character.camera);
             }
 
             //Occlusion
@@ -263,19 +262,18 @@ namespace Engine3D
                     if (objectType == ObjectType.TriangleMesh)
                     {
                         List<triangle> notOccludedTris = new List<triangle>();
-                        Random rnd_ = new Random();
-                        int i = 0;
-                        OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref i, ref frustum);
+                        OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
 
-                        occludedTriCount = 0;
-                        List<float> a = mesh.DrawNotOccluded(notOccludedTris, out occludedTriCount);
-                        triCount = mesh.tris.Count;
+                        List<float> a = mesh.DrawNotOccluded(notOccludedTris);
                         vertices.AddRange(a);
                         currentMesh = typeof(Mesh);
 
-                        meshVbo.Buffer(vertices);
-                        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                        vertices.Clear();
+                        if (vertices.Count > 0)
+                        {
+                            meshVbo.Buffer(vertices);
+                            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                            vertices.Clear();
+                        }
                     }
                     else
                     {
@@ -424,6 +422,9 @@ namespace Engine3D
             character.UpdatePosition(KeyboardState, MouseState, args);
             character.AfterUpdate(MouseState, args);
 
+            soundManager.SetListener(character.camera.GetPosition());
+
+            
             //if (temp != Math.Round(totalTime) || temp == -1)
             //{
             //    Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
@@ -508,6 +509,12 @@ namespace Engine3D
             // Create Physx context
             physx = new Physx(true);
 
+            // Create Sound Manager
+            soundManager = new SoundManager();
+
+            // Add test sound
+            //soundManager.CreateSoundEmitter("example.ogg", Vector3.Zero);
+
             //Camera
             Camera camera = new Camera(windowSize);
             camera.UpdateVectors();
@@ -538,7 +545,7 @@ namespace Engine3D
             //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
             //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));

@@ -195,25 +195,6 @@ namespace Engine3D
                     return;
                 }
             }
-
-            // 5. Cleanup the query object
-            //queryPool.ReturnQuery(query);
-
-
-            // 6. If there are samples passed, then mark the node as visible
-            //if (samplesPassed > 0)
-            //{
-            //    node.isVisible = true;
-
-
-            //    PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries);
-            //    PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries);
-            //}
-            //else
-            //{
-            //    node.isVisible = false;
-            //    return;
-            //}
         }
 
         public static double GTRandom(int index)
@@ -233,31 +214,18 @@ namespace Engine3D
             return random.NextDouble();
         }
 
-        public static void TraverseBVHNode(BVHNode node, ref List<triangle> notOccludedTris, ref int i, ref Frustum frustum)
+        public static void TraverseBVHNode(BVHNode node, ref List<triangle> notOccludedTris, ref Frustum frustum)
         {
             if (node == null)
                 return;
 
-
-
             //If it's a leaf node (i.e., no children but has triangles)
             if (node.left == null && node.right == null && node.triangles != null)
             {
-
-                //Color4 c = new Color4((float)GTRandom(i), (float)GTRandom(i+1), (float)GTRandom(i+2), 1.0f);
-                //i += 3;
-                //List<triangle> colorTris = new List<triangle>(node.triangles);
-                //colorTris.ForEach(x => x.SetColor(c));
-                //notOccludedTris.AddRange(colorTris);
                 if (frustum.IsAABBInside(node.bounds))
                 {
                     if (node.visibility.Any(x => x == true))
                     {
-                        //Color4 c = new Color4((float)GTRandom(i), (float)GTRandom(i + 1), (float)GTRandom(i + 2), 1.0f);
-                        //i += 3;
-                        //List<triangle> colorTris = new List<triangle>(node.triangles);
-                        //colorTris.ForEach(x => x.SetColor(c));
-                        //notOccludedTris.AddRange(colorTris);
                         node.triangles.ForEach(x => x.visibile = true);
 
                         notOccludedTris.AddRange(node.triangles);
@@ -266,8 +234,8 @@ namespace Engine3D
             }
             else
             {
-                TraverseBVHNode(node.left, ref notOccludedTris, ref i, ref frustum);
-                TraverseBVHNode(node.right, ref notOccludedTris, ref i, ref frustum);
+                TraverseBVHNode(node.left, ref notOccludedTris, ref frustum);
+                TraverseBVHNode(node.right, ref notOccludedTris, ref frustum);
             }
         }
 
@@ -275,8 +243,6 @@ namespace Engine3D
         {
             if (node == null)
                 return;
-
-
 
             // If it's a leaf node (i.e., no children but has triangles)
             if (node.left == null && node.right == null && node.triangles != null)

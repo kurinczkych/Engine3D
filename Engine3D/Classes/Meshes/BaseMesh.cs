@@ -24,6 +24,9 @@ namespace Engine3D
 
         protected Dictionary<string, int> uniformLocations;
 
+        protected int threadSize;
+        private int desiredPercentage = 80;
+
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
             tris = new List<triangle>();
@@ -34,6 +37,9 @@ namespace Engine3D
             this.shaderProgramId = shaderProgramId;
 
             uniformLocations = new Dictionary<string, int>();
+
+            threadSize = (int)(Environment.ProcessorCount * (desiredPercentage / 100.0));
+            threadSize = 16;
         }
         public void AddTriangle(triangle tri)
         {
@@ -41,22 +47,13 @@ namespace Engine3D
         }
         protected abstract void SendUniforms();
 
-        public void CalculateFrustumVisibility(ref Frustum frustum, ref Camera camera, BVH bvh)
+        public void CalculateFrustumVisibility(Frustum frustum, Camera camera)
         {
-            if (bvh != null)
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
+            Parallel.ForEach(tris, parallelOptions, tri =>
             {
-                //bvh.GetFrustumVisibleTriangles(ref frustum, ref camera);
-            }
-            else
-            {
-                foreach (triangle tri in tris)
-                {
-                    if (frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri))
-                        tri.visibile = true;
-                    else
-                        tri.visibile = false;
-                }
-            }
+                tri.visibile = frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
+            });
         }
 
         protected static Vector3 ComputeFaceNormal(triangle triangle)
@@ -117,6 +114,7 @@ namespace Engine3D
             // Compute the average normal for each vertex
             foreach (var triangle in triangles)
             {
+                triangle.gotPointNormals = true;
                 for (int i = 0; i < 3; i++)
                 {
                     triangle.n[i] = Average(vertexToNormals[triangle.p[i]]).Normalized();

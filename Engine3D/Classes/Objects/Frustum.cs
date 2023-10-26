@@ -72,10 +72,12 @@ namespace Engine3D
 
         public bool IsTriangleInside(triangle tri)
         {
-            var a = IsInside(tri.p[0]);
-            var b = IsInside(tri.p[1]);
-            var c = IsInside(tri.p[2]);
-            return a || b || c;
+            for (int i = 0; i < 3; i++)
+            {
+                if (IsInside(tri.p[i]))
+                    return true;
+            }
+            return false;
         }
 
         public bool IsLineInside(Line line)
