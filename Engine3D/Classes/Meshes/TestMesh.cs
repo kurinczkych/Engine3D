@@ -96,6 +96,14 @@ namespace Engine3D
             {
                 uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
             }
+            if (texture.textureDescriptor.Height != "")
+            {
+                uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
+            }
+            if (texture.textureDescriptor.AO != "")
+            {
+                uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
+            }
         }
 
         protected override void SendUniforms()
@@ -113,6 +121,14 @@ namespace Engine3D
             if (texture.textureDescriptor.Normal != "")
             {
                 GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
+            }
+            if (texture.textureDescriptor.Height != "")
+            {
+                GL.Uniform1(uniformLocations["textureSamplerHeight"], texture.textureDescriptor.HeightUnit);
+            }
+            if (texture.textureDescriptor.AO != "")
+            {
+                GL.Uniform1(uniformLocations["textureSamplerAO"], texture.textureDescriptor.AOUnit);
             }
         }
 
@@ -159,6 +175,10 @@ namespace Engine3D
             texture.Bind(TextureType.Texture);
             if (texture.textureDescriptor.Normal != "")
                 texture.Bind(TextureType.Normal);
+            if (texture.textureDescriptor.Height != "")
+                texture.Bind(TextureType.Height);
+            if (texture.textureDescriptor.AO != "")
+                texture.Bind(TextureType.AO);
 
             return vertices;
         }

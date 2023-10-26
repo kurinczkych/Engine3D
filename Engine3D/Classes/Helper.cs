@@ -56,6 +56,14 @@ namespace Engine3D
 
             string t = "";
             string n = "";
+            string h = "";
+            string ao = "";
+            string r = "";
+
+            string def_n = "";
+            string def_h = "";
+            string def_ao = "";
+            string def_r = "";
 
             foreach (string resourceName in resources)
             {
@@ -63,6 +71,20 @@ namespace Engine3D
                     t = resourceName;
                 else if (resourceName.EndsWith(withoutExtension + "_n" + extension, StringComparison.OrdinalIgnoreCase))
                     n = resourceName;
+                else if (resourceName.EndsWith(withoutExtension + "_h" + extension, StringComparison.OrdinalIgnoreCase))
+                    h = resourceName;
+                else if (resourceName.EndsWith(withoutExtension + "_ao" + extension, StringComparison.OrdinalIgnoreCase))
+                    ao = resourceName;
+                else if (resourceName.EndsWith(withoutExtension + "_r" + extension, StringComparison.OrdinalIgnoreCase))
+                    r = resourceName;
+                else if (resourceName.EndsWith("default_normal.png", StringComparison.OrdinalIgnoreCase))
+                    def_n = resourceName;
+                else if (resourceName.EndsWith("default_height.png", StringComparison.OrdinalIgnoreCase))
+                    def_h = resourceName;
+                else if (resourceName.EndsWith("default_ao.png", StringComparison.OrdinalIgnoreCase))
+                    def_ao = resourceName;
+                else if (resourceName.EndsWith("default_roughness.png", StringComparison.OrdinalIgnoreCase))
+                    def_r = resourceName;
             }
 
             if(t == "")
@@ -80,6 +102,46 @@ namespace Engine3D
                 td.Normal = n;
                 td.count++;
             }
+            else
+            {
+                td.Normal = def_n;
+                td.count++;
+            }
+            if (h != "")
+            {
+                td.Height = h;
+                td.count++;
+            }
+            else
+            {
+                td.Height = def_h;
+                td.count++;
+            }
+            if (ao != "")
+            {
+                td.AO = ao;
+                td.count++;
+            }
+            else
+            {
+                td.AO = def_ao;
+                td.count++;
+            }
+            if (r != "")
+            {
+                td.Rough = r;
+                td.count++;
+            }
+            else
+            {
+                td.Rough = def_r;
+                td.count++;
+            }
+
+            td.Normal = def_n;
+            td.Height = def_h;
+            td.AO = def_ao;
+            td.Rough = def_r;
 
             return td;
         }

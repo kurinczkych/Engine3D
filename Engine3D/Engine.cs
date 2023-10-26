@@ -380,13 +380,13 @@ namespace Engine3D
                 vertices = new List<float>();
 
             //Drawing character wireframe
-            WireframeMesh characterWiremesh = character.mesh;
-            noTextureShaderProgram.Use();
-            characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            vertices.AddRange(characterWiremesh.Draw());
-            wireVbo.Buffer(vertices);
-            GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
-            vertices = new List<float>();
+            //WireframeMesh characterWiremesh = character.mesh;
+            //noTextureShaderProgram.Use();
+            //characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //vertices.AddRange(characterWiremesh.Draw());
+            //wireVbo.Buffer(vertices);
+            //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            //vertices = new List<float>();
 
             ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
                         .ChangeText("Position = (" + character.PStr + ")");
@@ -463,6 +463,7 @@ namespace Engine3D
             meshVao.LinkToVAO(1, 3, 4, meshVbo);
             meshVao.LinkToVAO(2, 2, 7, meshVbo);
             meshVao.LinkToVAO(3, 4, 9, meshVbo);
+            meshVao.LinkToVAO(4, 3, 13, meshVbo);
 
             testVbo = new VBO();
             testVao = new VAO(Mesh.floatCount);
@@ -470,6 +471,7 @@ namespace Engine3D
             testVao.LinkToVAO(1, 3, 4, testVbo);
             testVao.LinkToVAO(2, 2, 7, testVbo);
             testVao.LinkToVAO(3, 4, 9, testVbo);
+            testVao.LinkToVAO(4, 3, 13, testVbo);
 
             textVbo = new VBO();
             textVao = new VAO(TextMesh.floatCount);
@@ -537,12 +539,12 @@ namespace Engine3D
 
             // Projection matrix and mesh loading
 
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "rock.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
-            objects.Last().SetSize(new Vector3(10, 2, 10));
-            objects.Last().AddCubeCollider(true);
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "wall.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
+            //objects.Last().SetSize(new Vector3(10, 2, 10));
+            //objects.Last().AddCubeCollider(true);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
             //objects.Last().SetPosition(new Vector3(0, 20, 0));

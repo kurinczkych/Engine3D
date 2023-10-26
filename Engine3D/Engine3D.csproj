@@ -40,6 +40,10 @@
     <None Remove="Models\teapot.obj" />
     <None Remove="Textures\bmp_24.bmp" />
     <None Remove="Textures\bmp_24_t.bmp" />
+    <None Remove="Textures\default_ao.png" />
+    <None Remove="Textures\default_height.png" />
+    <None Remove="Textures\default_normal.png" />
+    <None Remove="Textures\default_roughness.png" />
     <None Remove="Textures\font.json" />
     <None Remove="Textures\font.png" />
     <None Remove="Textures\font2.PNG" />
@@ -50,9 +54,15 @@
     <None Remove="Textures\High_test_t.png" />
     <None Remove="Textures\red.png" />
     <None Remove="Textures\red_t.png" />
+    <None Remove="Textures\rock_h.png" />
     <None Remove="Textures\rock_n.png" />
     <None Remove="Textures\rock_t.png" />
     <None Remove="Textures\rred.png" />
+    <None Remove="Textures\wall_ao.png" />
+    <None Remove="Textures\wall_h.png" />
+    <None Remove="Textures\wall_n.png" />
+    <None Remove="Textures\wall_r.png" />
+    <None Remove="Textures\wall_t.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -78,20 +88,30 @@
     <EmbeddedResource Include="Models\spiro_small.obj" />
     <EmbeddedResource Include="Models\teapot.obj" />
     <EmbeddedResource Include="Textures\bmp_24_t.bmp" />
+    <EmbeddedResource Include="Textures\default_ao.png" />
+    <EmbeddedResource Include="Textures\default_height.png" />
+    <EmbeddedResource Include="Textures\default_normal.png" />
+    <EmbeddedResource Include="Textures\default_roughness.png" />
     <EmbeddedResource Include="Textures\font.json" />
     <EmbeddedResource Include="Textures\font.png" />
     <EmbeddedResource Include="Textures\font2.PNG" />
     <EmbeddedResource Include="Textures\High_t.png" />
     <EmbeddedResource Include="Textures\High_test_t.png" />
     <EmbeddedResource Include="Textures\red_t.png" />
+    <EmbeddedResource Include="Textures\rock_h.png" />
     <EmbeddedResource Include="Textures\rock_n.png" />
     <EmbeddedResource Include="Textures\rock_t.png" />
+    <EmbeddedResource Include="Textures\wall_ao.png" />
+    <EmbeddedResource Include="Textures\wall_h.png" />
+    <EmbeddedResource Include="Textures\wall_n.png" />
+    <EmbeddedResource Include="Textures\wall_r.png" />
+    <EmbeddedResource Include="Textures\wall_t.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="AudioFiles\OpenAL32.dll">
+    <Content Include="OpenAL32.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

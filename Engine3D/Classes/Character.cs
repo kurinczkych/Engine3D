@@ -21,7 +21,8 @@ namespace Engine3D
     {
         private float sensitivity = 180f;
         private float speed = 2f;
-        private float flySpeed = 10f;
+        //private float flySpeed = 10f;
+        private float flySpeed = 2.5f;
         public bool isOnGround = false;
         private float gravity = 120;
         private float jumpForce = 0.20f;

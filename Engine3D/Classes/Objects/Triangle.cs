@@ -18,6 +18,8 @@ namespace Engine3D
         public Color4[] c;
         public Vec2d[] t;
         public int[] pi;
+        public Vector3[] tan;
+        public Vector3[] bitan;
         public bool gotPointNormals;
 
         public bool visibile = false;
@@ -29,6 +31,8 @@ namespace Engine3D
             n = new Vector3[3];
             c = new Color4[3];
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            tan = new Vector3[3];
+            bitan = new Vector3[3];
             pi = new int[3];
         }
 
@@ -48,6 +52,8 @@ namespace Engine3D
             }
 
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            tan = new Vector3[3];
+            bitan = new Vector3[3];
             pi = new int[3];
         }
 
@@ -63,6 +69,8 @@ namespace Engine3D
             }
 
             t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
+            tan = new Vector3[3];
+            bitan = new Vector3[3];
             pi = new int[3];
         }
 
@@ -85,6 +93,8 @@ namespace Engine3D
             {
                 this.t[t_] = t[t_].GetCopy();
             }
+            tan = new Vector3[3];
+            bitan = new Vector3[3];
             pi = new int[3];
         }
 
@@ -111,6 +121,8 @@ namespace Engine3D
             {
                 this.t[t_] = t[t_].GetCopy();
             }
+            tan = new Vector3[3];
+            bitan = new Vector3[3];
             pi = new int[3];
         }
 
@@ -256,6 +268,16 @@ namespace Engine3D
             tri.c[0] = c[0];
             tri.c[1] = c[1];
             tri.c[2] = c[2];
+            tri.pi[0] = pi[0];
+            tri.pi[1] = pi[1];
+            tri.pi[2] = pi[2];
+            tri.tan[0] = tan[0];
+            tri.tan[1] = tan[1];
+            tri.tan[2] = tan[2];
+            tri.bitan[0] = bitan[0];
+            tri.bitan[1] = bitan[1];
+            tri.bitan[2] = bitan[2];
+            tri.gotPointNormals = gotPointNormals;
 
             return tri;
         }
