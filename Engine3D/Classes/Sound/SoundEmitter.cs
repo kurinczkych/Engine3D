@@ -19,7 +19,7 @@ namespace Engine3D
         private int _buffer;
 
         public Vector3 Position;
-        private float soundDistance = 100f;
+        private float soundDistance = 20f;
 
         public SoundEmitter(string audioFile)
         {

@@ -49,7 +49,7 @@ namespace Engine3D
         //----------------------------------------------
         private float thirdY = 10f;
 
-        private bool noClip = true;
+        private bool noClip = false;
 
         private bool firstMove = true;
         public Vector2 lastPos;
@@ -111,6 +111,12 @@ namespace Engine3D
 
         public void CalculateVelocity(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
         {
+            if(keyboardState.IsKeyDown(Keys.N))
+            {
+                noClip = !noClip;
+                Velocity = Vector3.Zero;
+            }
+
             float speed_ = speed;
             float flySpeed_ = flySpeed;
             if (keyboardState.IsKeyDown(Keys.LeftShift))

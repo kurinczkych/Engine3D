@@ -513,7 +513,8 @@ namespace Engine3D
             soundManager = new SoundManager();
 
             // Add test sound
-            //soundManager.CreateSoundEmitter("example.ogg", Vector3.Zero);
+            soundManager.CreateSoundEmitter("nyanya.ogg", new Vector3(0,-28,0));
+            soundManager.PlayAll();
 
             //Camera
             Camera camera = new Camera(windowSize);
@@ -527,7 +528,7 @@ namespace Engine3D
             //-------------------------------------------
 
             noTextureShaderProgram.Use();
-            Vector3 characterPos = new Vector3(0, 20, 0);
+            Vector3 characterPos = new Vector3(0, 100, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
             frustum = character.camera.frustum;
 
@@ -539,7 +540,10 @@ namespace Engine3D
 
             // Projection matrix and mesh loading
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "wall.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
