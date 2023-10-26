@@ -56,7 +56,7 @@ namespace Engine3D
             rotation = Vector3.Zero;
 
             texture = new Texture(textureCount, embeddedTextureName);
-            textureCount++;
+            textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
             Vbo = vbo;
@@ -64,7 +64,8 @@ namespace Engine3D
             OnlyQuad();
 
             this.embeddedTextureName = embeddedTextureName;
-            Helper.LoadTexture(embeddedTextureName, false, TextureMinFilter.Nearest, TextureMagFilter.Nearest);
+            TextureDescriptor td = Helper.GetTextureDescriptor(embeddedTextureName);
+            Helper.LoadTexture(td.Texture, false, TextureMinFilter.Nearest, TextureMagFilter.Nearest);
 
             GetUniformLocations();
             SendUniforms();
@@ -79,7 +80,7 @@ namespace Engine3D
         protected override void SendUniforms()
         {
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
-            GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
         }
 
         private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
@@ -124,7 +125,7 @@ namespace Engine3D
             }
 
             SendUniforms();
-            texture.Bind();
+            texture.Bind(TextureType.Texture);
 
             return vertices;
         }

@@ -388,12 +388,10 @@ namespace Engine3D
             GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
             vertices = new List<float>();
 
-            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
-            //            .ChangeText("Position = (" + character.PStr + ")");
-            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
-            //            .ChangeText("Velocity = (" + character.VStr + ")");
-            //((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("IsOnGround")).First().GetMesh())
-            //            .ChangeText("IsOnGround = " + character.isOnGround.ToString());
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
+                        .ChangeText("Position = (" + character.PStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
+                        .ChangeText("Velocity = (" + character.VStr + ")");
 
             Context.SwapBuffers();
 
@@ -538,18 +536,13 @@ namespace Engine3D
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
             // Projection matrix and mesh loading
-            //meshCube.OnlyCube();
-            //meshCube.OnlyTriangle();
-            //meshCube.ProcessObj("spiro.obj");
-            //meshes.Add(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", 7, windowSize, ref frustum, ref camera, ref textureCount));
-            //meshes.Last().CalculateNormalWireframe(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera);
-            //testMeshes.Add(new TestMesh(testVao, testVbo, shaderProgram.id, "red.png", windowSize, ref frustum, ref camera, ref textureCount));
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "red.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
-            //objects.Last().SetSize(new Vector3(10, 2, 10));
-            //objects.Last().AddCubeCollider(true);
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "rock.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
+            objects.Last().SetSize(new Vector3(10, 2, 10));
+            objects.Last().AddCubeCollider(true);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
             //objects.Last().SetPosition(new Vector3(0, 20, 0));
@@ -568,29 +561,22 @@ namespace Engine3D
 
             posTexShader.Use();
 
-            //Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            //((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
-            //((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
-            //((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            //AddObject(textObj1);
+            Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
+            ((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
+            ((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            AddObject(textObj1);
 
-            //Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            //((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
-            //((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
-            //((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            //AddObject(textObj2);
-
-            //Object textObj3 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
-            //((TextMesh)textObj3.GetMesh()).ChangeText("IsOnGround = " + character.isOnGround.ToString());
-            //((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
-            //((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            //AddObject(textObj3);
+            Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            ((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
+            ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
+            ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            AddObject(textObj2);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 
             // We have text on screen
-            //if (haveText)
-            if (true)
+            if (haveText)
             {
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);

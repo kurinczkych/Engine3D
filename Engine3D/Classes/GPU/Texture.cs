@@ -10,20 +10,47 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace Engine3D
 {
+    public class TextureDescriptor
+    {
+        public string Texture;
+        public int TextureId;
+        public int TextureUnit;
+        public string Normal;
+        public int NormalId;
+        public int NormalUnit;
+
+        public int count;
+
+        public TextureDescriptor()
+        {
+            Normal = "";
+        }
+    }
+
+    public enum TextureType
+    {
+        Texture,
+        Normal
+    }
+
     public class Texture
     {
-        public int id;
-        public int unit;
-
         private TextureMinFilter tminf;
         private TextureMagFilter tmagf;
 
+        public TextureDescriptor textureDescriptor;
+
         public Texture(int unit, string embeddedResourceName, bool flipY = true, string textureFilter = "linear")
         {
-            id = GL.GenTexture();
-            this.unit = unit;
+            textureDescriptor = Helper.GetTextureDescriptor(embeddedResourceName);
 
-            if(textureFilter == "linear")
+            int currentUnit = unit;
+
+            textureDescriptor.TextureId = GL.GenTexture();
+            textureDescriptor.TextureUnit = currentUnit;
+            currentUnit++;
+
+            if (textureFilter == "linear")
             {
                 tminf = TextureMinFilter.Linear;
                 tmagf = TextureMagFilter.Linear;
@@ -39,19 +66,49 @@ namespace Engine3D
                 tmagf = TextureMagFilter.Linear;
             }
 
-            Bind();
-            Helper.LoadTexture(embeddedResourceName, flipY, tminf, tmagf);
+            Bind(TextureType.Texture);
+            Helper.LoadTexture(textureDescriptor.Texture, flipY, tminf, tmagf);
 
             Unbind();
+
+            if(textureDescriptor.Normal != "")
+            {
+                textureDescriptor.NormalId = GL.GenTexture();
+                textureDescriptor.NormalUnit = currentUnit;
+                currentUnit++;
+
+                Bind(TextureType.Normal);
+                Helper.LoadTexture(textureDescriptor.Normal, flipY, tminf, tmagf);
+
+                Unbind();
+            }
         }
 
-        public void Bind() 
+        public void Bind(TextureType tt) 
         {
-            GL.ActiveTexture(TextureUnit.Texture0 + unit);
-            GL.BindTexture(TextureTarget.Texture2D, id); 
+            if (tt == TextureType.Texture)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + textureDescriptor.TextureUnit);
+                GL.BindTexture(TextureTarget.Texture2D, textureDescriptor.TextureId);
+            }
+            else if (tt == TextureType.Normal)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + textureDescriptor.NormalUnit);
+                GL.BindTexture(TextureTarget.Texture2D, textureDescriptor.NormalId);
+            }
         }
         public void Unbind() { GL.BindTexture(TextureTarget.Texture2D, 0); }
-        public void Delete() { GL.DeleteTexture(id); }
+
+        public void Delete()
+        { 
+            GL.DeleteTexture(textureDescriptor.TextureId);
+            GL.DeleteTexture(textureDescriptor.NormalId);
+        }
+
+        ~Texture()
+        {
+            Delete();
+        }
 
     }
 }

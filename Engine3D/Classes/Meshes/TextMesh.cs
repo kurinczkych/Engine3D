@@ -46,7 +46,7 @@ namespace Engine3D
         public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName, false, "nearest");
-            textureCount++;
+            textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
             Vbo = vbo;
@@ -94,7 +94,7 @@ namespace Engine3D
         protected override void SendUniforms()
         {
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
-            GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
         }
 
         public List<float> Draw()
@@ -123,7 +123,7 @@ namespace Engine3D
             }
 
             SendUniforms();
-            texture.Bind();
+            texture.Bind(TextureType.Texture);
 
             return vertices;
         }

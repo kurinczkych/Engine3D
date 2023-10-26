@@ -37,7 +37,7 @@ uniform int actualNumOfLights;
 
 out vec4 FragColor;
 uniform sampler2D textureSampler;
-
+uniform sampler2D textureSamplerNormal;
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {

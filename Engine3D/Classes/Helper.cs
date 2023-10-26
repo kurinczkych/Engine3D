@@ -34,16 +34,76 @@ namespace Engine3D
             }
             return Stream.Null; // or throw an exception if the resource is not found
         }
+        public static string GetResourceNameByNameEnd(string nameEnd)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            foreach (string resourceName in assembly.GetManifestResourceNames())
+            {
+                if (resourceName.EndsWith(nameEnd, StringComparison.OrdinalIgnoreCase))
+                {
+                    return resourceName;
+                }
+            }
+            return ""; // or throw an exception if the resource is not found
+        }
+
+        public static TextureDescriptor GetTextureDescriptor(string embeddedResourceName)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            string withoutExtension = Path.GetFileNameWithoutExtension(embeddedResourceName);
+            string extension = Path.GetExtension(embeddedResourceName);
+            string[] resources = assembly.GetManifestResourceNames();
+
+            string t = "";
+            string n = "";
+
+            foreach (string resourceName in resources)
+            {
+                if (resourceName.EndsWith(withoutExtension + "_t" + extension, StringComparison.OrdinalIgnoreCase))
+                    t = resourceName;
+                else if (resourceName.EndsWith(withoutExtension + "_n" + extension, StringComparison.OrdinalIgnoreCase))
+                    n = resourceName;
+            }
+
+            if(t == "")
+            {
+                t = GetResourceNameByNameEnd(embeddedResourceName);
+            }
+
+            TextureDescriptor td = new TextureDescriptor()
+            {
+                Texture = t,
+                count = 1
+            };
+            if (n != "")
+            {
+                td.Normal = n;
+                td.count++;
+            }
+
+            return td;
+        }
+
+        public static Stream GetResourceStream(string embeddedResourceName)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+
+            Stream? s = assembly.GetManifestResourceStream(embeddedResourceName);
+            if (s == null)
+                return Stream.Null;
+
+            return s;
+        }
 
         public static void LoadTexture(string embeddedResourceName, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf)
         {
             // Load the image (using System.Drawing or another library)
-            Stream stream = Helper.GetResourceStreamByNameEnd(embeddedResourceName);
-            if (stream != Stream.Null)
+            Stream stream_t = GetResourceStream(embeddedResourceName);
+            if (stream_t != Stream.Null)
             {
-                using (stream)
+                using (stream_t)
                 {
-                    Bitmap bitmap = new Bitmap(stream);
+                    Bitmap bitmap = new Bitmap(stream_t);
                     if (flipY)
                         bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                     BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);

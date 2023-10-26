@@ -788,29 +788,34 @@ namespace Engine3D
             Vector3 p7 = new Vector3(halfSize, halfSize, halfSize);
             Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
 
+            Vec2d t1 = new Vec2d(0, 0);
+            Vec2d t2 = new Vec2d(1, 0);
+            Vec2d t3 = new Vec2d(1, 1);
+            Vec2d t4 = new Vec2d(0, 1);
+
             // Back face
-            tris.Add(new triangle(p1, p3, p2));
-            tris.Add(new triangle(p3, p1, p4));
+            tris.Add(new triangle(new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }));
+            tris.Add(new triangle(new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }));
 
             // Front face
-            tris.Add(new triangle(p5, p7, p6));
-            tris.Add(new triangle(p7, p5, p8));
+            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }));
+            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }));
 
             // Left face
-            tris.Add(new triangle(p1, p8, p4));
-            tris.Add(new triangle(p8, p1, p5));
+            tris.Add(new triangle(new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }));
+            tris.Add(new triangle(new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }));
 
             // Right face
-            tris.Add(new triangle(p2, p7, p3));
-            tris.Add(new triangle(p7, p2, p6));
+            tris.Add(new triangle(new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }));
+            tris.Add(new triangle(new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }));
 
             // Top face
-            tris.Add(new triangle(p4, p7, p3));
-            tris.Add(new triangle(p7, p4, p8));
+            tris.Add(new triangle(new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }));
+            tris.Add(new triangle(new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }));
 
             // Bottom face
-            tris.Add(new triangle(p1, p6, p2));
-            tris.Add(new triangle(p6, p1, p5));
+            tris.Add(new triangle(new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }));
+            tris.Add(new triangle(new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }));
 
             return tris;
         }

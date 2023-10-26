@@ -39,13 +39,19 @@
     <None Remove="Models\spiro_small2.obj" />
     <None Remove="Models\teapot.obj" />
     <None Remove="Textures\bmp_24.bmp" />
+    <None Remove="Textures\bmp_24_t.bmp" />
     <None Remove="Textures\font.json" />
     <None Remove="Textures\font.png" />
     <None Remove="Textures\font2.PNG" />
     <None Remove="Textures\High.png" />
     <None Remove="Textures\High_red.png" />
+    <None Remove="Textures\High_t.png" />
     <None Remove="Textures\High_test.png" />
+    <None Remove="Textures\High_test_t.png" />
     <None Remove="Textures\red.png" />
+    <None Remove="Textures\red_t.png" />
+    <None Remove="Textures\rock_n.png" />
+    <None Remove="Textures\rock_t.png" />
     <None Remove="Textures\rred.png" />
   </ItemGroup>
 
@@ -71,13 +77,15 @@
     <EmbeddedResource Include="Models\spiro.obj" />
     <EmbeddedResource Include="Models\spiro_small.obj" />
     <EmbeddedResource Include="Models\teapot.obj" />
-    <EmbeddedResource Include="Textures\bmp_24.bmp" />
+    <EmbeddedResource Include="Textures\bmp_24_t.bmp" />
     <EmbeddedResource Include="Textures\font.json" />
     <EmbeddedResource Include="Textures\font.png" />
     <EmbeddedResource Include="Textures\font2.PNG" />
-    <EmbeddedResource Include="Textures\High.png" />
-    <EmbeddedResource Include="Textures\High_test.png" />
-    <EmbeddedResource Include="Textures\red.png" />
+    <EmbeddedResource Include="Textures\High_t.png" />
+    <EmbeddedResource Include="Textures\High_test_t.png" />
+    <EmbeddedResource Include="Textures\red_t.png" />
+    <EmbeddedResource Include="Textures\rock_n.png" />
+    <EmbeddedResource Include="Textures\rock_t.png" />
   </ItemGroup>
 
   <ItemGroup>

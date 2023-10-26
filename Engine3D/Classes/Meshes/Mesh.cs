@@ -57,7 +57,7 @@ namespace Engine3D
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedModelName, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName);
-            textureCount++;
+            textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
             Vbo = vbo;
@@ -80,7 +80,7 @@ namespace Engine3D
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName);
-            textureCount++;
+            textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
             Vbo = vbo;
@@ -95,7 +95,7 @@ namespace Engine3D
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, embeddedTextureName);
-            textureCount++;
+            textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
             Vbo = vbo;
@@ -199,6 +199,10 @@ namespace Engine3D
             uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
+            if(texture.textureDescriptor.Normal != "")
+            {
+                uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
+            }
         }
 
         protected override void SendUniforms()
@@ -212,7 +216,11 @@ namespace Engine3D
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
-            GL.Uniform1(uniformLocations["textureSampler"], texture.unit);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
+            if(texture.textureDescriptor.Normal != "")
+            {
+                GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
+            }
         }
 
         protected void SendUniformsOnlyPos(Shader shader)
@@ -301,7 +309,10 @@ namespace Engine3D
                  });
 
             SendUniforms();
-            texture.Bind();
+
+            texture.Bind(TextureType.Texture);
+            if(texture.textureDescriptor.Normal != "")
+                texture.Bind(TextureType.Normal);
 
             return vertices;
         }
@@ -357,7 +368,10 @@ namespace Engine3D
                  });
 
             SendUniforms();
-            texture.Bind();
+
+            texture.Bind(TextureType.Texture);
+            if (texture.textureDescriptor.Normal != "")
+                texture.Bind(TextureType.Normal);
 
             return vertices;
         }
