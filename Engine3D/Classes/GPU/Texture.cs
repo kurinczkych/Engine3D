@@ -19,18 +19,22 @@ namespace Engine3D
         public string Normal;
         public int NormalId;
         public int NormalUnit;
+        public int NormalUse;
 
         public string Height;
         public int HeightId;
         public int HeightUnit;
+        public int HeightUse;
 
         public string AO;
         public int AOId;
         public int AOUnit;
+        public int AOUse;
 
         public string Rough;
         public int RoughId;
         public int RoughUnit;
+        public int RoughUse;
 
         public int count;
 

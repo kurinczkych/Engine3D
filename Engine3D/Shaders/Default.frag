@@ -44,6 +44,11 @@ uniform sampler2D textureSamplerHeight;
 uniform sampler2D textureSamplerAO;
 uniform sampler2D textureSamplerRough;
 
+uniform int useNormal;
+uniform int useHeight;
+uniform int useAO;
+uniform int useRough;
+
 const float heightScale = 0.1; // Adjust this value to your needs
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
@@ -55,9 +60,14 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float diff = max(dot(normal, lightDir), 0.0);
 
     // specular shading
-    float roughness = texture(textureSamplerRough, fragTexCoord).r;
-    float m = roughness * roughness;
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), light.specularPow / m);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), light.specularPow);
+
+    if(useRough == 1)
+    {
+        float roughness = texture(textureSamplerRough, fragTexCoord).r;
+        float m = roughness * roughness;
+        spec = pow(max(dot(normal, halfwayDir), 0.0), light.specularPow / m);
+    }
 
     // attenuation
     float distance    = length(light.position - fragPos);
@@ -66,7 +76,12 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
     // combine results
     float ao = texture(textureSamplerAO, fragTexCoord).r;
-    vec3 ambient  = light.ambient  * light.diffuse * ao;
+    vec3 ambient  = light.ambient * light.diffuse;
+    if(useAO == 1)
+    {
+        ambient  = ambient * ao;
+    }
+
     vec3 diffuse  = light.diffuse  * diff * light.diffuse;
     vec3 specular = light.specular * spec * light.specular;
     ambient  *= attenuation;
@@ -86,11 +101,23 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     float roughness = texture(textureSamplerRough, fragTexCoord).r;
     float m = roughness * roughness;
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow / m);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow);
+
+    if(useRough == 1)
+    {
+        float roughness = texture(textureSamplerRough, fragTexCoord).r;
+        float m = roughness * roughness;
+        spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow / m);
+    }
 
     // combine results
     float ao = texture(textureSamplerAO, fragTexCoord).r;
-    vec3 ambient  = light.ambient  * light.diffuse * ao;
+    vec3 ambient  = light.ambient * light.diffuse;
+    if(useAO == 1)
+    {
+        ambient  = ambient * ao;
+    }
+
     vec3 diffuse  = light.diffuse  * diff * light.diffuse;
     vec3 specular = light.specular * spec * light.specular;
 
@@ -113,13 +140,24 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
 
 void main()
 {
-    vec2 parallaxTexCoords = ParallaxMapping(fragTexCoord, TangentViewDir);
+    vec2 parallaxTexCoords = vec2(0,0);
+    vec3 tex = texture(textureSamplerNormal, fragTexCoord).rgb;
+    if(useHeight == 1)
+    {
+        parallaxTexCoords = ParallaxMapping(fragTexCoord, TangentViewDir);
+        tex = texture(textureSamplerNormal, parallaxTexCoords).rgb;
+    }
 
     vec3 viewDir = normalize(cameraPosition - fragPos);
 
-    vec3 sampledNormal = normalize(2.0 * texture(textureSamplerNormal, parallaxTexCoords).rgb - 1.0);
-//    vec3 sampledNormal = normalize(2.0 * texture(textureSamplerNormal, fragTexCoord).rgb - 1.0);
-    vec3 normalFromMap = normalize(TBN * sampledNormal);
+    vec3 sampledNormal = normal;
+    vec3 normalFromMap = normal;
+
+    if(useNormal == 1)
+    {
+        sampledNormal = normalize(2.0 * tex - 1.0);
+        normalFromMap = normalize(TBN * sampledNormal);
+    }
 
     DirLight dirLight;
     dirLight.direction = vec3(0,-1,0);
@@ -132,17 +170,17 @@ void main()
     vec3 result = vec3(0,0,0);
 
     // phase 1: Directional lighting
-//    result = CalcDirLight(dirLight, normal, viewDir);
     result = CalcDirLight(dirLight, normalFromMap, viewDir);
 
     // phase 2: Point lights
     for(int i = 0; i < actualNumOfLights; i++)
         result += CalcPointLight(pointLights[i], normalFromMap, fragPos, viewDir);
-//        result += CalcPointLight(pointLights[i], normal, fragPos, viewDir);
 
-//    FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
-//    FragColor = texture(textureSamplerNormal, fragTexCoord);// * vec4(result, 1.0) * fragColor;
-    FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * fragColor;
+    FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
+    if(useHeight == 1)
+    {
+        FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * fragColor;
+    }
 //    FragColor = fragColor;
 //    FragColor = vec4(result, 1.0);
 }

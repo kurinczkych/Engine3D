@@ -19,6 +19,9 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
+uniform int useNormal;
+uniform int useHeight;
+
 void main()
 {
 	gl_Position = inPosition * modelMatrix * viewMatrix * projectionMatrix;
@@ -29,12 +32,23 @@ void main()
 	normal = inNormal;
 	fragColor = inColor;
 
-	vec3 N = normalize(mat3(modelMatrix) * inNormal);
-    vec3 T = normalize(mat3(modelMatrix) * inTangent);
-    T = normalize(T - dot(T, N) * N);
-    vec3 B = cross(N, T); 
-    TBN = mat3(T, B, N);
+	//normal
+	vec3 T = vec3(0,0,0);
+	vec3 B = vec3(0,0,0);
+	vec3 N = vec3(0,0,0);
+	if(useNormal == 1)
+	{
+		N = normalize(mat3(modelMatrix) * inNormal);
+		T = normalize(mat3(modelMatrix) * inTangent);
+		T = normalize(T - dot(T, N) * N);
+		B = cross(N, T); 
+		TBN = mat3(T, B, N);
+	}
 
-	vec3 viewDir = cameraPosition - fragPos;
-    TangentViewDir = normalize(vec3(dot(viewDir, T), dot(viewDir, B), dot(viewDir, N)));
+	//height
+	if(useNormal == 1 && useHeight == 1)
+	{
+		vec3 viewDir = cameraPosition - fragPos;
+		TangentViewDir = normalize(vec3(dot(viewDir, T), dot(viewDir, B), dot(viewDir, N)));
+	}
 }

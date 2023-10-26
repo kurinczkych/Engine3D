@@ -206,18 +206,22 @@ namespace Engine3D
             if(texture.textureDescriptor.Normal != "")
             {
                 uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
+                uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
             }
             if(texture.textureDescriptor.Height != "")
             {
                 uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
+                uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
             }
             if(texture.textureDescriptor.AO != "")
             {
                 uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
+                uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
             }
             if(texture.textureDescriptor.Rough != "")
             {
                 uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
+                uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
             }
         }
 
@@ -236,18 +240,22 @@ namespace Engine3D
             if(texture.textureDescriptor.Normal != "")
             {
                 GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
+                GL.Uniform1(uniformLocations["useNormal"], texture.textureDescriptor.NormalUse);
             }
             if(texture.textureDescriptor.Height != "")
             {
                 GL.Uniform1(uniformLocations["textureSamplerHeight"], texture.textureDescriptor.HeightUnit);
+                GL.Uniform1(uniformLocations["useHeight"], texture.textureDescriptor.HeightUse);
             }
             if(texture.textureDescriptor.AO != "")
             {
                 GL.Uniform1(uniformLocations["textureSamplerAO"], texture.textureDescriptor.AOUnit);
+                GL.Uniform1(uniformLocations["useAO"], texture.textureDescriptor.AOUse);
             }
             if(texture.textureDescriptor.Rough != "")
             {
                 GL.Uniform1(uniformLocations["textureSamplerRough"], texture.textureDescriptor.RoughUnit);
+                GL.Uniform1(uniformLocations["useRough"], texture.textureDescriptor.RoughUse);
             }
         }
 

@@ -100,48 +100,56 @@ namespace Engine3D
             if (n != "")
             {
                 td.Normal = n;
+                td.NormalUse = 1;
                 td.count++;
             }
             else
             {
                 td.Normal = def_n;
+                td.NormalUse = 0;
                 td.count++;
             }
             if (h != "")
             {
                 td.Height = h;
+                td.HeightUse = 1;
                 td.count++;
             }
             else
             {
                 td.Height = def_h;
+                td.HeightUse = 0;
                 td.count++;
             }
             if (ao != "")
             {
                 td.AO = ao;
+                td.AOUse = 1;
                 td.count++;
             }
             else
             {
                 td.AO = def_ao;
+                td.AOUse = 0;
                 td.count++;
             }
             if (r != "")
             {
                 td.Rough = r;
+                td.RoughUse = 1;
                 td.count++;
             }
             else
             {
                 td.Rough = def_r;
+                td.RoughUse = 0;
                 td.count++;
             }
 
-            td.Normal = def_n;
-            td.Height = def_h;
-            td.AO = def_ao;
-            td.Rough = def_r;
+            //td.Normal = def_n;
+            //td.Height = def_h;
+            //td.AO = def_ao;
+            //td.Rough = def_r;
 
             return td;
         }
