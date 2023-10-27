@@ -33,7 +33,7 @@ namespace Engine3D
         public Texture texture;
 
         private List<float> vertices = new List<float>();
-        private string? embeddedModelName;
+        private string? modelName;
 
 
         public Vector3 Scale;
@@ -54,9 +54,9 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedModelName, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, string textureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
-            texture = new Texture(textureCount, embeddedTextureName);
+            texture = new Texture(textureCount, textureName);
             textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
@@ -68,8 +68,8 @@ namespace Engine3D
 
             Scale = Vector3.One;
 
-            this.embeddedModelName = embeddedModelName;
-            ProcessObj(embeddedModelName);
+            this.modelName = modelName;
+            ProcessObj(modelName);
 
             ComputeVertexNormals(ref tris);
             ComputeTangents(ref tris);
@@ -78,9 +78,9 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
-            texture = new Texture(textureCount, embeddedTextureName);
+            texture = new Texture(textureCount, textureName);
             textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
@@ -93,9 +93,9 @@ namespace Engine3D
             Scale = Vector3.One;
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string textureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
-            texture = new Texture(textureCount, embeddedTextureName);
+            texture = new Texture(textureCount, textureName);
             textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
@@ -237,22 +237,22 @@ namespace Engine3D
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
-            if(texture.textureDescriptor.Normal != "")
+            if(texture.textureDescriptor.NormalUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
                 GL.Uniform1(uniformLocations["useNormal"], texture.textureDescriptor.NormalUse);
             }
-            if(texture.textureDescriptor.Height != "")
+            if(texture.textureDescriptor.HeightUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerHeight"], texture.textureDescriptor.HeightUnit);
                 GL.Uniform1(uniformLocations["useHeight"], texture.textureDescriptor.HeightUse);
             }
-            if(texture.textureDescriptor.AO != "")
+            if(texture.textureDescriptor.AOUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerAO"], texture.textureDescriptor.AOUnit);
                 GL.Uniform1(uniformLocations["useAO"], texture.textureDescriptor.AOUse);
             }
-            if(texture.textureDescriptor.Rough != "")
+            if(texture.textureDescriptor.RoughUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerRough"], texture.textureDescriptor.RoughUnit);
                 GL.Uniform1(uniformLocations["useRough"], texture.textureDescriptor.RoughUse);
@@ -607,17 +607,13 @@ namespace Engine3D
         {
             tris = new List<triangle>();
 
-            var assembly = Assembly.GetExecutingAssembly();
-            string resourceName = assembly.GetManifestResourceNames()
-                .Single(str => str.EndsWith(filename));
-
             string result;
             int fPerCount = -1;
             List<Vector3> verts = new List<Vector3>();
             List<Vector3> normals = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            using (Stream stream = FileManager.GetFileStream(filename, FileType.Models))
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (true)

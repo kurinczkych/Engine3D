@@ -24,7 +24,7 @@ namespace Engine3D
         public Texture texture;
 
         private List<float> vertices = new List<float>();
-        private string? embeddedModelName;
+        private string? modelName;
 
         public Vector3 Scale;
         private bool IsTransformed
@@ -44,9 +44,9 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
-        public TestMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public TestMesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
-            texture = new Texture(textureCount, embeddedTextureName);
+            texture = new Texture(textureCount, textureName);
             textureCount += texture.textureDescriptor.count;
 
             Vao = vao;

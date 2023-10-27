@@ -43,9 +43,9 @@ namespace Engine3D
 
         public string currentText = "";
 
-        public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
-            texture = new Texture(textureCount, embeddedTextureName, false, "nearest");
+            texture = new Texture(textureCount, textureName, false, "nearest");
             textureCount += texture.textureDescriptor.count;
 
             Vao = vao;

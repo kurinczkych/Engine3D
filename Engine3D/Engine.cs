@@ -658,6 +658,8 @@ namespace Engine3D
             shaderProgram.Unload();
             noTextureShaderProgram.Unload();
             posTexShader.Unload();
+
+            FileManager.DisposeStreams();
         }
 
         protected override void OnResize(ResizeEventArgs e)

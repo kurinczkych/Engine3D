@@ -65,7 +65,7 @@ namespace Engine3D
 
         public Texture(int unit, string embeddedResourceName, bool flipY = true, string textureFilter = "linear")
         {
-            textureDescriptor = Helper.GetTextureDescriptor(embeddedResourceName);
+            textureDescriptor = GetTextureDescriptor(embeddedResourceName);
 
             int currentUnit = unit;
 
@@ -90,7 +90,7 @@ namespace Engine3D
             }
 
             Bind(TextureType.Texture);
-            Helper.LoadTexture(textureDescriptor.Texture, flipY, tminf, tmagf);
+            LoadTexture(textureDescriptor.Texture, flipY, tminf, tmagf);
 
             Unbind();
 
@@ -101,7 +101,7 @@ namespace Engine3D
                 currentUnit++;
 
                 Bind(TextureType.Normal);
-                Helper.LoadTexture(textureDescriptor.Normal, flipY, tminf, tmagf);
+                LoadTexture(textureDescriptor.Normal, flipY, tminf, tmagf);
 
                 Unbind();
             }
@@ -113,7 +113,7 @@ namespace Engine3D
                 currentUnit++;
 
                 Bind(TextureType.Height);
-                Helper.LoadTexture(textureDescriptor.Height, flipY, tminf, tmagf);
+                LoadTexture(textureDescriptor.Height, flipY, tminf, tmagf);
 
                 Unbind();
             }
@@ -125,7 +125,7 @@ namespace Engine3D
                 currentUnit++;
 
                 Bind(TextureType.AO);
-                Helper.LoadTexture(textureDescriptor.AO, flipY, tminf, tmagf);
+                LoadTexture(textureDescriptor.AO, flipY, tminf, tmagf);
 
                 Unbind();
             }
@@ -137,9 +137,105 @@ namespace Engine3D
                 currentUnit++;
 
                 Bind(TextureType.Rough);
-                Helper.LoadTexture(textureDescriptor.Rough, flipY, tminf, tmagf);
+                LoadTexture(textureDescriptor.Rough, flipY, tminf, tmagf);
 
                 Unbind();
+            }
+        }
+
+        public static TextureDescriptor GetTextureDescriptor(string fileName)
+        {
+            string withoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            string extension = Path.GetExtension(fileName);
+
+            TextureDescriptor td = new TextureDescriptor();
+            td.count = 1;
+            string t = FileManager.GetFilePath(withoutExtension + "_t" + extension, FileType.Textures);
+            if (t == "")
+            {
+                t = FileManager.GetFilePath(fileName, FileType.Textures);
+
+                if(t == "")
+                    throw new Exception("'" + withoutExtension + "_t" + extension + "' doesn't exist!");
+            }
+            td.Texture = t;
+
+            string n = FileManager.GetFilePath(withoutExtension + "_n" + extension, FileType.Textures);
+            if(n != "")
+            {
+                td.Normal = n;
+                td.NormalUse = 1;
+                td.count++;
+            }
+            else
+                td.NormalUse = 0;
+
+            string h = FileManager.GetFilePath(withoutExtension + "_h" + extension, FileType.Textures);
+            if(h != "")
+            {
+                td.Height = h;
+                td.HeightUse = 1;
+                td.count++;
+            }
+            else
+                td.HeightUse = 0;
+
+            string ao = FileManager.GetFilePath(withoutExtension + "_ao" + extension, FileType.Textures);
+            if(h != "")
+            {
+                td.AO = ao;
+                td.AOUse = 1;
+                td.count++;
+            }
+            else
+                td.AOUse = 0;
+
+            string r = FileManager.GetFilePath(withoutExtension + "_r" + extension, FileType.Textures);
+            if(r != "")
+            {
+                td.Rough = r;
+                td.RoughUse = 1;
+                td.count++;
+            }
+            else
+                td.RoughUse = 0;
+
+            //td.Normal = def_n;
+            //td.Height = def_h;
+            //td.AO = def_ao;
+            //td.Rough = def_r;
+
+            return td;
+        }
+
+        public static void LoadTexture(string fileName, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf)
+        {
+            // Load the image (using System.Drawing or another library)
+            Stream stream_t = FileManager.GetFileStream(Path.GetFileName(fileName), FileType.Textures);
+            if (stream_t != Stream.Null)
+            {
+                using (stream_t)
+                {
+                    Bitmap bitmap = new Bitmap(stream_t);
+                    if (flipY)
+                        bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
+                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)tminf);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)tmagf);
+
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+                    bitmap.UnlockBits(data);
+
+                    // Texture settings
+                }
+            }
+            else
+            {
+                throw new Exception("No texture was found");
             }
         }
 

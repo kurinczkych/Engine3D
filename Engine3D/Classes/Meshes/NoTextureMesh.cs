@@ -24,7 +24,7 @@ namespace Engine3D
         public static int floatCount = 8;
 
         private List<float> vertices = new List<float>();
-        private string? embeddedModelName;
+        private string? modelName;
 
         public Vector3 Position;
         public Quaternion Rotation;
@@ -45,7 +45,7 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
-        public NoTextureMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedModelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
+        public NoTextureMesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.frustum = frustum;
             this.camera = camera;
@@ -57,8 +57,8 @@ namespace Engine3D
             Rotation = Quaternion.Identity;
             Scale = Vector3.One;
 
-            this.embeddedModelName = embeddedModelName;
-            ProcessObj(embeddedModelName, color);
+            this.modelName = modelName;
+            ProcessObj(modelName, color);
 
             foreach (triangle tri in tris)
             {
@@ -174,17 +174,13 @@ namespace Engine3D
         {
             tris = new List<triangle>();
 
-            var assembly = Assembly.GetExecutingAssembly();
-            string resourceName = assembly.GetManifestResourceNames()
-                .Single(str => str.EndsWith(filename));
-
             string result;
             int fPerCount = -1;
             List<Vector3> verts = new List<Vector3>();
             List<Vector3> normals = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
-            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            using (Stream stream = FileManager.GetFileStream(filename, FileType.Models))
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (true)

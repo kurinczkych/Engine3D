@@ -22,7 +22,7 @@ namespace Engine3D
         private Vector2 windowSize;
 
         private List<float> vertices = new List<float>();
-        private string? embeddedTextureName;
+        private string? textureName;
         //private int vertexSize;
 
         private Vector3 position;
@@ -48,14 +48,14 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
-        public UITextureMesh(VAO vao, VBO vbo, int shaderProgramId, string embeddedTextureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public UITextureMesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 position, Vector2 size, Vector2 windowSize, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.windowSize = windowSize;
             Position = new Vector2(position.X, position.Y);
             Size = new Vector3(size.X, size.Y, 0);
             rotation = Vector3.Zero;
 
-            texture = new Texture(textureCount, embeddedTextureName);
+            texture = new Texture(textureCount, textureName);
             textureCount += texture.textureDescriptor.count;
 
             Vao = vao;
@@ -63,9 +63,9 @@ namespace Engine3D
 
             OnlyQuad();
 
-            this.embeddedTextureName = embeddedTextureName;
-            TextureDescriptor td = Helper.GetTextureDescriptor(embeddedTextureName);
-            Helper.LoadTexture(td.Texture, false, TextureMinFilter.Nearest, TextureMagFilter.Nearest);
+            this.textureName = textureName;
+            TextureDescriptor td = Texture.GetTextureDescriptor(textureName);
+            Texture.LoadTexture(td.Texture, false, TextureMinFilter.Nearest, TextureMagFilter.Nearest);
 
             GetUniformLocations();
             SendUniforms();
