@@ -85,7 +85,7 @@ namespace Engine3D
         }
 
         public static void PerformOcclusionQueriesForBVH(BVH node, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera, 
-                                                         ref QueryPool queryPool, ref Dictionary<int, BVHNode> pendingQueries, bool first)
+                                                         ref QueryPool queryPool, ref Dictionary<int, Tuple<int, BVHNode>> pendingQueries, bool first)
         {
             Frustum frustum = camera.frustum;
 
@@ -99,14 +99,23 @@ namespace Engine3D
 
             if (!first)
             {
-                foreach (KeyValuePair<int, BVHNode> keyValuePair in pendingQueries)
+                List<int> keysToRemove = new List<int>();
+                foreach (KeyValuePair<int, Tuple<int,BVHNode>> keyValuePair in pendingQueries)
                 {
+                    int available;
+                    GL.GetQueryObject(keyValuePair.Value.Item1, GetQueryObjectParam.QueryResultAvailable, out available);
+                    if (available == 0)
+                        continue;
+
                     int samplesPassed;
-                    GL.GetQueryObject(keyValuePair.Key, GetQueryObjectParam.QueryResult, out samplesPassed);
-                    keyValuePair.Value.samplesPassedPrevFrame = samplesPassed;
-                    queryPool.ReturnQuery(keyValuePair.Key);
+                    GL.GetQueryObject(keyValuePair.Value.Item1, GetQueryObjectParam.QueryResult, out samplesPassed);
+                    keyValuePair.Value.Item2.samplesPassedPrevFrame = samplesPassed;
+                    queryPool.ReturnQuery(keyValuePair.Value.Item1);
+                    keysToRemove.Add(keyValuePair.Key);
                 }
-                pendingQueries.Clear();
+
+                foreach (int key in keysToRemove)
+                    pendingQueries.Remove(key);
             }
 
             GL.DepthMask(false);
@@ -120,7 +129,7 @@ namespace Engine3D
 
 
         public static void PerformOcclusionQueriesForBVHRecursive(BVHNode node, ref VBO aabbVbo, ref VAO aabbVao, ref Shader shader, ref Camera camera,
-                                                                  ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, BVHNode> pendingQueries,
+                                                                  ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, Tuple<int, BVHNode>> pendingQueries,
                                                                   bool first)
         {
 
@@ -146,9 +155,9 @@ namespace Engine3D
                 GL.EndQuery(QueryTarget.SamplesPassed);
 
                 // 4. Buffer the pending results
-                if (!pendingQueries.ContainsKey(query))
+                if (!pendingQueries.ContainsKey(node.key))
                 {
-                    pendingQueries.Add(query, node);
+                    pendingQueries.Add(node.key, new Tuple<int, BVHNode>(query, node));
                 }
 
                 PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
@@ -176,12 +185,12 @@ namespace Engine3D
                 GL.EndQuery(QueryTarget.SamplesPassed);
 
                 // 4. Buffer the pending results
-                if (!pendingQueries.ContainsKey(query))
+                if (!pendingQueries.ContainsKey(node.key))
                 {
-                    pendingQueries.Add(query, node);
+                    pendingQueries.Add(node.key, new Tuple<int, BVHNode>(query, node));
                 }
 
-                if(node.samplesPassedPrevFrame > 0)
+                if (node.samplesPassedPrevFrame > 0)
                 {
                     ManageVisibility(node, true);
 

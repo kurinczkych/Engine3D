@@ -33,7 +33,7 @@ namespace Engine3D
     public class Engine : GameWindow
     {
 
-        // OPENGL
+        #region OPENGL
         private VAO meshVao;
         private VBO meshVbo;
 
@@ -61,28 +61,34 @@ namespace Engine3D
         private Shader aabbShaderProgram;
         private Shader depthShaderProgram;
         private int textureCount = 0;
+        #endregion
 
-        // Program variables
+
+        #region Program variables
         public static Random rnd = new Random((int)DateTime.Now.Ticks);
-        private Vector2 windowSize;
-        private int temp = -1;
         private bool haveText = false;
 
-        // Engine variables
+        private Vector2 windowSize;
 
+        private TextGenerator textGenerator;
+        private SoundManager soundManager;
+        #endregion
+
+        #region Engine variables
         private List<Object> objects;
         private Character character;
+        private Camera camera;
 
         private Frustum frustum;
         private List<PointLight> pointLights;
-        private TextGenerator textGenerator;
         private Physx physx;
-        private SoundManager soundManager;
 
+        private bool useOcclusionCulling = false;
         private QueryPool queryPool;
-        private Dictionary<int, BVHNode> pendingQueries;
+        private Dictionary<int, Tuple<int, BVHNode>> pendingQueries;
+        #endregion
 
-        // FPS and Frame limiting
+        #region FPS and Frame limiting
         private double totalTime;
         private const int SAMPLE_SIZE = 30;
         private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
@@ -90,6 +96,7 @@ namespace Engine3D
         private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
         private Stopwatch stopwatch;
+        #endregion
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
@@ -105,7 +112,7 @@ namespace Engine3D
 
             objects = new List<Object>();
             queryPool = new QueryPool(1000);
-            pendingQueries = new Dictionary<int,BVHNode>();
+            pendingQueries = new Dictionary<int, Tuple<int, BVHNode>>();
         }
 
         private double DrawFps(double deltaTime)
@@ -192,51 +199,56 @@ namespace Engine3D
                 obj.GetMesh().CalculateFrustumVisibility(frustum, character.camera);
             }
 
-            //Occlusion
-            GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
-            GL.Clear(ClearBufferMask.DepthBufferBit);
-            GL.ClearDepth(1.0);
-
-            List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
-            aabbShaderProgram.Use();
-            List<float> posVertices = new List<float>();
-            foreach (Object obj in triangleMeshObjects)
+            if (useOcclusionCulling)
             {
-                posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
-            }
-            aabbVbo.Buffer(posVertices);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
+                //Occlusion
+                GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
+                GL.Clear(ClearBufferMask.DepthBufferBit);
+                GL.ClearDepth(1.0);
 
-
-            //GL.ColorMask(true, true, true, true);
-            //GL.ClearColor(Color4.Cyan);
-            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            GL.Disable(EnableCap.CullFace);
-            if (pendingQueries.Count() == 0)
-            {
+                List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
+                aabbShaderProgram.Use();
+                List<float> posVertices = new List<float>();
                 foreach (Object obj in triangleMeshObjects)
                 {
-                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
+                    posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
                 }
-            }
-            else
-            {
-                foreach (Object obj in triangleMeshObjects)
+                aabbVbo.Buffer(posVertices);
+                GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
+
+
+                //GL.ColorMask(true, true, true, true);
+                //GL.ClearColor(Color4.Cyan);
+                //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+                GL.Disable(EnableCap.CullFace);
+                if (pendingQueries.Count() == 0)
                 {
-                    OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
+                    foreach (Object obj in triangleMeshObjects)
+                    {
+                        OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
+                    }
                 }
+                else
+                {
+                    ;
+                    foreach (Object obj in triangleMeshObjects)
+                    {
+                        OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
+                    }
+                }
+                GL.Enable(EnableCap.CullFace);
+                
+                
+                GL.ColorMask(true, true, true, true);
             }
-            GL.Enable(EnableCap.CullFace);
-            ;
 
             //------------------------------------------------------------
 
-            //character.camera.SetPosition(character.camera.GetPosition() +
-            //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
+            character.camera.SetPosition(character.camera.GetPosition() +
+                new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
 
 
-            GL.ColorMask(true, true, true, true);
             GL.ClearColor(Color4.Cyan);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             shaderProgram.Use();
@@ -259,13 +271,12 @@ namespace Engine3D
                     }
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
 
-                    if (objectType == ObjectType.TriangleMesh)
+                    if (useOcclusionCulling && objectType == ObjectType.TriangleMesh)
                     {
                         List<triangle> notOccludedTris = new List<triangle>();
                         OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
 
-                        List<float> a = mesh.DrawNotOccluded(notOccludedTris);
-                        vertices.AddRange(a);
+                        vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
                         currentMesh = typeof(Mesh);
 
                         if (vertices.Count > 0)
@@ -379,6 +390,19 @@ namespace Engine3D
             if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(int) : currentMesh, typeof(int)))
                 vertices = new List<float>();
 
+            //BVH bvh = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).First().BVHStruct;
+            //List<WireframeMesh> bvhs = bvh.ExtractWireframesWithPos(bvh.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref character.camera, character.Position);
+
+            //noTextureShaderProgram.Use();
+            //vertices.Clear();
+            //foreach (WireframeMesh m in bvhs)
+            //{
+            //    m.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //    vertices.AddRange(m.Draw());
+            //}
+            //wireVbo.Buffer(vertices);
+            //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+
             //Drawing character wireframe
             //WireframeMesh characterWiremesh = character.mesh;
             //noTextureShaderProgram.Use();
@@ -392,6 +416,10 @@ namespace Engine3D
                         .ChangeText("Position = (" + character.PStr + ")");
             ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
                         .ChangeText("Velocity = (" + character.VStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Looking")).First().GetMesh())
+                        .ChangeText("Looking = (" + character.LStr + ")");
+            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Noclip")).First().GetMesh())
+                        .ChangeText("Noclip = (" + character.noClip.ToString() + ")");
 
             Context.SwapBuffers();
 
@@ -513,8 +541,8 @@ namespace Engine3D
             soundManager = new SoundManager();
 
             // Add test sound
-            soundManager.CreateSoundEmitter("nyanya.ogg", new Vector3(0,-28,0));
-            soundManager.PlayAll();
+            //soundManager.CreateSoundEmitter("nyanya.ogg", new Vector3(0,-28,0));
+            //soundManager.PlayAll();
 
             //Camera
             Camera camera = new Camera(windowSize);
@@ -528,9 +556,11 @@ namespace Engine3D
             //-------------------------------------------
 
             noTextureShaderProgram.Use();
-            Vector3 characterPos = new Vector3(0, 100, 0);
+            Vector3 characterPos = new Vector3(34, -16, -275);
+            //Vector3 characterPos = new Vector3(0, 20, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
-            frustum = character.camera.frustum;
+            character.camera.SetYaw(218.84f);
+            character.camera.SetPitch(6.43f);
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
@@ -545,6 +575,9 @@ namespace Engine3D
 
             objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "wall.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));
@@ -578,6 +611,18 @@ namespace Engine3D
             ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
             ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
             AddObject(textObj2);
+
+            Object textObj3 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            ((TextMesh)textObj3.GetMesh()).ChangeText("Looking = (" + character.LStr + ")");
+            ((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
+            ((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            AddObject(textObj3);
+
+            Object textObj4 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            ((TextMesh)textObj4.GetMesh()).ChangeText("Noclip = (" + character.noClip.ToString() + ")");
+            ((TextMesh)textObj4.GetMesh()).Position = new Vector2(10, windowSize.Y - 125);
+            ((TextMesh)textObj4.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            AddObject(textObj4);
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 

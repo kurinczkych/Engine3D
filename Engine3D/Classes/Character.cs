@@ -25,7 +25,7 @@ namespace Engine3D
         private float flySpeed = 2.5f;
         public bool isOnGround = false;
         private float gravity = 120;
-        private float jumpForce = 0.20f;
+        private float jumpForce = 20.0f;
         private float terminalVelocity = -0.7f;
         private float characterHeight = 4f;
         private float characterWidth = 2f;
@@ -49,13 +49,13 @@ namespace Engine3D
         //----------------------------------------------
         private float thirdY = 10f;
 
-        private bool noClip = false;
+        public bool noClip = true;
 
         private bool firstMove = true;
         public Vector2 lastPos;
 
         private Vector3 Velocity;
-        private Vector3 Position;
+        public Vector3 Position;
         private Vector3 OrigPosition;
 
         public string PStr
@@ -66,6 +66,11 @@ namespace Engine3D
         public string VStr
         {
             get { return Math.Round(Velocity.X, 2).ToString() + "," + Math.Round(Velocity.Y, 2).ToString() + "," + Math.Round(Velocity.Z, 2).ToString(); }
+        }
+
+        public string LStr
+        {
+            get { return "Yaw: " + Math.Round(camera.GetYaw(), 2).ToString() + ", Pitch: " + Math.Round(camera.GetPitch(), 2).ToString(); }
         }
 
         private Physx physx;
@@ -111,10 +116,15 @@ namespace Engine3D
 
         public void CalculateVelocity(KeyboardState keyboardState, MouseState mouseState, FrameEventArgs args)
         {
-            if(keyboardState.IsKeyDown(Keys.N))
+            if(keyboardState.IsKeyReleased(Keys.N))
             {
                 noClip = !noClip;
                 Velocity = Vector3.Zero;
+                if(!noClip)
+                {
+                    PxExtendedVec3 vec3 = new PxExtendedVec3() { x = Position.X, y = Position.Y, z = Position.Z };
+                    GetCapsuleController()->SetPositionMut(&vec3);
+                }
             }
 
             float speed_ = speed;
@@ -139,7 +149,7 @@ namespace Engine3D
                 if (keyboardState.IsKeyDown(Keys.Space) && isOnGround)
                 {
                     if (!noClip)
-                        Velocity.Y += jumpForce;
+                        Velocity.Y += jumpForce * (float)args.Time;
                 }
             }
             else
@@ -209,11 +219,14 @@ namespace Engine3D
                 PxFilterData filterData = PxFilterData_new(PxEMPTY.PxEmpty);
                 PxControllerFilters filter = PxControllerFilters_new(&filterData, null, null);
                 PxControllerCollisionFlags result = GetCapsuleController()->MoveMut(&disp, 0.001f, (float)args.Time, &filter, null);
-                isOnGround = result.HasFlag(PxControllerCollisionFlags.CollisionDown);
+                isOnGround = (result & PxControllerCollisionFlags.CollisionDown) == PxControllerCollisionFlags.CollisionDown;
                 if (isOnGround)
                 {
                     Velocity.Y = 0;
-                    disp.y = 0;
+                }
+                if ((result & PxControllerCollisionFlags.CollisionUp) == PxControllerCollisionFlags.CollisionUp)
+                {
+                    Velocity.Y = 0;
                 }
                 PxExtendedVec3* pxPos = GetCapsuleController()->GetPosition();
                 newPos = new Vector3((float)pxPos->x, (float)pxPos->y, (float)pxPos->z);

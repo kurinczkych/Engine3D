@@ -117,6 +117,13 @@ namespace Engine3D
             return vertices;
         }
 
+        public bool IsPointInsideAABB(Vector3 point)
+        {
+            return point.X >= Min.X && point.X <= Max.X &&
+                   point.Y >= Min.Y && point.Y <= Max.Y &&
+                   point.Z >= Min.Z && point.Z <= Max.Z;
+        }
+
     }
     public class BVHNode
     {
@@ -130,6 +137,7 @@ namespace Engine3D
         public BVHNode right;
         public List<triangle> triangles;
         public bool frustumVisibility = false;
+        public int depth = 0;
 
         public List<bool> visibility;
         public int samplesPassedPrevFrame = 1;
@@ -153,7 +161,8 @@ namespace Engine3D
         public BVH(List<triangle> triangles, int shaderId)
         {
             int index = 0;
-            Root = BuildBVH(triangles, ref index);
+            int depth = 0;
+            Root = BuildBVH(triangles, ref index, ref depth);
             uniformLocations = new Dictionary<string, int>();
             GetUniformLocations(shaderId);
         }
@@ -169,13 +178,14 @@ namespace Engine3D
 
         public Dictionary<string, int> uniformLocations;
 
-        private BVHNode BuildBVH(List<triangle> triangles, ref int index)
+        private BVHNode BuildBVH(List<triangle> triangles, ref int index, ref int depth)
         {
             BVHNode node = new BVHNode();
             number_of_nodes++;
             node.bounds = ComputeBounds(triangles);
             node.triangles = new List<triangle>();
             node.key = index;
+            node.depth = depth;
             index++;
 
             if (triangles.Count <= leafLimit)  // leaf node
@@ -283,8 +293,9 @@ namespace Engine3D
                     rightTriangles.Add(tri);
             }
 
-            node.left = BuildBVH(leftTriangles, ref index);
-            node.right = BuildBVH(rightTriangles, ref index);
+            depth++;
+            node.left = BuildBVH(leftTriangles, ref index, ref depth);
+            node.right = BuildBVH(rightTriangles, ref index, ref depth);
 
             return node;
         }
@@ -380,6 +391,67 @@ namespace Engine3D
             {
                 meshes.AddRange(ExtractWireframes(node.left, wireVao, wireVbo, shaderId, ref frustum, ref camera));
                 meshes.AddRange(ExtractWireframes(node.right, wireVao, wireVbo, shaderId, ref frustum, ref camera));
+            }
+
+            
+
+            // Recursively extract from children
+
+            return meshes;
+        }
+
+        public List<WireframeMesh> ExtractWireframesWithPos(BVHNode node, VAO wireVao, VBO wireVbo, int shaderId, ref Camera camera, Vector3 pos)
+        {
+            List<WireframeMesh> meshes = new List<WireframeMesh>();
+
+            if (node == null)
+            {
+                return meshes;
+            }
+
+            if (!node.bounds.IsPointInsideAABB(pos))
+                return meshes;
+
+            if (node.left == null && node.right == null && node.triangles != null)
+            {
+
+                //WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White
+                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera.frustum, ref camera, Color4.Red);
+                AABB box = node.bounds;
+
+                // Create lines for each edge of the bounding box
+                Vector3[] corners = {
+                new Vector3(box.Min.X, box.Min.Y, box.Min.Z),
+                new Vector3(box.Max.X, box.Min.Y, box.Min.Z),
+                new Vector3(box.Max.X, box.Max.Y, box.Min.Z),
+                new Vector3(box.Min.X, box.Max.Y, box.Min.Z),
+                new Vector3(box.Min.X, box.Min.Y, box.Max.Z),
+                new Vector3(box.Max.X, box.Min.Y, box.Max.Z),
+                new Vector3(box.Max.X, box.Max.Y, box.Max.Z),
+                new Vector3(box.Min.X, box.Max.Y, box.Max.Z)
+                };
+
+                    int[,] edgePairs = {
+                    {0, 1}, {1, 2}, {2, 3}, {3, 0},
+                    {4, 5}, {5, 6}, {6, 7}, {7, 4},
+                    {0, 4}, {1, 5}, {2, 6}, {3, 7}
+                };
+
+                for (int i = 0; i < 12; i++)
+                {
+                    currentMesh.lines.Add(new Line
+                    (
+                        corners[edgePairs[i, 0]],
+                        corners[edgePairs[i, 1]]
+                    ));
+                }
+
+                meshes.Add(currentMesh);
+            }
+            else
+            {
+                meshes.AddRange(ExtractWireframesWithPos(node.left, wireVao, wireVbo, shaderId, ref camera, pos));
+                meshes.AddRange(ExtractWireframesWithPos(node.right, wireVao, wireVbo, shaderId, ref camera, pos));
             }
 
             

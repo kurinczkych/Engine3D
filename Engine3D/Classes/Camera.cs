@@ -73,6 +73,10 @@ namespace Engine3D
             if (this.yaw != yaw)
             {
                 this.yaw = yaw;
+                if (this.yaw > 360)
+                    this.yaw = 0;
+                if (this.yaw < 0)
+                    this.yaw = 360;
                 UpdateVectors();
             }
         }
