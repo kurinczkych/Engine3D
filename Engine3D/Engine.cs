@@ -556,8 +556,8 @@ namespace Engine3D
             //-------------------------------------------
 
             noTextureShaderProgram.Use();
-            Vector3 characterPos = new Vector3(34, -16, -275);
-            //Vector3 characterPos = new Vector3(0, 20, 0);
+            //Vector3 characterPos = new Vector3(34, -16, -275);
+            Vector3 characterPos = new Vector3(0, 20, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
             character.camera.SetYaw(218.84f);
             character.camera.SetPitch(6.43f);
@@ -573,15 +573,15 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "wall.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
-            //objects.Last().SetSize(new Vector3(10, 2, 10));
-            //objects.Last().AddCubeCollider(true);
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "space.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
+            objects.Last().SetSize(new Vector3(10, 2, 10));
+            objects.Last().AddCubeCollider(true);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
             //objects.Last().SetPosition(new Vector3(0, 20, 0));
@@ -589,7 +589,7 @@ namespace Engine3D
             //objects.Last().AddSphereCollider(false);
 
 
-            noTextureShaderProgram.Use();
+            //noTextureShaderProgram.Use();
             //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
             //foreach (WireframeMesh mesh in aabbs)
             //{

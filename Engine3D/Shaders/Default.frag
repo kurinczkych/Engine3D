@@ -43,15 +43,18 @@ uniform sampler2D textureSamplerNormal;
 uniform sampler2D textureSamplerHeight;
 uniform sampler2D textureSamplerAO;
 uniform sampler2D textureSamplerRough;
+uniform sampler2D textureSamplerMetal;
 
 uniform int useNormal;
 uniform int useHeight;
 uniform int useAO;
 uniform int useRough;
+uniform int useMetal;
 
-const float heightScale = 0.1; // Adjust this value to your needs
+const float heightScale = 0.1;
+const float metallnessVar = 0.04;
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, float metalness)
 {
     vec3 lightDir = normalize(light.position - fragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -84,13 +87,23 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
     vec3 diffuse  = light.diffuse  * diff * light.diffuse;
     vec3 specular = light.specular * spec * light.specular;
+
+    if(useMetal == 1)
+    {
+        vec3 k_s = mix(vec3(metallnessVar), vec3(1.0), metalness); // Reflectance at normal incidence, can be tweaked.
+        vec3 k_d = k_s;
+
+        diffuse = diffuse * k_d;
+        specular = specular * k_s;
+    }
+
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
     return (ambient + diffuse + specular);
 } 
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, float metalness)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -121,31 +134,43 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     vec3 diffuse  = light.diffuse  * diff * light.diffuse;
     vec3 specular = light.specular * spec * light.specular;
 
+    if(useMetal == 1)
+    {
+        vec3 k_s = mix(vec3(metallnessVar), vec3(1.0), metalness); // Reflectance at normal incidence, can be tweaked.
+        vec3 k_d = k_s;
+
+        diffuse = diffuse * k_d;
+        specular = specular * k_s;
+    }
+
     return (ambient + diffuse + specular);
 }  
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
-    float height = texture(textureSamplerHeight, texCoords).r - 0.5;  // Assuming the height map is centered around 0.5
+    float height = texture(textureSamplerHeight, texCoords).r - 0.5;
     return texCoords + height * heightScale * viewDir.xy;
 }
 
-//struct DirLight {
-//    vec3 direction;
-//  
-//    vec3 ambient;
-//    vec3 diffuse;
-//    vec3 specular;
-//    float specularPow;
-//};  
 
 void main()
 {
     vec2 parallaxTexCoords = vec2(0,0);
     vec3 tex = texture(textureSamplerNormal, fragTexCoord).rgb;
+    
+    float metalness = 1;
+    if(useMetal == 1)
+    {
+        metalness = texture(textureSamplerMetal, fragTexCoord).r;
+    }
     if(useHeight == 1)
     {
         parallaxTexCoords = ParallaxMapping(fragTexCoord, TangentViewDir);
         tex = texture(textureSamplerNormal, parallaxTexCoords).rgb;
+
+        if(useMetal == 1)
+        {
+            metalness = texture(textureSamplerMetal, parallaxTexCoords).r;
+        }
     }
 
     vec3 viewDir = normalize(cameraPosition - fragPos);
@@ -161,7 +186,7 @@ void main()
 
     DirLight dirLight;
     dirLight.direction = vec3(0,-1,0);
-//    dirLight.direction = normalize(vec3(0.0, -1.0, -1.0));
+    //dirLight.direction = normalize(vec3(0.0, -1.0, -1.0));
     dirLight.ambient = vec3(0.1,0.1,0.1);
     dirLight.diffuse = vec3(1.0,1.0,1.0);
     dirLight.specular = vec3(1.0,1.0,1.0);
@@ -170,18 +195,16 @@ void main()
     vec3 result = vec3(0,0,0);
 
     // phase 1: Directional lighting
-    result = CalcDirLight(dirLight, normalFromMap, viewDir);
+    result = CalcDirLight(dirLight, normalFromMap, viewDir, metalness);
 
     // phase 2: Point lights
     for(int i = 0; i < actualNumOfLights; i++)
-        result += CalcPointLight(pointLights[i], normalFromMap, fragPos, viewDir);
+        result += CalcPointLight(pointLights[i], normalFromMap, fragPos, viewDir, metalness);
 
     FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
     if(useHeight == 1)
     {
         FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * fragColor;
     }
-//    FragColor = fragColor;
-//    FragColor = vec4(result, 1.0);
 }
 

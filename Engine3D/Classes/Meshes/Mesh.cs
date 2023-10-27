@@ -223,6 +223,11 @@ namespace Engine3D
                 uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
                 uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
             }
+            if(texture.textureDescriptor.Metal != "")
+            {
+                uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
+                uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
+            }
         }
 
         protected override void SendUniforms()
@@ -237,6 +242,7 @@ namespace Engine3D
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
+            //texture.textureDescriptor.DisableMapUse();
             if(texture.textureDescriptor.NormalUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
@@ -256,6 +262,11 @@ namespace Engine3D
             {
                 GL.Uniform1(uniformLocations["textureSamplerRough"], texture.textureDescriptor.RoughUnit);
                 GL.Uniform1(uniformLocations["useRough"], texture.textureDescriptor.RoughUse);
+            }
+            if(texture.textureDescriptor.MetalUse == 1)
+            {
+                GL.Uniform1(uniformLocations["textureSamplerMetal"], texture.textureDescriptor.MetalUnit);
+                GL.Uniform1(uniformLocations["useMetal"], texture.textureDescriptor.MetalUse);
             }
         }
 

@@ -57,6 +57,13 @@
     <None Remove="Textures\rock_n.png" />
     <None Remove="Textures\rock_t.png" />
     <None Remove="Textures\rred.png" />
+    <None Remove="Textures\space_ao.png" />
+    <None Remove="Textures\space_h.png" />
+    <None Remove="Textures\space_m.png" />
+    <None Remove="Textures\space_n.png" />
+    <None Remove="Textures\space_r.png" />
+    <None Remove="Textures\space_t.png" />
+    <None Remove="Textures\transparent.png" />
     <None Remove="Textures\wall_ao.png" />
     <None Remove="Textures\wall_h.png" />
     <None Remove="Textures\wall_n.png" />
@@ -150,6 +157,27 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Textures\rock_t.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\space_ao.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\space_h.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\space_m.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\space_n.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\space_r.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\space_t.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\transparent.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Textures\wall_ao.png">

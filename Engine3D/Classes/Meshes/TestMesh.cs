@@ -95,14 +95,27 @@ namespace Engine3D
             if (texture.textureDescriptor.Normal != "")
             {
                 uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
+                uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
             }
             if (texture.textureDescriptor.Height != "")
             {
                 uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
+                uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
             }
             if (texture.textureDescriptor.AO != "")
             {
                 uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
+                uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
+            }
+            if (texture.textureDescriptor.Rough != "")
+            {
+                uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
+                uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
+            }
+            if (texture.textureDescriptor.Metal != "")
+            {
+                uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
+                uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
             }
         }
 
@@ -118,17 +131,30 @@ namespace Engine3D
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
-            if (texture.textureDescriptor.Normal != "")
+            if (texture.textureDescriptor.NormalUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
+                GL.Uniform1(uniformLocations["useNormal"], texture.textureDescriptor.NormalUse);
             }
-            if (texture.textureDescriptor.Height != "")
+            if (texture.textureDescriptor.HeightUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerHeight"], texture.textureDescriptor.HeightUnit);
+                GL.Uniform1(uniformLocations["useHeight"], texture.textureDescriptor.HeightUse);
             }
-            if (texture.textureDescriptor.AO != "")
+            if (texture.textureDescriptor.AOUse == 1)
             {
                 GL.Uniform1(uniformLocations["textureSamplerAO"], texture.textureDescriptor.AOUnit);
+                GL.Uniform1(uniformLocations["useAO"], texture.textureDescriptor.AOUse);
+            }
+            if (texture.textureDescriptor.RoughUse == 1)
+            {
+                GL.Uniform1(uniformLocations["textureSamplerRough"], texture.textureDescriptor.RoughUnit);
+                GL.Uniform1(uniformLocations["useRough"], texture.textureDescriptor.RoughUse);
+            }
+            if (texture.textureDescriptor.MetalUse == 1)
+            {
+                GL.Uniform1(uniformLocations["textureSamplerMetal"], texture.textureDescriptor.MetalUnit);
+                GL.Uniform1(uniformLocations["useMetal"], texture.textureDescriptor.MetalUse);
             }
         }
 

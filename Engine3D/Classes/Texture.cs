@@ -36,6 +36,11 @@ namespace Engine3D
         public int RoughUnit;
         public int RoughUse;
 
+        public string Metal;
+        public int MetalId;
+        public int MetalUnit;
+        public int MetalUse;
+
         public int count;
 
         public TextureDescriptor()
@@ -44,6 +49,34 @@ namespace Engine3D
             Height = "";
             AO = "";
             Rough = "";
+            Metal = "";
+        }
+
+        public void ChangeMapUse()
+        {
+            NormalUse = NormalUse == 1 ? 0 : 1;
+            HeightUse = HeightUse == 1 ? 0 : 1;
+            AOUse = AOUse == 1 ? 0 : 1;
+            RoughUse = RoughUse == 1 ? 0 : 1;
+            MetalUse = MetalUse == 1 ? 0 : 1;
+        }
+
+        public void DisableMapUse()
+        {
+            NormalUse = 0;
+            HeightUse = 0;
+            AOUse = 0;
+            RoughUse = 0;
+            MetalUse = 0;
+        }
+
+        public void EnableMapUse()
+        {
+            NormalUse = 1;
+            HeightUse = 1;
+            AOUse = 1;
+            RoughUse = 1;
+            MetalUse = 1;
         }
     }
 
@@ -53,7 +86,8 @@ namespace Engine3D
         Normal,
         Height,
         AO,
-        Rough
+        Rough,
+        Metal
     }
 
     public class Texture
@@ -141,6 +175,18 @@ namespace Engine3D
 
                 Unbind();
             }
+
+            if(textureDescriptor.Metal != "")
+            {
+                textureDescriptor.MetalId = GL.GenTexture();
+                textureDescriptor.MetalUnit = currentUnit;
+                currentUnit++;
+
+                Bind(TextureType.Metal);
+                LoadTexture(textureDescriptor.Metal, flipY, tminf, tmagf);
+
+                Unbind();
+            }
         }
 
         public static TextureDescriptor GetTextureDescriptor(string fileName)
@@ -199,6 +245,16 @@ namespace Engine3D
             }
             else
                 td.RoughUse = 0;
+
+            string m = FileManager.GetFilePath(withoutExtension + "_m" + extension, FileType.Textures);
+            if(m != "")
+            {
+                td.Metal = m;
+                td.MetalUse = 1;
+                td.count++;
+            }
+            else
+                td.MetalUse = 0;
 
             //td.Normal = def_n;
             //td.Height = def_h;
