@@ -16,6 +16,7 @@ using System.Security.Cryptography;
 
 namespace Engine3D
 {
+
     public static class Helper
     {
         public static Vector3 Vector3Min(Vector3 a, Vector3 b)

@@ -23,6 +23,7 @@ using Microsoft.VisualBasic.FileIO;
 using System.Diagnostics;
 using System.Xml.Schema;
 using OpenTK.Audio.OpenAL;
+using System.Drawing;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -59,7 +60,6 @@ namespace Engine3D
         private Shader posTexShader;
         private Shader noTextureShaderProgram;
         private Shader aabbShaderProgram;
-        private Shader depthShaderProgram;
         private int textureCount = 0;
         #endregion
 
@@ -68,7 +68,12 @@ namespace Engine3D
         public static Random rnd = new Random((int)DateTime.Now.Ticks);
         private bool haveText = false;
 
+        private Vector2 origWindowSize;
         private Vector2 windowSize;
+        private Box2i previousWindowBounds;
+        private float gameWindowPercent = 0.7f;
+        private Vector2 gameWindowPos;
+        private Vector2 gameWindowSize;
 
         private TextGenerator textGenerator;
         private SoundManager soundManager;
@@ -101,10 +106,14 @@ namespace Engine3D
         public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
-            
 
             windowSize = new Vector2(width, height);
+            origWindowSize = new Vector2(width, height);
             CenterWindow(new Vector2i(width, height));
+
+            gameWindowSize = new Vector2(width * gameWindowPercent, height * gameWindowPercent);
+            gameWindowPos = new Vector2((windowSize.X - gameWindowSize.X) / 2, (windowSize.Y - gameWindowSize.Y) / 2);
+
             frustum = new Frustum();
             shaderProgram = new Shader();
             posTexShader = new Shader();
@@ -185,11 +194,15 @@ namespace Engine3D
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
             double fps = DrawFps(args.Time);
 
-            frustum = character.camera.frustum;
+            GL.Viewport((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
+            GL.Enable(EnableCap.ScissorTest);
+            GL.Scissor((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
+
+            #region GameWindow
+
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             GL.Enable(EnableCap.DepthTest);
 
@@ -421,6 +434,11 @@ namespace Engine3D
             ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Noclip")).First().GetMesh())
                         .ChangeText("Noclip = (" + character.noClip.ToString() + ")");
 
+            #endregion
+
+            GL.Disable(EnableCap.ScissorTest);
+            GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+
             Context.SwapBuffers();
 
             base.OnRenderFrame(args);
@@ -443,6 +461,8 @@ namespace Engine3D
 
             if (KeyboardState.IsKeyDown(Keys.Escape))
                 Close();
+            if (KeyboardState.IsKeyReleased(Keys.F2))
+                SetFullscreenState(WindowState == WindowState.Normal ? WindowState.Fullscreen : WindowState.Normal);
 
             character.CalculateVelocity(KeyboardState, MouseState, args);
             character.UpdatePosition(KeyboardState, MouseState, args);
@@ -474,7 +494,7 @@ namespace Engine3D
         protected override void OnLoad()
         {
             base.OnLoad();
-            CursorState = CursorState.Grabbed;
+            //CursorState = CursorState.Grabbed;
 
             if(limitFps)
                 stopwatch = Stopwatch.StartNew();
@@ -532,7 +552,6 @@ namespace Engine3D
             posTexShader = new Shader("postex.vert", "postex.frag");
             noTextureShaderProgram = new Shader("noTexture.vert", "noTexture.frag");
             aabbShaderProgram = new Shader("aabb.vert", "aabb.frag");
-            depthShaderProgram = new Shader("depth.vert", "depth.frag");
 
             // Create Physx context
             physx = new Physx(true);
@@ -573,15 +592,15 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "space.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
-            objects.Last().SetSize(new Vector3(10, 2, 10));
-            objects.Last().AddCubeCollider(true);
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "space.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
+            //objects.Last().SetSize(new Vector3(10, 2, 10));
+            //objects.Last().AddCubeCollider(true);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", -1, windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx));
             //objects.Last().SetPosition(new Vector3(0, 20, 0));
@@ -636,6 +655,39 @@ namespace Engine3D
             objects.Sort();
         }
 
+        private void SetFullscreenState(WindowState state)
+        {
+            //WindowState = state;
+
+            //if (WindowState == WindowState.Normal)
+            //{
+            //    WindowBorder = WindowBorder.Resizable;
+            //    Bounds = new Box2i(0,0,(int)origWindowSize.X, (int)origWindowSize.Y);
+            //    CenterWindow(new Vector2i((int)origWindowSize.X, (int)origWindowSize.Y));
+            //}
+
+            if (state == WindowState.Normal)
+            {
+                Close(); // Close current window
+
+                using (var newWindow = new MyGameWindow())
+                {
+                    if (wasFullscreen)
+                    {
+                        // Adjust any properties of newWindow here if necessary, 
+                        // such as size or window state before running it.
+                    }
+
+                    newWindow.Run();
+                }
+            }
+            else
+            {
+                WindowBorder = WindowBorder.Hidden;
+                WindowState = WindowState.Fullscreen;
+            }
+        }
+
         protected override void OnUnload()
         {
             base.OnUnload();
@@ -668,6 +720,8 @@ namespace Engine3D
             GL.Viewport(0, 0, e.Width, e.Height);
             windowSize.X = e.Width;
             windowSize.Y = e.Height;
+            gameWindowSize = new Vector2(windowSize.X * gameWindowPercent, windowSize.Y * gameWindowPercent);
+            gameWindowPos = new Vector2((windowSize.X - gameWindowSize.X) / 2, (windowSize.Y - gameWindowSize.Y) / 2);
         }
     }
 }
