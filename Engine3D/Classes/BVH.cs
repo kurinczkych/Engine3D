@@ -157,11 +157,13 @@ namespace Engine3D
     public class BVH
     {
         public BVHNode Root;
+        public List<BVHNode> leaves;
 
         public BVH(List<triangle> triangles, int shaderId)
         {
             int index = 0;
             int depth = 0;
+            leaves = new List<BVHNode>();
             Root = BuildBVH(triangles, ref index, ref depth);
             uniformLocations = new Dictionary<string, int>();
             GetUniformLocations(shaderId);
@@ -192,6 +194,7 @@ namespace Engine3D
             {
                 node.triangles.AddRange(triangles);
                 number_of_leaves++;
+                leaves.Add(node);
                 return node;
             }
 

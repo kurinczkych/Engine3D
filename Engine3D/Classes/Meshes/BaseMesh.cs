@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using MagicPhysX;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -47,13 +48,25 @@ namespace Engine3D
         }
         protected abstract void SendUniforms();
 
-        public void CalculateFrustumVisibility(Frustum frustum, Camera camera)
+        public void CalculateFrustumVisibility(Camera camera, BVH bvh)
         {
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
-            Parallel.ForEach(tris, parallelOptions, tri =>
+            if (bvh != null)
             {
-                tri.visibile = frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
-            });
+                ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
+                Parallel.ForEach(bvh.leaves, parallelOptions, node =>
+                {
+                    bool v = camera.frustum.IsAABBInside(node.bounds) || node.bounds.IsPointInsideAABB(camera.GetPosition());
+                    node.triangles.ForEach(x => x.visibile = v);
+                });
+            }
+            else
+            {
+                ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
+                Parallel.ForEach(tris, parallelOptions, tri =>
+                {
+                    tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
+                });
+            }
         }
 
         protected static Vector3 ComputeFaceNormal(triangle triangle)

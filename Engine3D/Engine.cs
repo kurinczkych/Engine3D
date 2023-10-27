@@ -196,7 +196,7 @@ namespace Engine3D
             // Triangle frustum visibility calculation
             foreach (Object obj in objects)
             {
-                obj.GetMesh().CalculateFrustumVisibility(frustum, character.camera);
+                obj.GetMesh().CalculateFrustumVisibility(character.camera, obj.BVHStruct);
             }
 
             if (useOcclusionCulling)
@@ -245,8 +245,8 @@ namespace Engine3D
 
             //------------------------------------------------------------
 
-            character.camera.SetPosition(character.camera.GetPosition() +
-                new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
+            //character.camera.SetPosition(character.camera.GetPosition() +
+            //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
 
 
             GL.ClearColor(Color4.Cyan);
