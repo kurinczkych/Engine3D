@@ -63,7 +63,6 @@ namespace Engine3D
         private int textureCount = 0;
         #endregion
 
-
         #region Program variables
         public static Random rnd = new Random((int)DateTime.Now.Ticks);
         private bool haveText = false;
@@ -97,6 +96,7 @@ namespace Engine3D
         private double totalTime;
         private const int SAMPLE_SIZE = 30;
         private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
+        private int maxFps = 0;
 
         private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
@@ -138,8 +138,10 @@ namespace Engine3D
 
             double averageDeltaTime = totalTime / sampleTimes.Count;
             double fps = 1.0 / averageDeltaTime;
+            if (fps > maxFps && sampleTimes.Count != 1)
+                maxFps = (int)fps;
 
-            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString();
+            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() + "    |    MaxFPS: " + maxFps.ToString();
 
             return fps;
         }
@@ -459,10 +461,12 @@ namespace Engine3D
         {
             base.OnUpdateFrame(args);
 
-            if (KeyboardState.IsKeyDown(Keys.Escape))
-                Close();
+            if (KeyboardState.IsKeyReleased(Keys.Escape))
+            {
+                CursorState = CursorState == CursorState.Grabbed ? CursorState.Normal : CursorState.Grabbed;
+            }
             if (KeyboardState.IsKeyReleased(Keys.F2))
-                SetFullscreenState(WindowState == WindowState.Normal ? WindowState.Fullscreen : WindowState.Normal);
+                WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
 
             character.CalculateVelocity(KeyboardState, MouseState, args);
             character.UpdatePosition(KeyboardState, MouseState, args);
@@ -594,6 +598,7 @@ namespace Engine3D
 
             objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            objects.Last().BuildBSP();
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
@@ -653,39 +658,6 @@ namespace Engine3D
             }
 
             objects.Sort();
-        }
-
-        private void SetFullscreenState(WindowState state)
-        {
-            //WindowState = state;
-
-            //if (WindowState == WindowState.Normal)
-            //{
-            //    WindowBorder = WindowBorder.Resizable;
-            //    Bounds = new Box2i(0,0,(int)origWindowSize.X, (int)origWindowSize.Y);
-            //    CenterWindow(new Vector2i((int)origWindowSize.X, (int)origWindowSize.Y));
-            //}
-
-            if (state == WindowState.Normal)
-            {
-                Close(); // Close current window
-
-                using (var newWindow = new MyGameWindow())
-                {
-                    if (wasFullscreen)
-                    {
-                        // Adjust any properties of newWindow here if necessary, 
-                        // such as size or window state before running it.
-                    }
-
-                    newWindow.Run();
-                }
-            }
-            else
-            {
-                WindowBorder = WindowBorder.Hidden;
-                WindowState = WindowState.Fullscreen;
-            }
         }
 
         protected override void OnUnload()

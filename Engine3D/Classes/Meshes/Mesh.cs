@@ -336,6 +336,19 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
+            if (parentObject.BSPStruct != null)
+            {
+                tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera.GetPosition());
+            }
+            // Sorting triangles front to back
+            //var sortedTriangles = tris.AsParallel()
+            //                   .WithDegreeOfParallelism(threadSize)
+            //                   .OrderBy(t => t.DistanceToCamera(camera.GetPosition()))
+            //                   .ToList();
+            //// Update the original list
+            //tris.Clear();
+            //tris.AddRange(sortedTriangles);
+
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             Parallel.ForEach(tris, parallelOptions,
                  () => new List<float>(),

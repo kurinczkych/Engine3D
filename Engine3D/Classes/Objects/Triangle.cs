@@ -138,6 +138,16 @@ namespace Engine3D
             p[2] += transform;
         }
 
+        public float DistanceToCamera(Vector3 cameraPosition)
+        {
+            return (GetMiddle() - cameraPosition).Length;
+        }
+
+        public Plane GetPlane()
+        {
+            return new Plane(p[0], p[1], p[2]);
+        }
+
         public bool RayIntersects(Vector3 rayOrigin, Vector3 rayDir, out Vector3 intersection)
         {
             intersection = new Vector3();

@@ -39,6 +39,7 @@ namespace Engine3D
         private IntPtr staticColliderPtr;
 
         public BVH BVHStruct { get; private set; }
+        public BSP BSPStruct { get; private set; }
 
         public PxRigidDynamic* GetDynamicCollider() { return (PxRigidDynamic*)dynamicColliderPtr.ToPointer(); }
         public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
@@ -232,6 +233,11 @@ namespace Engine3D
             BVHShader.Use();
             BVHStruct = new BVH(((Mesh)mesh).tris, BVHShader.id);
             currentShader.Use();
+        }
+
+        public void BuildBSP()
+        {
+            BSPStruct = new BSP(((Mesh)mesh).tris);
         }
 
         private bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)

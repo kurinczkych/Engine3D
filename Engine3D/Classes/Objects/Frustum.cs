@@ -7,18 +7,6 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
-
-    public class Plane
-    {
-        public Plane() { }
-
-        // unit vector
-        public Vector3 normal = new Vector3(0.0f, 0.0f, 0.0f);
-
-        // distance from origin to the nearest point in the plane
-        public float distance = 0.0f;
-    };
-
     public class Frustum
     {
         public Frustum()
