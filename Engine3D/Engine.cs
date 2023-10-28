@@ -580,10 +580,13 @@ namespace Engine3D
 
             noTextureShaderProgram.Use();
             //Vector3 characterPos = new Vector3(34, -16, -275);
-            Vector3 characterPos = new Vector3(0, 20, 0);
+            //Vector3 characterPos = new Vector3(0, 20, 0);
+            Vector3 characterPos = new Vector3(108.32f, 352.56f, -7.79f);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
-            character.camera.SetYaw(218.84f);
-            character.camera.SetPitch(6.43f);
+            //character.camera.SetYaw(218.84f);
+            //character.camera.SetPitch(6.43f);
+            character.camera.SetYaw(4.72f);
+            character.camera.SetPitch(15.21f);
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
@@ -596,12 +599,13 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
-            objects.Last().BuildBSP();
-
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            //objects.Last().BuildBSP();
+
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            objects.Last().BuildBSP();
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "space.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));

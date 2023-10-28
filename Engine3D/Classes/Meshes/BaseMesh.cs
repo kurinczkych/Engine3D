@@ -25,8 +25,9 @@ namespace Engine3D
 
         protected Dictionary<string, int> uniformLocations;
 
-        protected int threadSize;
-        private int desiredPercentage = 80;
+        //protected int threadSize;
+        //private int desiredPercentage = 80;
+        public static int threadSize = 16;
 
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
@@ -39,8 +40,8 @@ namespace Engine3D
 
             uniformLocations = new Dictionary<string, int>();
 
-            threadSize = (int)(Environment.ProcessorCount * (desiredPercentage / 100.0));
-            threadSize = 16;
+            //threadSize = (int)(Environment.ProcessorCount * (desiredPercentage / 100.0));
+            //threadSize = 16;
         }
         public void AddTriangle(triangle tri)
         {
