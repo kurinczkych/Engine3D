@@ -206,5 +206,7 @@ void main()
     {
         FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * fragColor;
     }
+
+//    FragColor = fragColor;
 }
 

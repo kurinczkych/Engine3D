@@ -40,6 +40,8 @@ namespace Engine3D
 
         public BVH BVHStruct { get; private set; }
         public BSP BSPStruct { get; private set; }
+        public Octree Octree { get; private set; }
+        public GridStructure GridStructure { get; private set; }
 
         public PxRigidDynamic* GetDynamicCollider() { return (PxRigidDynamic*)dynamicColliderPtr.ToPointer(); }
         public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
@@ -238,6 +240,17 @@ namespace Engine3D
         public void BuildBSP()
         {
             BSPStruct = new BSP(((Mesh)mesh).tris);
+        }
+
+        public void BuildOctree()
+        {
+            Octree = new Octree();
+            Octree.Build(((Mesh)mesh).tris, ((Mesh)mesh).Bounds);
+        }
+
+        public void BuildGrid()
+        {
+            GridStructure = new GridStructure(((Mesh)mesh).tris, ((Mesh)mesh).Bounds, 20);
         }
 
         private bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)

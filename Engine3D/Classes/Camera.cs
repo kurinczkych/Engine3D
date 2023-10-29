@@ -12,8 +12,6 @@ namespace Engine3D
 {
     public class Camera
     {
-        private Vector2 screenSize;
-
         public float near;
         public float far;
         public float fov;
@@ -37,7 +35,6 @@ namespace Engine3D
 
         public Camera(Vector2 screenSize)
         {
-            this.screenSize = screenSize;
             position = new Vector3();
 
             near = 0.1f;
@@ -112,13 +109,47 @@ namespace Engine3D
 
         public bool IsTriangleClose(triangle tri)
         {
-            float dist1 = (position - new Vector3(tri.p[0].X, tri.p[0].Y, tri.p[0].Z)).Length;
-            float dist2 = (position - new Vector3(tri.p[1].X, tri.p[1].Y, tri.p[1].Z)).Length;
-            float dist3 = (position - new Vector3(tri.p[2].X, tri.p[2].Y, tri.p[2].Z)).Length;
             float dist = float.PositiveInfinity;
-            if (dist1 < dist) dist = dist1;
-            if (dist2 < dist) dist = dist2;
-            if (dist3 < dist) dist = dist3;
+            foreach (var point in tri.p)
+            {
+                float ddist = (position - point).Length;
+                if (ddist < dist)
+                    dist = ddist;
+            }
+
+            return dist < 15.0f;
+
+        }
+        public bool IsAnyTriangleClose(List<triangle> tris)
+        {
+            float dist = float.PositiveInfinity;
+            foreach(triangle triangle in tris)
+            {
+                foreach (var point in triangle.p)
+                {
+                    float ddist = (position - point).Length;
+                    if (ddist < dist)
+                        dist = ddist;
+                }
+            }
+
+            if (dist < 15f)
+                ;
+
+            return dist < 15.0f;
+
+        }
+
+        public bool IsAABBClose(AABB aabb)
+        {
+            Vector3[] corners = aabb.GetCorners();
+            float dist = float.PositiveInfinity;
+            foreach (var corner in corners)
+            {
+                float ddist = (position - corner).Length;
+                if(ddist < dist) 
+                    dist = ddist;
+            }
 
             return dist < 15.0f;
 

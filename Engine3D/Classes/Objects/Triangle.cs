@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using MagicPhysX;
+using OpenTK.Mathematics;
 using OpenTK.Platform.Windows;
 using System;
 using System.Collections.Generic;
@@ -571,6 +572,40 @@ namespace Engine3D
             bool intersects = IsSphereInTriangle(new Sphere(center, capsule.Radius), out penetration_normal, out penetration_depth);
 
             return intersects;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
+
+            triangle other = (triangle)obj;
+            return p[0] == other.p[0] && p[1] == other.p[1] && p[2] == other.p[2];
+        }
+
+        public override int GetHashCode()
+        {
+            // Here's a simple way to get a hash code, but you might want to refine this for better distribution.
+            return p[0].GetHashCode() ^ p[1].GetHashCode() ^ p[2].GetHashCode();
+        }
+
+        public static bool operator ==(triangle t1, triangle t2)
+        {
+            // If both are null, or both are the same instance, return true.
+            if (ReferenceEquals(t1, t2))
+                return true;
+
+            // If one is null, but not both, return false.
+            if (t1 is null || t2 is null)
+                return false;
+
+            // Use the Equals() method for the actual comparison.
+            return t1.Equals(t2);
+        }
+
+        public static bool operator !=(triangle t1, triangle t2)
+        {
+            return !(t1 == t2);
         }
     }
 }

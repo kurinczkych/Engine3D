@@ -28,33 +28,38 @@ namespace Engine3D
             return true;
         }
 
-        public bool IsAABBInside(AABB aabb)
+        public bool IsAABBInside(AABB box)
         {
-            // For each plane of the frustum
-            for (int i = 0; i < 6; i++)
+            foreach (var plane in planes)
             {
-                Plane plane = planes[i];
+                int outCount = 0;  // Counter to track how many corners are outside the current plane
 
-                // Check box points against the plane
-                // Start by assuming all points are outside the plane (behind it)
-                int outCount = 0;
+                // Check each corner of the AABB against the current plane
+                for (float x = 0; x <= 1; x++)
+                {
+                    for (float y = 0; y <= 1; y++)
+                    {
+                        for (float z = 0; z <= 1; z++)
+                        {
+                            Vector3 corner = new Vector3(
+                                x > 0.5f ? box.Max.X : box.Min.X,
+                                y > 0.5f ? box.Max.Y : box.Min.Y,
+                                z > 0.5f ? box.Max.Z : box.Min.Z
+                            );
 
-                // Check all 8 corners of the AABB
-                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
-                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
-                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
-                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Min.Z + plane.distance > 0) outCount++;
-                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
-                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Min.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
-                if (plane.normal.X * aabb.Min.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
-                if (plane.normal.X * aabb.Max.X + plane.normal.Y * aabb.Max.Y + plane.normal.Z * aabb.Max.Z + plane.distance > 0) outCount++;
+                            if (Vector3.Dot(plane.normal, corner) + plane.distance < 0)
+                            {
+                                outCount++;
+                            }
+                        }
+                    }
+                }
 
-                // If none of the points were in front of the plane, the box is outside of the frustum
-                if (outCount == 0)
-                    return false;
+                // If all 8 corners are outside of the current plane, the AABB is outside the frustum
+                if (outCount == 8) return false;
             }
 
-            // If we get here, the box is in the frustum
+            // If we didn't exit early, then the AABB is inside (or intersecting) the frustum
             return true;
         }
 

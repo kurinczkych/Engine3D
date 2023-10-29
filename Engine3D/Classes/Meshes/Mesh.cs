@@ -48,6 +48,7 @@ namespace Engine3D
         private Frustum frustum;
         private Camera camera;
         private Vector2 windowSize;
+        public AABB Bounds = new AABB();
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
@@ -336,10 +337,12 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
-            if (parentObject.BSPStruct != null)
-            {
-                tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera);
-            }
+            //if (parentObject.BSPStruct != null)
+            //{
+            //    //tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera);
+            //    //parentObject.BSPStruct.GetNodesFrontToBack(camera);
+            //}
+            tris = parentObject.GridStructure.GetTriangles(camera);
 
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             Parallel.ForEach(tris, parallelOptions,
@@ -704,6 +707,8 @@ namespace Engine3D
                                     tris.Last().pi[1] = v[1] - 1;
                                     tris.Last().pi[2] = v[2] - 1;
 
+                                    Bounds.Enclose(tris.Last());
+
                                     hasIndices = true;
                                 }
                                 else if (fPerCount == 1)
@@ -725,6 +730,8 @@ namespace Engine3D
                                     tris.Last().pi[1] = v[1] - 1;
                                     tris.Last().pi[2] = v[2] - 1;
 
+                                    Bounds.Enclose(tris.Last());
+
                                     hasIndices = true;
                                 }
 
@@ -739,6 +746,8 @@ namespace Engine3D
                                 tris.Last().pi[0] = f[0] - 1;
                                 tris.Last().pi[1] = f[1] - 1;
                                 tris.Last().pi[2] = f[2] - 1;
+
+                                Bounds.Enclose(tris.Last());
 
                                 hasIndices = true;
                             }

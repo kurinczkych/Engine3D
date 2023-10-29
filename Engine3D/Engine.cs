@@ -262,6 +262,8 @@ namespace Engine3D
 
             //character.camera.SetPosition(character.camera.GetPosition() +
             //    new Vector3(-(float)Math.Cos(MathHelper.DegreesToRadians(character.camera.GetYaw())) * 8, 10, -(float)Math.Sin(MathHelper.DegreesToRadians(character.camera.GetYaw()))) * 8);
+            //character.camera.SetPosition(character.camera.GetPosition() +
+            //    new Vector3(0, 100, 0));
 
 
             GL.ClearColor(Color4.Cyan);
@@ -410,11 +412,12 @@ namespace Engine3D
 
             //noTextureShaderProgram.Use();
             //vertices.Clear();
-            //foreach (WireframeMesh m in bvhs)
-            //{
-            //    m.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //    vertices.AddRange(m.Draw());
-            //}
+            //WireframeMesh wfm = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).First().GridStructure.
+            //    ExtractWireframeRange(wireVao, wireVbo, noTextureShaderProgram.id, ref character.camera);
+
+            //wfm.UpdateFrustumAndCamera(ref frustum, ref character.camera);
+            //vertices.AddRange(wfm.Draw());
+
             //wireVbo.Buffer(vertices);
             //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
 
@@ -498,9 +501,9 @@ namespace Engine3D
         protected override void OnLoad()
         {
             base.OnLoad();
-            //CursorState = CursorState.Grabbed;
+            CursorState = CursorState.Grabbed;
 
-            if(limitFps)
+            if (limitFps)
                 stopwatch = Stopwatch.StartNew();
 
             textGenerator = new TextGenerator();
@@ -580,13 +583,15 @@ namespace Engine3D
 
             noTextureShaderProgram.Use();
             //Vector3 characterPos = new Vector3(34, -16, -275);
-            //Vector3 characterPos = new Vector3(0, 20, 0);
-            Vector3 characterPos = new Vector3(108.32f, 352.56f, -7.79f);
+            Vector3 characterPos = new Vector3(0, 20, 0);
+            //Vector3 characterPos = new Vector3(108.32f, 352.56f, -7.79f);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
             //character.camera.SetYaw(218.84f);
             //character.camera.SetPitch(6.43f);
-            character.camera.SetYaw(4.72f);
-            character.camera.SetPitch(15.21f);
+            //character.camera.SetYaw(4.72f);
+            //character.camera.SetPitch(15.21f);
+            character.camera.SetYaw(209f);
+            character.camera.SetPitch(-61f);
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
@@ -599,12 +604,14 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
+            //objects.Last().BuildOctree();
+            objects.Last().BuildGrid();
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            ////objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "space.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
@@ -626,7 +633,7 @@ namespace Engine3D
             //    AddObject(aabbO);
             //}
 
-            posTexShader.Use();
+            //posTexShader.Use();
 
             Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
             ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
