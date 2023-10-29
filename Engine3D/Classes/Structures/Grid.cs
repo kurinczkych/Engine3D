@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using FontStashSharp;
 using OpenTK.Mathematics;
 
@@ -24,6 +26,19 @@ namespace Engine3D
         {
             triangles.Add(triangle);
         }
+
+        public override int GetHashCode()
+        {
+            unchecked // Overflow is fine; it's by design
+            {
+                int hashCode = 17; // Prime number
+
+                // Combine the hash codes of significant properties
+                hashCode = hashCode * 23 + Bounds.GetHashCode();
+
+                return hashCode;
+            }
+        }
     }
 
     public class GridStructure
@@ -33,6 +48,7 @@ namespace Engine3D
         public GridNode[,,] Grid;
         public int nodeCount;
         public Vector3i stepSize;
+        public int biggestStepSize;
 
         public GridStructure(List<triangle> tris, AABB bounds, int gridSize) 
         { 
@@ -40,6 +56,8 @@ namespace Engine3D
             GridSize = gridSize;
 
             stepSize = new Vector3i((int)Bounds.Width / GridSize + 1, (int)Bounds.Height / GridSize + 1, (int)Bounds.Depth / GridSize + 1);
+            biggestStepSize = stepSize.X;
+            biggestStepSize = biggestStepSize < stepSize.Y ? stepSize.Y : (biggestStepSize < stepSize.Z ? stepSize.Z : biggestStepSize);
 
             Grid = new GridNode[stepSize.X, stepSize.Y, stepSize.Z];
             nodeCount = stepSize.X * stepSize.Y * stepSize.Z;
@@ -98,45 +116,49 @@ namespace Engine3D
 
         public List<GridNode> GetNodesInFrontOfCamera(Vector3 cameraPos, Camera camera)
         {
-            ConcurrentBag<(GridNode node, float distance)> nodesWithDistance = new ConcurrentBag<(GridNode, float)>();
+            Vector3i centerIndex = GetIndex(cameraPos);  // Get the grid index for the given point
+            List<GridNode> result = new List<GridNode>();
 
-            // Divide the grid into chunks based on the number of available CPU cores
-            int numberOfChunks = BaseMesh.threadSize;
+            int maxRadius = biggestStepSize * GridSize;
 
-            Vector3i chunkSize = new Vector3i(stepSize.X / numberOfChunks, stepSize.Y, stepSize.Z);
+            HashSet<GridNode> visited = new HashSet<GridNode>();
 
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize }; // Adjust as needed
-            Parallel.ForEach(Enumerable.Range(0, numberOfChunks), parallelOptions, chunkIndex =>
+            for (int radius = 0; radius <= maxRadius; radius += GridSize)
             {
-                Vector3i start = new Vector3i(chunkIndex * chunkSize.X, 0, 0);
-                Vector3i end = start + chunkSize;
+                List<GridNode> currentRadiusNodes = new List<GridNode>();
 
-                for (int x = start.X; x < end.X; x++)
+                // Define bounds for the current "radius"
+                int startX = Math.Max(centerIndex.X - radius, 0);
+                int endX = Math.Min(centerIndex.X + radius, stepSize.X - 1);
+                int startY = Math.Max(centerIndex.Y - radius, 0);
+                int endY = Math.Min(centerIndex.Y + radius, stepSize.Y - 1);
+                int startZ = Math.Max(centerIndex.Z - radius, 0);
+                int endZ = Math.Min(centerIndex.Z + radius, stepSize.Z - 1);
+
+                // Iterate over the nodes within the current "radius"
+                for (int x = startX; x <= endX; x++)
                 {
-                    for (int y = 0; y < stepSize.Y; y++)
+                    for (int y = startY; y <= endY; y++)
                     {
-                        for (int z = 0; z < stepSize.Z; z++)
+                        for (int z = startZ; z <= endZ; z++)
                         {
-                            GridNode node = Grid[x, y, z];
-
-                            if (node != null)
+                            // Only add nodes that are on the "surface" of the current radius
+                            if (x == startX || x == endX || y == startY || y == endY || z == startZ || z == endZ)
                             {
-                                Vector3 centerOfNode = node.Bounds.Center;
-
-                                float distance = (centerOfNode - cameraPos).Length;
-                                if (camera.frustum.IsAABBInside(node.Bounds))
+                                if (camera.frustum.IsAABBInside(Grid[x, y, z].Bounds) && !visited.Contains(Grid[x, y, z]))
                                 {
-                                    nodesWithDistance.Add((node, distance));
-                                    node.triangles.ForEach(x => x.visibile = true);
+                                    currentRadiusNodes.Add(Grid[x, y, z]);
+                                    visited.Add(Grid[x, y, z]);
                                 }
                             }
                         }
                     }
                 }
-            });
 
-            // Sort nodes based on distance
-            return nodesWithDistance.OrderBy(nd => nd.distance).Select(nd => nd.node).ToList();
+                result.AddRange(currentRadiusNodes);
+            }
+
+            return result;
         }
 
 
