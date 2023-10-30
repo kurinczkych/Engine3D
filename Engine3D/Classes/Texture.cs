@@ -267,8 +267,8 @@ namespace Engine3D
         public static void LoadTexture(string fileName, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf)
         {
             // Load the image (using System.Drawing or another library)
-            Stream stream_t = FileManager.GetFileStream(Path.GetFileName(fileName), FileType.Textures);
-            if (stream_t != Stream.Null)
+            Stream? stream_t = FileManager.GetFileStream(Path.GetFileName(fileName), FileType.Textures);
+            if (stream_t != Stream.Null && stream_t != null)
             {
                 using (stream_t)
                 {

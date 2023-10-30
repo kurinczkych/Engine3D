@@ -200,7 +200,7 @@ namespace Engine3D
         }
 
 
-        private Octree GetNodeContainingPoint(Vector3 point)
+        private Octree? GetNodeContainingPoint(Vector3 point)
         {
             if (!Bounds.IsPointInsideAABB(point))
             {
@@ -218,7 +218,7 @@ namespace Engine3D
             // Otherwise, search children
             for (int i = 0; i < 8; i++)
             {
-                Octree node = Children[i].GetNodeContainingPoint(point);
+                Octree? node = Children[i].GetNodeContainingPoint(point);
                 if (node != null)
                 {
                     return node;
@@ -231,7 +231,7 @@ namespace Engine3D
         public List<triangle> CollectTrianglesFromNodeOutward(Vector3 point, ref Frustum frustum, ref int index)
         {
             List<triangle> result = new List<triangle>();
-            Octree startNode = GetNodeContainingPoint(point);
+            Octree? startNode = GetNodeContainingPoint(point);
             if (startNode == null)
             {
                 return result;
@@ -288,7 +288,7 @@ namespace Engine3D
 
                 if (queue.Count() == 0)
                 {
-                    Octree v = GetNotVisited(currentNode.Parent, visited);
+                    Octree? v = GetNotVisited(currentNode.Parent, visited);
                     if (v != null)
                     {
                         if (frustum.IsAABBInside(v.Bounds))
@@ -301,7 +301,7 @@ namespace Engine3D
             return result;
         }
 
-        private Octree GetNotVisited(Octree parent, HashSet<Octree> visited)
+        private Octree? GetNotVisited(Octree parent, HashSet<Octree> visited)
         {
             foreach(var child in parent.Children)
             {

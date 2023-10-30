@@ -248,9 +248,11 @@ namespace Engine3D
             Octree.Build(((Mesh)mesh).tris, ((Mesh)mesh).Bounds);
         }
 
-        public void BuildGrid()
+        public void BuildGrid(Shader currentShader, Shader GridShader)
         {
-            GridStructure = new GridStructure(((Mesh)mesh).tris, ((Mesh)mesh).Bounds, 20);
+            GridShader.Use();
+            GridStructure = new GridStructure(((Mesh)mesh).tris, ((Mesh)mesh).Bounds, 20, GridShader.id);
+            currentShader.Use();
         }
 
         private bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)

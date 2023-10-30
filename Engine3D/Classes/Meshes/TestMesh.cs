@@ -16,6 +16,7 @@ using static OpenTK.Graphics.OpenGL.GL;
 #pragma warning disable CA1416
 #pragma warning disable CS8604
 #pragma warning disable CS8603
+#pragma warning disable IDE0044
 
 namespace Engine3D
 {

@@ -20,13 +20,13 @@ namespace Engine3D
         public SoundManager()
         {
             device = ALC.OpenDevice(null);  // null means the default device
-            if (device == null)
+            if (device == ALDevice.Null)
             {
                 throw new Exception("Failed to open device");
             }
 
             context = ALC.CreateContext(device, new int[0]);  // null means default attributes
-            if (context == null)
+            if (context == ALContext.Null)
             {
                 throw new Exception("Failed to create context");
             }

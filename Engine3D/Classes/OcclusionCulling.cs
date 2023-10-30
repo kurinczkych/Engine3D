@@ -159,44 +159,44 @@ namespace Engine3D
             }
             else
             {
-                if (node == null) return;
-                if (!frustum.IsAABBInside(node.bounds))
-                {
-                    ManageVisibility(node, false);
+                //if (node == null) return;
+                //if (!frustum.IsAABBInside(node.bounds))
+                //{
+                //    ManageVisibility(node, false);
 
-                    return;
-                }
+                //    return;
+                //}
 
-                int query = queryPool.GetQuery();
+                //int query = queryPool.GetQuery();
 
-                // 1. Initiate occlusion query
-                GL.BeginQuery(QueryTarget.SamplesPassed, query);
+                //// 1. Initiate occlusion query
+                //GL.BeginQuery(QueryTarget.SamplesPassed, query);
 
-                // 2. Render the AABB of the current BVH node
-                RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
+                //// 2. Render the AABB of the current BVH node
+                //RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
 
-                // 3. End occlusion query
-                GL.EndQuery(QueryTarget.SamplesPassed);
+                //// 3. End occlusion query
+                //GL.EndQuery(QueryTarget.SamplesPassed);
 
-                // 4. Buffer the pending results
-                if (!pendingQueries.ContainsKey(node.key))
-                {
-                    pendingQueries.Add(node.key, new Tuple<int, BVHNode>(query, node));
-                }
+                //// 4. Buffer the pending results
+                //if (!pendingQueries.ContainsKey(node.key))
+                //{
+                //    pendingQueries.Add(node.key, new Tuple<int, BVHNode>(query, node));
+                //}
 
-                if (node.samplesPassedPrevFrame > 0)
-                {
-                    ManageVisibility(node, true);
+                //if (node.samplesPassedPrevFrame > 0)
+                //{
+                //    ManageVisibility(node, true);
 
-                    PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
-                    PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
-                }
-                else
-                {
-                    ManageVisibility(node, false);
+                //    PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                //    PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                //}
+                //else
+                //{
+                //    ManageVisibility(node, false);
 
-                    return;
-                }
+                //    return;
+                //}
             }
         }
 
@@ -356,8 +356,11 @@ namespace Engine3D
             }
             else
             {
-                TraverseBVHNode(node.left, ref notOccludedTris, ref frustum);
-                TraverseBVHNode(node.right, ref notOccludedTris, ref frustum);
+                if (node.left != null)
+                    TraverseBVHNode(node.left, ref notOccludedTris, ref frustum);
+
+                if (node.right != null)
+                    TraverseBVHNode(node.right, ref notOccludedTris, ref frustum);
             }
         }
 
@@ -376,8 +379,11 @@ namespace Engine3D
             }
             else
             {
-                TraverseBVHNode(node.left);
-                TraverseBVHNode(node.right);
+                if(node.left != null)
+                    TraverseBVHNode(node.left);
+
+                if (node.right!= null)
+                    TraverseBVHNode(node.right);
             }
         }
 

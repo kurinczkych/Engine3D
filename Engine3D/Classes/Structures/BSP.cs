@@ -6,12 +6,13 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Engine3D
 {
     public class BSP
     {
-        public BSPNode Root;
+        public BSPNode? Root;
         public AABB Bounds;
         public int triangleCount = 0;
 
@@ -22,7 +23,7 @@ namespace Engine3D
             Root = BuildNode(triangles);
         }
 
-        private BSPNode BuildNode(List<triangle> triangles)
+        private BSPNode? BuildNode(List<triangle> triangles)
         {
             if (triangles.Count == 0)
                 return null;
@@ -118,7 +119,8 @@ namespace Engine3D
 
             int index = 0;
 
-            TraverseFrontToBack(Root, pointOfInterest, orderedTriangles, ref index);
+            if(Root != null)
+                TraverseFrontToBack(Root, pointOfInterest, orderedTriangles, ref index);
 
             return orderedTriangles;
         }
@@ -128,7 +130,8 @@ namespace Engine3D
             List<BSPNode> orderedNodes = new List<BSPNode>();
             Vector3 front = camera.front.Normalized(); // Ensure it's a unit vector.
             Vector3 pointOfInterest = camera.GetPosition() + front; // Move a unit distance along view direction.
-            TraverseNodesFrontToBack(Root, pointOfInterest, orderedNodes);
+            if (Root != null)
+                TraverseNodesFrontToBack(Root, pointOfInterest, orderedNodes);
 
             return orderedNodes;
         }
@@ -142,7 +145,8 @@ namespace Engine3D
             if (pointPosRelativeToPlane == TrianglePosition.InFront)
             {
                 // If camera is in front of the plane, process the front side first
-                TraverseFrontToBack(node.Front, pointOfInterest, result, ref index);
+                if (node.Front != null)
+                    TraverseFrontToBack(node.Front, pointOfInterest, result, ref index);
 
                 List<triangle> tris = new List<triangle>(node.Triangles);
                 foreach (triangle tri in tris)
@@ -152,12 +156,14 @@ namespace Engine3D
                 }
                 result.AddRange(tris);  // Add triangles on the plane
 
-                TraverseFrontToBack(node.Back, pointOfInterest, result, ref index);
+                if (node.Back != null)
+                    TraverseFrontToBack(node.Back, pointOfInterest, result, ref index);
             }
             else // includes TrianglePosition.Behind and TrianglePosition.OnPlane cases
             {
                 // If camera is behind or on the plane, process the back side first
-                TraverseFrontToBack(node.Back, pointOfInterest, result, ref index);
+                if (node.Back != null)
+                    TraverseFrontToBack(node.Back, pointOfInterest, result, ref index);
 
                 List<triangle> tris = new List<triangle>(node.Triangles);
                 foreach (triangle tri in tris)
@@ -167,7 +173,8 @@ namespace Engine3D
                 }
                 result.AddRange(tris);  // Add triangles on the plane
 
-                TraverseFrontToBack(node.Front, pointOfInterest, result, ref index);
+                if (node.Front != null)
+                    TraverseFrontToBack(node.Front, pointOfInterest, result, ref index);
             }
         }
 
@@ -180,16 +187,20 @@ namespace Engine3D
             if (cameraPosRelativeToPlane == TrianglePosition.InFront)
             {
                 // If camera is in front of the plane, process the front side first
-                TraverseNodesFrontToBack(node.Front, cameraPosition, result);
+                if(node.Front != null)
+                    TraverseNodesFrontToBack(node.Front, cameraPosition, result);
                 result.Add(node);  // Add the current node after processing front and before processing back
-                TraverseNodesFrontToBack(node.Back, cameraPosition, result);
+                if (node.Back != null)
+                    TraverseNodesFrontToBack(node.Back, cameraPosition, result);
             }
             else // includes TrianglePosition.Behind and TrianglePosition.OnPlane cases
             {
                 // If camera is behind or on the plane, process the back side first
-                TraverseNodesFrontToBack(node.Back, cameraPosition, result);
+                if (node.Back != null)
+                    TraverseNodesFrontToBack(node.Back, cameraPosition, result);
                 result.Add(node);  // Add the current node after processing back and before processing front
-                TraverseNodesFrontToBack(node.Front, cameraPosition, result);
+                if (node.Front != null)
+                    TraverseNodesFrontToBack(node.Front, cameraPosition, result);
             }
         }
     }
@@ -197,8 +208,8 @@ namespace Engine3D
     public class BSPNode
     {
         public List<triangle> Triangles { get; } = new List<triangle>();
-        public BSPNode Front { get; set; }
-        public BSPNode Back { get; set; }
+        public BSPNode? Front { get; set; }
+        public BSPNode? Back { get; set; }
         public Plane SplitterPlane { get; set; }
         public AABB Bounds { get; set; }
     }

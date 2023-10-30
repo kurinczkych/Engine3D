@@ -86,7 +86,7 @@ namespace Engine3D
         //Occlusion 
         public Dictionary<string, int> uniformLocations;
 
-        public GridStructure(List<triangle> tris, AABB bounds, int gridSize, int shaderId
+        public GridStructure(List<triangle> tris, AABB bounds, int gridSize, int shaderId)
         { 
             Bounds = bounds;
             GridSize = gridSize;
@@ -258,7 +258,7 @@ namespace Engine3D
         }
 
 
-        public WireframeMesh ExtractWireframeRange(VAO wireVao, VBO wireVbo, int shaderId, ref Camera camera)
+        public WireframeMesh? ExtractWireframeRange(VAO wireVao, VBO wireVbo, int shaderId, ref Camera camera)
         {
             if (Grid == null)
             {
@@ -350,7 +350,7 @@ namespace Engine3D
             return currentMesh;
         }
 
-        public WireframeMesh ExtractWireframe(VAO wireVao, VBO wireVbo, int shaderId, ref Camera camera)
+        public WireframeMesh? ExtractWireframe(VAO wireVao, VBO wireVbo, int shaderId, ref Camera camera)
         {
             if (Grid == null)
             {

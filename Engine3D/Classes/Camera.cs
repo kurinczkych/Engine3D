@@ -133,9 +133,6 @@ namespace Engine3D
                 }
             }
 
-            if (dist < 15f)
-                ;
-
             return dist < 15.0f;
 
         }

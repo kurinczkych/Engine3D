@@ -337,12 +337,18 @@ namespace Engine3D
                 transformMatrix = s * r * t;
             }
 
-            //if (parentObject.BSPStruct != null)
-            //{
-            //    //tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera);
-            //    //parentObject.BSPStruct.GetNodesFrontToBack(camera);
-            //}
-            tris = parentObject.GridStructure.GetTriangles(camera);
+            if (parentObject.BSPStruct != null)
+            {
+                tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera);
+            }
+            else if (parentObject.BVHStruct != null)
+            {
+
+            }
+            else if (parentObject.GridStructure != null)
+            {
+                tris = parentObject.GridStructure.GetTriangles(camera);
+            }
 
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             Parallel.ForEach(tris, parallelOptions,

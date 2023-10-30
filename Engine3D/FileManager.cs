@@ -19,9 +19,9 @@ namespace Engine3D
     {
         private static List<Stream> openedStreams = new List<Stream>();
 
-        public static Stream GetFileStream(string file, FileType type)
+        public static Stream? GetFileStream(string file, FileType type)
         {
-            Stream s = Stream.Null;
+            Stream? s = Stream.Null;
 
             string fileLocation = Environment.CurrentDirectory + "\\" + type.ToString();
 
@@ -84,7 +84,7 @@ namespace Engine3D
             return ""; // or throw an exception if the resource is not found
         }
 
-        private static Stream GetFileStreamFromResource(string file, FileType type)
+        private static Stream? GetFileStreamFromResource(string file, FileType type)
         {
             string resourceName = GetResourceNameByNameEnd(file);
             if (resourceName == "")

@@ -226,8 +226,11 @@ namespace Engine3D
                 return;
             }
 
-            GetFrustumVisibleTrianglesRec(ref frustum, ref camera, node.left);
-            GetFrustumVisibleTrianglesRec(ref frustum, ref camera, node.right);
+            if(node.left != null)
+                GetFrustumVisibleTrianglesRec(ref frustum, ref camera, node.left);
+
+            if(node.right != null)
+                GetFrustumVisibleTrianglesRec(ref frustum, ref camera, node.right);
         }
 
         public List<WireframeMesh> ExtractWireframes(BVHNode node, VAO wireVao, VBO wireVbo, int shaderId, ref Frustum frustum, ref Camera camera)
@@ -277,8 +280,11 @@ namespace Engine3D
             }
             else
             {
-                meshes.AddRange(ExtractWireframes(node.left, wireVao, wireVbo, shaderId, ref frustum, ref camera));
-                meshes.AddRange(ExtractWireframes(node.right, wireVao, wireVbo, shaderId, ref frustum, ref camera));
+                if(node.left != null)
+                    meshes.AddRange(ExtractWireframes(node.left, wireVao, wireVbo, shaderId, ref frustum, ref camera));
+
+                if(node.right != null)
+                    meshes.AddRange(ExtractWireframes(node.right, wireVao, wireVbo, shaderId, ref frustum, ref camera));
             }
 
             
@@ -338,13 +344,12 @@ namespace Engine3D
             }
             else
             {
-                meshes.AddRange(ExtractWireframesWithPos(node.left, wireVao, wireVbo, shaderId, ref camera, pos));
-                meshes.AddRange(ExtractWireframesWithPos(node.right, wireVao, wireVbo, shaderId, ref camera, pos));
+                if(node.left != null)
+                    meshes.AddRange(ExtractWireframesWithPos(node.left, wireVao, wireVbo, shaderId, ref camera, pos));
+
+                if(node.right != null)
+                    meshes.AddRange(ExtractWireframesWithPos(node.right, wireVao, wireVbo, shaderId, ref camera, pos));
             }
-
-            
-
-            // Recursively extract from children
 
             return meshes;
         }

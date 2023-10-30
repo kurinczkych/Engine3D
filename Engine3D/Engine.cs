@@ -608,7 +608,7 @@ namespace Engine3D
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
             //objects.Last().BuildOctree();
-            objects.Last().BuildGrid();
+            //objects.Last().BuildGrid(shaderProgram, noTextureShaderProgram);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             ////objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
