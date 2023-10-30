@@ -136,134 +136,85 @@ namespace Engine3D
             Vector3i centerIndex = GetIndex(cameraPos);  // Get the grid index for the given point
             List<GridNode> result = new List<GridNode>();
 
-            bool[,] visited = new bool[Grid.GetLength(0), Grid.GetLength(2)];
-            int flatNodeCount = Grid.GetLength(0) * Grid.GetLength(2);
-            int currentNodeCount = 0;
+            int rowStart = 0, rowEnd = Grid.GetLength(0) - 1;
+            int colStart = 0, colEnd = Grid.GetLength(2) - 1;
 
-            int x = centerIndex.X;
-            int y = centerIndex.Y;
-            int z = centerIndex.Z;
-
-            if (camera.frustum.IsAABBInside(Grid[x, y, z].Bounds))
+            while (rowStart <= rowEnd && colStart <= colEnd)
             {
-                for (int i = 0; i < Grid.GetLength(1); i++)
+                for (int i = colStart; i <= colEnd; i = i + 1)
                 {
-                    result.Add(Grid[x, i, z]);
-                }
-            }
-
-            visited[x, z] = true;
-
-            GridDir currentDir = GridDir.Right;
-
-            while (currentNodeCount != flatNodeCount)
-            {
-                switch (currentDir)
-                {
-                    case GridDir.Right:
-                        if (!visited[x, z - 1])
-                        {
-                            currentDir = GridDir.Down;
-                            z--;
-                        }
-                        else
-                            x++;
-                        break;
-                    case GridDir.Left:
-                        if (!visited[x, z + 1])
-                        {
-                            currentDir = GridDir.Up;
-                            z++;
-                        }
-                        else
-                            x--;
-                        break;
-                    case GridDir.Up:
-                        if (!visited[x + 1, z])
-                        {
-                            currentDir = GridDir.Right;
-                            x++;
-                        }
-                        else
-                            z++;
-                        break;
-                    case GridDir.Down:
-                        if (!visited[x - 1, z])
-                        {
-                            currentDir = GridDir.Left;
-                            x--;
-                        }
-                        else
-                            z--;
-                        break;
-                }
-
-                if (x < 0 || x >= visited.GetLength(0) || z < 0 || z >= visited.GetLength(1))
-                    break;
-
-                if (!visited[x, z])
-                {
-                    AABB extendedBounds = Grid[x, y, z].Bounds;
+                    AABB extendedBounds = Grid[rowStart, centerIndex.Y, i].Bounds;
                     extendedBounds.Min.Y = Bounds.Min.Y;
                     extendedBounds.Max.Y = Bounds.Max.Y;
                     if (camera.frustum.IsAABBInside(extendedBounds))
                     {
-                        for (int i = 0; i < Grid.GetLength(1); i++)
+                        for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
                         {
-                            result.Add(Grid[x, i, z]);
+                            result.Add(Grid[rowStart, i_, i]);
                         }
                     }
-                    currentNodeCount++;
-                    visited[x, z] = true;
                 }
-            }
 
-            if (visited.GetLength(0) > visited.GetLength(1))
-            {
-                for (int i_ = 0; i_ < visited.GetLength(0); i_++)
+                rowStart = rowStart + 1;
+
+                for (int i = rowStart; i <= rowEnd; i = i + 1)
                 {
-                    if (!visited[i_, 0] && !visited[i_, 1])
+                    AABB extendedBounds = Grid[i, centerIndex.Y, colEnd].Bounds;
+                    extendedBounds.Min.Y = Bounds.Min.Y;
+                    extendedBounds.Max.Y = Bounds.Max.Y;
+                    if (camera.frustum.IsAABBInside(extendedBounds))
                     {
-                        for (int z_ = 0; z_ < Grid.GetLength(2); z_++)
+                        for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
                         {
-                            AABB extendedBounds = Grid[i_, y, z_].Bounds;
-                            extendedBounds.Min.Y = Bounds.Min.Y;
-                            extendedBounds.Max.Y = Bounds.Max.Y;
-                            if (camera.frustum.IsAABBInside(extendedBounds))
+                            result.Add(Grid[i, i_, colEnd]);
+                        }
+                    }
+                }
+
+                colEnd = colEnd - 1;
+
+                if (rowStart <= rowEnd)
+                {
+                    for (int i = colEnd; i >= colStart; i = i - 1)
+                    {
+                        AABB extendedBounds = Grid[rowEnd, centerIndex.Y, i].Bounds;
+                        extendedBounds.Min.Y = Bounds.Min.Y;
+                        extendedBounds.Max.Y = Bounds.Max.Y;
+                        if (camera.frustum.IsAABBInside(extendedBounds))
+                        {
+                            for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
                             {
-                                for (int i = 0; i < Grid.GetLength(1); i++)
-                                {
-                                    result.Add(Grid[i_, i, z_]);
-                                }
+                                result.Add(Grid[rowEnd, i_, i]);
                             }
                         }
                     }
+
+                    rowEnd = rowEnd - 1;
                 }
-            }
-            else
-            {
-                for (int i_ = 0; i_ < visited.GetLength(1); i_++)
+
+                if (colStart <= colEnd)
                 {
-                    if (!visited[0, i_] && !visited[1, i_])
+                    for (int i = rowEnd; i >= rowStart; i = i - 1)
                     {
-                        for (int x_ = 0; x_ < Grid.GetLength(0); x_++)
+                        AABB extendedBounds = Grid[i, centerIndex.Y, colStart].Bounds;
+                        extendedBounds.Min.Y = Bounds.Min.Y;
+                        extendedBounds.Max.Y = Bounds.Max.Y;
+                        if (camera.frustum.IsAABBInside(extendedBounds))
                         {
-                            AABB extendedBounds = Grid[x_, y, i_].Bounds;
-                            extendedBounds.Min.Y = Bounds.Min.Y;
-                            extendedBounds.Max.Y = Bounds.Max.Y;
-                            if (camera.frustum.IsAABBInside(extendedBounds))
+                            for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
                             {
-                                for (int i = 0; i < Grid.GetLength(1); i++)
-                                {
-                                    result.Add(Grid[x_, i, i_]);
-                                }
+                                result.Add(Grid[i, i_, colStart]);
                             }
                         }
                     }
+
+                    colStart = colStart + 1;
                 }
             }
 
 
+
+            result.Reverse();
             return result;
         }
 
