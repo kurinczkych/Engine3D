@@ -164,60 +164,50 @@ namespace Engine3D
             return triangles;
         }
 
-        private void AddNodeToSublist(List<GridNode> nodes, GridNode node)
+        private void AddNodeToList(List<List<GridNode>> nodes, GridNode node)
         {
             lock (nodes)
             {
-                nodes.Add(node);
+                nodes.Add(new List<GridNode>{node});
             }
         }
 
         public List<GridNode> GetNodesInFrontOfCamera(Vector3 cameraPos, Camera camera)
         {
             Vector3i centerIndex = GetIndex(cameraPos);  // Get the grid index for the given point
-            List<GridNode> result = new List<GridNode>();
+            List<List<GridNode>> result = new List<List<GridNode>>();
 
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
-            Parallel.ForEach(zeroYNodes, parallelOptions,
-                 () => new List<GridNode>(),
-                 (node, loopState, localVertices) =>
-                 {
-                     float dist = (centerIndex - node.Position).EuclideanLength;
-                     AABB extendedBounds = node.Bounds;
-                     extendedBounds.Min.Y = Bounds.Min.Y;
-                     extendedBounds.Max.Y = Bounds.Max.Y;
 
-                     if (camera.frustum.IsAABBInside(extendedBounds))
-                     {
-                         GridNode newNode = Grid[node.Position.X, 0, node.Position.Z];
-                         newNode.distance = dist;
-                         AddNodeToSublist(localVertices, newNode);
-                         //for (int i = 0; i < Grid.GetLength(1); i++)
-                         //{
-                         //}
-                     }
-
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (result)
-                     {
-                         result.AddRange(localVertices);
-                     }
-                 });
-
-            result.Sort((x, y) => y.distance.CompareTo(x.distance));
-
-            for (int i = result.Count-1; i >= 0; i--)
+            Parallel.ForEach(zeroYNodes, parallelOptions, node =>
             {
+                float dist = (centerIndex - node.Position).EuclideanLength;
+                AABB extendedBounds = node.Bounds;
+                extendedBounds.Min.Y = Bounds.Min.Y;
+                extendedBounds.Max.Y = Bounds.Max.Y;
+
+                if (camera.frustum.IsAABBInside(extendedBounds))
+                {
+                    GridNode newNode = Grid[node.Position.X, 0, node.Position.Z];
+                    newNode.distance = dist;
+                    AddNodeToList(result, newNode);
+                }
+            });
+
+
+            result.Sort((x, y) => x.First().distance.CompareTo(y.First().distance));
+
+
+            Parallel.ForEach(result, parallelOptions, nodes =>
+            {
+                GridNode node = nodes.First();
                 for (int y = 0; y < Grid.GetLength(1); y++)
                 {
-                    result.Add(Grid[result[i].Position.X, y, result[i].Position.Z]);
+                    nodes.Add(Grid[node.Position.X, y, node.Position.Z]);
                 }
-            }
+            });
 
-            return result;
+            return result.SelectMany(subList => subList).ToList();
         }
 
 
