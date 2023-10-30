@@ -84,7 +84,7 @@ namespace Engine3D
             }
         }
 
-        public static void PerformOcclusionQueriesForGrid(GridStructure node, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera,
+        public static void PerformOcclusionQueriesForGrid(GridStructure grid, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera,
                                                          ref QueryPool queryPool, ref Dictionary<int, Tuple<int, GridNode>> pendingQueries, bool first)
         {
             Frustum frustum = camera.frustum;
@@ -93,9 +93,9 @@ namespace Engine3D
             Matrix4 projectionMatrix = camera.projectionMatrix;
             Matrix4 viewMatrix = camera.viewMatrix;
 
-            GL.UniformMatrix4(node.uniformLocations["modelMatrix"], true, ref modelMatrix);
-            GL.UniformMatrix4(node.uniformLocations["viewMatrix"], true, ref viewMatrix);
-            GL.UniformMatrix4(node.uniformLocations["projectionMatrix"], true, ref projectionMatrix);
+            GL.UniformMatrix4(grid.uniformLocations["modelMatrix"], true, ref modelMatrix);
+            GL.UniformMatrix4(grid.uniformLocations["viewMatrix"], true, ref viewMatrix);
+            GL.UniformMatrix4(grid.uniformLocations["projectionMatrix"], true, ref projectionMatrix);
 
             if (!first)
             {
@@ -119,7 +119,7 @@ namespace Engine3D
             }
 
             GL.DepthMask(false);
-            PerformOcclusionQueriesForGridIterative(node, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+            PerformOcclusionQueriesForGridIterative(grid, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
             GL.DepthMask(true);
 
             aabbVbo.Unbind();
@@ -127,40 +127,35 @@ namespace Engine3D
 
         }
 
-        public static void PerformOcclusionQueriesForGridIterative(GridStructure node, ref VBO aabbVbo, ref VAO aabbVao, ref Shader shader, ref Camera camera,
+        public static void PerformOcclusionQueriesForGridIterative(GridStructure grid, ref VBO aabbVbo, ref VAO aabbVao, ref Shader shader, ref Camera camera,
                                                                   ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, Tuple<int, GridNode>> pendingQueries,
                                                                   bool first)
         {
 
             if (first)
             {
-                if (node == null) return;
-                if (!frustum.IsAABBInside(node.bounds))
+                if (grid == null) return;
+
+                List<GridNode> nodes = grid.GetNodesByDistance(camera.GetPosition(), camera);
+                foreach(GridNode node in nodes)
                 {
-                    ManageVisibility(node, false);
+                    int query = queryPool.GetQuery();
 
-                    return;
+                    // 1. Initiate occlusion query
+                    GL.BeginQuery(QueryTarget.SamplesPassed, query);
+
+                    // 2. Render the AABB of the current BVH node
+                    RenderAABB(node.Bounds, aabbVbo, aabbVao, shader, camera);
+
+                    // 3. End occlusion query
+                    GL.EndQuery(QueryTarget.SamplesPassed);
+
+                    // 4. Buffer the pending results
+                    if (!pendingQueries.ContainsKey(node.key))
+                    {
+                        pendingQueries.Add(node.key, new Tuple<int, GridNode>(query, node));
+                    }
                 }
-
-                int query = queryPool.GetQuery();
-
-                // 1. Initiate occlusion query
-                GL.BeginQuery(QueryTarget.SamplesPassed, query);
-
-                // 2. Render the AABB of the current BVH node
-                RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
-
-                // 3. End occlusion query
-                GL.EndQuery(QueryTarget.SamplesPassed);
-
-                // 4. Buffer the pending results
-                if (!pendingQueries.ContainsKey(node.key))
-                {
-                    pendingQueries.Add(node.key, new Tuple<int, BVHNode>(query, node));
-                }
-
-                PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
-                PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
             }
             else
             {
