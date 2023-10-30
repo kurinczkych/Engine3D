@@ -7,7 +7,7 @@ layout(location = 3) in vec4 inColor;
 layout(location = 4) in vec3 inTangent;
 
 out vec3 fragPos;
-out vec3 normal;
+out vec3 fragNormal;
 out vec2 fragTexCoord;
 out vec4 fragColor;
 out mat3 TBN; 
@@ -29,7 +29,7 @@ void main()
 
 	fragPos = vec3(fragPos4.x,fragPos4.y, fragPos4.z);
 	fragTexCoord = inUV;
-	normal = inNormal;
+	fragNormal = inNormal;
 	fragColor = inColor;
 
 	//normal

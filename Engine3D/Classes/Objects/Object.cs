@@ -22,6 +22,7 @@ namespace Engine3D
         Sphere,
         Capsule,
         TriangleMesh,
+        TriangleMeshWithCollider,
         TestMesh,
         NoTexture,
         Wireframe,
@@ -129,7 +130,7 @@ namespace Engine3D
 
             mesh.parentObject = this;
 
-            if (type == ObjectType.TriangleMesh)
+            if (type == ObjectType.TriangleMeshWithCollider)
             {
                 Type meshType = mesh.GetType();
                 if (meshType != typeof(Mesh))

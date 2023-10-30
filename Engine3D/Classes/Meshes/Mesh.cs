@@ -30,6 +30,7 @@ namespace Engine3D
         public bool drawNormals = false;
         public WireframeMesh normalMesh;
 
+        public int useTexture;
         public Texture texture;
 
         private List<float> vertices = new List<float>();
@@ -45,10 +46,8 @@ namespace Engine3D
             }
         }
 
-        private Frustum frustum;
         private Camera camera;
         private Vector2 windowSize;
-        public AABB Bounds = new AABB();
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
@@ -59,12 +58,12 @@ namespace Engine3D
         {
             texture = new Texture(textureCount, textureName);
             textureCount += texture.textureDescriptor.count;
+            useTexture = 1;
 
             Vao = vao;
             Vbo = vbo;
 
             this.windowSize = windowSize;
-            this.frustum = frustum;
             this.camera = camera;
 
             Scale = Vector3.One;
@@ -79,31 +78,53 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
-            texture = new Texture(textureCount, textureName);
-            textureCount += texture.textureDescriptor.count;
+            useTexture = 0;
 
             Vao = vao;
             Vbo = vbo;
 
             this.windowSize = windowSize;
-            this.frustum = frustum;
             this.camera = camera;
 
             Scale = Vector3.One;
+
+            this.modelName = modelName;
+            ProcessObj(modelName);
+
+            ComputeVertexNormals(ref tris);
+            ComputeTangents(ref tris);
+
+            GetUniformLocations();
+            SendUniforms();
         }
+
+        //public Mesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        //{
+        //    texture = new Texture(textureCount, textureName);
+        //    textureCount += texture.textureDescriptor.count;
+        //    useTexture = 1;
+
+        //    Vao = vao;
+        //    Vbo = vbo;
+
+        //    this.windowSize = windowSize;
+        //    this.camera = camera;
+
+        //    Scale = Vector3.One;
+        //}
 
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string textureName, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
             texture = new Texture(textureCount, textureName);
             textureCount += texture.textureDescriptor.count;
+            useTexture = 1;
 
             Vao = vao;
             Vbo = vbo;
 
             this.windowSize = windowSize;
-            this.frustum = frustum;
             this.camera = camera;
 
             Scale = Vector3.One;
@@ -117,17 +138,25 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public void CalculateNormalWireframe(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
         {
-            List<Line> normalLines = new List<Line>();
-            foreach (triangle tri in tris)
-            {
-                Vector3 n1 = tri.GetMiddle();
-                Vector3 n2 = (tri.ComputeTriangleNormal() * 2.5f) + tri.GetMiddle();
-                normalLines.Add(new Line(n1, n2));
-            }
-            normalMesh = new WireframeMesh(vao, vbo, shaderProgramId, ref frustum, ref camera, Color4.Red);
-            normalMesh.lines = normalLines;
+            useTexture = 0;
+
+            Vao = vao;
+            Vbo = vbo;
+
+            this.windowSize = windowSize;
+            this.camera = camera;
+
+            Scale = Vector3.One;
+
+            this.tris = new List<triangle>(tris);
+
+            ComputeVertexNormals(ref tris);
+            ComputeTangents(ref tris);
+
+            GetUniformLocations();
+            SendUniforms();
         }
 
         private void ConvertToNDC(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
@@ -190,44 +219,47 @@ namespace Engine3D
             return vec;
         }
 
-        public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
+        public void UpdateFrustumAndCamera(ref Camera camera)
         {
-            this.frustum = frustum;
             this.camera = camera;
         }
 
         private void GetUniformLocations()
         {
-            uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
             uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
             uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
             uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
-            if(texture.textureDescriptor.Normal != "")
+            uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
+            if (texture != null)
             {
-                uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
-                uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
-            }
-            if(texture.textureDescriptor.Height != "")
-            {
-                uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
-                uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
-            }
-            if(texture.textureDescriptor.AO != "")
-            {
-                uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
-                uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
-            }
-            if(texture.textureDescriptor.Rough != "")
-            {
-                uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
-                uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
-            }
-            if(texture.textureDescriptor.Metal != "")
-            {
-                uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
-                uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
+                uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
+                if (texture.textureDescriptor.Normal != "")
+                {
+                    uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
+                    uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
+                }
+                if (texture.textureDescriptor.Height != "")
+                {
+                    uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
+                    uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
+                }
+                if (texture.textureDescriptor.AO != "")
+                {
+                    uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
+                    uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
+                }
+                if (texture.textureDescriptor.Rough != "")
+                {
+                    uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
+                    uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
+                }
+                if (texture.textureDescriptor.Metal != "")
+                {
+                    uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
+                    uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
+                }
             }
         }
 
@@ -242,32 +274,37 @@ namespace Engine3D
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
-            GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
-            //texture.textureDescriptor.DisableMapUse();
-            if(texture.textureDescriptor.NormalUse == 1)
+
+            GL.Uniform1(uniformLocations["useTexture"], useTexture);
+            if (texture != null)
             {
-                GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
-                GL.Uniform1(uniformLocations["useNormal"], texture.textureDescriptor.NormalUse);
-            }
-            if(texture.textureDescriptor.HeightUse == 1)
-            {
-                GL.Uniform1(uniformLocations["textureSamplerHeight"], texture.textureDescriptor.HeightUnit);
-                GL.Uniform1(uniformLocations["useHeight"], texture.textureDescriptor.HeightUse);
-            }
-            if(texture.textureDescriptor.AOUse == 1)
-            {
-                GL.Uniform1(uniformLocations["textureSamplerAO"], texture.textureDescriptor.AOUnit);
-                GL.Uniform1(uniformLocations["useAO"], texture.textureDescriptor.AOUse);
-            }
-            if(texture.textureDescriptor.RoughUse == 1)
-            {
-                GL.Uniform1(uniformLocations["textureSamplerRough"], texture.textureDescriptor.RoughUnit);
-                GL.Uniform1(uniformLocations["useRough"], texture.textureDescriptor.RoughUse);
-            }
-            if(texture.textureDescriptor.MetalUse == 1)
-            {
-                GL.Uniform1(uniformLocations["textureSamplerMetal"], texture.textureDescriptor.MetalUnit);
-                GL.Uniform1(uniformLocations["useMetal"], texture.textureDescriptor.MetalUse);
+                GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
+                //texture.textureDescriptor.DisableMapUse();
+                if (texture.textureDescriptor.NormalUse == 1)
+                {
+                    GL.Uniform1(uniformLocations["textureSamplerNormal"], texture.textureDescriptor.NormalUnit);
+                    GL.Uniform1(uniformLocations["useNormal"], texture.textureDescriptor.NormalUse);
+                }
+                if (texture.textureDescriptor.HeightUse == 1)
+                {
+                    GL.Uniform1(uniformLocations["textureSamplerHeight"], texture.textureDescriptor.HeightUnit);
+                    GL.Uniform1(uniformLocations["useHeight"], texture.textureDescriptor.HeightUse);
+                }
+                if (texture.textureDescriptor.AOUse == 1)
+                {
+                    GL.Uniform1(uniformLocations["textureSamplerAO"], texture.textureDescriptor.AOUnit);
+                    GL.Uniform1(uniformLocations["useAO"], texture.textureDescriptor.AOUse);
+                }
+                if (texture.textureDescriptor.RoughUse == 1)
+                {
+                    GL.Uniform1(uniformLocations["textureSamplerRough"], texture.textureDescriptor.RoughUnit);
+                    GL.Uniform1(uniformLocations["useRough"], texture.textureDescriptor.RoughUse);
+                }
+                if (texture.textureDescriptor.MetalUse == 1)
+                {
+                    GL.Uniform1(uniformLocations["textureSamplerMetal"], texture.textureDescriptor.MetalUnit);
+                    GL.Uniform1(uniformLocations["useMetal"], texture.textureDescriptor.MetalUse);
+                }
             }
         }
 
@@ -371,15 +408,18 @@ namespace Engine3D
 
             SendUniforms();
 
-            texture.Bind(TextureType.Texture);
-            if(texture.textureDescriptor.Normal != "")
-                texture.Bind(TextureType.Normal);
-            if(texture.textureDescriptor.Height != "")
-                texture.Bind(TextureType.Height);
-            if(texture.textureDescriptor.AO != "")
-                texture.Bind(TextureType.AO);
-            if(texture.textureDescriptor.Rough != "")
-                texture.Bind(TextureType.Rough);
+            if (texture != null)
+            {
+                texture.Bind(TextureType.Texture);
+                if (texture.textureDescriptor.Normal != "")
+                    texture.Bind(TextureType.Normal);
+                if (texture.textureDescriptor.Height != "")
+                    texture.Bind(TextureType.Height);
+                if (texture.textureDescriptor.AO != "")
+                    texture.Bind(TextureType.AO);
+                if (texture.textureDescriptor.Rough != "")
+                    texture.Bind(TextureType.Rough);
+            }
 
             return vertices;
         }
@@ -436,15 +476,18 @@ namespace Engine3D
 
             SendUniforms();
 
-            texture.Bind(TextureType.Texture);
-            if (texture.textureDescriptor.Normal != "")
-                texture.Bind(TextureType.Normal);
-            if (texture.textureDescriptor.Height != "")
-                texture.Bind(TextureType.Height);
-            if (texture.textureDescriptor.AO != "")
-                texture.Bind(TextureType.AO);
-            if (texture.textureDescriptor.Rough != "")
-                texture.Bind(TextureType.Rough);
+            if (texture != null)
+            {
+                texture.Bind(TextureType.Texture);
+                if (texture.textureDescriptor.Normal != "")
+                    texture.Bind(TextureType.Normal);
+                if (texture.textureDescriptor.Height != "")
+                    texture.Bind(TextureType.Height);
+                if (texture.textureDescriptor.AO != "")
+                    texture.Bind(TextureType.AO);
+                if (texture.textureDescriptor.Rough != "")
+                    texture.Bind(TextureType.Rough);
+            }
 
             return vertices;
         }
@@ -555,214 +598,6 @@ namespace Engine3D
                 index++;
                 indices[index] = tri.pi[2];
                 index++;
-            }
-        }
-
-        private void ComputeTangents(ref List<triangle> tris)
-        {
-            // Initialize tangent and bitangent lists with zeros
-            Dictionary<Vector3, List<Vector3>> tangentSums = new Dictionary<Vector3, List<Vector3>>();
-            Dictionary<Vector3, List<Vector3>> bitangentSums = new Dictionary<Vector3, List<Vector3>>();
-
-            foreach (var tri in tris)
-            {
-                // Get the vertices of the triangle
-                Vector3 p0 = tri.p[0];
-                Vector3 p1 = tri.p[1];
-                Vector3 p2 = tri.p[2];
-
-                // Get UVs of the triangle
-                Vector2 uv0 = new Vector2(tri.t[0].u, tri.t[0].v);
-                Vector2 uv1 = new Vector2(tri.t[1].u, tri.t[1].v);
-                Vector2 uv2 = new Vector2(tri.t[2].u, tri.t[2].v);
-
-                // Compute the edges of the triangle in both object space and texture space
-                Vector3 edge1 = p1 - p0;
-                Vector3 edge2 = p2 - p0;
-
-                Vector2 deltaUV1 = uv1 - uv0;
-                Vector2 deltaUV2 = uv2 - uv0;
-
-                float f = 1.0f / (deltaUV1.X * deltaUV2.Y - deltaUV2.X * deltaUV1.Y);
-
-                // Calculate tangent and bitangent
-                Vector3 tangent = new Vector3(
-                    f * (deltaUV2.Y * edge1.X - deltaUV1.Y * edge2.X),
-                    f * (deltaUV2.Y * edge1.Y - deltaUV1.Y * edge2.Y),
-                    f * (deltaUV2.Y * edge1.Z - deltaUV1.Y * edge2.Z)
-                );
-
-                Vector3 bitangent = new Vector3(
-                    f * (-deltaUV2.X * edge1.X + deltaUV1.X * edge2.X),
-                    f * (-deltaUV2.X * edge1.Y + deltaUV1.X * edge2.Y),
-                    f * (-deltaUV2.X * edge1.Z + deltaUV1.X * edge2.Z)
-                );
-
-                // Accumulate the tangents and bitangents
-                foreach (var vertex in tri.p)
-                {
-                    if (!tangentSums.ContainsKey(vertex))
-                    {
-                        tangentSums[vertex] = new List<Vector3>();
-                        bitangentSums[vertex] = new List<Vector3>();
-                    }
-
-                    tangentSums[vertex].Add(tangent);
-                    bitangentSums[vertex].Add(bitangent);
-                }
-            }
-
-            // Average and normalize tangents and bitangents
-            foreach (var tri in tris)
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    Vector3 vertex = tri.p[i];
-
-                    Vector3 avgTangent = Average(tangentSums[vertex]).Normalized();
-                    Vector3 avgBitangent = Average(bitangentSums[vertex]).Normalized();
-
-                    tri.tan[i] = avgTangent;
-                    tri.bitan[i] = avgBitangent;
-                }
-            }
-        }
-
-        public void ProcessObj(string filename)
-        {
-            tris = new List<triangle>();
-
-            string result;
-            int fPerCount = -1;
-            List<Vector3> verts = new List<Vector3>();
-            List<Vector3> normals = new List<Vector3>();
-            List<Vec2d> uvs = new List<Vec2d>();
-
-            using (Stream stream = FileManager.GetFileStream(filename, FileType.Models))
-            using (StreamReader reader = new StreamReader(stream))
-            {
-                while (true)
-                {
-                    result = reader.ReadLine();
-                    if (result != null && result.Length > 0)
-                    {
-                        if (result[0] == 'v')
-                        {
-                            if (result[1] == 't')
-                            {
-                                string[] vStr = result.Substring(3).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                Vec2d v = new Vec2d(a, b);
-                                uvs.Add(v);
-                            }
-                            else if (result[1] == 'n')
-                            {
-                                string[] vStr = result.Substring(3).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                var c = float.Parse(vStr[2]);
-                                Vector3 v = new Vector3(a, b, c);
-                                normals.Add(v);
-                            }
-                            else
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                var c = float.Parse(vStr[2]);
-                                Vector3 v = new Vector3(a, b, c);
-                                verts.Add(v);
-                                allVerts.Add(v);
-                            }
-                        }
-                        else if (result[0] == 'f')
-                        {
-                            if (result.Contains("//"))
-                            {
-
-                            }
-                            else if (result.Contains("/"))
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                if (vStr.Length > 3)
-                                    throw new Exception();
-
-                                if (fPerCount == -1)
-                                    fPerCount = vStr[0].Count(x => x == '/');
-
-                                if (fPerCount == 2)
-                                {
-                                    // 1/1/1, 2/2/2, 3/3/3
-                                    int[] v = new int[3];
-                                    int[] n = new int[3];
-                                    int[] uv = new int[3];
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        string[] fStr = vStr[i].Split("/");
-                                        v[i] = int.Parse(fStr[0]);
-                                        uv[i] = int.Parse(fStr[1]);
-                                        n[i] = int.Parse(fStr[2]);
-                                    }
-
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vector3[] { normals[n[0] - 1], normals[n[1] - 1], normals[n[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
-
-                                    tris.Last().pi[0] = v[0] - 1;
-                                    tris.Last().pi[1] = v[1] - 1;
-                                    tris.Last().pi[2] = v[2] - 1;
-
-                                    Bounds.Enclose(tris.Last());
-
-                                    hasIndices = true;
-                                }
-                                else if (fPerCount == 1)
-                                {
-                                    // 1/1, 2/2, 3/3
-                                    int[] v = new int[3];
-                                    int[] uv = new int[3];
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        string[] fStr = vStr[i].Split("/");
-                                        v[i] = int.Parse(fStr[0]);
-                                        uv[i] = int.Parse(fStr[1]);
-                                    }
-
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
-
-                                    tris.Last().pi[0] = v[0] - 1;
-                                    tris.Last().pi[1] = v[1] - 1;
-                                    tris.Last().pi[2] = v[2] - 1;
-
-                                    Bounds.Enclose(tris.Last());
-
-                                    hasIndices = true;
-                                }
-
-                            }
-                            else
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                int[] f = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
-
-                                tris.Add(new triangle(new Vector3[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
-
-                                tris.Last().pi[0] = f[0] - 1;
-                                tris.Last().pi[1] = f[1] - 1;
-                                tris.Last().pi[2] = f[2] - 1;
-
-                                Bounds.Enclose(tris.Last());
-
-                                hasIndices = true;
-                            }
-                        }
-                    }
-
-                    if (result == null)
-                        break;
-                }
             }
         }
 

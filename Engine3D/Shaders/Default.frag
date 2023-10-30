@@ -25,7 +25,7 @@ struct DirLight {
 };  
 
 in vec3 fragPos;
-in vec3 normal;
+in vec3 fragNormal;
 in vec2 fragTexCoord;
 in vec4 fragColor;
 in mat3 TBN; 
@@ -45,6 +45,7 @@ uniform sampler2D textureSamplerAO;
 uniform sampler2D textureSamplerRough;
 uniform sampler2D textureSamplerMetal;
 
+uniform int useTexture;
 uniform int useNormal;
 uniform int useHeight;
 uniform int useAO;
@@ -124,10 +125,10 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, float metalness)
     }
 
     // combine results
-    float ao = texture(textureSamplerAO, fragTexCoord).r;
     vec3 ambient  = light.ambient * light.diffuse;
     if(useAO == 1)
     {
+        float ao = texture(textureSamplerAO, fragTexCoord).r;
         ambient  = ambient * ao;
     }
 
@@ -175,8 +176,8 @@ void main()
 
     vec3 viewDir = normalize(cameraPosition - fragPos);
 
-    vec3 sampledNormal = normal;
-    vec3 normalFromMap = normal;
+    vec3 sampledNormal = fragNormal;
+    vec3 normalFromMap = fragNormal;
 
     if(useNormal == 1)
     {
@@ -201,10 +202,14 @@ void main()
     for(int i = 0; i < actualNumOfLights; i++)
         result += CalcPointLight(pointLights[i], normalFromMap, fragPos, viewDir, metalness);
 
-    FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
-    if(useHeight == 1)
+    FragColor = vec4(result, 1.0) * fragColor;
+    if(useTexture == 1)
     {
-        FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * fragColor;
+        FragColor = texture(textureSampler, fragTexCoord) * vec4(result, 1.0) * fragColor;
+        if(useHeight == 1)
+        {
+            FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * fragColor;
+        }
     }
 
 //    FragColor = fragColor;

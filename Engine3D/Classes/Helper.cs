@@ -19,6 +19,8 @@ namespace Engine3D
 
     public static class Helper
     {
+        public static Random rnd = new Random((int)DateTime.Now.Ticks);
+
         public static Color4 CalcualteColorBasedOnDistance(float index, float maxIndex)
         {
             float c = InterpolateComponent(index, 0f, maxIndex, 1f, 0f);
@@ -50,5 +52,49 @@ namespace Engine3D
             return new Vector3(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y), Math.Max(a.Z, b.Z));
         }
 
+        public static Vector3 GetRandomVectorInAABB(AABB aabb)
+        {
+            float x = (float)(rnd.NextDouble() * (aabb.Max.X - aabb.Min.X) + aabb.Min.X);
+            float y = (float)(rnd.NextDouble() * (aabb.Max.Y - aabb.Min.Y) + aabb.Min.Y);
+            float z = (float)(rnd.NextDouble() * (aabb.Max.Z - aabb.Min.Z) + aabb.Min.Z);
+
+            return new Vector3(x, y, z);
+        }
+
+        public static Quaternion GetRandomQuaternion()
+        {
+            float u1 = (float)rnd.NextDouble();
+            float u2 = (float)rnd.NextDouble();
+            float u3 = (float)rnd.NextDouble();
+
+            float sqrt1MinusU1 = MathF.Sqrt(1 - u1);
+            float sqrtU1 = MathF.Sqrt(u1);
+
+            float x = sqrt1MinusU1 * MathF.Sin(2 * MathF.PI * u2);
+            float y = sqrt1MinusU1 * MathF.Cos(2 * MathF.PI * u2);
+            float z = sqrtU1 * MathF.Sin(2 * MathF.PI * u3);
+            float w = sqrtU1 * MathF.Cos(2 * MathF.PI * u3);
+
+            return new Quaternion(x, y, z, w).Normalized();
+        }
+
+        public static Vector3 GetRandomScale(AABB aabb)
+        {
+            float x = (float)(rnd.NextDouble() * (aabb.Max.X - aabb.Min.X));
+            float y = (float)(rnd.NextDouble() * (aabb.Max.Y - aabb.Min.Y));
+            float z = (float)(rnd.NextDouble() * (aabb.Max.Z - aabb.Min.Z));
+
+            return new Vector3(x, y, z);
+        }
+
+        public static Color4 GetRandomColor(bool includeAlpha = false)
+        {
+            float r = (float)rnd.NextDouble();
+            float g = (float)rnd.NextDouble();
+            float b = (float)rnd.NextDouble();
+            float a = includeAlpha ? (float)rnd.NextDouble() : 1.0f;  // If you don't want a random alpha, it defaults to 1 (opaque).
+
+            return new Color4(r, g, b, a);
+        }
     }
 }

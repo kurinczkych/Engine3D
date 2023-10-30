@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.Xml.Schema;
 using OpenTK.Audio.OpenAL;
 using System.Drawing;
+using System.Linq.Expressions;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -37,6 +38,9 @@ namespace Engine3D
         #region OPENGL
         private VAO meshVao;
         private VBO meshVbo;
+
+        private InstancedVAO instancedMeshVao;
+        private VBO instancedMeshVbo;
 
         private VAO testVao;
         private VBO testVbo;
@@ -57,6 +61,7 @@ namespace Engine3D
         private VBO aabbVbo;
 
         private Shader shaderProgram;
+        private Shader instancedShaderProgram;
         private Shader posTexShader;
         private Shader noTextureShaderProgram;
         private Shader aabbShaderProgram;
@@ -96,7 +101,10 @@ namespace Engine3D
         private double totalTime;
         private const int SAMPLE_SIZE = 30;
         private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
+
         private int maxFps = 0;
+        private int minFps = int.MaxValue;
+        private Stopwatch maxminStopwatch;
 
         private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
@@ -119,6 +127,9 @@ namespace Engine3D
             posTexShader = new Shader();
             pointLights = new List<PointLight>();
 
+            maxminStopwatch = new Stopwatch();
+            maxminStopwatch.Start();
+
             objects = new List<Object>();
             queryPool = new QueryPool(1000);
             pendingQueries = new Dictionary<int, Tuple<int, BVHNode>>();
@@ -138,10 +149,23 @@ namespace Engine3D
 
             double averageDeltaTime = totalTime / sampleTimes.Count;
             double fps = 1.0 / averageDeltaTime;
-            if (fps > maxFps && sampleTimes.Count != 1)
-                maxFps = (int)fps;
 
-            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() + "    |    MaxFPS: " + maxFps.ToString();
+
+            if (!maxminStopwatch.IsRunning)
+            {
+                if (fps > maxFps)
+                    maxFps = (int)fps;
+                if (fps < minFps)
+                    minFps = (int)fps;
+            }
+            else
+            {
+                if (maxminStopwatch.ElapsedMilliseconds > 1000)
+                    maxminStopwatch.Stop();
+            }
+
+            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() + 
+                             "    |    MaxFPS: " + maxFps.ToString() + "    |    MinFPS: " + minFps.ToString();
 
             return fps;
         }
@@ -155,7 +179,7 @@ namespace Engine3D
         }
 
 
-        private bool DrawCorrectMesh(ref List<float> vertices, Type prevMeshType, Type currentMeshType)
+        private bool DrawCorrectMesh(ref List<float> vertices, Type prevMeshType, Type currentMeshType, BaseMesh? prevMesh)
         {
             if (prevMeshType == null || currentMeshType == null)
                 return false;
@@ -163,6 +187,10 @@ namespace Engine3D
             if(prevMeshType == typeof(Mesh) && prevMeshType != currentMeshType)
             {
                 meshVbo.Buffer(vertices);
+            }
+            if(prevMeshType == typeof(InstancedMesh) && prevMeshType != currentMeshType)
+            {
+                instancedMeshVbo.Buffer(vertices);
             }
             else if(prevMeshType == typeof(TestMesh) && prevMeshType != currentMeshType)
             {
@@ -187,8 +215,13 @@ namespace Engine3D
             else
                 return false;
 
-            if(prevMeshType == typeof(WireframeMesh))
+            if (prevMeshType == typeof(WireframeMesh))
                 GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            else if (prevMeshType == typeof(InstancedMesh))
+            {
+                if(prevMesh != null)
+                    GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, ((InstancedMesh)prevMesh).instancedData.Count());
+            }
             else
                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             return true;
@@ -271,7 +304,8 @@ namespace Engine3D
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id);
 
-            Type? currentMesh = null;
+            Type? currentMeshType = null;
+            //BaseMesh? currentMesh = null;
             List<float> vertices = new List<float>();
             foreach (Object o in objects)
             {
@@ -281,35 +315,56 @@ namespace Engine3D
                    objectType == ObjectType.Capsule ||
                    objectType == ObjectType.TriangleMesh)
                 {
-                    Mesh mesh = (Mesh)o.GetMesh();
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    if (o.GetMesh().GetType() == typeof(Mesh))
                     {
-                        shaderProgram.Use();
-                    }
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-
-                    if (useOcclusionCulling && objectType == ObjectType.TriangleMesh)
-                    {
-                        List<triangle> notOccludedTris = new List<triangle>();
-                        OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
-
-                        vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
-                        currentMesh = typeof(Mesh);
-
-                        if (vertices.Count > 0)
+                        Mesh mesh = (Mesh)o.GetMesh();
+                        if (currentMeshType == null || currentMeshType != mesh.GetType())
                         {
+                            shaderProgram.Use();
+                        }
+                        mesh.UpdateFrustumAndCamera(ref character.camera);
+
+                        if (useOcclusionCulling && objectType == ObjectType.TriangleMesh)
+                        {
+                            List<triangle> notOccludedTris = new List<triangle>();
+                            OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
+
+                            vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
+                            currentMeshType = typeof(Mesh);
+
+                            if (vertices.Count > 0)
+                            {
+                                meshVbo.Buffer(vertices);
+                                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                                vertices.Clear();
+                            }
+                        }
+                        else
+                        {
+                            vertices.AddRange(mesh.Draw());
+                            currentMeshType = typeof(Mesh);
+
                             meshVbo.Buffer(vertices);
                             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                             vertices.Clear();
                         }
                     }
-                    else
+                    else if (o.GetMesh().GetType() == typeof(InstancedMesh))
                     {
-                        vertices.AddRange(mesh.Draw());
-                        currentMesh = typeof(Mesh);
+                        InstancedMesh mesh = (InstancedMesh)o.GetMesh();
+                        if (currentMeshType == null || currentMeshType != mesh.GetType())
+                        {
+                            instancedShaderProgram.Use();
+                        }
+                        mesh.UpdateFrustumAndCamera(ref character.camera);
+
+                        List<float> instancedVertices = new List<float>();
+                        (vertices, instancedVertices) = mesh.Draw();
+                        currentMeshType = typeof(InstancedMesh);
 
                         meshVbo.Buffer(vertices);
-                        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                        instancedMeshVbo.Buffer(instancedVertices);
+                        GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
                         vertices.Clear();
                     }
                 }
@@ -320,14 +375,14 @@ namespace Engine3D
                     //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
                     //    vertices = new List<float>();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    if (currentMeshType == null || currentMeshType != mesh.GetType())
                     {
                         shaderProgram.Use();
                     }
 
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(TestMesh);
+                    currentMeshType = typeof(TestMesh);
 
                     testVbo.Buffer(vertices);
                     GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
@@ -337,33 +392,33 @@ namespace Engine3D
                 {
                     NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(NoTextureMesh) : currentMesh, typeof(NoTextureMesh)))
+                    if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(NoTextureMesh) : currentMeshType, typeof(NoTextureMesh), null))
                         vertices = new List<float>();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    if (currentMeshType == null || currentMeshType != mesh.GetType())
                     {
                         noTextureShaderProgram.Use();
                     }
 
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(NoTextureMesh);
+                    currentMeshType = typeof(NoTextureMesh);
                 }
                 else if (objectType == ObjectType.Wireframe)
                 {
                     WireframeMesh mesh = (WireframeMesh)o.GetMesh();
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(WireframeMesh) : currentMesh, typeof(WireframeMesh)))
+                    if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(WireframeMesh) : currentMeshType, typeof(WireframeMesh), null))
                         vertices = new List<float>();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    if (currentMeshType == null || currentMeshType != mesh.GetType())
                     {
                         noTextureShaderProgram.Use();
                     }
 
                     mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
                     vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(WireframeMesh);
+                    currentMeshType = typeof(WireframeMesh);
                 }
                 else if (objectType == ObjectType.UIMesh)
                 {
@@ -372,14 +427,14 @@ namespace Engine3D
                     //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
                     //    vertices = new List<float>();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    if (currentMeshType == null || currentMeshType != mesh.GetType())
                     {
                         GL.Disable(EnableCap.DepthTest);
                         posTexShader.Use();
                     }
 
                     vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(UITextureMesh);
+                    currentMeshType = typeof(UITextureMesh);
 
                     uiTexVbo.Buffer(vertices);
                     GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
@@ -389,22 +444,22 @@ namespace Engine3D
                 {
                     TextMesh mesh = (TextMesh)o.GetMesh();
 
-                    if (currentMesh == null || currentMesh != mesh.GetType())
+                    if (currentMeshType == null || currentMeshType != mesh.GetType())
                     {
                         GL.Disable(EnableCap.DepthTest);
                         posTexShader.Use();
                     }
 
-                    if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(TextMesh) : currentMesh, typeof(TextMesh)))
+                    if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(TextMesh) : currentMeshType, typeof(TextMesh), null))
                         vertices = new List<float>();
 
                     vertices.AddRange(mesh.Draw());
-                    currentMesh = typeof(TextMesh);
+                    currentMeshType = typeof(TextMesh);
                 }
             }
 
 
-            if (DrawCorrectMesh(ref vertices, currentMesh == null ? typeof(int) : currentMesh, typeof(int)))
+            if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(int) : currentMeshType, typeof(int), null))
                 vertices = new List<float>();
 
             //BVH bvh = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).First().BVHStruct;
@@ -514,48 +569,61 @@ namespace Engine3D
             // OPENGL init
             meshVbo = new VBO();
             meshVao = new VAO(Mesh.floatCount);
-            meshVao.LinkToVAO(0, 4, 0, meshVbo);
-            meshVao.LinkToVAO(1, 3, 4, meshVbo);
-            meshVao.LinkToVAO(2, 2, 7, meshVbo);
-            meshVao.LinkToVAO(3, 4, 9, meshVbo);
-            meshVao.LinkToVAO(4, 3, 13, meshVbo);
+            meshVao.LinkToVAO(0, 4, meshVbo);
+            meshVao.LinkToVAO(1, 3, meshVbo);
+            meshVao.LinkToVAO(2, 2, meshVbo);
+            meshVao.LinkToVAO(3, 4, meshVbo);
+            meshVao.LinkToVAO(4, 3, meshVbo);
+
+            instancedMeshVbo = new VBO();
+            instancedMeshVao = new InstancedVAO(InstancedMesh.floatCount, InstancedMesh.instancedFloatCount);
+            instancedMeshVao.LinkToVAO(0, 4, meshVbo);
+            instancedMeshVao.LinkToVAO(1, 3, meshVbo);
+            instancedMeshVao.LinkToVAO(2, 2, meshVbo);
+            instancedMeshVao.LinkToVAO(3, 4, meshVbo);
+            instancedMeshVao.LinkToVAO(4, 3, meshVbo);
+            instancedMeshVao.LinkToVAOInstanceData(5, 4, 1, instancedMeshVbo);
+            instancedMeshVao.LinkToVAOInstanceData(6, 4, 1, instancedMeshVbo);
+            instancedMeshVao.LinkToVAOInstanceData(7, 3, 1, instancedMeshVbo);
+            instancedMeshVao.LinkToVAOInstanceData(8, 4, 1, instancedMeshVbo);
 
             testVbo = new VBO();
             testVao = new VAO(Mesh.floatCount);
-            testVao.LinkToVAO(0, 4, 0, testVbo);
-            testVao.LinkToVAO(1, 3, 4, testVbo);
-            testVao.LinkToVAO(2, 2, 7, testVbo);
-            testVao.LinkToVAO(3, 4, 9, testVbo);
-            testVao.LinkToVAO(4, 3, 13, testVbo);
+            testVao.LinkToVAO(0, 4, testVbo);
+            testVao.LinkToVAO(1, 3, testVbo);
+            testVao.LinkToVAO(2, 2, testVbo);
+            testVao.LinkToVAO(3, 4, testVbo);
+            testVao.LinkToVAO(4, 3, testVbo);
 
             textVbo = new VBO();
             textVao = new VAO(TextMesh.floatCount);
-            textVao.LinkToVAO(0, 4, 0, textVbo);
-            textVao.LinkToVAO(1, 4, 4, textVbo);
-            textVao.LinkToVAO(2, 2, 8, textVbo);
+            textVao.LinkToVAO(0, 4, textVbo);
+            textVao.LinkToVAO(1, 4, textVbo);
+            textVao.LinkToVAO(2, 2, textVbo);
 
             noTexVbo = new VBO();
             noTexVao = new VAO(NoTextureMesh.floatCount);
-            noTexVao.LinkToVAO(0, 4, 0, noTexVbo);
-            noTexVao.LinkToVAO(1, 4, 4, noTexVbo);
+            noTexVao.LinkToVAO(0, 4, noTexVbo);
+            noTexVao.LinkToVAO(1, 4, noTexVbo);
 
             uiTexVbo = new VBO();
             uiTexVao = new VAO(UITextureMesh.floatCount);
-            uiTexVao.LinkToVAO(0, 4, 0, uiTexVbo);
-            uiTexVao.LinkToVAO(1, 4, 4, uiTexVbo);
-            uiTexVao.LinkToVAO(2, 2, 8, uiTexVbo);
+            uiTexVao.LinkToVAO(0, 4, uiTexVbo);
+            uiTexVao.LinkToVAO(1, 4, uiTexVbo);
+            uiTexVao.LinkToVAO(2, 2, uiTexVbo);
 
             wireVbo = new VBO();
             wireVao = new VAO(WireframeMesh.floatCount);
-            wireVao.LinkToVAO(0, 4, 0, wireVbo);
-            wireVao.LinkToVAO(1, 4, 4, wireVbo);
+            wireVao.LinkToVAO(0, 4, wireVbo);
+            wireVao.LinkToVAO(1, 4, wireVbo);
 
             aabbVbo = new VBO();
             aabbVao = new VAO(3);
-            aabbVao.LinkToVAO(0, 3, 0, aabbVbo);
+            aabbVao.LinkToVAO(0, 3, aabbVbo);
 
             // Create the shader program
             shaderProgram = new Shader("Default.vert", "Default.frag");
+            instancedShaderProgram = new Shader("Instanced.vert", "Default.frag");
             posTexShader = new Shader("postex.vert", "postex.frag");
             noTextureShaderProgram = new Shader("noTexture.vert", "noTexture.frag");
             aabbShaderProgram = new Shader("aabb.vert", "aabb.frag");
@@ -583,7 +651,7 @@ namespace Engine3D
 
             noTextureShaderProgram.Use();
             //Vector3 characterPos = new Vector3(34, -16, -275);
-            Vector3 characterPos = new Vector3(0, 0, 0);
+            Vector3 characterPos = new Vector3(0, 20, 0);
             //Vector3 characterPos = new Vector3(108.32f, 352.56f, -7.79f);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
             //character.camera.SetYaw(218.84f);
@@ -601,18 +669,19 @@ namespace Engine3D
 
             // Projection matrix and mesh loading
 
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
             //objects.Last().BuildOctree();
             //objects.Last().BuildGrid(shaderProgram, noTextureShaderProgram);
 
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "core_transfer.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             ////objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
+            //objects.Last().BuildGrid(shaderProgram, noTextureShaderProgram);
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitCube(), "space.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.Cube, ref physx));
             //objects.Last().SetSize(new Vector3(10, 2, 10));
@@ -623,6 +692,19 @@ namespace Engine3D
             //objects.Last().SetSize(2);
             //objects.Last().AddSphereCollider(false);
 
+            objects.Add(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitCube(), windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+
+            for (int i = 0; i < 10000; i++)
+            {
+                InstancedMeshData instData = new InstancedMeshData();
+                instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-100, -100, -100), new Vector3(100, 100, 100)));
+                instData.Rotation = Helper.GetRandomQuaternion();
+                //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
+                instData.Scale = new Vector3(3, 3, 3);
+                instData.Color = Helper.GetRandomColor();
+
+                ((InstancedMesh)objects.Last().GetMesh()).instancedData.Add(instData);
+            }
 
             //noTextureShaderProgram.Use();
             //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
