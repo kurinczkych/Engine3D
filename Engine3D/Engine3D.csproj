@@ -31,6 +31,7 @@
     <None Remove="Models\cube.obj" />
     <None Remove="Models\level.obj" />
     <None Remove="Models\level2.obj" />
+    <None Remove="Models\level2Rot.obj" />
     <None Remove="Models\mountains.obj" />
     <None Remove="Models\plane.obj" />
     <None Remove="Models\sphere.obj" />
@@ -100,6 +101,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Models\level2.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Models\level2Rot.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Models\mountains.obj">

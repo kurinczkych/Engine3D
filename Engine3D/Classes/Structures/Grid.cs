@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -12,6 +14,14 @@ using OpenTK.Mathematics;
 
 namespace Engine3D
 {
+    public enum GridDir
+    {
+        Up,
+        Down,
+        Left,
+        Right
+    }
+
     public class GridNode
     {
         public AABB Bounds;
@@ -115,49 +125,144 @@ namespace Engine3D
             return triangles;
         }
 
+        private void AddNodeToSublist(List<GridNode> nodes, GridNode node)
+        {
+            lock (nodes)
+                nodes.Add(node);
+        }
+
         public List<GridNode> GetNodesInFrontOfCamera(Vector3 cameraPos, Camera camera)
         {
             Vector3i centerIndex = GetIndex(cameraPos);  // Get the grid index for the given point
             List<GridNode> result = new List<GridNode>();
 
-            int maxRadius = biggestStepSize * GridSize;
-            //int maxRadius = 40;
+            bool[,] visited = new bool[Grid.GetLength(0), Grid.GetLength(2)];
+            int flatNodeCount = Grid.GetLength(0) * Grid.GetLength(2);
+            int currentNodeCount = 0;
 
-            for (int radius = 0; radius <= maxRadius; radius += GridSize)
+            int x = centerIndex.X;
+            int y = centerIndex.Y;
+            int z = centerIndex.Z;
+
+            if (camera.frustum.IsAABBInside(Grid[x, y, z].Bounds))
             {
-                int radiusIndex = (radius / GridSize) * 2 + 1;
-                int halfIndex = (int)Math.Floor(radiusIndex / 2.0);
-
-                if(radiusIndex == 1)
+                for (int i = 0; i < Grid.GetLength(1); i++)
                 {
-                    result.Add(Grid[centerIndex.X, centerIndex.Y, centerIndex.Z]);
+                    result.Add(Grid[x, i, z]);
                 }
-                else
+            }
+
+            visited[x, z] = true;
+
+            GridDir currentDir = GridDir.Right;
+
+            while (currentNodeCount != flatNodeCount)
+            {
+                switch (currentDir)
                 {
-                    for (int x = -halfIndex; x <= halfIndex; x++)
-                    {
-                        for (int y = -halfIndex; y <= halfIndex; y++)
+                    case GridDir.Right:
+                        if (!visited[x, z - 1])
                         {
-                            for (int z = -halfIndex; z <= halfIndex; z++)
+                            currentDir = GridDir.Down;
+                            z--;
+                        }
+                        else
+                            x++;
+                        break;
+                    case GridDir.Left:
+                        if (!visited[x, z + 1])
+                        {
+                            currentDir = GridDir.Up;
+                            z++;
+                        }
+                        else
+                            x--;
+                        break;
+                    case GridDir.Up:
+                        if (!visited[x + 1, z])
+                        {
+                            currentDir = GridDir.Right;
+                            x++;
+                        }
+                        else
+                            z++;
+                        break;
+                    case GridDir.Down:
+                        if (!visited[x - 1, z])
+                        {
+                            currentDir = GridDir.Left;
+                            x--;
+                        }
+                        else
+                            z--;
+                        break;
+                }
+
+                if (x < 0 || x >= visited.GetLength(0) || z < 0 || z >= visited.GetLength(1))
+                    break;
+
+                if (!visited[x, z])
+                {
+                    AABB extendedBounds = Grid[x, y, z].Bounds;
+                    extendedBounds.Min.Y = Bounds.Min.Y;
+                    extendedBounds.Max.Y = Bounds.Max.Y;
+                    if (camera.frustum.IsAABBInside(extendedBounds))
+                    {
+                        for (int i = 0; i < Grid.GetLength(1); i++)
+                        {
+                            result.Add(Grid[x, i, z]);
+                        }
+                    }
+                    currentNodeCount++;
+                    visited[x, z] = true;
+                }
+            }
+
+            if (visited.GetLength(0) > visited.GetLength(1))
+            {
+                for (int i_ = 0; i_ < visited.GetLength(0); i_++)
+                {
+                    if (!visited[i_, 0] && !visited[i_, 1])
+                    {
+                        for (int z_ = 0; z_ < Grid.GetLength(2); z_++)
+                        {
+                            AABB extendedBounds = Grid[i_, y, z_].Bounds;
+                            extendedBounds.Min.Y = Bounds.Min.Y;
+                            extendedBounds.Max.Y = Bounds.Max.Y;
+                            if (camera.frustum.IsAABBInside(extendedBounds))
                             {
-                                int x_ = centerIndex.X + x;
-                                int y_ = centerIndex.Y + y;
-                                int z_ = centerIndex.Z + z;
-
-                                if ((x == -halfIndex || x == halfIndex) || (y == -halfIndex || y == halfIndex) || (z == -halfIndex || z == halfIndex))
+                                for (int i = 0; i < Grid.GetLength(1); i++)
                                 {
-                                    if ((x_ >= 0 && x_ < Grid.GetLength(0)) && (y_ >= 0 && y_ < Grid.GetLength(1)) && (z_ >= 0 && z_ < Grid.GetLength(2)) &&
-                                        camera.frustum.IsAABBInside(Grid[x_, y_, z_].Bounds))
-                                    {
-                                        result.Add(Grid[x_, y_, z_]);
-
-                                    }
+                                    result.Add(Grid[i_, i, z_]);
                                 }
                             }
                         }
                     }
                 }
             }
+            else
+            {
+                for (int i_ = 0; i_ < visited.GetLength(1); i_++)
+                {
+                    if (!visited[0, i_] && !visited[1, i_])
+                    {
+                        for (int x_ = 0; x_ < Grid.GetLength(0); x_++)
+                        {
+                            AABB extendedBounds = Grid[x_, y, i_].Bounds;
+                            extendedBounds.Min.Y = Bounds.Min.Y;
+                            extendedBounds.Max.Y = Bounds.Max.Y;
+                            if (camera.frustum.IsAABBInside(extendedBounds))
+                            {
+                                for (int i = 0; i < Grid.GetLength(1); i++)
+                                {
+                                    result.Add(Grid[x_, i, i_]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
 
             return result;
         }
@@ -174,59 +279,83 @@ namespace Engine3D
 
             Vector3i centerIndex = GetIndex(camera.GetPosition());  // Get the grid index for the given point
 
-            int maxRadius = biggestStepSize * GridSize;
+            //if ((x_ >= 0 && x_ < Grid.GetLength(0)) && (y_ >= 0 && y_ < Grid.GetLength(1)) && (z_ >= 0 && z_ < Grid.GetLength(2)) &&
+            //                            camera.frustum.IsAABBInside(Grid[x_, y_, z_].Bounds))
+            //{
+            //    currentMesh.lines.AddRange(Grid[x_, y_, z_].Bounds.GetLines());
+            //}
 
-            for (int radius = 0; radius <= maxRadius; radius += GridSize)
+            bool[,] visited = new bool[Grid.GetLength(0), Grid.GetLength(2)];
+            int flatNodeCount = Grid.GetLength(0) * Grid.GetLength(2);
+            int currentNodeCount = 0;
+
+            int x = centerIndex.X;
+            int y = centerIndex.Y;
+            int z = centerIndex.Z;
+
+            if (camera.frustum.IsAABBInside(Grid[x, y, z].Bounds))
             {
-                int radiusIndex = (radius / GridSize) * 2 + 1;
-                int halfIndex = (int)Math.Floor(radiusIndex / 2.0);
+                currentMesh.lines.AddRange(Grid[x, y, z].Bounds.GetLines());
+            }
+            visited[x, z] = true;
 
-                if (radiusIndex == 1)
+            GridDir currentDir = GridDir.Right;
+
+            while(currentNodeCount != flatNodeCount)
+            {
+                switch(currentDir)
                 {
-                    currentMesh.lines.AddRange(Grid[centerIndex.X, centerIndex.Y, centerIndex.Z].Bounds.GetLines());
-                }
-                else
-                {
-                    for (int x = -halfIndex; x <= halfIndex; x++)
-                    {
-                        for (int y = -halfIndex; y <= halfIndex; y++)
+                    case GridDir.Right:
+                        if (!visited[x, z - 1])
                         {
-                            for (int z = -halfIndex; z <= halfIndex; z++)
-                            {
-                                int x_ = centerIndex.X + x;
-                                int y_ = centerIndex.Y + y;
-                                int z_ = centerIndex.Z + z;
-
-                                if ((x == -halfIndex || x == halfIndex) || (y == -halfIndex || y == halfIndex) || (z == -halfIndex || z == halfIndex))
-                                {
-                                    if ((x_ >= 0 && x_ < Grid.GetLength(0)) && (y_ >= 0 && y_ < Grid.GetLength(1)) && (z_ >= 0 && z_ < Grid.GetLength(2)) &&
-                                        camera.frustum.IsAABBInside(Grid[x_, y_, z_].Bounds))
-                                    {
-                                        currentMesh.lines.AddRange(Grid[x_, y_, z_].Bounds.GetLines());
-                                    }
-                                }
-                            }
+                            currentDir = GridDir.Down;
+                            z--;
                         }
+                        else
+                            x++;
+                        break;
+                    case GridDir.Left:
+                        if (!visited[x, z + 1])
+                        {
+                            currentDir = GridDir.Up;
+                            z++;
+                        }
+                        else
+                            x--;
+                        break;
+                    case GridDir.Up:
+                        if (!visited[x + 1, z])
+                        {
+                            currentDir = GridDir.Right;
+                            x++;
+                        }
+                        else
+                            z++;
+                        break;
+                    case GridDir.Down:
+                        if (!visited[x - 1, z])
+                        {
+                            currentDir = GridDir.Left;
+                            x--;
+                        }
+                        else
+                            z--;
+                        break;
+                }
+
+                if (z < 0 || x < 0)
+                    break;
+
+                if (!visited[x,z])
+                {
+                    if (camera.frustum.IsAABBInside(Grid[x, y, z].Bounds))
+                    {
+                        currentMesh.lines.AddRange(Grid[x, y, z].Bounds.GetLines());
                     }
+                    currentNodeCount++;
+                    visited[x, z] = true;
                 }
             }
-
-
-            //int range = 1;
-            //Vector3i index = GetIndex(camera.GetPosition());
-            //for (int x = -range; x <= range; x++)
-            //{
-            //    for (int y = -range; y <= range; y++)
-            //    {
-            //        for (int z = -range; z <= range; z++)
-            //        {
-            //            int x_ = Math.Max(0, Math.Min(Grid.GetLength(0)-1, index.X + x));
-            //            int y_ = Math.Max(0, Math.Min(Grid.GetLength(1)-1, index.Y + y));
-            //            int z_ = Math.Max(0, Math.Min(Grid.GetLength(2)-1, index.Z + z));
-            //            currentMesh.lines.AddRange(Grid[x_,y_,z_].Bounds.GetLines());
-            //        }
-            //    }
-            //}
 
             return currentMesh;
         }

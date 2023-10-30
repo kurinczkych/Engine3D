@@ -198,9 +198,9 @@ namespace Engine3D
         {
             double fps = DrawFps(args.Time);
 
-            GL.Viewport((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
-            GL.Enable(EnableCap.ScissorTest);
-            GL.Scissor((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
+            //GL.Viewport((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
+            //GL.Enable(EnableCap.ScissorTest);
+            //GL.Scissor((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
 
             #region GameWindow
 
@@ -441,8 +441,8 @@ namespace Engine3D
 
             #endregion
 
-            GL.Disable(EnableCap.ScissorTest);
-            GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            //GL.Disable(EnableCap.ScissorTest);
+            //GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
 
             Context.SwapBuffers();
 
@@ -604,7 +604,7 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
             //objects.Last().BuildOctree();
