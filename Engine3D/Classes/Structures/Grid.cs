@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using FontStashSharp;
 using Newtonsoft.Json.Linq;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
 namespace Engine3D
@@ -29,6 +30,13 @@ namespace Engine3D
         public List<triangle> triangles;
         public float distance;
         public Vector3i Position;
+
+        //Occlusion
+        public List<bool> visibility;
+        public int samplesPassedPrevFrame = 1;
+        public int pendingQuery = -1;
+        public int key;
+        public const int VisCount = 5;
 
         public GridNode(GridNode n)
         {
@@ -72,14 +80,16 @@ namespace Engine3D
         public Vector3i stepSize;
         public int biggestStepSize;
 
-        List<GridNode> allNodes;
         List<GridNode> zeroYNodes;
 
-        public GridStructure(List<triangle> tris, AABB bounds, int gridSize) 
+
+        //Occlusion 
+        public Dictionary<string, int> uniformLocations;
+
+        public GridStructure(List<triangle> tris, AABB bounds, int gridSize, int shaderId
         { 
             Bounds = bounds;
             GridSize = gridSize;
-            allNodes = new List<GridNode>();
             zeroYNodes = new List<GridNode>();
 
             stepSize = new Vector3i((int)Bounds.Width / GridSize + 1, (int)Bounds.Height / GridSize + 1, (int)Bounds.Depth / GridSize + 1);
@@ -113,24 +123,22 @@ namespace Engine3D
             currentIndex = new Vector3i();
             for (currentIndex.X = 0; currentIndex.X < stepSize.X; currentIndex.X++)
             {
-                for (currentIndex.Y = 0; currentIndex.Y < stepSize.Y; currentIndex.Y++)
-                {
-                    for (currentIndex.Z = 0; currentIndex.Z < stepSize.Z; currentIndex.Z++)
-                    {
-                        allNodes.Add(Grid[currentIndex.X, currentIndex.Y, currentIndex.Z]);
-                    }
-                }
-            }
-
-            currentIndex = new Vector3i();
-            for (currentIndex.X = 0; currentIndex.X < stepSize.X; currentIndex.X++)
-            {
                 for (currentIndex.Z = 0; currentIndex.Z < stepSize.Z; currentIndex.Z++)
                 {
                     zeroYNodes.Add(Grid[currentIndex.X, 0, currentIndex.Z]);
                     zeroYNodes.Last().Position = new Vector3i(currentIndex.X, 0, currentIndex.Z);
                 }
             }
+
+            uniformLocations = new Dictionary<string, int>();
+            GetUniformLocations(shaderId);
+        }
+
+        private void GetUniformLocations(int shaderProgramId)
+        {
+            uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
+            uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
+            uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
         }
 
         public List<triangle> GetTriangles(Camera camera)

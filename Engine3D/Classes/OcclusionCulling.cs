@@ -71,9 +71,9 @@ namespace Engine3D
             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count / 3);
         }
 
-        private static void ManageVisibility(BVHNode node, bool value)
+        private static void ManageVisibilityForGrid(GridNode node, bool value)
         {
-            if (node.visibility.Count == BVHNode.VisCount)
+            if (node.visibility.Count == GridNode.VisCount)
             {
                 node.visibility.Insert(0, value);
                 node.visibility.RemoveAt(node.visibility.Count - 1);
@@ -84,8 +84,8 @@ namespace Engine3D
             }
         }
 
-        public static void PerformOcclusionQueriesForBVH(BVH node, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera, 
-                                                         ref QueryPool queryPool, ref Dictionary<int, Tuple<int, BVHNode>> pendingQueries, bool first)
+        public static void PerformOcclusionQueriesForGrid(GridStructure node, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera,
+                                                         ref QueryPool queryPool, ref Dictionary<int, Tuple<int, GridNode>> pendingQueries, bool first)
         {
             Frustum frustum = camera.frustum;
 
@@ -100,7 +100,7 @@ namespace Engine3D
             if (!first)
             {
                 List<int> keysToRemove = new List<int>();
-                foreach (KeyValuePair<int, Tuple<int,BVHNode>> keyValuePair in pendingQueries)
+                foreach (KeyValuePair<int, Tuple<int, GridNode>> keyValuePair in pendingQueries)
                 {
                     int available;
                     GL.GetQueryObject(keyValuePair.Value.Item1, GetQueryObjectParam.QueryResultAvailable, out available);
@@ -119,7 +119,7 @@ namespace Engine3D
             }
 
             GL.DepthMask(false);
-            PerformOcclusionQueriesForBVHRecursive(node.Root, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+            PerformOcclusionQueriesForGridIterative(node, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
             GL.DepthMask(true);
 
             aabbVbo.Unbind();
@@ -127,9 +127,8 @@ namespace Engine3D
 
         }
 
-
-        public static void PerformOcclusionQueriesForBVHRecursive(BVHNode node, ref VBO aabbVbo, ref VAO aabbVao, ref Shader shader, ref Camera camera,
-                                                                  ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, Tuple<int, BVHNode>> pendingQueries,
+        public static void PerformOcclusionQueriesForGridIterative(GridStructure node, ref VBO aabbVbo, ref VAO aabbVao, ref Shader shader, ref Camera camera,
+                                                                  ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, Tuple<int, GridNode>> pendingQueries,
                                                                   bool first)
         {
 
@@ -206,21 +205,140 @@ namespace Engine3D
             }
         }
 
-        public static double GTRandom(int index)
+        #region BVH Occlusion
+        private static void ManageVisibilityForBVH(BVHNode node, bool value)
         {
-            byte[] hash;
-            using (SHA256 sha256 = SHA256.Create())
+            if (node.visibility.Count == BVHNode.VisCount)
             {
-                // Compute hash from the index
-                hash = sha256.ComputeHash(BitConverter.GetBytes(index));
+                node.visibility.Insert(0, value);
+                node.visibility.RemoveAt(node.visibility.Count - 1);
+            }
+            else
+            {
+                node.visibility.Insert(0, value);
+            }
+        }
+
+        public static void PerformOcclusionQueriesForBVH(BVH node, VBO aabbVbo, VAO aabbVao, Shader shader, Camera camera, 
+                                                         ref QueryPool queryPool, ref Dictionary<int, Tuple<int, BVHNode>> pendingQueries, bool first)
+        {
+            Frustum frustum = camera.frustum;
+
+            Matrix4 modelMatrix = Matrix4.Identity;
+            Matrix4 projectionMatrix = camera.projectionMatrix;
+            Matrix4 viewMatrix = camera.viewMatrix;
+
+            GL.UniformMatrix4(node.uniformLocations["modelMatrix"], true, ref modelMatrix);
+            GL.UniformMatrix4(node.uniformLocations["viewMatrix"], true, ref viewMatrix);
+            GL.UniformMatrix4(node.uniformLocations["projectionMatrix"], true, ref projectionMatrix);
+
+            if (!first)
+            {
+                List<int> keysToRemove = new List<int>();
+                foreach (KeyValuePair<int, Tuple<int,BVHNode>> keyValuePair in pendingQueries)
+                {
+                    int available;
+                    GL.GetQueryObject(keyValuePair.Value.Item1, GetQueryObjectParam.QueryResultAvailable, out available);
+                    if (available == 0)
+                        continue;
+
+                    int samplesPassed;
+                    GL.GetQueryObject(keyValuePair.Value.Item1, GetQueryObjectParam.QueryResult, out samplesPassed);
+                    keyValuePair.Value.Item2.samplesPassedPrevFrame = samplesPassed;
+                    queryPool.ReturnQuery(keyValuePair.Value.Item1);
+                    keysToRemove.Add(keyValuePair.Key);
+                }
+
+                foreach (int key in keysToRemove)
+                    pendingQueries.Remove(key);
             }
 
-            // Convert the hash bytes to an int seed (we'll just use the first 4 bytes)
-            int seed = BitConverter.ToInt32(hash, 0);
+            GL.DepthMask(false);
+            PerformOcclusionQueriesForBVHRecursive(node.Root, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+            GL.DepthMask(true);
 
-            // Use the seed to get a random number
-            Random random = new Random(seed);
-            return random.NextDouble();
+            aabbVbo.Unbind();
+            aabbVao.Unbind();
+
+        }
+
+
+        public static void PerformOcclusionQueriesForBVHRecursive(BVHNode node, ref VBO aabbVbo, ref VAO aabbVao, ref Shader shader, ref Camera camera,
+                                                                  ref Frustum frustum, ref QueryPool queryPool, ref Dictionary<int, Tuple<int, BVHNode>> pendingQueries,
+                                                                  bool first)
+        {
+
+            if (first)
+            {
+                if (node == null) return;
+                if (!frustum.IsAABBInside(node.bounds))
+                {
+                    ManageVisibilityForBVH(node, false);
+
+                    return;
+                }
+
+                int query = queryPool.GetQuery();
+
+                // 1. Initiate occlusion query
+                GL.BeginQuery(QueryTarget.SamplesPassed, query);
+
+                // 2. Render the AABB of the current BVH node
+                RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
+
+                // 3. End occlusion query
+                GL.EndQuery(QueryTarget.SamplesPassed);
+
+                // 4. Buffer the pending results
+                if (!pendingQueries.ContainsKey(node.key))
+                {
+                    pendingQueries.Add(node.key, new Tuple<int, BVHNode>(query, node));
+                }
+
+                PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+            }
+            else
+            {
+                if (node == null) return;
+                if (!frustum.IsAABBInside(node.bounds))
+                {
+                    ManageVisibilityForBVH(node, false);
+
+                    return;
+                }
+
+                int query = queryPool.GetQuery();
+
+                // 1. Initiate occlusion query
+                GL.BeginQuery(QueryTarget.SamplesPassed, query);
+
+                // 2. Render the AABB of the current BVH node
+                RenderAABB(node.bounds, aabbVbo, aabbVao, shader, camera);
+
+                // 3. End occlusion query
+                GL.EndQuery(QueryTarget.SamplesPassed);
+
+                // 4. Buffer the pending results
+                if (!pendingQueries.ContainsKey(node.key))
+                {
+                    pendingQueries.Add(node.key, new Tuple<int, BVHNode>(query, node));
+                }
+
+                if (node.samplesPassedPrevFrame > 0)
+                {
+                    ManageVisibilityForBVH(node, true);
+
+                    PerformOcclusionQueriesForBVHRecursive(node.left, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                    PerformOcclusionQueriesForBVHRecursive(node.right, ref aabbVbo, ref aabbVao, ref shader, ref camera, ref frustum, ref queryPool, ref pendingQueries, first);
+                }
+                else
+                {
+                    ManageVisibilityForBVH(node, false);
+
+                    return;
+                }
+            }
         }
 
         public static void TraverseBVHNode(BVHNode node, ref List<triangle> notOccludedTris, ref Frustum frustum)
@@ -266,6 +384,25 @@ namespace Engine3D
                 TraverseBVHNode(node.left);
                 TraverseBVHNode(node.right);
             }
+        }
+
+        #endregion
+
+        public static double GTRandom(int index)
+        {
+            byte[] hash;
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                // Compute hash from the index
+                hash = sha256.ComputeHash(BitConverter.GetBytes(index));
+            }
+
+            // Convert the hash bytes to an int seed (we'll just use the first 4 bytes)
+            int seed = BitConverter.ToInt32(hash, 0);
+
+            // Use the seed to get a random number
+            Random random = new Random(seed);
+            return random.NextDouble();
         }
     }
 }
