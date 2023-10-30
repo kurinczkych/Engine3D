@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -120,42 +121,42 @@ namespace Engine3D
             List<GridNode> result = new List<GridNode>();
 
             int maxRadius = biggestStepSize * GridSize;
-
-            HashSet<GridNode> visited = new HashSet<GridNode>();
+            //int maxRadius = 40;
 
             for (int radius = 0; radius <= maxRadius; radius += GridSize)
             {
-                List<GridNode> currentRadiusNodes = new List<GridNode>();
+                int radiusIndex = (radius / GridSize) * 2 + 1;
+                int halfIndex = (int)Math.Floor(radiusIndex / 2.0);
 
-                // Define bounds for the current "radius"
-                int startX = Math.Max(centerIndex.X - radius, 0);
-                int endX = Math.Min(centerIndex.X + radius, stepSize.X - 1);
-                int startY = Math.Max(centerIndex.Y - radius, 0);
-                int endY = Math.Min(centerIndex.Y + radius, stepSize.Y - 1);
-                int startZ = Math.Max(centerIndex.Z - radius, 0);
-                int endZ = Math.Min(centerIndex.Z + radius, stepSize.Z - 1);
-
-                // Iterate over the nodes within the current "radius"
-                for (int x = startX; x <= endX; x++)
+                if(radiusIndex == 1)
                 {
-                    for (int y = startY; y <= endY; y++)
+                    result.Add(Grid[centerIndex.X, centerIndex.Y, centerIndex.Z]);
+                }
+                else
+                {
+                    for (int x = -halfIndex; x <= halfIndex; x++)
                     {
-                        for (int z = startZ; z <= endZ; z++)
+                        for (int y = -halfIndex; y <= halfIndex; y++)
                         {
-                            // Only add nodes that are on the "surface" of the current radius
-                            if (x == startX || x == endX || y == startY || y == endY || z == startZ || z == endZ)
+                            for (int z = -halfIndex; z <= halfIndex; z++)
                             {
-                                if (camera.frustum.IsAABBInside(Grid[x, y, z].Bounds) && !visited.Contains(Grid[x, y, z]))
+                                int x_ = centerIndex.X + x;
+                                int y_ = centerIndex.Y + y;
+                                int z_ = centerIndex.Z + z;
+
+                                if ((x == -halfIndex || x == halfIndex) || (y == -halfIndex || y == halfIndex) || (z == -halfIndex || z == halfIndex))
                                 {
-                                    currentRadiusNodes.Add(Grid[x, y, z]);
-                                    visited.Add(Grid[x, y, z]);
+                                    if ((x_ >= 0 && x_ < Grid.GetLength(0)) && (y_ >= 0 && y_ < Grid.GetLength(1)) && (z_ >= 0 && z_ < Grid.GetLength(2)) &&
+                                        camera.frustum.IsAABBInside(Grid[x_, y_, z_].Bounds))
+                                    {
+                                        result.Add(Grid[x_, y_, z_]);
+
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
-                result.AddRange(currentRadiusNodes);
             }
 
             return result;
@@ -171,21 +172,61 @@ namespace Engine3D
 
             WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera.frustum, ref camera, Color4.Red);
 
-            int range = 1;
-            Vector3i index = GetIndex(camera.GetPosition());
-            for (int x = -range; x <= range; x++)
+            Vector3i centerIndex = GetIndex(camera.GetPosition());  // Get the grid index for the given point
+
+            int maxRadius = biggestStepSize * GridSize;
+
+            for (int radius = 0; radius <= maxRadius; radius += GridSize)
             {
-                for (int y = -range; y <= range; y++)
+                int radiusIndex = (radius / GridSize) * 2 + 1;
+                int halfIndex = (int)Math.Floor(radiusIndex / 2.0);
+
+                if (radiusIndex == 1)
                 {
-                    for (int z = -range; z <= range; z++)
+                    currentMesh.lines.AddRange(Grid[centerIndex.X, centerIndex.Y, centerIndex.Z].Bounds.GetLines());
+                }
+                else
+                {
+                    for (int x = -halfIndex; x <= halfIndex; x++)
                     {
-                        int x_ = Math.Max(0, Math.Min(Grid.GetLength(0)-1, index.X + x));
-                        int y_ = Math.Max(0, Math.Min(Grid.GetLength(1)-1, index.Y + y));
-                        int z_ = Math.Max(0, Math.Min(Grid.GetLength(2)-1, index.Z + z));
-                        currentMesh.lines.AddRange(Grid[x_,y_,z_].Bounds.GetLines());
+                        for (int y = -halfIndex; y <= halfIndex; y++)
+                        {
+                            for (int z = -halfIndex; z <= halfIndex; z++)
+                            {
+                                int x_ = centerIndex.X + x;
+                                int y_ = centerIndex.Y + y;
+                                int z_ = centerIndex.Z + z;
+
+                                if ((x == -halfIndex || x == halfIndex) || (y == -halfIndex || y == halfIndex) || (z == -halfIndex || z == halfIndex))
+                                {
+                                    if ((x_ >= 0 && x_ < Grid.GetLength(0)) && (y_ >= 0 && y_ < Grid.GetLength(1)) && (z_ >= 0 && z_ < Grid.GetLength(2)) &&
+                                        camera.frustum.IsAABBInside(Grid[x_, y_, z_].Bounds))
+                                    {
+                                        currentMesh.lines.AddRange(Grid[x_, y_, z_].Bounds.GetLines());
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
+
+
+            //int range = 1;
+            //Vector3i index = GetIndex(camera.GetPosition());
+            //for (int x = -range; x <= range; x++)
+            //{
+            //    for (int y = -range; y <= range; y++)
+            //    {
+            //        for (int z = -range; z <= range; z++)
+            //        {
+            //            int x_ = Math.Max(0, Math.Min(Grid.GetLength(0)-1, index.X + x));
+            //            int y_ = Math.Max(0, Math.Min(Grid.GetLength(1)-1, index.Y + y));
+            //            int z_ = Math.Max(0, Math.Min(Grid.GetLength(2)-1, index.Z + z));
+            //            currentMesh.lines.AddRange(Grid[x_,y_,z_].Bounds.GetLines());
+            //        }
+            //    }
+            //}
 
             return currentMesh;
         }

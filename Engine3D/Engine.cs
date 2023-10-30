@@ -583,7 +583,7 @@ namespace Engine3D
 
             noTextureShaderProgram.Use();
             //Vector3 characterPos = new Vector3(34, -16, -275);
-            Vector3 characterPos = new Vector3(0, 20, 0);
+            Vector3 characterPos = new Vector3(0, 0, 0);
             //Vector3 characterPos = new Vector3(108.32f, 352.56f, -7.79f);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
             //character.camera.SetYaw(218.84f);
