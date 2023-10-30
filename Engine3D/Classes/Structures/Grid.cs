@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using FontStashSharp;
+using Newtonsoft.Json.Linq;
 using OpenTK.Mathematics;
 
 namespace Engine3D
@@ -26,6 +27,16 @@ namespace Engine3D
     {
         public AABB Bounds;
         public List<triangle> triangles;
+        public float distance;
+        public Vector3i Position;
+
+        public GridNode(GridNode n)
+        {
+            Bounds = n.Bounds;
+            triangles = n.triangles;
+            distance = n.distance;
+            Position = n.Position;
+        }
 
         public GridNode(AABB bounds)
         {
@@ -61,10 +72,15 @@ namespace Engine3D
         public Vector3i stepSize;
         public int biggestStepSize;
 
+        List<GridNode> allNodes;
+        List<GridNode> zeroYNodes;
+
         public GridStructure(List<triangle> tris, AABB bounds, int gridSize) 
         { 
             Bounds = bounds;
             GridSize = gridSize;
+            allNodes = new List<GridNode>();
+            zeroYNodes = new List<GridNode>();
 
             stepSize = new Vector3i((int)Bounds.Width / GridSize + 1, (int)Bounds.Height / GridSize + 1, (int)Bounds.Depth / GridSize + 1);
             biggestStepSize = stepSize.X;
@@ -82,6 +98,7 @@ namespace Engine3D
                     {
                         AABB b = AABB.GetBoundsFromStep(Bounds, currentIndex, gridSize);
                         Grid[currentIndex.X, currentIndex.Y, currentIndex.Z] = new GridNode(b);
+                        Grid[currentIndex.X, currentIndex.Y, currentIndex.Z].Position = currentIndex;
                     }
                 }
             }
@@ -91,6 +108,28 @@ namespace Engine3D
                 Vector3 center = triangle.GetMiddle();
                 Vector3i index = GetIndex(center);
                 Grid[index.X, index.Y, index.Z].Add(triangle);
+            }
+
+            currentIndex = new Vector3i();
+            for (currentIndex.X = 0; currentIndex.X < stepSize.X; currentIndex.X++)
+            {
+                for (currentIndex.Y = 0; currentIndex.Y < stepSize.Y; currentIndex.Y++)
+                {
+                    for (currentIndex.Z = 0; currentIndex.Z < stepSize.Z; currentIndex.Z++)
+                    {
+                        allNodes.Add(Grid[currentIndex.X, currentIndex.Y, currentIndex.Z]);
+                    }
+                }
+            }
+
+            currentIndex = new Vector3i();
+            for (currentIndex.X = 0; currentIndex.X < stepSize.X; currentIndex.X++)
+            {
+                for (currentIndex.Z = 0; currentIndex.Z < stepSize.Z; currentIndex.Z++)
+                {
+                    zeroYNodes.Add(Grid[currentIndex.X, 0, currentIndex.Z]);
+                    zeroYNodes.Last().Position = new Vector3i(currentIndex.X, 0, currentIndex.Z);
+                }
             }
         }
 
@@ -119,7 +158,7 @@ namespace Engine3D
                 }
 
                 index++;
-                triangles.AddRange(trisSorted);
+                triangles.AddRange(node.triangles);
             }
 
             return triangles;
@@ -128,7 +167,9 @@ namespace Engine3D
         private void AddNodeToSublist(List<GridNode> nodes, GridNode node)
         {
             lock (nodes)
+            {
                 nodes.Add(node);
+            }
         }
 
         public List<GridNode> GetNodesInFrontOfCamera(Vector3 cameraPos, Camera camera)
@@ -136,85 +177,46 @@ namespace Engine3D
             Vector3i centerIndex = GetIndex(cameraPos);  // Get the grid index for the given point
             List<GridNode> result = new List<GridNode>();
 
-            int rowStart = 0, rowEnd = Grid.GetLength(0) - 1;
-            int colStart = 0, colEnd = Grid.GetLength(2) - 1;
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
+            Parallel.ForEach(zeroYNodes, parallelOptions,
+                 () => new List<GridNode>(),
+                 (node, loopState, localVertices) =>
+                 {
+                     float dist = (centerIndex - node.Position).EuclideanLength;
+                     AABB extendedBounds = node.Bounds;
+                     extendedBounds.Min.Y = Bounds.Min.Y;
+                     extendedBounds.Max.Y = Bounds.Max.Y;
 
-            while (rowStart <= rowEnd && colStart <= colEnd)
+                     if (camera.frustum.IsAABBInside(extendedBounds))
+                     {
+                         GridNode newNode = Grid[node.Position.X, 0, node.Position.Z];
+                         newNode.distance = dist;
+                         AddNodeToSublist(localVertices, newNode);
+                         //for (int i = 0; i < Grid.GetLength(1); i++)
+                         //{
+                         //}
+                     }
+
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (result)
+                     {
+                         result.AddRange(localVertices);
+                     }
+                 });
+
+            result.Sort((x, y) => y.distance.CompareTo(x.distance));
+
+            for (int i = result.Count-1; i >= 0; i--)
             {
-                for (int i = colStart; i <= colEnd; i = i + 1)
+                for (int y = 0; y < Grid.GetLength(1); y++)
                 {
-                    AABB extendedBounds = Grid[rowStart, centerIndex.Y, i].Bounds;
-                    extendedBounds.Min.Y = Bounds.Min.Y;
-                    extendedBounds.Max.Y = Bounds.Max.Y;
-                    if (camera.frustum.IsAABBInside(extendedBounds))
-                    {
-                        for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
-                        {
-                            result.Add(Grid[rowStart, i_, i]);
-                        }
-                    }
-                }
-
-                rowStart = rowStart + 1;
-
-                for (int i = rowStart; i <= rowEnd; i = i + 1)
-                {
-                    AABB extendedBounds = Grid[i, centerIndex.Y, colEnd].Bounds;
-                    extendedBounds.Min.Y = Bounds.Min.Y;
-                    extendedBounds.Max.Y = Bounds.Max.Y;
-                    if (camera.frustum.IsAABBInside(extendedBounds))
-                    {
-                        for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
-                        {
-                            result.Add(Grid[i, i_, colEnd]);
-                        }
-                    }
-                }
-
-                colEnd = colEnd - 1;
-
-                if (rowStart <= rowEnd)
-                {
-                    for (int i = colEnd; i >= colStart; i = i - 1)
-                    {
-                        AABB extendedBounds = Grid[rowEnd, centerIndex.Y, i].Bounds;
-                        extendedBounds.Min.Y = Bounds.Min.Y;
-                        extendedBounds.Max.Y = Bounds.Max.Y;
-                        if (camera.frustum.IsAABBInside(extendedBounds))
-                        {
-                            for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
-                            {
-                                result.Add(Grid[rowEnd, i_, i]);
-                            }
-                        }
-                    }
-
-                    rowEnd = rowEnd - 1;
-                }
-
-                if (colStart <= colEnd)
-                {
-                    for (int i = rowEnd; i >= rowStart; i = i - 1)
-                    {
-                        AABB extendedBounds = Grid[i, centerIndex.Y, colStart].Bounds;
-                        extendedBounds.Min.Y = Bounds.Min.Y;
-                        extendedBounds.Max.Y = Bounds.Max.Y;
-                        if (camera.frustum.IsAABBInside(extendedBounds))
-                        {
-                            for (int i_ = 0; i_ < Grid.GetLength(1); i_++)
-                            {
-                                result.Add(Grid[i, i_, colStart]);
-                            }
-                        }
-                    }
-
-                    colStart = colStart + 1;
+                    result.Add(Grid[result[i].Position.X, y, result[i].Position.Z]);
                 }
             }
 
-
-
-            result.Reverse();
             return result;
         }
 
