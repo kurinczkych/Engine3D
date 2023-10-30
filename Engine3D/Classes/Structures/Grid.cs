@@ -135,8 +135,6 @@ namespace Engine3D
 
         public List<triangle> GetTriangles(Camera camera)
         {
-            List<triangle> triangles = new List<triangle>();
-
             Vector3 cameraPos = new Vector3(camera.GetPosition());
             if(cameraPos.X > Bounds.Max.X) cameraPos.X = Bounds.Max.X;
             if(cameraPos.X < Bounds.Min.X) cameraPos.X = Bounds.Min.X;
@@ -145,69 +143,110 @@ namespace Engine3D
             if(cameraPos.Z > Bounds.Max.Z) cameraPos.Z = Bounds.Max.Z;
             if(cameraPos.Z < Bounds.Min.Z) cameraPos.Z = Bounds.Min.Z;
 
-            List<GridNode> nodes = GetNodesInFrontOfCamera(cameraPos, camera);
-            int index = 0;
-
-            foreach (GridNode node in nodes)
-            {
-                List<triangle> trisSorted = new List<triangle>(node.triangles);
-
-                for (int i = trisSorted.Count-1; i >= 0; i--)
-                {
-                    trisSorted[i].SetColor(Helper.CalcualteColorBasedOnDistance(index, nodes.Count()));
-                }
-
-                index++;
-                triangles.AddRange(node.triangles);
-            }
+            List<triangle> triangles = GetTrianglesByDistance(cameraPos, camera);
 
             return triangles;
         }
 
-        private void AddNodeToList(List<List<GridNode>> nodes, GridNode node)
+        private void AddNodeToSublist(List<GridNode> nodes, GridNode node)
         {
             lock (nodes)
             {
-                nodes.Add(new List<GridNode>{node});
+                nodes.Add(node);
             }
         }
 
-        public List<GridNode> GetNodesInFrontOfCamera(Vector3 cameraPos, Camera camera)
+        public List<triangle> GetTrianglesByDistance(Vector3 cameraPos, Camera camera)
         {
             Vector3i centerIndex = GetIndex(cameraPos);  // Get the grid index for the given point
-            List<List<GridNode>> result = new List<List<GridNode>>();
+            List<GridNode> result = new List<GridNode>();
 
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
+            Parallel.ForEach(zeroYNodes, parallelOptions,
+                 () => new List<GridNode>(),
+                 (node, loopState, localVertices) =>
+                 {
+                     float dist = (centerIndex - node.Position).EuclideanLength;
+                     AABB extendedBounds = node.Bounds;
+                     extendedBounds.Min.Y = Bounds.Min.Y;
+                     extendedBounds.Max.Y = Bounds.Max.Y;
 
-            Parallel.ForEach(zeroYNodes, parallelOptions, node =>
+                     if (camera.frustum.IsAABBInside(extendedBounds))
+                     {
+                         GridNode newNode = Grid[node.Position.X, 0, node.Position.Z];
+                         newNode.distance = dist;
+                         AddNodeToSublist(localVertices, newNode);
+                     }
+
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (result)
+                     {
+                         result.AddRange(localVertices);
+                     }
+                 });
+
+            result.Sort((x, y) => y.distance.CompareTo(x.distance));
+
+            List<triangle> resultTriangles = new List<triangle>();
+            for (int i = result.Count - 1; i >= 0; i--)
             {
-                float dist = (centerIndex - node.Position).EuclideanLength;
-                AABB extendedBounds = node.Bounds;
-                extendedBounds.Min.Y = Bounds.Min.Y;
-                extendedBounds.Max.Y = Bounds.Max.Y;
-
-                if (camera.frustum.IsAABBInside(extendedBounds))
+                resultTriangles.AddRange(Grid[result[i].Position.X, 0, result[i].Position.Z].triangles);
+                for (int y = 1; y < Grid.GetLength(1); y++)
                 {
-                    GridNode newNode = Grid[node.Position.X, 0, node.Position.Z];
-                    newNode.distance = dist;
-                    AddNodeToList(result, newNode);
+                    resultTriangles.AddRange(Grid[result[i].Position.X, y, result[i].Position.Z].triangles);
                 }
-            });
+            }
 
+            return resultTriangles;
+        }
 
-            result.Sort((x, y) => x.First().distance.CompareTo(y.First().distance));
+        public List<GridNode> GetNodesByDistance(Vector3 cameraPos, Camera camera)
+        {
+            Vector3i centerIndex = GetIndex(cameraPos);  // Get the grid index for the given point
+            List<GridNode> result = new List<GridNode>();
 
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
+            Parallel.ForEach(zeroYNodes, parallelOptions,
+                 () => new List<GridNode>(),
+                 (node, loopState, localVertices) =>
+                 {
+                     float dist = (centerIndex - node.Position).EuclideanLength;
+                     AABB extendedBounds = node.Bounds;
+                     extendedBounds.Min.Y = Bounds.Min.Y;
+                     extendedBounds.Max.Y = Bounds.Max.Y;
 
-            Parallel.ForEach(result, parallelOptions, nodes =>
+                     if (camera.frustum.IsAABBInside(extendedBounds))
+                     {
+                         GridNode newNode = Grid[node.Position.X, 0, node.Position.Z];
+                         newNode.distance = dist;
+                         AddNodeToSublist(localVertices, newNode);
+                     }
+
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (result)
+                     {
+                         result.AddRange(localVertices);
+                     }
+                 });
+
+            result.Sort((x, y) => y.distance.CompareTo(x.distance));
+
+            List<triangle> resultTriangles = new List<triangle>();
+            for (int i = result.Count - 1; i >= 0; i--)
             {
-                GridNode node = nodes.First();
-                for (int y = 0; y < Grid.GetLength(1); y++)
+                for (int y = 1; y < Grid.GetLength(1); y++)
                 {
-                    nodes.Add(Grid[node.Position.X, y, node.Position.Z]);
+                    result.Add(Grid[result[i].Position.X, y, result[i].Position.Z]);
                 }
-            });
+            }
 
-            return result.SelectMany(subList => subList).ToList();
+            return result;
         }
 
 
