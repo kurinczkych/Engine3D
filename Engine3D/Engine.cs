@@ -650,16 +650,11 @@ namespace Engine3D
             //-------------------------------------------
 
             noTextureShaderProgram.Use();
-            //Vector3 characterPos = new Vector3(34, -16, -275);
-            Vector3 characterPos = new Vector3(0, 20, 0);
-            //Vector3 characterPos = new Vector3(108.32f, 352.56f, -7.79f);
+            //Vector3 characterPos = new Vector3(0, 20, 0);
+            Vector3 characterPos = new Vector3(4.5f, 1.3f, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
-            //character.camera.SetYaw(218.84f);
-            //character.camera.SetPitch(6.43f);
-            //character.camera.SetYaw(4.72f);
-            //character.camera.SetPitch(15.21f);
-            character.camera.SetYaw(209f);
-            character.camera.SetPitch(-61f);
+            character.camera.SetYaw(180f);
+            character.camera.SetPitch(0f);
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
@@ -692,19 +687,19 @@ namespace Engine3D
             //objects.Last().SetSize(2);
             //objects.Last().AddSphereCollider(false);
 
-            objects.Add(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitCube(), windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //objects.Add(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitCube(), windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
 
-            for (int i = 0; i < 10000; i++)
-            {
-                InstancedMeshData instData = new InstancedMeshData();
-                instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-100, -100, -100), new Vector3(100, 100, 100)));
-                instData.Rotation = Helper.GetRandomQuaternion();
-                //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
-                instData.Scale = new Vector3(3, 3, 3);
-                instData.Color = Helper.GetRandomColor();
+            //for (int i = 0; i < 10000; i++)
+            //{
+            //    InstancedMeshData instData = new InstancedMeshData();
+            //    instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-100, -100, -100), new Vector3(100, 100, 100)));
+            //    instData.Rotation = Helper.GetRandomQuaternion();
+            //    //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
+            //    instData.Scale = new Vector3(3, 3, 3);
+            //    instData.Color = Helper.GetRandomColor();
 
-                ((InstancedMesh)objects.Last().GetMesh()).instancedData.Add(instData);
-            }
+            //    ((InstancedMesh)objects.Last().GetMesh()).instancedData.Add(instData);
+            //}
 
             //noTextureShaderProgram.Use();
             //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);

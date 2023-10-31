@@ -96,5 +96,15 @@ namespace Engine3D
 
             return new Color4(r, g, b, a);
         }
+
+        public static Color4 LerpColor(Color4 a, Color4 b, float t)
+        {
+            return new Color4(
+                a.R + t * (b.R - a.R),
+                a.G + t * (b.G - a.G),
+                a.B + t * (b.B - a.B),
+                a.A + t * (b.A - a.A)
+            );  
+        }
     }
 }
