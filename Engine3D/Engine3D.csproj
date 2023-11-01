@@ -58,6 +58,7 @@
     <None Remove="Textures\rock_n.png" />
     <None Remove="Textures\rock_t.png" />
     <None Remove="Textures\rred.png" />
+    <None Remove="Textures\smoke.png" />
     <None Remove="Textures\space_ao.png" />
     <None Remove="Textures\space_h.png" />
     <None Remove="Textures\space_m.png" />
@@ -70,6 +71,7 @@
     <None Remove="Textures\wall_n.png" />
     <None Remove="Textures\wall_r.png" />
     <None Remove="Textures\wall_t.png" />
+    <None Remove="Textures\white.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -163,6 +165,9 @@
     <Content Include="Textures\rock_t.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Textures\smoke.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Textures\space_ao.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -204,6 +209,9 @@
   <ItemGroup>
     <Content Include="OpenAL32.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\white.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

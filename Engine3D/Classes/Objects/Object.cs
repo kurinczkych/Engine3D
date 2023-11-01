@@ -256,6 +256,15 @@ namespace Engine3D
             currentShader.Use();
         }
 
+        public void SetBillboarding(bool useBillboarding)
+        {
+            Type meshType = mesh.GetType();
+            if (meshType != typeof(Mesh) && meshType != typeof(InstancedMesh))
+                throw new Exception("Billboarding can only be used on type 'Mesh' and 'InstancedMesh'!");
+
+            mesh.useBillboarding = useBillboarding ? 1 : 0;
+        }
+
         private bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)
         {
             if(numVertices == 0 || numIndices == 0 || numIndices % 3 != 0)
@@ -276,6 +285,15 @@ namespace Engine3D
         {
             return mesh;
         }
+
+        public void SetInstancedData(List<InstancedMeshData> data)
+        {
+            if(mesh.GetType() != typeof(InstancedMesh))
+                throw new Exception("Cannot set instanced mesh data for '" + mesh.GetType().ToString() + "'!");
+
+            ((InstancedMesh)mesh).instancedData = data;
+        }
+
         public ObjectType GetObjectType()
         {
             return type;
@@ -838,6 +856,30 @@ namespace Engine3D
             // Bottom face
             tris.Add(new triangle(new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }));
             tris.Add(new triangle(new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }));
+
+            return tris;
+        }
+
+        public static List<triangle> GetUnitFace()
+        {
+            List<triangle> tris = new List<triangle>();
+
+            float halfSize = 0.5f;
+
+            // Define cube vertices (only what's needed for the front face)
+            Vector3 p5 = new Vector3(-halfSize, -halfSize, halfSize);
+            Vector3 p6 = new Vector3(halfSize, -halfSize, halfSize);
+            Vector3 p7 = new Vector3(halfSize, halfSize, halfSize);
+            Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
+
+            Vec2d t1 = new Vec2d(0, 0);
+            Vec2d t2 = new Vec2d(1, 0);
+            Vec2d t3 = new Vec2d(1, 1);
+            Vec2d t4 = new Vec2d(0, 1);
+
+            // Front face
+            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }));
+            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }));
 
             return tris;
         }

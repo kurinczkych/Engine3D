@@ -21,11 +21,30 @@ uniform mat4 projectionMatrix;
 
 uniform int useNormal;
 uniform int useHeight;
+uniform int useBillboarding;
 
 void main()
 {
 	gl_Position = inPosition * modelMatrix * viewMatrix * projectionMatrix;
 	vec4 fragPos4 = inPosition * modelMatrix;
+
+	if(useBillboarding == 1)
+	{
+		vec3 look = normalize(cameraPosition - vec3(modelMatrix * inPosition));
+		vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), look));
+		vec3 up = cross(look, right);
+
+		// Build the billboard matrix
+		mat4 billboardMat = mat4(
+			vec4(right, 0.0),
+			vec4(up, 0.0),
+			vec4(-look, 0.0),
+			vec4(0.0, 0.0, 0.0, 1.0)
+		);
+
+		gl_Position = inPosition * billboardMat * modelMatrix * viewMatrix * projectionMatrix;
+		fragPos4 = inPosition * billboardMat * modelMatrix;
+	}
 
 	fragPos = vec3(fragPos4.x,fragPos4.y, fragPos4.z);
 	fragTexCoord = inUV;

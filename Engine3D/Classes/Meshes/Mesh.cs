@@ -231,6 +231,7 @@ namespace Engine3D
             uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
+            uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
             if (texture != null)
             {
@@ -274,7 +275,7 @@ namespace Engine3D
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
-
+            GL.Uniform1(uniformLocations["useBillboarding"], useBillboarding);
             GL.Uniform1(uniformLocations["useTexture"], useTexture);
             if (texture != null)
             {

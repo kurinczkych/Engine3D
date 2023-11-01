@@ -79,8 +79,10 @@ namespace Engine3D
         private Vector2 gameWindowPos;
         private Vector2 gameWindowSize;
 
-        private TextGenerator textGenerator;
         private SoundManager soundManager;
+        
+        private TextGenerator textGenerator;
+        private Dictionary<string, TextMesh> texts;
         #endregion
 
         #region Engine variables
@@ -90,6 +92,7 @@ namespace Engine3D
 
         private Frustum frustum;
         private List<PointLight> pointLights;
+        private List<ParticleSystem> particleSystems;
         private Physx physx;
 
         private bool useOcclusionCulling = false;
@@ -126,6 +129,8 @@ namespace Engine3D
             shaderProgram = new Shader();
             posTexShader = new Shader();
             pointLights = new List<PointLight>();
+            particleSystems = new List<ParticleSystem>();
+            texts = new Dictionary<string, TextMesh>();
 
             maxminStopwatch = new Stopwatch();
             maxminStopwatch.Start();
@@ -176,6 +181,18 @@ namespace Engine3D
                 haveText = true;
             objects.Add(obj);
             objects.Sort();
+        }
+
+        private void AddText(Object obj, string tag)
+        {
+            if (obj.GetObjectType() != ObjectType.TextMesh && obj.GetMesh().GetType() != typeof(TextMesh))
+                throw new Exception("Can only add Text, if its ObjectType.TextMesh");
+
+            haveText = true;
+            objects.Add(obj);
+            texts.Add(tag, (TextMesh)obj.GetMesh());
+            objects.Sort();
+
         }
 
 
@@ -462,6 +479,30 @@ namespace Engine3D
             if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(int) : currentMeshType, typeof(int), null))
                 vertices = new List<float>();
 
+            //GL.BlendFunc(BlendingFactor.SrcColor, BlendingFactor.OneMinusSrcColor);
+            foreach (ParticleSystem ps in particleSystems)
+            {
+                Object psO = ps.GetObject();
+                psO.GetMesh().CalculateFrustumVisibility(character.camera, null);
+
+                InstancedMesh mesh = (InstancedMesh)psO.GetMesh();
+                if (currentMeshType == null || currentMeshType != mesh.GetType())
+                {
+                    instancedShaderProgram.Use();
+                }
+                mesh.UpdateFrustumAndCamera(ref character.camera);
+
+                List<float> instancedVertices = new List<float>();
+                (vertices, instancedVertices) = mesh.Draw();
+                currentMeshType = typeof(InstancedMesh);
+
+                meshVbo.Buffer(vertices);
+                instancedMeshVbo.Buffer(instancedVertices);
+                GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
+                vertices.Clear();
+            }
+            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
             //BVH bvh = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).First().BVHStruct;
             //List<WireframeMesh> bvhs = bvh.ExtractWireframesWithPos(bvh.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref character.camera, character.Position);
 
@@ -485,14 +526,10 @@ namespace Engine3D
             //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
             //vertices = new List<float>();
 
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Position")).First().GetMesh())
-                        .ChangeText("Position = (" + character.PStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Velocity")).First().GetMesh())
-                        .ChangeText("Velocity = (" + character.VStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Looking")).First().GetMesh())
-                        .ChangeText("Looking = (" + character.LStr + ")");
-            ((TextMesh)objects.Where(x => x.GetMesh().GetType() == typeof(TextMesh) && ((TextMesh)x.GetMesh()).currentText.Contains("Noclip")).First().GetMesh())
-                        .ChangeText("Noclip = (" + character.noClip.ToString() + ")");
+            texts["Position"].ChangeText("Position = (" + character.PStr + ")");
+            texts["Velocity"].ChangeText("Velocity = (" + character.VStr + ")");
+            texts["Looking"].ChangeText("Looking = (" + character.LStr + ")");
+            texts["Noclip"].ChangeText("Noclip = (" + character.noClip.ToString() + ")");
 
             #endregion
 
@@ -531,6 +568,11 @@ namespace Engine3D
             character.AfterUpdate(MouseState, args);
 
             soundManager.SetListener(character.camera.GetPosition());
+
+            foreach(ParticleSystem ps in particleSystems)
+            {
+                ps.Update((float)args.Time);
+            }
 
             
             //if (temp != Math.Round(totalTime) || temp == -1)
@@ -701,6 +743,19 @@ namespace Engine3D
             //    ((InstancedMesh)objects.Last().GetMesh()).instancedData.Add(instData);
             //}
 
+            ParticleSystem ps = new ParticleSystem(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitFace(), "smoke.png", windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            ps.GetObject().SetBillboarding(true);
+            ps.emitTimeSec = 0.2f;
+            ps.startSpeed = 3;
+            ps.endSpeed = 3;
+            ps.lifetime = 2;
+            ps.randomDir = true;
+            ps.startScale = new Vector3(10, 10, 10);
+            ps.endScale = new Vector3(10, 10, 10);
+            ps.startColor = Helper.ColorFromRGBA(255, 0, 0);
+            ps.endColor = Helper.ColorFromRGBA(255, 0, 0, 0);
+            particleSystems.Add(ps);
+
             //noTextureShaderProgram.Use();
             //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
             //foreach (WireframeMesh mesh in aabbs)
@@ -716,25 +771,25 @@ namespace Engine3D
             ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
             ((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
             ((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj1);
+            AddText(textObj1, "Position");
 
             Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
             ((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
             ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
             ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj2);
+            AddText(textObj2, "Velocity");
 
             Object textObj3 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
             ((TextMesh)textObj3.GetMesh()).ChangeText("Looking = (" + character.LStr + ")");
             ((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
             ((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj3);
+            AddText(textObj3, "Looking");
 
             Object textObj4 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
             ((TextMesh)textObj4.GetMesh()).ChangeText("Noclip = (" + character.noClip.ToString() + ")");
             ((TextMesh)textObj4.GetMesh()).Position = new Vector2(10, windowSize.Y - 125);
             ((TextMesh)textObj4.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddObject(textObj4);
+            AddText(textObj4, "Noclip");
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 

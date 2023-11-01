@@ -61,6 +61,22 @@ namespace Engine3D
             return new Vector3(x, y, z);
         }
 
+        public static Vector3 GetRandomNormVector()
+        {
+            Vector3 randomVector;
+
+            do
+            {
+                randomVector = new Vector3(
+                    GetRandomNumberBetween(-1f, 1f),
+                    GetRandomNumberBetween(-1f, 1f),
+                    GetRandomNumberBetween(-1f, 1f)
+                );
+            } while (randomVector.Length < 0.1f); // Ensure the vector isn't too close to zero-length
+
+            return Vector3.Normalize(randomVector);
+        }
+
         public static Quaternion GetRandomQuaternion()
         {
             float u1 = (float)rnd.NextDouble();
@@ -105,6 +121,27 @@ namespace Engine3D
                 a.B + t * (b.B - a.B),
                 a.A + t * (b.A - a.A)
             );  
+        }
+
+        public static float Lerp(float a, float b, float t)
+        {
+            return a + t * (b - a);
+        }
+
+        public static Vector3 GetForwardVectorFromQuaternion(Quaternion rotation)
+        {
+            Vector3 forward = new Vector3(0, 0, -1);
+            return Vector3.Normalize(rotation * forward);
+        }
+
+        public static float GetRandomNumberBetween(float min, float max)
+        {
+            return (float)(rnd.NextDouble() * (max - min) + min);
+        }
+
+        public static Color4 ColorFromRGBA(float r, float g, float b, float a = 255.0f)
+        {
+            return new Color4(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
         }
     }
 }

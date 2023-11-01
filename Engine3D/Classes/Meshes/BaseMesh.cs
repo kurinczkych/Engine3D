@@ -17,6 +17,8 @@ namespace Engine3D
         public int vaoId;
         public int vboId;
         protected int shaderProgramId;
+        
+        public int useBillboarding = 0;
 
         public List<triangle> tris;
         public List<triangle> visibleTris;

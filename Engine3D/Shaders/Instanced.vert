@@ -25,6 +25,7 @@ uniform mat4 projectionMatrix;
 
 uniform int useNormal;
 uniform int useHeight;
+uniform int useBillboarding;
 
 mat3 convertQuaternionToMat3(vec4 q) {
     // Convert quaternion to 3x3 rotation matrix
@@ -74,9 +75,26 @@ void main()
     vec4 scaledVertex = scaleMatrix * rotatedVertex;
     vec4 positionedVertex = scaledVertex + instPosition;
 
-
 	gl_Position = positionedVertex * modelMatrix * viewMatrix * projectionMatrix;
 	vec4 fragPos4 = positionedVertex * modelMatrix;
+
+    if(useBillboarding == 1)
+	{
+		vec3 look = normalize(cameraPosition - vec3(modelMatrix * inPosition));
+		vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), look));
+		vec3 up = cross(look, right);
+
+		// Build the billboard matrix
+		mat4 billboardMat = mat4(
+			vec4(right, 0.0),
+			vec4(up, 0.0),
+			vec4(-look, 0.0),
+			vec4(0.0, 0.0, 0.0, 1.0)
+		);
+
+		gl_Position = positionedVertex * billboardMat * modelMatrix * viewMatrix * projectionMatrix;
+		vec4 fragPos4 = positionedVertex * billboardMat * modelMatrix;
+	}
 
     mat3 normalMatrix = inverseTranspose(rotationMatrix);
     fragNormal = normalize(normalMatrix * inNormal.xyz);
