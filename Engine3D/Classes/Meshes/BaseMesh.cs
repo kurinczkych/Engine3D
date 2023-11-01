@@ -53,7 +53,7 @@ namespace Engine3D
         }
         protected abstract void SendUniforms();
 
-        public void CalculateFrustumVisibility(Camera camera, BVH bvh)
+        public void CalculateFrustumVisibility(Camera camera, BVH? bvh)
         {
             if (bvh != null)
             {
@@ -295,6 +295,8 @@ namespace Engine3D
                                     tris.Last().pi[1] = v[1] - 1;
                                     tris.Last().pi[2] = v[2] - 1;
 
+                                    tris.Last().visibile = true;
+
                                     Bounds.Enclose(tris.Last());
 
                                     hasIndices = true;
@@ -318,6 +320,8 @@ namespace Engine3D
                                     tris.Last().pi[1] = v[1] - 1;
                                     tris.Last().pi[2] = v[2] - 1;
 
+                                    tris.Last().visibile = true;
+
                                     Bounds.Enclose(tris.Last());
 
                                     hasIndices = true;
@@ -334,6 +338,8 @@ namespace Engine3D
                                 tris.Last().pi[0] = f[0] - 1;
                                 tris.Last().pi[1] = f[1] - 1;
                                 tris.Last().pi[2] = f[2] - 1;
+
+                                tris.Last().visibile = true;
 
                                 Bounds.Enclose(tris.Last());
 

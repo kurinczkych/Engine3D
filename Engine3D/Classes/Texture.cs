@@ -97,9 +97,9 @@ namespace Engine3D
 
         public TextureDescriptor textureDescriptor;
 
-        public Texture(int unit, string embeddedResourceName, bool flipY = true, string textureFilter = "linear")
+        public Texture(int unit, string textureName, bool flipY = true, string textureFilter = "linear")
         {
-            textureDescriptor = GetTextureDescriptor(embeddedResourceName);
+            textureDescriptor = GetTextureDescriptor(textureName);
 
             int currentUnit = unit;
 

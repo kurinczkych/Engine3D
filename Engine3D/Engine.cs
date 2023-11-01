@@ -25,15 +25,35 @@ using System.Xml.Schema;
 using OpenTK.Audio.OpenAL;
 using System.Drawing;
 using System.Linq.Expressions;
+using MagicPhysX;
+using ImGuiNET;
+using OpenTK.Windowing.Common.Input;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
 
 namespace Engine3D
 {
-
     public class Engine : GameWindow
     {
+        public class SavedStart
+        {
+            public List<Object> objects;
+            public Dictionary<string, TextMesh> texts;
+            Character character;
+        }
+
+        public class GameWindowProperty
+        {
+            public float topPanelSize = 50;
+            public float bottomPanelPercent = 0.15f;
+            public float leftPanelPercent = 0.15f;
+            public float rightPanelPercent = 0.15f;
+            public Vector2 gameWindowPos;
+            public Vector2 gameWindowSize;
+
+            public GameWindowProperty() { }
+        }
 
         #region OPENGL
         private VAO meshVao;
@@ -41,9 +61,6 @@ namespace Engine3D
 
         private InstancedVAO instancedMeshVao;
         private VBO instancedMeshVbo;
-
-        private VAO testVao;
-        private VBO testVbo;
 
         private VAO textVao;
         private VBO textVbo;
@@ -71,24 +88,28 @@ namespace Engine3D
         #region Program variables
         public static Random rnd = new Random((int)DateTime.Now.Ticks);
         private bool haveText = false;
+        private bool firstRun = true;
 
         private Vector2 origWindowSize;
         private Vector2 windowSize;
-        private Box2i previousWindowBounds;
-        private float gameWindowPercent = 0.7f;
-        private Vector2 gameWindowPos;
-        private Vector2 gameWindowSize;
+        private GameWindowProperty gameWindowProperty;
+        private Vector2 gameWindowMousePos;
 
         private SoundManager soundManager;
-        
+
         private TextGenerator textGenerator;
         private Dictionary<string, TextMesh> texts;
+        #endregion
+
+        #region UI variables
+        private EditorProperties editorProperties = new EditorProperties();
+        private ImGuiController imGuiController;
+        private Dictionary<string, Texture> guiTextures = new Dictionary<string, Texture>();
         #endregion
 
         #region Engine variables
         private List<Object> objects;
         private Character character;
-        private Camera camera;
 
         private Frustum frustum;
         private List<PointLight> pointLights;
@@ -118,12 +139,13 @@ namespace Engine3D
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
 
+            gameWindowProperty = new GameWindowProperty();
+            gameWindowProperty.gameWindowSize = new Vector2();
+            gameWindowProperty.gameWindowPos = new Vector2();
+
             windowSize = new Vector2(width, height);
             origWindowSize = new Vector2(width, height);
             CenterWindow(new Vector2i(width, height));
-
-            gameWindowSize = new Vector2(width * gameWindowPercent, height * gameWindowPercent);
-            gameWindowPos = new Vector2((windowSize.X - gameWindowSize.X) / 2, (windowSize.Y - gameWindowSize.Y) / 2);
 
             frustum = new Frustum();
             shaderProgram = new Shader();
@@ -209,10 +231,6 @@ namespace Engine3D
             {
                 instancedMeshVbo.Buffer(vertices);
             }
-            else if(prevMeshType == typeof(TestMesh) && prevMeshType != currentMeshType)
-            {
-                testVbo.Buffer(vertices);
-            }
             else if(prevMeshType == typeof(NoTextureMesh) && prevMeshType != currentMeshType)
             {
                 noTexVbo.Buffer(vertices);
@@ -248,9 +266,13 @@ namespace Engine3D
         {
             double fps = DrawFps(args.Time);
 
-            //GL.Viewport((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
-            //GL.Enable(EnableCap.ScissorTest);
-            //GL.Scissor((int)gameWindowPos.X, (int)gameWindowPos.Y, (int)gameWindowSize.X, (int)gameWindowSize.Y);
+            imGuiController.Update(this, (float)args.Time);
+
+            GL.Viewport((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y, 
+                        (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
+            GL.Enable(EnableCap.ScissorTest);
+            GL.Scissor((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y, 
+                       (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
 
             #region GameWindow
 
@@ -259,53 +281,60 @@ namespace Engine3D
             GL.Enable(EnableCap.DepthTest);
 
             // Triangle frustum visibility calculation
-            foreach (Object obj in objects)
+            if (editorProperties.gameRunning == GameState.Running || firstRun)
             {
-                obj.GetMesh().CalculateFrustumVisibility(character.camera, obj.BVHStruct);
+                foreach (Object obj in objects)
+                {
+                    obj.GetMesh().CalculateFrustumVisibility(character.camera, obj.BVHStruct);
+                }
+                firstRun = false;
             }
 
-            if (useOcclusionCulling)
+            if (editorProperties.gameRunning == GameState.Running)
             {
-                //Occlusion
-                GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
-                GL.Clear(ClearBufferMask.DepthBufferBit);
-                GL.ClearDepth(1.0);
-
-                List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
-                aabbShaderProgram.Use();
-                List<float> posVertices = new List<float>();
-                foreach (Object obj in triangleMeshObjects)
+                if (useOcclusionCulling)
                 {
-                    posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
-                }
-                aabbVbo.Buffer(posVertices);
-                GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
+                    //Occlusion
+                    GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
+                    GL.Clear(ClearBufferMask.DepthBufferBit);
+                    GL.ClearDepth(1.0);
 
-
-                //GL.ColorMask(true, true, true, true);
-                //GL.ClearColor(Color4.Cyan);
-                //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-                GL.Disable(EnableCap.CullFace);
-                if (pendingQueries.Count() == 0)
-                {
+                    List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
+                    aabbShaderProgram.Use();
+                    List<float> posVertices = new List<float>();
                     foreach (Object obj in triangleMeshObjects)
                     {
-                        OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
+                        posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
                     }
-                }
-                else
-                {
-                    ;
-                    foreach (Object obj in triangleMeshObjects)
+                    aabbVbo.Buffer(posVertices);
+                    GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
+
+
+                    //GL.ColorMask(true, true, true, true);
+                    //GL.ClearColor(Color4.Cyan);
+                    //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+                    GL.Disable(EnableCap.CullFace);
+                    if (pendingQueries.Count() == 0)
                     {
-                        OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
+                        foreach (Object obj in triangleMeshObjects)
+                        {
+                            OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
+                        }
                     }
+                    else
+                    {
+                        ;
+                        foreach (Object obj in triangleMeshObjects)
+                        {
+                            OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
+                        }
+                    }
+                    GL.Enable(EnableCap.CullFace);
+
+
+                    GL.ColorMask(true, true, true, true);
                 }
-                GL.Enable(EnableCap.CullFace);
-                
-                
-                GL.ColorMask(true, true, true, true);
             }
 
             //------------------------------------------------------------
@@ -319,7 +348,8 @@ namespace Engine3D
             GL.ClearColor(Color4.Cyan);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
+
+            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorProperties.gameRunning);
 
             Type? currentMeshType = null;
             //BaseMesh? currentMesh = null;
@@ -330,7 +360,8 @@ namespace Engine3D
                 if (objectType == ObjectType.Cube ||
                    objectType == ObjectType.Sphere ||
                    objectType == ObjectType.Capsule ||
-                   objectType == ObjectType.TriangleMesh)
+                   objectType == ObjectType.TriangleMesh ||
+                   objectType == ObjectType.TriangleMeshWithCollider)
                 {
                     if (o.GetMesh().GetType() == typeof(Mesh))
                     {
@@ -339,9 +370,8 @@ namespace Engine3D
                         {
                             shaderProgram.Use();
                         }
-                        mesh.UpdateFrustumAndCamera(ref character.camera);
 
-                        if (useOcclusionCulling && objectType == ObjectType.TriangleMesh)
+                        if (editorProperties.gameRunning == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
                         {
                             List<triangle> notOccludedTris = new List<triangle>();
                             OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
@@ -358,7 +388,7 @@ namespace Engine3D
                         }
                         else
                         {
-                            vertices.AddRange(mesh.Draw());
+                            vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
                             currentMeshType = typeof(Mesh);
 
                             meshVbo.Buffer(vertices);
@@ -373,10 +403,9 @@ namespace Engine3D
                         {
                             instancedShaderProgram.Use();
                         }
-                        mesh.UpdateFrustumAndCamera(ref character.camera);
 
                         List<float> instancedVertices = new List<float>();
-                        (vertices, instancedVertices) = mesh.Draw();
+                        (vertices, instancedVertices) = mesh.Draw(editorProperties.gameRunning);
                         currentMeshType = typeof(InstancedMesh);
 
                         meshVbo.Buffer(vertices);
@@ -384,26 +413,6 @@ namespace Engine3D
                         GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
                         vertices.Clear();
                     }
-                }
-                else if (objectType == ObjectType.TestMesh)
-                {
-                    TestMesh mesh = (TestMesh)o.GetMesh();
-
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(TestMesh)))
-                    //    vertices = new List<float>();
-
-                    if (currentMeshType == null || currentMeshType != mesh.GetType())
-                    {
-                        shaderProgram.Use();
-                    }
-
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
-                    currentMeshType = typeof(TestMesh);
-
-                    testVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
                 }
                 else if (objectType == ObjectType.NoTexture)
                 {
@@ -417,8 +426,7 @@ namespace Engine3D
                         noTextureShaderProgram.Use();
                     }
 
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
+                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
                     currentMeshType = typeof(NoTextureMesh);
                 }
                 else if (objectType == ObjectType.Wireframe)
@@ -433,8 +441,7 @@ namespace Engine3D
                         noTextureShaderProgram.Use();
                     }
 
-                    mesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-                    vertices.AddRange(mesh.Draw());
+                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
                     currentMeshType = typeof(WireframeMesh);
                 }
                 else if (objectType == ObjectType.UIMesh)
@@ -450,7 +457,7 @@ namespace Engine3D
                         posTexShader.Use();
                     }
 
-                    vertices.AddRange(mesh.Draw());
+                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
                     currentMeshType = typeof(UITextureMesh);
 
                     uiTexVbo.Buffer(vertices);
@@ -470,7 +477,7 @@ namespace Engine3D
                     if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(TextMesh) : currentMeshType, typeof(TextMesh), null))
                         vertices = new List<float>();
 
-                    vertices.AddRange(mesh.Draw());
+                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
                     currentMeshType = typeof(TextMesh);
                 }
             }
@@ -493,7 +500,7 @@ namespace Engine3D
                 mesh.UpdateFrustumAndCamera(ref character.camera);
 
                 List<float> instancedVertices = new List<float>();
-                (vertices, instancedVertices) = mesh.Draw();
+                (vertices, instancedVertices) = mesh.Draw(editorProperties.gameRunning);
                 currentMeshType = typeof(InstancedMesh);
 
                 meshVbo.Buffer(vertices);
@@ -533,8 +540,16 @@ namespace Engine3D
 
             #endregion
 
-            //GL.Disable(EnableCap.ScissorTest);
-            //GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            GL.Disable(EnableCap.ScissorTest);
+            GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+
+
+            imGuiController.EditorWindow(gameWindowProperty, guiTextures);
+            if (editorProperties.windowResized)
+                ResizedEditorWindow();
+            if (Cursor != editorProperties.mouseType)
+                Cursor = editorProperties.mouseType;
+            imGuiController.Render();
 
             Context.SwapBuffers();
 
@@ -556,34 +571,44 @@ namespace Engine3D
         {
             base.OnUpdateFrame(args);
 
-            if (KeyboardState.IsKeyReleased(Keys.Escape))
+            if(editorProperties.gameRunning == GameState.Stopped &&
+               editorProperties.justSetGameState)
             {
-                CursorState = CursorState == CursorState.Grabbed ? CursorState.Normal : CursorState.Grabbed;
+
+
+                editorProperties.justSetGameState = false;
             }
+
+            if(editorProperties.gameRunning == GameState.Running && CursorState != CursorState.Grabbed)
+            {
+                CursorState = CursorState.Grabbed;
+            }
+            else if(editorProperties.gameRunning == GameState.Stopped && CursorState != CursorState.Normal)
+            {
+                CursorState = CursorState.Normal;
+            }
+
+            if (KeyboardState.IsKeyReleased(Keys.Escape) && editorProperties.gameRunning == GameState.Running)
+            {
+                editorProperties.gameRunning = GameState.Stopped;
+            }
+
             if (KeyboardState.IsKeyReleased(Keys.F2))
                 WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
 
-            character.CalculateVelocity(KeyboardState, MouseState, args);
-            character.UpdatePosition(KeyboardState, MouseState, args);
-            character.AfterUpdate(MouseState, args);
-
-            soundManager.SetListener(character.camera.GetPosition());
-
-            foreach(ParticleSystem ps in particleSystems)
+            if (editorProperties.gameRunning == GameState.Running)
             {
-                ps.Update((float)args.Time);
-            }
+                character.CalculateVelocity(KeyboardState, MouseState, args);
+                character.UpdatePosition(KeyboardState, MouseState, args);
 
-            
-            //if (temp != Math.Round(totalTime) || temp == -1)
-            //{
-            //    Object obj = new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, Object.GetUnitSphere(), "red.png", windowSize, ref frustum, ref character.camera, ref textureCount), ObjectType.Sphere, ref physx);
-            //    obj.SetPosition(new Vector3(rnd.Next(-20, 20), 50, rnd.Next(-20, 20)));
-            //    obj.SetSize(2);
-            //    obj.AddSphereCollider(false);
-            //    temp += 1;
-            //    AddObject(obj);
-            //}
+                foreach(ParticleSystem ps in particleSystems)
+                {
+                    ps.Update((float)args.Time);
+                }
+
+                soundManager.SetListener(character.camera.GetPosition());
+            }
+            character.AfterUpdate(MouseState, args, editorProperties.gameRunning);
 
             if (totalTime > 0)
             {
@@ -598,12 +623,16 @@ namespace Engine3D
         protected override void OnLoad()
         {
             base.OnLoad();
-            CursorState = CursorState.Grabbed;
+            CursorState = CursorState.Normal;
 
             if (limitFps)
                 stopwatch = Stopwatch.StartNew();
 
             textGenerator = new TextGenerator();
+            imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorProperties);
+            guiTextures.Add("play", new Texture(textureCount, "ui_play.png"));
+            guiTextures.Add("stop", new Texture(textureCount, "ui_stop.png"));
+            guiTextures.Add("pause", new Texture(textureCount, "ui_pause.png"));
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
@@ -628,14 +657,6 @@ namespace Engine3D
             instancedMeshVao.LinkToVAOInstanceData(6, 4, 1, instancedMeshVbo);
             instancedMeshVao.LinkToVAOInstanceData(7, 3, 1, instancedMeshVbo);
             instancedMeshVao.LinkToVAOInstanceData(8, 4, 1, instancedMeshVbo);
-
-            testVbo = new VBO();
-            testVao = new VAO(Mesh.floatCount);
-            testVao.LinkToVAO(0, 4, testVbo);
-            testVao.LinkToVAO(1, 3, testVbo);
-            testVao.LinkToVAO(2, 2, testVbo);
-            testVao.LinkToVAO(3, 4, testVbo);
-            testVao.LinkToVAO(4, 3, testVbo);
 
             textVbo = new VBO();
             textVao = new VAO(TextMesh.floatCount);
@@ -702,14 +723,14 @@ namespace Engine3D
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
 
             shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id);
+            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorProperties.gameRunning);
 
             // Projection matrix and mesh loading
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
+            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
             //objects.Last().BuildOctree();
@@ -743,18 +764,18 @@ namespace Engine3D
             //    ((InstancedMesh)objects.Last().GetMesh()).instancedData.Add(instData);
             //}
 
-            ParticleSystem ps = new ParticleSystem(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitFace(), "smoke.png", windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
-            ps.GetObject().SetBillboarding(true);
-            ps.emitTimeSec = 0.2f;
-            ps.startSpeed = 3;
-            ps.endSpeed = 3;
-            ps.lifetime = 2;
-            ps.randomDir = true;
-            ps.startScale = new Vector3(10, 10, 10);
-            ps.endScale = new Vector3(10, 10, 10);
-            ps.startColor = Helper.ColorFromRGBA(255, 0, 0);
-            ps.endColor = Helper.ColorFromRGBA(255, 0, 0, 0);
-            particleSystems.Add(ps);
+            //ParticleSystem ps = new ParticleSystem(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitFace(), "smoke.png", windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //ps.GetObject().SetBillboarding(true);
+            //ps.emitTimeSec = 0.2f;
+            //ps.startSpeed = 3;
+            //ps.endSpeed = 3;
+            //ps.lifetime = 2;
+            //ps.randomDir = true;
+            //ps.startScale = new Vector3(10, 10, 10);
+            //ps.endScale = new Vector3(10, 10, 10);
+            //ps.startColor = Helper.ColorFromRGBA(255, 0, 0);
+            //ps.endColor = Helper.ColorFromRGBA(255, 0, 0, 0);
+            //particleSystems.Add(ps);
 
             //noTextureShaderProgram.Use();
             //List<WireframeMesh> aabbs = objects.Last().BVHStruct.ExtractWireframes(objects.Last().BVHStruct.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref character.camera);
@@ -803,6 +824,20 @@ namespace Engine3D
             objects.Sort();
         }
 
+        protected override void OnTextInput(TextInputEventArgs e)
+        {
+            base.OnTextInput(e);
+
+            imGuiController.PressChar((char)e.Unicode);
+        }
+
+        protected override void OnMouseWheel(MouseWheelEventArgs e)
+        {
+            base.OnMouseWheel(e);
+
+            imGuiController.MouseScroll(e.Offset);
+        }
+
         protected override void OnUnload()
         {
             base.OnUnload();
@@ -810,7 +845,6 @@ namespace Engine3D
             queryPool.DeleteQueries();
 
             GL.DeleteVertexArray(meshVao.id);
-            GL.DeleteVertexArray(testVao.id);
             GL.DeleteVertexArray(textVao.id);
             GL.DeleteVertexArray(noTexVao.id);
             GL.DeleteVertexArray(uiTexVao.id);
@@ -831,12 +865,29 @@ namespace Engine3D
 
         protected override void OnResize(ResizeEventArgs e)
         {
+            Resized(e);
+        }
+
+        private void Resized(ResizeEventArgs e)
+        {
             base.OnResize(e);
             GL.Viewport(0, 0, e.Width, e.Height);
             windowSize.X = e.Width;
             windowSize.Y = e.Height;
-            gameWindowSize = new Vector2(windowSize.X * gameWindowPercent, windowSize.Y * gameWindowPercent);
-            gameWindowPos = new Vector2((windowSize.X - gameWindowSize.X) / 2, (windowSize.Y - gameWindowSize.Y) / 2);
+
+            gameWindowProperty.gameWindowSize = new Vector2(windowSize.X * (1.0f - (gameWindowProperty.leftPanelPercent + gameWindowProperty.rightPanelPercent)),
+                                                            windowSize.Y * (1 - gameWindowProperty.bottomPanelPercent) - gameWindowProperty.topPanelSize);
+            gameWindowProperty.gameWindowPos = new Vector2(windowSize.X * gameWindowProperty.leftPanelPercent, windowSize.Y * gameWindowProperty.bottomPanelPercent);
+
+            if (imGuiController != null)
+                imGuiController.WindowResized(ClientSize.X, ClientSize.Y);
+        }
+
+        private void ResizedEditorWindow()
+        {
+            gameWindowProperty.gameWindowSize = new Vector2(windowSize.X * (1.0f - (gameWindowProperty.leftPanelPercent + gameWindowProperty.rightPanelPercent)),
+                                                            windowSize.Y * (1 - gameWindowProperty.bottomPanelPercent) - gameWindowProperty.topPanelSize);
+            gameWindowProperty.gameWindowPos = new Vector2(windowSize.X * gameWindowProperty.leftPanelPercent, windowSize.Y * gameWindowProperty.bottomPanelPercent);
         }
     }
 }

@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
+using Cyotek.Drawing.BitmapFont;
 
 #pragma warning disable CS8600
 #pragma warning disable CS8604
@@ -219,11 +220,6 @@ namespace Engine3D
             return vec;
         }
 
-        public void UpdateFrustumAndCamera(ref Camera camera)
-        {
-            this.camera = camera;
-        }
-
         private void GetUniformLocations()
         {
             uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
@@ -344,9 +340,29 @@ namespace Engine3D
             }
         }
 
-        public List<float> Draw()
+        public List<float> Draw(GameState gameRunning)
         {
             Vao.Bind();
+
+            if(gameRunning == GameState.Stopped && vertices.Count > 0)
+            {
+                SendUniforms();
+
+                if (texture != null)
+                {
+                    texture.Bind(TextureType.Texture);
+                    if (texture.textureDescriptor.Normal != "")
+                        texture.Bind(TextureType.Normal);
+                    if (texture.textureDescriptor.Height != "")
+                        texture.Bind(TextureType.Height);
+                    if (texture.textureDescriptor.AO != "")
+                        texture.Bind(TextureType.AO);
+                    if (texture.textureDescriptor.Rough != "")
+                        texture.Bind(TextureType.Rough);
+                }
+
+                return vertices;
+            }
 
             vertices = new List<float>();
 

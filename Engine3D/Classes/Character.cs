@@ -236,7 +236,7 @@ namespace Engine3D
             Position = newPos;
         }
 
-        public void AfterUpdate(MouseState mouseState, FrameEventArgs args)
+        public void AfterUpdate(MouseState mouseState, FrameEventArgs args, GameState gameRunning)
         {
             Velocity.X *= 0.9f;
             Velocity.Z *= 0.9f;
@@ -271,8 +271,11 @@ namespace Engine3D
                 {
                     lastPos = new Vector2(mouseState.X, mouseState.Y);
 
-                    camera.SetYaw(camera.GetYaw() + deltaX * sensitivity * (float)args.Time);//45.73648
-                    camera.SetPitch(camera.GetPitch() - deltaY * sensitivity * (float)args.Time);//-18.75002
+                    if (gameRunning == GameState.Running)
+                    {
+                        camera.SetYaw(camera.GetYaw() + deltaX * sensitivity * (float)args.Time);//45.73648
+                        camera.SetPitch(camera.GetPitch() - deltaY * sensitivity * (float)args.Time);//-18.75002
+                    }
                 }
             }
         }

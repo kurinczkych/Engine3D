@@ -104,9 +104,16 @@ namespace Engine3D
             return mesh;
         }
 
-        public static void SendToGPU(ref List<PointLight> pointLights, int shaderProgramId)
+        public static void SendToGPU(ref List<PointLight> pointLights, int shaderProgramId, GameState gameRunning)
         {
+            if (gameRunning == GameState.Stopped)
+            {
+                GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), 0);
+                return;
+            }
+
             GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), pointLights.Count);
+
             for (int i = 0; i < pointLights.Count; i++)
             {
                 Vector3 c = new Vector3(pointLights[i].color.R, pointLights[i].color.G, pointLights[i].color.B);

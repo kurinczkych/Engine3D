@@ -97,9 +97,21 @@ namespace Engine3D
             GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
         }
 
-        public List<float> Draw()
+        public List<float> Draw(GameState gameRunning)
         {
             Vao.Bind();
+
+            if (gameRunning == GameState.Stopped && vertices.Count > 0)
+            {
+                SendUniforms();
+
+                if (texture != null)
+                {
+                    texture.Bind(TextureType.Texture);
+                }
+
+                return vertices;
+            }
 
             vertices = new List<float>();
 

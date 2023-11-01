@@ -100,9 +100,22 @@ namespace Engine3D
             return result;
         }
 
-        public List<float> Draw()
+        public List<float> Draw(GameState gameRunning)
         {
             Vao.Bind();
+
+            if (gameRunning == GameState.Stopped && vertices.Count > 0)
+            {
+                SendUniforms();
+
+                if (texture != null)
+                {
+                    texture.Bind(TextureType.Texture);
+                }
+
+                return vertices;
+            }
+
             vertices = new List<float>();
 
             Matrix4 s = Matrix4.CreateScale(Size);

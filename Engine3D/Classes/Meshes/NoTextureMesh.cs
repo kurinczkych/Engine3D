@@ -37,7 +37,6 @@ namespace Engine3D
             }
         }
 
-        private Frustum frustum;
         private Camera camera;
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
@@ -47,7 +46,6 @@ namespace Engine3D
 
         public NoTextureMesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
         {
-            this.frustum = frustum;
             this.camera = camera;
 
             Vao = vao;
@@ -69,13 +67,6 @@ namespace Engine3D
 
             GetUniformLocations();
             SendUniforms();
-        }
-
-
-        public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
-        {
-            this.frustum = frustum;
-            this.camera = camera;
         }
 
         private void GetUniformLocations()
@@ -108,9 +99,16 @@ namespace Engine3D
             return result;
         }
 
-        public List<float> Draw()
+        public List<float> Draw(GameState gameRunning)
         {
             Vao.Bind();
+
+            if (gameRunning == GameState.Stopped && vertices.Count > 0)
+            {
+                SendUniforms();
+
+                return vertices;
+            }
 
             vertices = new List<float>();
 

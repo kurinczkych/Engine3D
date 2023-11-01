@@ -834,28 +834,28 @@ namespace Engine3D
             Vec2d t4 = new Vec2d(0, 1);
 
             // Back face
-            tris.Add(new triangle(new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }));
-            tris.Add(new triangle(new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }));
+            tris.Add(new triangle(new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }) { visibile = true });
 
             // Front face
-            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }));
-            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }));
+            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
 
             // Left face
-            tris.Add(new triangle(new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }));
-            tris.Add(new triangle(new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }));
+            tris.Add(new triangle(new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }) { visibile = true });
 
             // Right face
-            tris.Add(new triangle(new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }));
-            tris.Add(new triangle(new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }));
+            tris.Add(new triangle(new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
 
             // Top face
-            tris.Add(new triangle(new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }));
-            tris.Add(new triangle(new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }));
+            tris.Add(new triangle(new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }) { visibile = true });
 
             // Bottom face
-            tris.Add(new triangle(new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }));
-            tris.Add(new triangle(new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }));
+            tris.Add(new triangle(new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
 
             return tris;
         }
@@ -878,8 +878,8 @@ namespace Engine3D
             Vec2d t4 = new Vec2d(0, 1);
 
             // Front face
-            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }));
-            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }));
+            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
 
             return tris;
         }
@@ -921,8 +921,8 @@ namespace Engine3D
                         radius * MathF.Cos(v2),
                         radius * MathF.Sin(v2) * MathF.Sin(u2));
 
-                    tris.Add(new triangle(new Vector3[] { p1, p2, p3 }));
-                    tris.Add(new triangle(new Vector3[] { p2, p4, p3 }));
+                    tris.Add(new triangle(new Vector3[] { p1, p2, p3 }) { visibile = true });
+                    tris.Add(new triangle(new Vector3[] { p2, p4, p3 }) { visibile = true });
                 }
             }
 
@@ -976,8 +976,8 @@ namespace Engine3D
                     Vector3 p3b = new Vector3(-p3.X, p3.Y, p3.Z);
                     Vector3 p4b = new Vector3(-p4.X, p4.Y, p4.Z);
 
-                    tris.Add(new triangle(p1b, p2b, p3b));
-                    tris.Add(new triangle(p2b, p4b, p3b));
+                    tris.Add(new triangle(p1b, p2b, p3b) { visibile = true });
+                    tris.Add(new triangle(p2b, p4b, p3b) { visibile = true });
                 }
             }
 
@@ -993,8 +993,8 @@ namespace Engine3D
                 Vector3 p3 = new Vector3(-halfHeight, p1.Y, p1.Z);
                 Vector3 p4 = new Vector3(-halfHeight, p2.Y, p2.Z);
 
-                tris.Add(new triangle(p1, p3, p2));
-                tris.Add(new triangle(p2, p3, p4));
+                tris.Add(new triangle(p1, p3, p2) { visibile = true });
+                tris.Add(new triangle(p2, p3, p4) { visibile = true });
             }
 
             return tris;

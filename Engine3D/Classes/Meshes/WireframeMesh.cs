@@ -26,7 +26,6 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
 
-        private Frustum frustum;
         private Camera camera;
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
@@ -53,7 +52,6 @@ namespace Engine3D
 
         public WireframeMesh(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
         {
-            this.frustum = frustum;
             this.camera = camera;
 
             Vao = vao;
@@ -67,13 +65,6 @@ namespace Engine3D
 
             GetUniformLocations();
             SendUniforms();
-        }
-
-
-        public void UpdateFrustumAndCamera(ref Frustum frustum, ref Camera camera)
-        {
-            this.frustum = frustum;
-            this.camera = camera;
         }
 
 
@@ -108,9 +99,17 @@ namespace Engine3D
             return result;
         }
 
-        public List<float> Draw()
+        public List<float> Draw(GameState gameRunning)
         {
             Vao.Bind();
+
+
+            if (gameRunning == GameState.Stopped && vertices.Count > 0)
+            {
+                SendUniforms();
+
+                return vertices;
+            }
 
             vertices = new List<float>();
 
@@ -136,11 +135,8 @@ namespace Engine3D
 
             foreach (Line line in lines)
             {
-                    vertices.AddRange(ConvertToNDC(line.Start, ref transformMatrix));
-                    vertices.AddRange(ConvertToNDC(line.End, ref transformMatrix));
-                if (frustum.IsLineInside(line) || camera.IsLineClose(line))
-                {
-                }
+                vertices.AddRange(ConvertToNDC(line.Start, ref transformMatrix));
+                vertices.AddRange(ConvertToNDC(line.End, ref transformMatrix));
             }
 
             SendUniforms();

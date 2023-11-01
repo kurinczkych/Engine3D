@@ -264,9 +264,29 @@ namespace Engine3D
             }
         }
 
-        public (List<float>, List<float>) Draw()
+        public (List<float>, List<float>) Draw(GameState gameRunning)
         {
             Vao.Bind();
+
+            if (gameRunning == GameState.Stopped && vertices.Count > 0 && instancedVertices.Count > 0)
+            {
+                SendUniforms();
+
+                if (texture != null)
+                {
+                    texture.Bind(TextureType.Texture);
+                    if (texture.textureDescriptor.Normal != "")
+                        texture.Bind(TextureType.Normal);
+                    if (texture.textureDescriptor.Height != "")
+                        texture.Bind(TextureType.Height);
+                    if (texture.textureDescriptor.AO != "")
+                        texture.Bind(TextureType.AO);
+                    if (texture.textureDescriptor.Rough != "")
+                        texture.Bind(TextureType.Rough);
+                }
+
+                return (vertices, instancedVertices);
+            }
 
             vertices = new List<float>();
             instancedVertices = new List<float>();
