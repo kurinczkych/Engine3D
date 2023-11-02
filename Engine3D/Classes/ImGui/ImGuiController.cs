@@ -420,6 +420,7 @@ namespace Engine3D
                                         {
                                             o.Position.X = value;
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
                                         }
                                     }
                                     ImGui.SameLine();
@@ -445,6 +446,7 @@ namespace Engine3D
                                         {
                                             o.Position.Y = value;
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
                                         }
                                     }
                                     ImGui.SameLine();
@@ -470,6 +472,7 @@ namespace Engine3D
                                         {
                                             o.Position.Z = value;
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
                                         }
                                     }
                                     #endregion
@@ -501,6 +504,7 @@ namespace Engine3D
                                             rotation.X = value;
                                             o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { false, true, false });
                                         }
                                     }
                                     ImGui.SameLine();
@@ -527,6 +531,7 @@ namespace Engine3D
                                             rotation.Y = value;
                                             o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { false, true, false });
                                         }
                                     }
                                     ImGui.SameLine();
@@ -553,6 +558,7 @@ namespace Engine3D
                                             rotation.Z = value;
                                             o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { false, true, false });
                                         }
                                     }
                                     #endregion
@@ -581,6 +587,7 @@ namespace Engine3D
                                         {
                                             o.Scale.X = value;
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { false, false, true });
                                         }
                                     }
                                     ImGui.SameLine();
@@ -606,6 +613,7 @@ namespace Engine3D
                                         {
                                             o.Scale.Y = value;
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { false, false, true });
                                         }
                                     }
                                     ImGui.SameLine();
@@ -631,6 +639,7 @@ namespace Engine3D
                                         {
                                             o.Scale.Z = value;
                                             o.GetMesh().recalculate = true;
+                                            o.GetMesh().RecalculateModelMatrix(new bool[] { false, false, true });
                                         }
                                     }
                                     #endregion

@@ -44,7 +44,6 @@ namespace Engine3D
         private IntPtr dynamicColliderPtr;
         private IntPtr staticColliderPtr;
 
-        public BVH BVHStruct { get; private set; }
         public BSP BSPStruct { get; private set; }
         public Octree Octree { get; private set; }
         public GridStructure GridStructure { get; private set; }

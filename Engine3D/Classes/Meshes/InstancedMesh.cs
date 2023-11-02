@@ -38,19 +38,10 @@ namespace Engine3D
         private List<float> instancedVertices = new List<float>();
         private string? modelName;
 
-        public Vector3 Scale;
-        private bool IsTransformed
-        {
-            get
-            {
-                return !(parentObject.Position == Vector3.Zero && parentObject.Rotation == Quaternion.Identity && Scale == Vector3.One);
-            }
-        }
-
         private Camera camera;
         private Vector2 windowSize;
 
-        Matrix4 modelMatrix, viewMatrix, projectionMatrix;
+        Matrix4 viewMatrix, projectionMatrix;
 
         private InstancedVAO Vao;
         private VBO Vbo;
@@ -68,8 +59,6 @@ namespace Engine3D
 
             this.windowSize = windowSize;
             this.camera = camera;
-
-            Scale = Vector3.One;
 
             this.modelName = modelName;
             ProcessObj(modelName);
@@ -93,8 +82,6 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            Scale = Vector3.One;
-
             this.tris = new List<triangle>(tris);
 
             ComputeVertexNormals(ref tris);
@@ -113,8 +100,6 @@ namespace Engine3D
 
             this.windowSize = windowSize;
             this.camera = camera;
-
-            Scale = Vector3.One;
 
             this.tris = new List<triangle>(tris);
 
@@ -167,7 +152,6 @@ namespace Engine3D
 
         protected override void SendUniforms()
         {
-            modelMatrix = Matrix4.Identity;
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
 
@@ -215,24 +199,9 @@ namespace Engine3D
             this.camera = camera;
         }
 
-        private void ConvertToNDC(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
+        private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
         {
-            if (isTransformed)
-            {
-                Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
-
-                vertices.AddRange(new float[]
-                {
-                    v.X, v.Y, v.Z, 1.0f,
-                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v,
-                    tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-                    tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
-                });
-            }
-            else
-            {
-                vertices.AddRange(new float[]
+            vertices.AddRange(new float[]
                 {
                     tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
@@ -240,7 +209,6 @@ namespace Engine3D
                     tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
                     tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
                 });
-            }
         }
 
         private void ConvertToNDCInstance(ref List<float> vertices, InstancedMeshData data)
@@ -254,13 +222,13 @@ namespace Engine3D
             });
         }
 
-        private void AddVertices(List<float> vertices, triangle tri, ref Matrix4 transformMatrix, bool isTransformed)
+        private void AddVertices(List<float> vertices, triangle tri)
         {
             lock (vertices) // Lock to ensure thread-safety when modifying the list
             {
-                ConvertToNDC(ref vertices, tri, 0, ref transformMatrix, isTransformed);
-                ConvertToNDC(ref vertices, tri, 1, ref transformMatrix, isTransformed);
-                ConvertToNDC(ref vertices, tri, 2, ref transformMatrix, isTransformed);
+                ConvertToNDC(ref vertices, tri, 0);
+                ConvertToNDC(ref vertices, tri, 1);
+                ConvertToNDC(ref vertices, tri, 2);
             }
         }
 
@@ -271,53 +239,38 @@ namespace Engine3D
 
             Vao.Bind();
 
-            if (gameRunning == GameState.Stopped && vertices.Count > 0 && instancedVertices.Count > 0)
+            if (!recalculate)
             {
-                SendUniforms();
-
-                if (texture != null)
+                if (gameRunning == GameState.Stopped && vertices.Count > 0 && instancedVertices.Count > 0)
                 {
-                    texture.Bind(TextureType.Texture);
-                    if (texture.textureDescriptor.Normal != "")
-                        texture.Bind(TextureType.Normal);
-                    if (texture.textureDescriptor.Height != "")
-                        texture.Bind(TextureType.Height);
-                    if (texture.textureDescriptor.AO != "")
-                        texture.Bind(TextureType.AO);
-                    if (texture.textureDescriptor.Rough != "")
-                        texture.Bind(TextureType.Rough);
-                }
+                    SendUniforms();
 
-                return (vertices, instancedVertices);
+                    if (texture != null)
+                    {
+                        texture.Bind(TextureType.Texture);
+                        if (texture.textureDescriptor.Normal != "")
+                            texture.Bind(TextureType.Normal);
+                        if (texture.textureDescriptor.Height != "")
+                            texture.Bind(TextureType.Height);
+                        if (texture.textureDescriptor.AO != "")
+                            texture.Bind(TextureType.AO);
+                        if (texture.textureDescriptor.Rough != "")
+                            texture.Bind(TextureType.Rough);
+                    }
+
+                    return (vertices, instancedVertices);
+                }
+            }
+            else
+            {
+                recalculate = false;
+                CalculateFrustumVisibility(camera, null);
             }
 
             vertices = new List<float>();
             instancedVertices = new List<float>();
 
             ObjectType type = parentObject.GetObjectType();
-            if (type == ObjectType.Sphere)
-            {
-                Scale = new Vector3(parentObject.Radius);
-            }
-            else if (type == ObjectType.Cube)
-            {
-                Scale = new Vector3(parentObject.Size);
-            }
-            else if (type == ObjectType.Capsule)
-            {
-                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
-            }
-
-            Matrix4 s = Matrix4.CreateScale(Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
-
-            Matrix4 transformMatrix = Matrix4.Identity;
-            bool isTransformed = IsTransformed;
-            if (isTransformed)
-            {
-                transformMatrix = s * r * t;
-            }
 
             if (parentObject.BSPStruct != null)
             {
@@ -339,7 +292,7 @@ namespace Engine3D
                  {
                      if (tri.visibile)
                      {
-                         AddVertices(localVertices, tri, ref transformMatrix, isTransformed);
+                         AddVertices(localVertices, tri);
                      }
                      return localVertices;
                  },

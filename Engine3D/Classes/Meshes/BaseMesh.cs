@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Engine3D
 {
@@ -31,6 +32,13 @@ namespace Engine3D
 
         protected Dictionary<string, int> uniformLocations;
 
+        public BVH BVHStruct { get; private set; }
+
+        protected Matrix4 scaleMatrix = Matrix4.Identity;
+        protected Matrix4 rotationMatrix = Matrix4.Identity;
+        protected Matrix4 translationMatrix = Matrix4.Identity;
+        protected Matrix4 modelMatrix = Matrix4.Identity;
+
         //protected int threadSize;
         //private int desiredPercentage = 80;
         public static int threadSize = 32;
@@ -49,6 +57,31 @@ namespace Engine3D
             //threadSize = (int)(Environment.ProcessorCount * (80 / 100.0));
             //threadSize = 16;
         }
+
+        public void RecalculateModelMatrix(bool[] which)
+        {
+            if (which.Length != 3)
+                throw new Exception("Which matrix bool[] must be a length of 3");
+
+            if (which[2])
+                scaleMatrix = Matrix4.CreateScale(parentObject.Scale);
+
+            if (which[1])
+                rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+
+            if (which[0])
+                translationMatrix = Matrix4.CreateTranslation(parentObject.Position);
+
+            modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+
+            TransformBVH();
+        }
+
+        private void TransformBVH()
+        {
+
+        }
+
         public void AddTriangle(triangle tri)
         {
             tris.Add(tri);

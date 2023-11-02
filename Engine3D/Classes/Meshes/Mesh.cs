@@ -37,20 +37,10 @@ namespace Engine3D
         private List<float> vertices = new List<float>();
         private string? modelName;
 
-
-        public Vector3 Scale;
-        private bool IsTransformed
-        {
-            get
-            {
-                return !(parentObject.Position == Vector3.Zero && parentObject.Rotation == Quaternion.Identity && Scale == Vector3.One);
-            }
-        }
-
         private Camera camera;
         private Vector2 windowSize;
 
-        Matrix4 modelMatrix, viewMatrix, projectionMatrix;
+        Matrix4 viewMatrix, projectionMatrix;
 
         private VAO Vao;
         private VBO Vbo;
@@ -66,8 +56,6 @@ namespace Engine3D
 
             this.windowSize = windowSize;
             this.camera = camera;
-
-            Scale = Vector3.One;
 
             this.modelName = modelName;
             ProcessObj(modelName);
@@ -88,8 +76,6 @@ namespace Engine3D
 
             this.windowSize = windowSize;
             this.camera = camera;
-
-            Scale = Vector3.One;
 
             this.modelName = modelName;
             ProcessObj(modelName);
@@ -128,8 +114,6 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            Scale = Vector3.One;
-
             this.tris = new List<triangle>(tris);
 
             ComputeVertexNormals(ref tris);
@@ -149,8 +133,6 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            Scale = Vector3.One;
-
             this.tris = new List<triangle>(tris);
 
             ComputeVertexNormals(ref tris);
@@ -160,24 +142,9 @@ namespace Engine3D
             SendUniforms();
         }
 
-        private void ConvertToNDC(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
+        private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
         {
-            if (isTransformed)
-            {
-                Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
-
-                vertices.AddRange(new float[]
-                {
-                    v.X, v.Y, v.Z, 1.0f,
-                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v,
-                    tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-                    tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
-                });
-            }
-            else
-            {
-                vertices.AddRange(new float[]
+            vertices.AddRange(new float[]
                 {
                     tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
@@ -185,10 +152,9 @@ namespace Engine3D
                     tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
                     tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
                 });
-            }
         }
 
-        private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed)
+        private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed = false)
         {
             if (isTransformed)
             {
@@ -262,7 +228,6 @@ namespace Engine3D
 
         protected override void SendUniforms()
         {
-            modelMatrix = Matrix4.Identity;
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
 
@@ -311,7 +276,6 @@ namespace Engine3D
             int viewLoc = GL.GetUniformLocation(shader.id, "viewMatrix");
             int projLoc = GL.GetUniformLocation(shader.id, "projectionMatrix");
 
-            modelMatrix = Matrix4.Identity;
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
 
@@ -320,23 +284,23 @@ namespace Engine3D
             GL.UniformMatrix4(projLoc, true, ref projectionMatrix);
         }
 
-        private void AddVertices(List<float> vertices, triangle tri, ref Matrix4 transformMatrix, bool isTransformed)
+        private void AddVertices(List<float> vertices, triangle tri)
         {
             lock (vertices) // Lock to ensure thread-safety when modifying the list
             {
-                ConvertToNDC(ref vertices, tri, 0, ref transformMatrix, isTransformed);
-                ConvertToNDC(ref vertices, tri, 1, ref transformMatrix, isTransformed);
-                ConvertToNDC(ref vertices, tri, 2, ref transformMatrix, isTransformed);
+                ConvertToNDC(ref vertices, tri, 0);
+                ConvertToNDC(ref vertices, tri, 1);
+                ConvertToNDC(ref vertices, tri, 2);
             }
         }
 
-        private void AddVerticesOnlyPos(List<float> vertices, triangle tri, ref Matrix4 transformMatrix, bool isTransformed)
+        private void AddVerticesOnlyPos(List<float> vertices, triangle tri, ref Matrix4 transformMatrix)
         {
             lock (vertices) // Lock to ensure thread-safety when modifying the list
             {
-                ConvertToNDCOnlyPos(ref vertices, tri, 0, ref transformMatrix, isTransformed);
-                ConvertToNDCOnlyPos(ref vertices, tri, 1, ref transformMatrix, isTransformed);
-                ConvertToNDCOnlyPos(ref vertices, tri, 2, ref transformMatrix, isTransformed);
+                ConvertToNDCOnlyPos(ref vertices, tri, 0, ref transformMatrix);
+                ConvertToNDCOnlyPos(ref vertices, tri, 1, ref transformMatrix);
+                ConvertToNDCOnlyPos(ref vertices, tri, 2, ref transformMatrix);
             }
         }
 
@@ -370,34 +334,12 @@ namespace Engine3D
                 }
             }
             else
+            {
                 recalculate = false;
+                CalculateFrustumVisibility(camera, null);
+            }
 
             vertices = new List<float>();
-
-            ObjectType type = parentObject.GetObjectType();
-            if (type == ObjectType.Sphere)
-            {
-                Scale = new Vector3(parentObject.Radius);
-            }
-            else if (type == ObjectType.Cube)
-            {
-                Scale = new Vector3(parentObject.Size);
-            }
-            else if (type == ObjectType.Capsule)
-            {
-                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
-            }
-
-            Matrix4 s = Matrix4.CreateScale(Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
-
-            Matrix4 transformMatrix = Matrix4.Identity;
-            bool isTransformed = IsTransformed;
-            if (isTransformed)
-            {
-                transformMatrix = s * r * t;
-            }
 
             if (parentObject.BSPStruct != null)
             {
@@ -419,7 +361,7 @@ namespace Engine3D
                  {
                      if (tri.visibile)
                      {
-                         AddVertices(localVertices, tri, ref transformMatrix, isTransformed);
+                         AddVertices(localVertices, tri);
                      }
                      return localVertices;
                  },
@@ -456,29 +398,6 @@ namespace Engine3D
             vertices = new List<float>();
 
             ObjectType type = parentObject.GetObjectType();
-            if (type == ObjectType.Sphere)
-            {
-                Scale = new Vector3(parentObject.Radius);
-            }
-            else if (type == ObjectType.Cube)
-            {
-                Scale = new Vector3(parentObject.Size);
-            }
-            else if (type == ObjectType.Capsule)
-            {
-                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
-            }
-
-            Matrix4 s = Matrix4.CreateScale(Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
-
-            Matrix4 transformMatrix = Matrix4.Identity;
-            bool isTransformed = IsTransformed;
-            if (isTransformed)
-            {
-                transformMatrix = s * r * t;
-            }
 
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             Parallel.ForEach(notOccludedTris, parallelOptions,
@@ -487,7 +406,7 @@ namespace Engine3D
                  {
                      if (tri.visibile)
                      {
-                         AddVertices(localVertices, tri, ref transformMatrix, isTransformed);
+                         AddVertices(localVertices, tri);
                      }
                      return localVertices;
                  },
@@ -525,29 +444,13 @@ namespace Engine3D
             vertices = new List<float>();
 
             ObjectType type = parentObject.GetObjectType();
-            if (type == ObjectType.Sphere)
-            {
-                Scale = new Vector3(parentObject.Radius);
-            }
-            else if (type == ObjectType.Cube)
-            {
-                Scale = new Vector3(parentObject.Size);
-            }
-            else if (type == ObjectType.Capsule)
-            {
-                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
-            }
 
-            Matrix4 s = Matrix4.CreateScale(Scale);
+            Matrix4 s = Matrix4.CreateScale(parentObject.Scale);
             Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
             Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
 
             Matrix4 transformMatrix = Matrix4.Identity;
-            bool isTransformed = IsTransformed;
-            if (isTransformed)
-            {
-                transformMatrix = s * r * t;
-            }
+            transformMatrix = s * r * t;
 
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             Parallel.ForEach(tris, parallelOptions,
@@ -556,7 +459,7 @@ namespace Engine3D
                  {
                      if (tri.visibile)
                      {
-                         AddVerticesOnlyPos(localVertices, tri, ref transformMatrix, isTransformed);
+                         AddVerticesOnlyPos(localVertices, tri, ref transformMatrix);
                      }
                      return localVertices;
                  },
@@ -581,34 +484,13 @@ namespace Engine3D
             indices = new int[vertCount];
 
             ObjectType type = parentObject.GetObjectType();
-            if (type == ObjectType.Sphere)
-            {
-                Scale = new Vector3(parentObject.Radius);
-            }
-            else if (type == ObjectType.Cube)
-            {
-                Scale = new Vector3(parentObject.Size);
-            }
-            else if (type == ObjectType.Capsule)
-            {
-                Scale = new Vector3(parentObject.Radius, parentObject.HalfHeight + parentObject.Radius, parentObject.Radius);
-            }
 
-            Matrix4 s = Matrix4.CreateScale(Scale);
+            Matrix4 s = Matrix4.CreateScale(parentObject.Scale);
             Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
             Matrix4 t = Matrix4.CreateTranslation(parentObject.Position);
-            Matrix4 offsetTo = Matrix4.CreateTranslation(-Scale / 2f);
-            Matrix4 offsetFrom = Matrix4.CreateTranslation(Scale / 2f);
 
             Matrix4 transformMatrix = Matrix4.Identity;
-            if (IsTransformed)
-            {
-                transformMatrix = s * r * t;
-                //if (type == ObjectType.Sphere || type == ObjectType.Capsule)
-                //    transformMatrix = s * r * t;
-                //else
-                //    transformMatrix = s * offsetTo * r * offsetFrom * t;
-            }
+            transformMatrix = s * r * t;
 
             for (int i = 0; i < allVerts.Count(); i++)
             {
