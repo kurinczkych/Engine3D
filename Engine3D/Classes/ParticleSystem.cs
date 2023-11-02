@@ -82,6 +82,8 @@ namespace Engine3D
 
     public class ParticleSystem
     {
+        public string name = "";
+
         public float duration = 5;
         public bool looping = true;
         public bool useGravity = false;

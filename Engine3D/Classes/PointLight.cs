@@ -12,6 +12,8 @@ namespace Engine3D
 
     public class PointLight
     {
+        public string name = "";
+
         public int positionLoc;
 
         private Vector3 _position;

@@ -6,6 +6,7 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
@@ -23,11 +24,24 @@ namespace Engine3D
         Stopped
     }
 
+    public class EditorData
+    {
+        public List<Object> objects;
+        public List<ParticleSystem> particleSystems;
+        public List<PointLight> pointLights;
+
+        public object selectedItem;
+
+        public EditorData() { }
+    }
+
     public class EditorProperties
     {
         public bool windowResized = false;
         public MouseCursor mouseType = MouseCursor.Default;
 
+        public bool manualCursor = false;
+        public bool isGameFullscreen = false;
         public bool justSetGameState = false;
         public bool isPaused = false;
         public GameState prevGameState;
@@ -56,6 +70,8 @@ namespace Engine3D
 
         private EditorProperties editorProperties;
 
+        private Dictionary<string, byte[]> _inputBuffers = new Dictionary<string, byte[]>();
+
         private bool isResizingLeft = false;
         private bool isResizingRight = false;
         private bool isResizingBottom = false;
@@ -66,13 +82,26 @@ namespace Engine3D
         public ImGuiController(int width, int height, ref EditorProperties editorProperties) : base(width, height)
         {
             this.editorProperties = editorProperties;
+
+            #region Input boxes
+            _inputBuffers.Add("##name", new byte[100]);
+
+            _inputBuffers.Add("##positionX", new byte[100]);
+            _inputBuffers.Add("##positionY", new byte[100]);
+            _inputBuffers.Add("##positionZ", new byte[100]);
+            _inputBuffers.Add("##rotationX", new byte[100]);
+            _inputBuffers.Add("##rotationY", new byte[100]);
+            _inputBuffers.Add("##rotationZ", new byte[100]);
+
+            #endregion
         }
 
-        public void EditorWindow(Engine.GameWindowProperty gameWindow, Dictionary<string, Texture> guiTextures)
+        public void EditorWindow(Engine.GameWindowProperty gameWindow, Dictionary<string, Texture> guiTextures,
+                                 ref EditorData editorData)
         {
             var io = ImGui.GetIO();
 
-            if (editorProperties.gameRunning == GameState.Running)
+            if (editorProperties.gameRunning == GameState.Running && !editorProperties.manualCursor)
                 io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
             else
                 io.ConfigFlags &= ~ImGuiConfigFlags.NoMouse;
@@ -80,9 +109,8 @@ namespace Engine3D
             editorProperties.windowResized = false;
             bool[] mouseTypes = new bool[3];
 
-            // Remove gray border
             var style = ImGui.GetStyle();
-            style.WindowBorderSize = 0.5f; // Removes the window border
+            style.WindowBorderSize = 0.5f;
             style.Colors[(int)ImGuiCol.WindowBg] = baseBGColor;
             style.Colors[(int)ImGuiCol.Border] = new System.Numerics.Vector4(0, 0, 0, 1.0f);
             style.Colors[(int)ImGuiCol.Tab] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -90,6 +118,8 @@ namespace Engine3D
             style.Colors[(int)ImGuiCol.TabHovered] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
             style.Colors[(int)ImGuiCol.ButtonHovered] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
             style.Colors[(int)ImGuiCol.ButtonActive] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 1.0f);
+            style.Colors[(int)ImGuiCol.CheckMark] = new System.Numerics.Vector4(1f, 1f, 1f, 1.0f);
+            style.Colors[(int)ImGuiCol.FrameBg] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
             style.WindowRounding = 5f;
 
             #region Top panel with menubar
@@ -125,9 +155,9 @@ namespace Engine3D
                 var button = style.Colors[(int)ImGuiCol.Button];
                 style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 
-                float totalWidth = 40;  // Total width of the three buttons
-                float spaceBetweenButtons = 2;  // Gap between buttons
-                float buttonWidth = (totalWidth - 1 * spaceBetweenButtons) / 2;  // Width of each button
+                float totalWidth = 40;
+                if (editorProperties.gameRunning == GameState.Running)
+                    totalWidth = 60;
 
                 float startX = (ImGui.GetWindowSize().X - totalWidth) * 0.5f;
                 float startY = (ImGui.GetWindowSize().Y - 10) * 0.5f;
@@ -159,6 +189,12 @@ namespace Engine3D
                     }
                 }
 
+                ImGui.SameLine();
+                if (ImGui.ImageButton("screen", (IntPtr)guiTextures["screen"].textureDescriptor.TextureId, new System.Numerics.Vector2(20, 20)))
+                {
+                    editorProperties.isGameFullscreen = !editorProperties.isGameFullscreen;
+                }
+
 
                 style.Colors[(int)ImGuiCol.Button] = button;
             }
@@ -166,6 +202,10 @@ namespace Engine3D
             #endregion
 
             #region Left panel
+            List<Object> meshes = editorData.objects.Where(x => x.meshType == typeof(Mesh)).ToList();
+            List<Object> instMeshes = editorData.objects.Where(x => x.meshType == typeof(InstancedMesh)).ToList();
+            List<ParticleSystem> particleSystems = editorData.particleSystems;
+
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth * gameWindow.leftPanelPercent, 
                                                                 _windowHeight - gameWindow.topPanelSize - (_windowHeight * gameWindow.bottomPanelPercent)));
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, gameWindow.topPanelSize), ImGuiCond.Always);
@@ -176,7 +216,73 @@ namespace Engine3D
                 {
                     if (ImGui.BeginTabItem("Objects"))
                     {
-                        ImGui.Text("Content for Tab 1");
+                        if (meshes.Count > 0)
+                        {
+                            if (ImGui.TreeNode("Meshes"))
+                            {
+                                for (int i = 0; i < meshes.Count; i++)
+                                {
+                                    string name = meshes[i].name == "" ? "Object " + i.ToString() : meshes[i].name;
+                                    if(ImGui.Selectable(name))
+                                    {
+                                        editorData.selectedItem = meshes[i];
+                                    }
+                                }
+
+                                ImGui.TreePop();
+                            }
+                        }
+
+                        if (instMeshes.Count > 0)
+                        {
+                            if (ImGui.TreeNode("Instanced meshes"))
+                            {
+                                for (int i = 0; i < instMeshes.Count; i++)
+                                {
+                                    string name = instMeshes[i].name == "" ? "Object " + i.ToString() : instMeshes[i].name;
+                                    if (ImGui.Selectable(name))
+                                    {
+                                        editorData.selectedItem = meshes[i];
+                                    }
+                                }
+
+                                ImGui.TreePop();
+                            }
+                        }
+
+                        if (editorData.particleSystems.Count > 0)
+                        {
+                            if (ImGui.TreeNode("Particle systems"))
+                            {
+                                for (int i = 0; i < editorData.particleSystems.Count; i++)
+                                {
+                                    string name = editorData.particleSystems[i].name == "" ? "Particle system " + i.ToString() : editorData.particleSystems[i].name;
+                                    if (ImGui.Selectable(name))
+                                    {
+                                        editorData.selectedItem = meshes[i];
+                                    }
+                                }
+
+                                ImGui.TreePop();
+                            }
+                        }
+
+                        if (editorData.pointLights.Count > 0)
+                        {
+                            if (ImGui.TreeNode("Point lights"))
+                            {
+                                for (int i = 0; i < editorData.pointLights.Count; i++)
+                                {
+                                    string name = editorData.pointLights[i].name == "" ? "Point light " + i.ToString() : editorData.pointLights[i].name;
+                                    if (ImGui.Selectable(name))
+                                    {
+                                        editorData.selectedItem = meshes[i];
+                                    }
+                                }
+
+                                ImGui.TreePop();
+                            }
+                        }
 
                         ImGui.EndTabItem();
                     }
@@ -242,6 +348,7 @@ namespace Engine3D
             #endregion
 
             #region Right panel
+
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth * gameWindow.rightPanelPercent - seperatorSize,
                                                                 _windowHeight - gameWindow.topPanelSize - (_windowHeight * gameWindow.bottomPanelPercent)));
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(seperatorSize + _windowWidth * (1 - gameWindow.rightPanelPercent), gameWindow.topPanelSize), ImGuiCond.Always);
@@ -252,7 +359,134 @@ namespace Engine3D
                 {
                     if (ImGui.BeginTabItem("Inspector"))
                     {
-                        ImGui.Text("Content for Tab 1");
+                        if(editorData.selectedItem != null)
+                        {
+                            if(editorData.selectedItem is Object o && o.meshType == typeof(Mesh))
+                            {
+                                ImGui.Checkbox("##isMeshEnabled", ref o.isEnabled);
+
+                                ImGui.SameLine();
+
+                                Encoding.UTF8.GetBytes(o.name, 0, o.name.Length, _inputBuffers["##name"], 0);
+                                if (ImGui.InputText("##name", _inputBuffers["##name"], (uint)_inputBuffers["##name"].Length))
+                                {
+                                    o.name = Encoding.UTF8.GetString(_inputBuffers["##name"]).TrimEnd('\0');
+                                }
+
+                                ImGui.SetNextItemOpen(true, ImGuiCond.Once);
+                                if (ImGui.TreeNode("Transform"))
+                                {
+                                    ImGui.PushItemWidth(40);
+
+                                    #region Position
+                                    ImGui.Text("Position");
+
+                                    ImGui.Text("X");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.Position.X.ToString(), 0, o.Position.X.ToString().Length, _inputBuffers["##positionX"], 0);
+                                    if (ImGui.InputText("##positionX", _inputBuffers["##positionX"], (uint)_inputBuffers["##positionX"].Length))
+                                    {
+                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##positionX"]).TrimEnd('\0');
+                                        float value = o.Position.X;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            o.Position.X = value;
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Y");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.Position.Y.ToString(), 0, o.Position.Y.ToString().Length, _inputBuffers["##positionY"], 0);
+                                    if (ImGui.InputText("##positionY", _inputBuffers["##positionY"], (uint)_inputBuffers["##positionY"].Length))
+                                    {
+                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##positionY"]).TrimEnd('\0');
+                                        float value = o.Position.Y;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            o.Position.Y = value;
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Z");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.Position.Z.ToString(), 0, o.Position.Z.ToString().Length, _inputBuffers["##positionZ"], 0);
+                                    if (ImGui.InputText("##positionZ", _inputBuffers["##positionZ"], (uint)_inputBuffers["##positionZ"].Length))
+                                    {
+                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##positionZ"]).TrimEnd('\0');
+                                        float value = o.Position.Z;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            o.Position.Z = value;
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                        else
+                                            o.Position.Z = value;
+                                    }
+                                    #endregion
+
+                                    #region Rotation
+                                    ImGui.Text("Rotation");
+
+                                    Vector3 rotation = o.Rotation.ToEulerAngles();
+
+                                    ImGui.Text("X");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(rotation.X.ToString(), 0, rotation.X.ToString().Length, _inputBuffers["##rotationX"], 0);
+                                    if (ImGui.InputText("##rotationX", _inputBuffers["##rotationX"], (uint)_inputBuffers["##rotationX"].Length))
+                                    {
+                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationX"]).TrimEnd('\0');
+                                        float value = rotation.X;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            rotation.X = value;
+                                            o.Rotation = Quaternion.FromEulerAngles(rotation);
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Y");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(rotation.Y.ToString(), 0, rotation.Y.ToString().Length, _inputBuffers["##rotationY"], 0);
+                                    if (ImGui.InputText("##rotationY", _inputBuffers["##rotationY"], (uint)_inputBuffers["##rotationY"].Length))
+                                    {
+                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationY"]).TrimEnd('\0');
+                                        float value = rotation.Y;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            rotation.Y = value;
+                                            o.Rotation = Quaternion.FromEulerAngles(rotation);
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Z");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(rotation.Z.ToString(), 0, rotation.Z.ToString().Length, _inputBuffers["##rotationZ"], 0);
+                                    if (ImGui.InputText("##rotationZ", _inputBuffers["##rotationZ"], (uint)_inputBuffers["##rotationZ"].Length))
+                                    {
+                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationZ"]).TrimEnd('\0');
+                                        float value = rotation.Z;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            rotation.Z = value;
+                                            o.Rotation = Quaternion.FromEulerAngles(rotation);
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    #endregion
+
+                                    ImGui.PopItemWidth();
+
+                                    ImGui.TreePop();
+                                }
+                            }
+                        }
 
                         ImGui.EndTabItem();
                     }
@@ -391,7 +625,7 @@ namespace Engine3D
             style.Colors[(int)ImGuiCol.WindowBg] = baseBGColor;
             #endregion
 
-            #region Return
+            #region MouseType
             if (mouseTypes[0] || mouseTypes[1])
                 editorProperties.mouseType = MouseCursor.HResize;
             else if (mouseTypes[2])
@@ -400,6 +634,60 @@ namespace Engine3D
                 editorProperties.mouseType = MouseCursor.Default;
             #endregion
         }
+        public void FullscreenWindow(Engine.GameWindowProperty gameWindow, Dictionary<string, Texture> guiTextures)
+        {
+            var io = ImGui.GetIO();
 
+            if (editorProperties.gameRunning == GameState.Running && !editorProperties.manualCursor)
+                io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
+            else
+                io.ConfigFlags &= ~ImGuiConfigFlags.NoMouse;
+
+            float totalWidth = 40;
+            if (editorProperties.gameRunning == GameState.Running)
+                totalWidth = 60;
+
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(totalWidth*2, 40));
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(_windowWidth/2 - totalWidth, 0), ImGuiCond.Always);
+            if (ImGui.Begin("TopFullscreenPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar |
+                                                  ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse ))
+            {
+
+                if (editorProperties.gameRunning == GameState.Stopped)
+                {
+                    if (ImGui.ImageButton("play", (IntPtr)guiTextures["play"].textureDescriptor.TextureId, new System.Numerics.Vector2(20, 20)))
+                    {
+                        editorProperties.gameRunning = GameState.Running;
+                        editorProperties.justSetGameState = true;
+                    }
+                }
+                else
+                {
+                    if (ImGui.ImageButton("stop", (IntPtr)guiTextures["stop"].textureDescriptor.TextureId, new System.Numerics.Vector2(20, 20)))
+                    {
+                        editorProperties.gameRunning = GameState.Stopped;
+                        editorProperties.justSetGameState = true;
+                    }
+                }
+
+                ImGui.SameLine();
+                if (editorProperties.gameRunning == GameState.Running)
+                {
+                    if (ImGui.ImageButton("pause", (IntPtr)guiTextures["pause"].textureDescriptor.TextureId, new System.Numerics.Vector2(20, 20)))
+                    {
+                        editorProperties.isPaused = !editorProperties.isPaused;
+                    }
+                }
+
+                ImGui.SameLine();
+                if (ImGui.ImageButton("screen", (IntPtr)guiTextures["screen"].textureDescriptor.TextureId, new System.Numerics.Vector2(20, 20)))
+                {
+                    editorProperties.isGameFullscreen = !editorProperties.isGameFullscreen;
+                }
+            }
+            ImGui.End();
+
+            return;
+        }
     }
 }

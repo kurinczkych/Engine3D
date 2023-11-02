@@ -344,25 +344,30 @@ namespace Engine3D
         {
             Vao.Bind();
 
-            if(gameRunning == GameState.Stopped && vertices.Count > 0)
+            if (!recalculate)
             {
-                SendUniforms();
-
-                if (texture != null)
+                if (gameRunning == GameState.Stopped && vertices.Count > 0)
                 {
-                    texture.Bind(TextureType.Texture);
-                    if (texture.textureDescriptor.Normal != "")
-                        texture.Bind(TextureType.Normal);
-                    if (texture.textureDescriptor.Height != "")
-                        texture.Bind(TextureType.Height);
-                    if (texture.textureDescriptor.AO != "")
-                        texture.Bind(TextureType.AO);
-                    if (texture.textureDescriptor.Rough != "")
-                        texture.Bind(TextureType.Rough);
-                }
+                    SendUniforms();
 
-                return vertices;
+                    if (texture != null)
+                    {
+                        texture.Bind(TextureType.Texture);
+                        if (texture.textureDescriptor.Normal != "")
+                            texture.Bind(TextureType.Normal);
+                        if (texture.textureDescriptor.Height != "")
+                            texture.Bind(TextureType.Height);
+                        if (texture.textureDescriptor.AO != "")
+                            texture.Bind(TextureType.AO);
+                        if (texture.textureDescriptor.Rough != "")
+                            texture.Bind(TextureType.Rough);
+                    }
+
+                    return vertices;
+                }
             }
+            else
+                recalculate = false;
 
             vertices = new List<float>();
 

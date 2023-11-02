@@ -26,6 +26,8 @@
     <None Remove="Audio\example.ogg" />
     <None Remove="Audio\nyanya.ogg" />
     <None Remove="Audio\OpenAL32.dll" />
+    <None Remove="Fonts\times.ttf" />
+    <None Remove="Fonts\timesbd.ttf" />
     <None Remove="Models\axis.obj" />
     <None Remove="Models\core_transfer.obj" />
     <None Remove="Models\cube.obj" />
@@ -67,6 +69,7 @@
     <None Remove="Textures\space_t.png" />
     <None Remove="Textures\transparent.png" />
     <None Remove="Textures\ui_pause.png" />
+    <None Remove="Textures\ui_screen.png" />
     <None Remove="Textures\ui_stop.png" />
     <None Remove="Textures\wall_ao.png" />
     <None Remove="Textures\wall_h.png" />
@@ -91,6 +94,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Audio\nyanya.ogg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\times.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Fonts\timesbd.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Models\axis.obj">
@@ -196,6 +205,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Textures\ui_play.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Textures\ui_screen.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Textures\ui_stop.png">

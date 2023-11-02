@@ -45,7 +45,10 @@ namespace Engine3D
         protected int GLVersion;
         protected bool CompatibilityProfile;
 
-        public BaseImGuiController(int width, int height)
+        protected ImFontPtr font;
+        protected ImFontPtr boldFont;
+
+        public unsafe BaseImGuiController(int width, int height)
         {
             _windowWidth = width;
             _windowHeight = height;
@@ -63,6 +66,21 @@ namespace Engine3D
             ImGui.SetCurrentContext(context);
             var io = ImGui.GetIO();
             io.Fonts.AddFontDefault();
+            // Font init
+            //string fontPath = Environment.CurrentDirectory + "\\Fonts\\times.ttf";
+            //float fontSize = 16.0f;
+            //font = io.Fonts.AddFontFromFileTTF(fontPath, fontSize);
+            //if (font.NativePtr == null)
+            //{
+            //    throw new InvalidOperationException("Failed to load the font file.");
+            //}
+            //string boldFontPath = Environment.CurrentDirectory + "\\Fonts\\timesbd.ttf";
+            //boldFont = io.Fonts.AddFontFromFileTTF(boldFontPath, fontSize);
+            //if (boldFont.NativePtr == null)
+            //{
+            //    throw new InvalidOperationException("Failed to load the font file.");
+            //}
+            //io.Fonts.Build();
 
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
 
@@ -70,6 +88,7 @@ namespace Engine3D
             SetKeyMappings();
 
             SetPerFrameImGuiData(1f / 60f);
+
 
             ImGui.NewFrame();
             _frameBegun = true;

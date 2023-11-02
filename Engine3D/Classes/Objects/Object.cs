@@ -32,6 +32,10 @@ namespace Engine3D
 
     public unsafe class Object : IComparable<Object>
     {
+        public string name = "";
+        public bool isEnabled = true;
+
+        public Type meshType;
         private BaseMesh mesh;
         private ObjectType type;
         private Physx physx;
@@ -48,7 +52,7 @@ namespace Engine3D
         public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
 
         public Vector3 Position;
-        public Quaternion Rotation { get; private set; }
+        public Quaternion Rotation { get; set; }
 
         public string PStr
         {
@@ -124,6 +128,7 @@ namespace Engine3D
             this.mesh = mesh;
             this.type = type;
             this.physx = physx;
+            meshType = mesh.GetType();
 
             Position = Vector3.Zero;
             Rotation = Quaternion.Identity;

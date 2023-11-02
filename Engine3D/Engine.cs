@@ -48,7 +48,7 @@ namespace Engine3D
             public float topPanelSize = 50;
             public float bottomPanelPercent = 0.15f;
             public float leftPanelPercent = 0.15f;
-            public float rightPanelPercent = 0.15f;
+            public float rightPanelPercent = 0.20f;
             public Vector2 gameWindowPos;
             public Vector2 gameWindowSize;
 
@@ -102,6 +102,7 @@ namespace Engine3D
         #endregion
 
         #region UI variables
+        private EditorData editorData = new EditorData();
         private EditorProperties editorProperties = new EditorProperties();
         private ImGuiController imGuiController;
         private Dictionary<string, Texture> guiTextures = new Dictionary<string, Texture>();
@@ -268,11 +269,14 @@ namespace Engine3D
 
             imGuiController.Update(this, (float)args.Time);
 
-            GL.Viewport((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y, 
-                        (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
-            GL.Enable(EnableCap.ScissorTest);
-            GL.Scissor((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y, 
-                       (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
+            if (!editorProperties.isGameFullscreen)
+            {
+                GL.Viewport((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y,
+                            (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
+                GL.Enable(EnableCap.ScissorTest);
+                GL.Scissor((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y,
+                           (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
+            }
 
             #region GameWindow
 
@@ -540,11 +544,18 @@ namespace Engine3D
 
             #endregion
 
-            GL.Disable(EnableCap.ScissorTest);
-            GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            if (!editorProperties.isGameFullscreen)
+            {
+                GL.Disable(EnableCap.ScissorTest);
+                GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            }
 
 
-            imGuiController.EditorWindow(gameWindowProperty, guiTextures);
+            if(!editorProperties.isGameFullscreen)
+                imGuiController.EditorWindow(gameWindowProperty, guiTextures, ref editorData);
+            else
+                imGuiController.FullscreenWindow(gameWindowProperty, guiTextures);
+
             if (editorProperties.windowResized)
                 ResizedEditorWindow();
             if (Cursor != editorProperties.mouseType)
@@ -574,12 +585,12 @@ namespace Engine3D
             if(editorProperties.gameRunning == GameState.Stopped &&
                editorProperties.justSetGameState)
             {
-
+                editorProperties.manualCursor = false;
 
                 editorProperties.justSetGameState = false;
             }
 
-            if(editorProperties.gameRunning == GameState.Running && CursorState != CursorState.Grabbed)
+            if(editorProperties.gameRunning == GameState.Running && CursorState != CursorState.Grabbed && !editorProperties.manualCursor)
             {
                 CursorState = CursorState.Grabbed;
             }
@@ -588,13 +599,24 @@ namespace Engine3D
                 CursorState = CursorState.Normal;
             }
 
-            if (KeyboardState.IsKeyReleased(Keys.Escape) && editorProperties.gameRunning == GameState.Running)
+            if (KeyboardState.IsKeyReleased(Keys.F5))
             {
-                editorProperties.gameRunning = GameState.Stopped;
+                editorProperties.gameRunning = editorProperties.gameRunning == GameState.Stopped ? GameState.Running : GameState.Stopped;
             }
 
             if (KeyboardState.IsKeyReleased(Keys.F2))
-                WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
+            {
+                if(CursorState == CursorState.Normal)
+                {
+                    CursorState = CursorState.Grabbed;
+                    editorProperties.manualCursor = false;
+                }
+                else if(CursorState == CursorState.Grabbed)
+                {
+                    CursorState = CursorState.Normal;
+                    editorProperties.manualCursor = true;
+                }
+            }
 
             if (editorProperties.gameRunning == GameState.Running)
             {
@@ -633,6 +655,10 @@ namespace Engine3D
             guiTextures.Add("play", new Texture(textureCount, "ui_play.png"));
             guiTextures.Add("stop", new Texture(textureCount, "ui_stop.png"));
             guiTextures.Add("pause", new Texture(textureCount, "ui_pause.png"));
+            guiTextures.Add("screen", new Texture(textureCount, "ui_screen.png"));
+            editorData.objects = objects;
+            editorData.particleSystems = particleSystems;
+            editorData.pointLights = pointLights;
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
