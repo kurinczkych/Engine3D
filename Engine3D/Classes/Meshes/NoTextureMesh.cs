@@ -37,7 +37,6 @@ namespace Engine3D
             }
         }
 
-        private Camera camera;
 
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 

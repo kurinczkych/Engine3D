@@ -38,7 +38,6 @@ namespace Engine3D
         private List<float> instancedVertices = new List<float>();
         private string? modelName;
 
-        private Camera camera;
         private Vector2 windowSize;
 
         Matrix4 viewMatrix, projectionMatrix;
@@ -264,7 +263,7 @@ namespace Engine3D
             else
             {
                 recalculate = false;
-                CalculateFrustumVisibility(camera, null);
+                CalculateFrustumVisibility();
             }
 
             vertices = new List<float>();
@@ -275,10 +274,6 @@ namespace Engine3D
             if (parentObject.BSPStruct != null)
             {
                 tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera);
-            }
-            else if (parentObject.BVHStruct != null)
-            {
-
             }
             else if (parentObject.GridStructure != null)
             {

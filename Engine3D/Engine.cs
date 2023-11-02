@@ -289,7 +289,7 @@ namespace Engine3D
             {
                 foreach (Object obj in objects)
                 {
-                    obj.GetMesh().CalculateFrustumVisibility(character.camera, obj.BVHStruct);
+                    obj.GetMesh().CalculateFrustumVisibility();
                 }
                 firstRun = false;
             }
@@ -323,7 +323,7 @@ namespace Engine3D
                     {
                         foreach (Object obj in triangleMeshObjects)
                         {
-                            OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
+                            //OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
                         }
                     }
                     else
@@ -331,7 +331,7 @@ namespace Engine3D
                         ;
                         foreach (Object obj in triangleMeshObjects)
                         {
-                            OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
+                            //OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
                         }
                     }
                     GL.Enable(EnableCap.CullFace);
@@ -377,18 +377,18 @@ namespace Engine3D
 
                         if (editorProperties.gameRunning == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
                         {
-                            List<triangle> notOccludedTris = new List<triangle>();
-                            OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
+                            //List<triangle> notOccludedTris = new List<triangle>();
+                            //OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
 
-                            vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
-                            currentMeshType = typeof(Mesh);
+                            //vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
+                            //currentMeshType = typeof(Mesh);
 
-                            if (vertices.Count > 0)
-                            {
-                                meshVbo.Buffer(vertices);
-                                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                                vertices.Clear();
-                            }
+                            //if (vertices.Count > 0)
+                            //{
+                            //    meshVbo.Buffer(vertices);
+                            //    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                            //    vertices.Clear();
+                            //}
                         }
                         else
                         {
@@ -494,7 +494,7 @@ namespace Engine3D
             foreach (ParticleSystem ps in particleSystems)
             {
                 Object psO = ps.GetObject();
-                psO.GetMesh().CalculateFrustumVisibility(character.camera, null);
+                psO.GetMesh().CalculateFrustumVisibility();
 
                 InstancedMesh mesh = (InstancedMesh)psO.GetMesh();
                 if (currentMeshType == null || currentMeshType != mesh.GetType())

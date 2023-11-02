@@ -175,8 +175,6 @@ namespace Engine3D
 
             GL.BindVertexArray(prevVAO);
             GL.BindBuffer(BufferTarget.ArrayBuffer, prevArrayBuffer);
-
-            CheckGLError("End of ImGui setup");
         }
 
         /// <summary>
@@ -434,10 +432,8 @@ namespace Engine3D
             GL.UseProgram(_shader);
             GL.UniformMatrix4(_shaderProjectionMatrixLocation, false, ref mvp);
             GL.Uniform1(_shaderFontTextureLocation, 0);
-            CheckGLError("Projection");
 
             GL.BindVertexArray(_vertexArray);
-            CheckGLError("VAO");
 
             draw_data.ScaleClipRects(io.DisplayFramebufferScale);
 
@@ -454,10 +450,8 @@ namespace Engine3D
                 ImDrawListPtr cmd_list = draw_data.CmdLists[n];
 
                 GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>(), cmd_list.VtxBuffer.Data);
-                CheckGLError($"Data Vert {n}");
 
                 GL.BufferSubData(BufferTarget.ElementArrayBuffer, IntPtr.Zero, cmd_list.IdxBuffer.Size * sizeof(ushort), cmd_list.IdxBuffer.Data);
-                CheckGLError($"Data Idx {n}");
 
                 for (int cmd_i = 0; cmd_i < cmd_list.CmdBuffer.Size; cmd_i++)
                 {
@@ -470,12 +464,10 @@ namespace Engine3D
                     {
                         GL.ActiveTexture(TextureUnit.Texture0);
                         GL.BindTexture(TextureTarget.Texture2D, (int)pcmd.TextureId);
-                        CheckGLError("Texture");
 
                         // We do _windowHeight - (int)clip.W instead of (int)clip.Y because gl has flipped Y when it comes to these coordinates
                         var clip = pcmd.ClipRect;
                         GL.Scissor((int)clip.X, _windowHeight - (int)clip.W, (int)(clip.Z - clip.X), (int)(clip.W - clip.Y));
-                        CheckGLError("Scissor");
 
                         if ((io.BackendFlags & ImGuiBackendFlags.RendererHasVtxOffset) != 0)
                         {
@@ -485,7 +477,6 @@ namespace Engine3D
                         {
                             GL.DrawElements(BeginMode.Triangles, (int)pcmd.ElemCount, DrawElementsType.UnsignedShort, (int)pcmd.IdxOffset * sizeof(ushort));
                         }
-                        CheckGLError("Draw");
                     }
                 }
             }
@@ -597,16 +588,6 @@ namespace Engine3D
             }
 
             return shader;
-        }
-
-        public static void CheckGLError(string title)
-        {
-            ErrorCode error;
-            int i = 1;
-            while ((error = GL.GetError()) != ErrorCode.NoError)
-            {
-                Debug.Print($"{title} ({i++}): {error}");
-            }
         }
     }
 }

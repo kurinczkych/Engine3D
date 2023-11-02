@@ -26,8 +26,6 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
 
-        private Camera camera;
-
         Matrix4 modelMatrix, viewMatrix, projectionMatrix;
 
         private bool IsTransformed

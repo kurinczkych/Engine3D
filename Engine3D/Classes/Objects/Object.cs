@@ -131,6 +131,9 @@ namespace Engine3D
             this.physx = physx;
             meshType = mesh.GetType();
 
+            BuildBVH();
+            mesh.CalculateFrustumVisibility();
+
             Position = Vector3.Zero;
             Rotation = Quaternion.Identity;
 
@@ -236,12 +239,15 @@ namespace Engine3D
             }
         }
 
-        public void BuildBVH(Shader currentShader, Shader BVHShader)
+        public void BuildBVH()
         {
             //Calculating bounding volume hiearchy
-            BVHShader.Use();
-            BVHStruct = new BVH(((Mesh)mesh).tris, BVHShader.id);
-            currentShader.Use();
+            if (meshType == typeof(Mesh) ||
+                meshType == typeof(InstancedMesh) ||
+                meshType == typeof(NoTextureMesh))
+            {
+                mesh.BVHStruct = new BVH(mesh.tris);
+            }
         }
 
         public void BuildBSP()

@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using FontStashSharp;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,14 @@ namespace Engine3D
             Root = BuildBVH(triangles, ref index, ref depth);
             uniformLocations = new Dictionary<string, int>();
             GetUniformLocations(shaderId);
+        }
+
+        public BVH(List<triangle> triangles)
+        {
+            int index = 0;
+            int depth = 0;
+            leaves = new List<BVHNode>();
+            Root = BuildBVH(triangles, ref index, ref depth);
         }
 
         private const int NUM_BINS = 12;  // for instance, you can adjust this
@@ -352,6 +361,60 @@ namespace Engine3D
             }
 
             return meshes;
+        }
+
+        public void TransformBVH(ref Matrix4 modelMatrix)
+        {
+            TransformBVHRecursive(Root, ref modelMatrix);
+        }
+
+        private void TransformBVHRecursive(BVHNode node, ref Matrix4 modelMatrix)
+        {
+            if(node == null) return;
+
+            node.bounds = TransformAABB(node.bounds, ref modelMatrix);
+
+            if(node.left != null)
+                TransformBVHRecursive(node.left, ref modelMatrix);
+            if(node.right != null)
+                TransformBVHRecursive(node.right, ref modelMatrix);
+        }
+
+        private AABB TransformAABB(AABB aabb, ref Matrix4 modelMatrix)
+        {
+            AABB newAABB = new AABB();
+            var points = aabb.GetCorners();
+            for (int i = 0; i < points.Count(); i++)
+            {
+                points[i] = Vector3.TransformPosition(points[i], modelMatrix);
+                newAABB.Enclose(points[i]);
+            }
+            return newAABB;
+        }
+
+        public void CalculateFrustumVisibility(ref Camera camera)
+        {
+            CalculateFrustumVisibilityRec(Root, ref camera);
+        }
+
+        private void CalculateFrustumVisibilityRec(BVHNode node, ref Camera camera)
+        {
+            if(node == null) return;
+
+            if(camera.frustum.IsAABBInside(node.bounds) || camera.IsAABBClose(node.bounds))
+            {
+                node.triangles.ForEach(x => x.visibile = true);
+
+                if (node.left != null)
+                    CalculateFrustumVisibilityRec(node.left, ref camera);
+                if(node.right != null)
+                    CalculateFrustumVisibilityRec(node.right, ref camera);
+            }
+            else
+            {
+                node.triangles.ForEach(x => x.visibile = false);
+                return;
+            }
         }
 
         private AABB ComputeBounds(List<triangle> triangles)

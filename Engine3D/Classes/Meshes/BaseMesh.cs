@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static OpenTK.Graphics.OpenGL.GL;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Engine3D
@@ -30,9 +31,11 @@ namespace Engine3D
         public Object parentObject;
         public AABB Bounds = new AABB();
 
+        protected Camera camera;
+
         protected Dictionary<string, int> uniformLocations;
 
-        public BVH BVHStruct { get; private set; }
+        public BVH BVHStruct;
 
         protected Matrix4 scaleMatrix = Matrix4.Identity;
         protected Matrix4 rotationMatrix = Matrix4.Identity;
@@ -72,15 +75,22 @@ namespace Engine3D
             if (which[0])
                 translationMatrix = Matrix4.CreateTranslation(parentObject.Position);
 
-            modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 
-            TransformBVH();
+            if (which[0] || which[1] || which[2])
+            {
+                modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+
+                if (GetType() == typeof(Mesh) ||
+                    GetType() == typeof(InstancedMesh) ||
+                    GetType() == typeof(NoTextureMesh))
+                {
+                    BVHStruct.TransformBVH(ref modelMatrix);
+                }
+
+                CalculateFrustumVisibility();
+            }
         }
 
-        private void TransformBVH()
-        {
-
-        }
 
         public void AddTriangle(triangle tri)
         {
@@ -88,24 +98,24 @@ namespace Engine3D
         }
         protected abstract void SendUniforms();
 
-        public void CalculateFrustumVisibility(Camera camera, BVH? bvh)
+        public void CalculateFrustumVisibility()
         {
-            if (bvh != null)
+            if (GetType() == typeof(Mesh) ||
+                GetType() == typeof(InstancedMesh) ||
+                GetType() == typeof(NoTextureMesh))
             {
-                ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
-                Parallel.ForEach(bvh.leaves, parallelOptions, node =>
+                if (BVHStruct != null)
                 {
-                    bool v = camera.frustum.IsAABBInside(node.bounds) || node.bounds.IsPointInsideAABB(camera.GetPosition());
-                    node.triangles.ForEach(x => x.visibile = v);
-                });
-            }
-            else
-            {
-                ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
-                Parallel.ForEach(tris, parallelOptions, tri =>
+                    BVHStruct.CalculateFrustumVisibility(ref camera);
+                }
+                else
                 {
-                    tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
-                });
+                    ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
+                    Parallel.ForEach(tris, parallelOptions, tri =>
+                    {
+                        tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
+                    });
+                }
             }
         }
 

@@ -63,6 +63,12 @@ namespace Engine3D
                 Max = Helper.Vector3Max(Max, tri.p[i]);
             }
         }
+
+        public void Enclose(Vector3 point)
+        {
+            Min = Vector3.ComponentMin(Min, point);
+            Max = Vector3.ComponentMax(Max, point);
+        }
         public float SurfaceArea()
         {
             float dx = Max.X - Min.X;
