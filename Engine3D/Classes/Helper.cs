@@ -143,5 +143,47 @@ namespace Engine3D
         {
             return new Color4(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f);
         }
+
+        public static Vector3 EulerFromQuaternion(Quaternion quat)
+        {
+            Vector3 rot = quat.ToEulerAngles();
+
+            rot.X = MathHelper.RadiansToDegrees(rot.X);
+            if (Math.Abs(Math.Round(rot.X) - rot.X) < 0.001f)
+                rot.X = (int)Math.Round(rot.X);
+
+            rot.Y = MathHelper.RadiansToDegrees(rot.Y);
+            if (Math.Abs(Math.Round(rot.Y) - rot.Y) < 0.001f)
+                rot.Y = (int)Math.Round(rot.Y);
+
+            rot.Z = MathHelper.RadiansToDegrees(rot.Z);
+            if (Math.Abs(Math.Round(rot.Z) - rot.Z) < 0.001f)
+                rot.Z = (int)Math.Round(rot.Z);
+
+            return rot;
+        }
+
+        public static Quaternion QuaternionFromEuler(Vector3 rot)
+        {
+            Vector3 rotR = new Vector3(rot);
+
+            rotR.X = MathHelper.DegreesToRadians(rotR.X);
+            rotR.Y = MathHelper.DegreesToRadians(rotR.Y);
+            rotR.Z = MathHelper.DegreesToRadians(rotR.Z);
+
+            //if (Math.Abs(Math.Round(rotR.X) - rotR.X) < 0.001f)
+            //    rotR.X = (int)Math.Round(rotR.X);
+            //rotR.X = MathHelper.DegreesToRadians(rotR.X);
+
+            //if (Math.Abs(Math.Round(rotR.Y) - rotR.Y) < 0.001f)
+            //    rotR.Y = (int)Math.Round(rotR.Y);
+            //rotR.Y = MathHelper.DegreesToRadians(rotR.Y);
+
+            //if (Math.Abs(Math.Round(rotR.Z) - rotR.Z) < 0.001f)
+            //    rotR.Z = (int)Math.Round(rotR.Z);
+            //rotR.Z = MathHelper.DegreesToRadians(rotR.Z);
+
+            return Quaternion.FromEulerAngles(rotR);
+        }
     }
 }

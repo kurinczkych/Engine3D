@@ -20,29 +20,34 @@ namespace Engine3D
         public SoundManager()
         {
             device = ALC.OpenDevice(null);  // null means the default device
-            if (device == ALDevice.Null)
+            if (device != ALDevice.Null)
             {
-                throw new Exception("Failed to open device");
-            }
+                context = ALC.CreateContext(device, new int[0]);  // null means default attributes
+                if (context == ALContext.Null)
+                {
+                    throw new Exception("Failed to create context");
+                }
 
-            context = ALC.CreateContext(device, new int[0]);  // null means default attributes
-            if (context == ALContext.Null)
+                if (!ALC.MakeContextCurrent(context))
+                {
+                    throw new Exception("Failed to make context current");
+                }
+
+                AL.DistanceModel(ALDistanceModel.LinearDistance);
+                //AL.DistanceModel(ALDistanceModel.InverseDistanceClamped);
+                AL.Listener(ALListenerf.Gain, 1.0f);
+            }
+            else
             {
-                throw new Exception("Failed to create context");
+                // Error handling
             }
-
-            if (!ALC.MakeContextCurrent(context))
-            {
-                throw new Exception("Failed to make context current");
-            }
-
-            AL.DistanceModel(ALDistanceModel.LinearDistance);
-            //AL.DistanceModel(ALDistanceModel.InverseDistanceClamped);
-            AL.Listener(ALListenerf.Gain, 1.0f);
         }
 
         public SoundEmitter CreateSoundEmitter(string filePath)
         {
+            if (device == ALDevice.Null)
+                throw new Exception("There is no opened sound device!");
+
             var emitter = new SoundEmitter(filePath);
             soundEmitters.Add(emitter);
             return emitter;
@@ -50,6 +55,9 @@ namespace Engine3D
 
         public SoundEmitter CreateSoundEmitter(string filePath, Vector3 position)
         {
+            if (device == ALDevice.Null)
+                throw new Exception("There is no opened sound device!"); 
+
             var emitter = new SoundEmitter(filePath, position);
             soundEmitters.Add(emitter);
             return emitter;
@@ -57,6 +65,13 @@ namespace Engine3D
 
         public void SetListener(Vector3 position)
         {
+            if (device == ALDevice.Null)
+            {
+                // Error handling
+
+                return;
+            }
+
             AL.Listener(ALListener3f.Position, position.X, position.Y, position.Z);
             foreach (var emitter in soundEmitters)
             {
@@ -66,6 +81,13 @@ namespace Engine3D
 
         public void PlayAll()
         {
+            if (device == ALDevice.Null)
+            {
+                // Error handling
+
+                return;
+            }
+
             foreach (var emitter in soundEmitters)
             {
                 emitter.Play();
@@ -74,6 +96,13 @@ namespace Engine3D
 
         public void StopAll()
         {
+            if (device == ALDevice.Null)
+            {
+                // Error handling
+
+                return;
+            }
+
             foreach (var emitter in soundEmitters)
             {
                 emitter.Stop();

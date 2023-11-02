@@ -342,6 +342,9 @@ namespace Engine3D
 
         public List<float> Draw(GameState gameRunning)
         {
+            if (!parentObject.isEnabled)
+                return new List<float>();
+
             Vao.Bind();
 
             if (!recalculate)

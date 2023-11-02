@@ -33,6 +33,7 @@ namespace Engine3D
     public unsafe class Object : IComparable<Object>
     {
         public string name = "";
+
         public bool isEnabled = true;
 
         public Type meshType;
@@ -53,6 +54,7 @@ namespace Engine3D
 
         public Vector3 Position;
         public Quaternion Rotation { get; set; }
+        public Vector3 Scale = Vector3.One;
 
         public string PStr
         {

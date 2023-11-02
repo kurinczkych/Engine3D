@@ -89,15 +89,29 @@ namespace Engine3D
             _inputBuffers.Add("##positionX", new byte[100]);
             _inputBuffers.Add("##positionY", new byte[100]);
             _inputBuffers.Add("##positionZ", new byte[100]);
-            _inputBuffers.Add("##rotationX", new byte[100]);
-            _inputBuffers.Add("##rotationY", new byte[100]);
-            _inputBuffers.Add("##rotationZ", new byte[100]);
+            _inputBuffers.Add("##rotationX", new byte[200]);
+            _inputBuffers.Add("##rotationY", new byte[200]);
+            _inputBuffers.Add("##rotationZ", new byte[200]);
+            _inputBuffers.Add("##scaleX", new byte[200]);
+            _inputBuffers.Add("##scaleY", new byte[200]);
+            _inputBuffers.Add("##scaleZ", new byte[200]);
 
             #endregion
         }
 
+        private string GetStringFromBuffer(string bufferName)
+        {
+            string s = Encoding.UTF8.GetString(_inputBuffers[bufferName]).TrimEnd('\0');
+            int nullIndex = s.IndexOf('\0');
+            if (nullIndex >= 0)
+            {
+                return s.Substring(0, nullIndex);
+            }
+            return s;
+        }
+
         public void EditorWindow(Engine.GameWindowProperty gameWindow, Dictionary<string, Texture> guiTextures,
-                                 ref EditorData editorData)
+                                 ref EditorData editorData, KeyboardState keyboardState)
         {
             var io = ImGui.GetIO();
 
@@ -363,20 +377,24 @@ namespace Engine3D
                         {
                             if(editorData.selectedItem is Object o && o.meshType == typeof(Mesh))
                             {
-                                ImGui.Checkbox("##isMeshEnabled", ref o.isEnabled);
+                                if (ImGui.Checkbox("##isMeshEnabled", ref o.isEnabled))
+                                {
+                                    o.GetMesh().recalculate = true;
+                                }
 
                                 ImGui.SameLine();
 
                                 Encoding.UTF8.GetBytes(o.name, 0, o.name.Length, _inputBuffers["##name"], 0);
                                 if (ImGui.InputText("##name", _inputBuffers["##name"], (uint)_inputBuffers["##name"].Length))
                                 {
-                                    o.name = Encoding.UTF8.GetString(_inputBuffers["##name"]).TrimEnd('\0');
+                                    o.name = GetStringFromBuffer("##name");
                                 }
 
                                 ImGui.SetNextItemOpen(true, ImGuiCond.Once);
                                 if (ImGui.TreeNode("Transform"))
                                 {
-                                    ImGui.PushItemWidth(40);
+                                    bool commit = false;
+                                    ImGui.PushItemWidth(50);
 
                                     #region Position
                                     ImGui.Text("Position");
@@ -384,9 +402,19 @@ namespace Engine3D
                                     ImGui.Text("X");
                                     ImGui.SameLine();
                                     Encoding.UTF8.GetBytes(o.Position.X.ToString(), 0, o.Position.X.ToString().Length, _inputBuffers["##positionX"], 0);
+                                    commit = false;
                                     if (ImGui.InputText("##positionX", _inputBuffers["##positionX"], (uint)_inputBuffers["##positionX"].Length))
                                     {
-                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##positionX"]).TrimEnd('\0');
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##positionX");
                                         float value = o.Position.X;
                                         if (float.TryParse(valueStr, out value))
                                         {
@@ -399,9 +427,19 @@ namespace Engine3D
                                     ImGui.Text("Y");
                                     ImGui.SameLine();
                                     Encoding.UTF8.GetBytes(o.Position.Y.ToString(), 0, o.Position.Y.ToString().Length, _inputBuffers["##positionY"], 0);
+                                    commit = false;
                                     if (ImGui.InputText("##positionY", _inputBuffers["##positionY"], (uint)_inputBuffers["##positionY"].Length))
                                     {
-                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##positionY"]).TrimEnd('\0');
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##positionY");
                                         float value = o.Position.Y;
                                         if (float.TryParse(valueStr, out value))
                                         {
@@ -414,36 +452,54 @@ namespace Engine3D
                                     ImGui.Text("Z");
                                     ImGui.SameLine();
                                     Encoding.UTF8.GetBytes(o.Position.Z.ToString(), 0, o.Position.Z.ToString().Length, _inputBuffers["##positionZ"], 0);
+                                    commit = false;
                                     if (ImGui.InputText("##positionZ", _inputBuffers["##positionZ"], (uint)_inputBuffers["##positionZ"].Length))
                                     {
-                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##positionZ"]).TrimEnd('\0');
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##positionZ");
                                         float value = o.Position.Z;
                                         if (float.TryParse(valueStr, out value))
                                         {
                                             o.Position.Z = value;
                                             o.GetMesh().recalculate = true;
                                         }
-                                        else
-                                            o.Position.Z = value;
                                     }
                                     #endregion
 
                                     #region Rotation
                                     ImGui.Text("Rotation");
 
-                                    Vector3 rotation = o.Rotation.ToEulerAngles();
+                                    Vector3 rotation = Helper.EulerFromQuaternion(o.Rotation);
 
                                     ImGui.Text("X");
                                     ImGui.SameLine();
                                     Encoding.UTF8.GetBytes(rotation.X.ToString(), 0, rotation.X.ToString().Length, _inputBuffers["##rotationX"], 0);
-                                    if (ImGui.InputText("##rotationX", _inputBuffers["##rotationX"], (uint)_inputBuffers["##rotationX"].Length))
+                                    commit = false;
+                                    if (ImGui.InputText("##rotationX", _inputBuffers["##rotationX"], (uint)_inputBuffers["##rotationX"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
                                     {
-                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationX"]).TrimEnd('\0');
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+                                    
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##rotationX");
                                         float value = rotation.X;
                                         if (float.TryParse(valueStr, out value))
                                         {
                                             rotation.X = value;
-                                            o.Rotation = Quaternion.FromEulerAngles(rotation);
+                                            o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
                                         }
                                     }
@@ -452,14 +508,24 @@ namespace Engine3D
                                     ImGui.Text("Y");
                                     ImGui.SameLine();
                                     Encoding.UTF8.GetBytes(rotation.Y.ToString(), 0, rotation.Y.ToString().Length, _inputBuffers["##rotationY"], 0);
-                                    if (ImGui.InputText("##rotationY", _inputBuffers["##rotationY"], (uint)_inputBuffers["##rotationY"].Length))
+                                    commit = false;
+                                    if (ImGui.InputText("##rotationY", _inputBuffers["##rotationY"], (uint)_inputBuffers["##rotationY"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
                                     {
                                         string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationY"]).TrimEnd('\0');
                                         float value = rotation.Y;
                                         if (float.TryParse(valueStr, out value))
                                         {
                                             rotation.Y = value;
-                                            o.Rotation = Quaternion.FromEulerAngles(rotation);
+                                            o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
                                         }
                                     }
@@ -468,14 +534,102 @@ namespace Engine3D
                                     ImGui.Text("Z");
                                     ImGui.SameLine();
                                     Encoding.UTF8.GetBytes(rotation.Z.ToString(), 0, rotation.Z.ToString().Length, _inputBuffers["##rotationZ"], 0);
-                                    if (ImGui.InputText("##rotationZ", _inputBuffers["##rotationZ"], (uint)_inputBuffers["##rotationZ"].Length))
+                                    commit = false;
+                                    if (ImGui.InputText("##rotationZ", _inputBuffers["##rotationZ"], (uint)_inputBuffers["##rotationZ"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
                                     {
                                         string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationZ"]).TrimEnd('\0');
                                         float value = rotation.Z;
                                         if (float.TryParse(valueStr, out value))
                                         {
                                             rotation.Z = value;
-                                            o.Rotation = Quaternion.FromEulerAngles(rotation);
+                                            o.Rotation = Helper.QuaternionFromEuler(rotation);
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    #endregion
+
+                                    #region Scale
+                                    ImGui.Text("Scale");
+
+                                    ImGui.Text("X");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.Scale.X.ToString(), 0, o.Scale.X.ToString().Length, _inputBuffers["##scaleX"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##scaleX", _inputBuffers["##scaleX"], (uint)_inputBuffers["##scaleX"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##scaleX");
+                                        float value = o.Scale.X;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            o.Scale.X = value;
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Y");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.Scale.Y.ToString(), 0, o.Scale.Y.ToString().Length, _inputBuffers["##scaleY"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##scaleY", _inputBuffers["##scaleY"], (uint)_inputBuffers["##scaleY"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##scaleY");
+                                        float value = o.Scale.Y;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            o.Scale.Y = value;
+                                            o.GetMesh().recalculate = true;
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Z");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.Scale.Z.ToString(), 0, o.Scale.Z.ToString().Length, _inputBuffers["##scaleZ"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##scaleZ", _inputBuffers["##scaleZ"], (uint)_inputBuffers["##scaleZ"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (!ImGui.IsItemActive() && ImGui.IsItemDeactivated())
+                                        commit = true;
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##scaleZ");
+                                        float value = o.Scale.Z;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            o.Scale.Z = value;
                                             o.GetMesh().recalculate = true;
                                         }
                                     }

@@ -552,7 +552,7 @@ namespace Engine3D
 
 
             if(!editorProperties.isGameFullscreen)
-                imGuiController.EditorWindow(gameWindowProperty, guiTextures, ref editorData);
+                imGuiController.EditorWindow(gameWindowProperty, guiTextures, ref editorData, KeyboardState);
             else
                 imGuiController.FullscreenWindow(gameWindowProperty, guiTextures);
 

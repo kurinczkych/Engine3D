@@ -266,6 +266,9 @@ namespace Engine3D
 
         public (List<float>, List<float>) Draw(GameState gameRunning)
         {
+            if (!parentObject.isEnabled)
+                return (new List<float>(), new List<float>());
+
             Vao.Bind();
 
             if (gameRunning == GameState.Stopped && vertices.Count > 0 && instancedVertices.Count > 0)
