@@ -242,7 +242,7 @@ namespace Engine3D
                 GetFrustumVisibleTrianglesRec(ref frustum, ref camera, node.right);
         }
 
-        public List<WireframeMesh> ExtractWireframes(BVHNode node, VAO wireVao, VBO wireVbo, int shaderId, ref Frustum frustum, ref Camera camera)
+        public List<WireframeMesh> ExtractWireframes(BVHNode node, VAO wireVao, VBO wireVbo, int shaderId, ref Camera camera)
         {
             List<WireframeMesh> meshes = new List<WireframeMesh>();
 
@@ -255,7 +255,7 @@ namespace Engine3D
             {
 
                 //WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White
-                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref frustum, ref camera, Color4.Red);
+                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
                 AABB box = node.bounds;
 
                 // Create lines for each edge of the bounding box
@@ -290,10 +290,10 @@ namespace Engine3D
             else
             {
                 if(node.left != null)
-                    meshes.AddRange(ExtractWireframes(node.left, wireVao, wireVbo, shaderId, ref frustum, ref camera));
+                    meshes.AddRange(ExtractWireframes(node.left, wireVao, wireVbo, shaderId, ref camera));
 
                 if(node.right != null)
-                    meshes.AddRange(ExtractWireframes(node.right, wireVao, wireVbo, shaderId, ref frustum, ref camera));
+                    meshes.AddRange(ExtractWireframes(node.right, wireVao, wireVbo, shaderId, ref camera));
             }
 
             
@@ -319,7 +319,7 @@ namespace Engine3D
             {
 
                 //WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White
-                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera.frustum, ref camera, Color4.Red);
+                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
                 AABB box = node.bounds;
 
                 // Create lines for each edge of the bounding box
@@ -401,7 +401,7 @@ namespace Engine3D
         {
             if(node == null) return;
 
-            if(camera.frustum.IsAABBInside(node.bounds) || camera.IsAABBClose(node.bounds))
+            if(camera.frustum.IsAABBInside(node.bounds)/* || camera.IsAABBClose(node.bounds)*/)
             {
                 node.triangles.ForEach(x => x.visibile = true);
 

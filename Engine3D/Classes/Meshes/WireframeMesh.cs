@@ -48,7 +48,7 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
-        public WireframeMesh(VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
+        public WireframeMesh(VAO vao, VBO vbo, int shaderProgramId, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.camera = camera;
 

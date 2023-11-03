@@ -46,7 +46,8 @@ namespace Engine3D
         public class GameWindowProperty
         {
             public float topPanelSize = 50;
-            public float bottomPanelPercent = 0.15f;
+            public float bottomPanelSize = 25;
+            public float bottomPanelPercent = 0.25f;
             public float leftPanelPercent = 0.15f;
             public float rightPanelPercent = 0.20f;
             public Vector2 gameWindowPos;
@@ -82,7 +83,6 @@ namespace Engine3D
         private Shader posTexShader;
         private Shader noTextureShaderProgram;
         private Shader aabbShaderProgram;
-        private int textureCount = 0;
         #endregion
 
         #region Program variables
@@ -96,6 +96,7 @@ namespace Engine3D
         private Vector2 gameWindowMousePos;
 
         private SoundManager soundManager;
+        public static TextureManager textureManager;
 
         private TextGenerator textGenerator;
         private Dictionary<string, TextMesh> texts;
@@ -105,14 +106,12 @@ namespace Engine3D
         private EditorData editorData = new EditorData();
         private EditorProperties editorProperties = new EditorProperties();
         private ImGuiController imGuiController;
-        private Dictionary<string, Texture> guiTextures = new Dictionary<string, Texture>();
         #endregion
 
         #region Engine variables
         private List<Object> objects;
         private Character character;
 
-        private Frustum frustum;
         private List<PointLight> pointLights;
         private List<ParticleSystem> particleSystems;
         private Physx physx;
@@ -148,12 +147,12 @@ namespace Engine3D
             origWindowSize = new Vector2(width, height);
             CenterWindow(new Vector2i(width, height));
 
-            frustum = new Frustum();
             shaderProgram = new Shader();
             posTexShader = new Shader();
             pointLights = new List<PointLight>();
             particleSystems = new List<ParticleSystem>();
             texts = new Dictionary<string, TextMesh>();
+            textureManager = new TextureManager();
 
             maxminStopwatch = new Stopwatch();
             maxminStopwatch.Start();
@@ -188,11 +187,11 @@ namespace Engine3D
             }
             else
             {
-                if (maxminStopwatch.ElapsedMilliseconds > 1000)
+                if (maxminStopwatch.ElapsedMilliseconds > 2000)
                     maxminStopwatch.Stop();
             }
 
-            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() + 
+            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() +
                              "    |    MaxFPS: " + maxFps.ToString() + "    |    MinFPS: " + minFps.ToString();
 
             return fps;
@@ -215,7 +214,6 @@ namespace Engine3D
             objects.Add(obj);
             texts.Add(tag, (TextMesh)obj.GetMesh());
             objects.Sort();
-
         }
 
 
@@ -395,6 +393,9 @@ namespace Engine3D
                             vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
                             currentMeshType = typeof(Mesh);
 
+                            //float a = vertices.Count() / Mesh.floatCount / 3;
+                            //float b = mesh.tris.Count();
+
                             meshVbo.Buffer(vertices);
                             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                             vertices.Clear();
@@ -550,11 +551,11 @@ namespace Engine3D
                 GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
             }
 
-
+            textureManager.GetAssetTextureIfNeeded(ref editorData);
             if(!editorProperties.isGameFullscreen)
-                imGuiController.EditorWindow(gameWindowProperty, guiTextures, ref editorData, KeyboardState);
+                imGuiController.EditorWindow(gameWindowProperty, ref editorData, KeyboardState);
             else
-                imGuiController.FullscreenWindow(gameWindowProperty, guiTextures);
+                imGuiController.FullscreenWindow(gameWindowProperty, ref editorData);
 
             if (editorProperties.windowResized)
                 ResizedEditorWindow();
@@ -645,20 +646,24 @@ namespace Engine3D
         protected override void OnLoad()
         {
             base.OnLoad();
-            CursorState = CursorState.Normal;
+            CursorState = CursorState.Normal; 
 
             if (limitFps)
                 stopwatch = Stopwatch.StartNew();
 
             textGenerator = new TextGenerator();
             imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorProperties);
-            guiTextures.Add("play", new Texture(textureCount, "ui_play.png"));
-            guiTextures.Add("stop", new Texture(textureCount, "ui_stop.png"));
-            guiTextures.Add("pause", new Texture(textureCount, "ui_pause.png"));
-            guiTextures.Add("screen", new Texture(textureCount, "ui_screen.png"));
+            textureManager.AddTexture("ui_play.png", flipY:false);
+            textureManager.AddTexture("ui_play.png", flipY: false);
+            textureManager.AddTexture("ui_stop.png", flipY:false);
+            textureManager.AddTexture("ui_pause.png", flipY:false);
+            textureManager.AddTexture("ui_screen.png", flipY:false);
+            textureManager.AddTexture("ui_missing.png", flipY:false);
             editorData.objects = objects;
             editorData.particleSystems = particleSystems;
             editorData.pointLights = pointLights;
+            editorData.assets = FileManager.GetAllAssets();
+            textureManager.GetAssetTextures(editorData);
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
@@ -741,7 +746,7 @@ namespace Engine3D
             noTextureShaderProgram.Use();
             //Vector3 characterPos = new Vector3(0, 20, 0);
             Vector3 characterPos = new Vector3(4.5f, 1.3f, 0);
-            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White), ref physx, characterPos, camera);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref camera, Color4.White), ref physx, characterPos, camera);
             character.camera.SetYaw(180f);
             character.camera.SetPitch(0f);
 
@@ -756,7 +761,9 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
+            Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
+            objects.Add(o);
+            objects.Last().AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
             //objects.Last().BuildOctree();
@@ -814,25 +821,33 @@ namespace Engine3D
 
             //posTexShader.Use();
 
-            Object textObj1 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            Object textObj1 = new Object(ObjectType.TextMesh, ref physx);
+            TextMesh m1 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj1);
+            textObj1.AddMesh(m1);
             ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
             ((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
             ((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
             AddText(textObj1, "Position");
 
-            Object textObj2 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            Object textObj2 = new Object(ObjectType.TextMesh, ref physx);
+            TextMesh m2 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj2);
+            textObj2.AddMesh(m2);
             ((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
             ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
             ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
             AddText(textObj2, "Velocity");
 
-            Object textObj3 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            Object textObj3 = new Object(ObjectType.TextMesh, ref physx);
+            TextMesh m3 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj3);
+            textObj3.AddMesh(m3);
             ((TextMesh)textObj3.GetMesh()).ChangeText("Looking = (" + character.LStr + ")");
             ((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
             ((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
             AddText(textObj3, "Looking");
 
-            Object textObj4 = new Object(new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textureCount), ObjectType.TextMesh, ref physx);
+            Object textObj4 = new Object(ObjectType.TextMesh, ref physx);
+            TextMesh m4 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj4);
+            textObj4.AddMesh(m4);
             ((TextMesh)textObj4.GetMesh()).ChangeText("Noclip = (" + character.noClip.ToString() + ")");
             ((TextMesh)textObj4.GetMesh()).Position = new Vector2(10, windowSize.Y - 125);
             ((TextMesh)textObj4.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
@@ -887,6 +902,7 @@ namespace Engine3D
             posTexShader.Unload();
 
             FileManager.DisposeStreams();
+            textureManager.DeleteTextures();
         }
 
         protected override void OnResize(ResizeEventArgs e)
@@ -902,8 +918,8 @@ namespace Engine3D
             windowSize.Y = e.Height;
 
             gameWindowProperty.gameWindowSize = new Vector2(windowSize.X * (1.0f - (gameWindowProperty.leftPanelPercent + gameWindowProperty.rightPanelPercent)),
-                                                            windowSize.Y * (1 - gameWindowProperty.bottomPanelPercent) - gameWindowProperty.topPanelSize);
-            gameWindowProperty.gameWindowPos = new Vector2(windowSize.X * gameWindowProperty.leftPanelPercent, windowSize.Y * gameWindowProperty.bottomPanelPercent);
+                                                            windowSize.Y * (1 - gameWindowProperty.bottomPanelPercent) - gameWindowProperty.topPanelSize - gameWindowProperty.bottomPanelSize);
+            gameWindowProperty.gameWindowPos = new Vector2(windowSize.X * gameWindowProperty.leftPanelPercent, windowSize.Y * gameWindowProperty.bottomPanelPercent + gameWindowProperty.bottomPanelSize);
 
             if (imGuiController != null)
                 imGuiController.WindowResized(ClientSize.X, ClientSize.Y);
@@ -912,8 +928,8 @@ namespace Engine3D
         private void ResizedEditorWindow()
         {
             gameWindowProperty.gameWindowSize = new Vector2(windowSize.X * (1.0f - (gameWindowProperty.leftPanelPercent + gameWindowProperty.rightPanelPercent)),
-                                                            windowSize.Y * (1 - gameWindowProperty.bottomPanelPercent) - gameWindowProperty.topPanelSize);
-            gameWindowProperty.gameWindowPos = new Vector2(windowSize.X * gameWindowProperty.leftPanelPercent, windowSize.Y * gameWindowProperty.bottomPanelPercent);
+                                                            windowSize.Y * (1 - gameWindowProperty.bottomPanelPercent) - gameWindowProperty.topPanelSize - gameWindowProperty.bottomPanelSize);
+            gameWindowProperty.gameWindowPos = new Vector2(windowSize.X * gameWindowProperty.leftPanelPercent, windowSize.Y * gameWindowProperty.bottomPanelPercent + gameWindowProperty.bottomPanelSize);
         }
     }
 }

@@ -36,6 +36,214 @@ namespace Engine3D
 
         public bool isEnabled = true;
 
+        public Texture? texture;
+        public Texture? textureNormal;
+        public Texture? textureHeight;
+        public Texture? textureAO;
+        public Texture? textureRough;
+        public Texture? textureMetal;
+
+        #region Texture setters
+        private string _textureName;
+        public string textureName
+        {
+            get
+            {
+                if (texture != null)
+                    return Path.GetFileName(texture.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && texture != null)
+                {
+                    Engine.textureManager.DeleteTexture(texture, mesh, "");
+                    texture = null;
+                }
+                else if (texture != null)
+                {
+                    Engine.textureManager.DeleteTexture(texture, mesh, "");
+                    texture = Engine.textureManager.AddTexture(texturePath);
+                    texture.Bind();
+                    Texture.LoadTexture(texturePath, texture.flipY, texture.tminf, texture.tmagf);
+                }
+                else
+                {
+                    texture = Engine.textureManager.AddTexture(texturePath);
+                    mesh.AddUniformLocation("textureSampler");
+                    mesh.AddUniformLocation("useTexture");
+                }
+            }
+        }
+        private string _textureNormalName;
+        public string textureNormalName
+        {
+            get
+            {
+                if (textureNormal != null)
+                    return Path.GetFileName(textureNormal.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureNormal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureNormal, mesh, "Normal");
+                    textureNormal = null;
+                }
+                else if (textureNormal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureNormal, mesh, "Normal");
+                    textureNormal = Engine.textureManager.AddTexture(texturePath);
+                    textureNormal.Bind();
+                    Texture.LoadTexture(texturePath, textureNormal.flipY, textureNormal.tminf, textureNormal.tmagf);
+                }
+                else
+                {
+                    textureNormal = Engine.textureManager.AddTexture(texturePath);
+                    mesh.AddUniformLocation("textureSamplerNormal");
+                    mesh.AddUniformLocation("useNormal");
+                }
+            }
+        }
+        private string _textureHeightName;
+        public string textureHeightName
+        {
+            get
+            {
+                if (textureHeight != null)
+                    return Path.GetFileName(textureHeight.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureHeight != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureHeight, mesh, "Height");
+                    textureHeight = null;
+                }
+                else if (textureHeight != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureHeight, mesh, "Height");
+                    textureHeight = Engine.textureManager.AddTexture(texturePath);
+                    textureHeight.Bind();
+                    Texture.LoadTexture(texturePath, textureHeight.flipY, textureHeight.tminf, textureHeight.tmagf);
+                }
+                else
+                {
+                    textureHeight = Engine.textureManager.AddTexture(texturePath);
+                    mesh.AddUniformLocation("textureSamplerHeight");
+                    mesh.AddUniformLocation("useHeight");
+                }
+            }
+        }
+        private string _textureAOName;
+        public string textureAOName
+        {
+            get
+            {
+                if (textureAO != null)
+                    return Path.GetFileName(textureAO.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureAO != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureAO, mesh, "AO");
+                    textureAO = null;
+                }
+                else if (textureAO != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureAO, mesh, "AO");
+                    textureAO.TexturePath = texturePath;
+                    textureAO.Bind();
+                    Texture.LoadTexture(texturePath, textureAO.flipY, textureAO.tminf, textureAO.tmagf);
+                }
+                else
+                {
+                    textureAO = Engine.textureManager.AddTexture(texturePath);
+                    mesh.AddUniformLocation("textureSamplerAO");
+                    mesh.AddUniformLocation("useAO");
+                }
+            }
+        }
+        private string _textureRoughName;
+        public string textureRoughName
+        {
+            get
+            {
+                if (textureRough != null)
+                    return Path.GetFileName(textureRough.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureRough != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureRough, mesh, "Rough");
+                    textureRough = null;
+                }
+                else if (textureRough != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureRough, mesh, "Rough");
+                    textureRough.TexturePath = texturePath;
+                    textureRough.Bind();
+                    Texture.LoadTexture(texturePath, textureRough.flipY, textureRough.tminf, textureRough.tmagf);
+                }
+                else
+                {
+                    textureRough = Engine.textureManager.AddTexture(texturePath);
+                    mesh.AddUniformLocation("textureSamplerRough");
+                    mesh.AddUniformLocation("useRough");
+                }
+            }
+        }
+        private string _textureMetalName;
+        public string textureMetalName
+        {
+            get
+            {
+                if (textureMetal != null)
+                    return Path.GetFileName(textureMetal.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureMetal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureMetal, mesh, "Metal");
+                    textureMetal = null;
+                }
+                else if (textureMetal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureMetal, mesh, "Metal");
+                    textureMetal.TexturePath = texturePath;
+                    textureMetal.Bind();
+                    Texture.LoadTexture(texturePath, textureMetal.flipY, textureMetal.tminf, textureMetal.tmagf);
+                }
+                else
+                {
+                    textureMetal = Engine.textureManager.AddTexture(texturePath);
+                    mesh.AddUniformLocation("textureSamplerMetal");
+                    mesh.AddUniformLocation("useMetal");
+                }
+            }
+        }
+        #endregion
+
         public Type meshType;
         private BaseMesh mesh;
         private ObjectType type;
@@ -120,31 +328,33 @@ namespace Engine3D
             }
         }
 
-        public Object(BaseMesh mesh, ObjectType type, ref Physx physx)
+        public Object(ObjectType type, ref Physx physx)
         {
+            this.type = type;
+            this.physx = physx;
+
+            Position = Vector3.Zero;
+            Rotation = Quaternion.Identity;
+        }
+
+        public void AddMesh(BaseMesh mesh)
+        {
+            this.mesh = mesh;
+            meshType = mesh.GetType();
+
             StaticFriction = 0.5f;
             DynamicFriction = 0.5f;
             Restitution = 0.1f;
 
-            this.mesh = mesh;
-            this.type = type;
-            this.physx = physx;
-            meshType = mesh.GetType();
-
             BuildBVH();
             mesh.CalculateFrustumVisibility();
-
-            Position = Vector3.Zero;
-            Rotation = Quaternion.Identity;
-
-            mesh.parentObject = this;
 
             if (type == ObjectType.TriangleMeshWithCollider)
             {
                 Type meshType = mesh.GetType();
                 if (meshType != typeof(Mesh))
                     throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
-                if(!mesh.hasIndices)
+                if (!mesh.hasIndices)
                     throw new Exception("The mesh doesn't have triangle indices!");
 
                 uint count = (uint)((Mesh)mesh).tris.Count() * 3;
@@ -166,7 +376,7 @@ namespace Engine3D
                 //fixed (PxVec3* vertsPointer = &verts[0])
 
                 bool valid = isValidMesh((PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer(), (int)count, (int*)indicesHandle.AddrOfPinnedObject().ToPointer(), (int)count);
-                if(!valid)
+                if (!valid)
                     throw new Exception("TriangleMesh cooking data is not right!");
 
                 meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
@@ -187,7 +397,7 @@ namespace Engine3D
                     if (GC.TryStartNoGCRegion(((Mesh)mesh).tris.Count() * 60))
                     {
                         triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
-                        
+
                     }
                 }
                 finally
@@ -202,7 +412,7 @@ namespace Engine3D
                 ;
 
 
-                if(triMesh == null || &triMesh == null)
+                if (triMesh == null || &triMesh == null)
                 {
                     throw new Exception("TriangleMesh cooking didn't work!");
                 }
@@ -224,7 +434,7 @@ namespace Engine3D
                 indicesHandle.Free();
             }
 
-            if(type == ObjectType.Cube)
+            if (type == ObjectType.Cube)
             {
                 Size = new Vector3(5, 5, 5);
             }

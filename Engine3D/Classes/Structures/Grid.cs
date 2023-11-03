@@ -265,7 +265,7 @@ namespace Engine3D
                 return null;
             }
 
-            WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera.frustum, ref camera, Color4.Red);
+            WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
 
             Vector3i centerIndex = GetIndex(camera.GetPosition());  // Get the grid index for the given point
 
@@ -357,7 +357,7 @@ namespace Engine3D
                 return null;
             }
 
-            WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera.frustum, ref camera, Color4.Red);
+            WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
 
             Vector3i currentIndex = new Vector3i();
             for (currentIndex.X = 0; currentIndex.X < stepSize.X; currentIndex.X++)

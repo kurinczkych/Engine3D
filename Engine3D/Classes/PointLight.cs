@@ -57,7 +57,7 @@ namespace Engine3D
 
         public NoTextureMesh mesh;
 
-        public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Frustum frustum, ref Camera camera, VAO meshVao, VBO meshVbo, int meshShaderProgramId, int i)
+        public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Camera camera, VAO meshVao, VBO meshVbo, int meshShaderProgramId, int i, ref Object parentObject)
         {
             Position = pos;
             this.color = color;
@@ -84,7 +84,7 @@ namespace Engine3D
             linearLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].linear");
             quadraticLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].quadratic");
 
-            mesh = GetMesh(this, meshVao, meshVbo, meshShaderProgramId, ref frustum, ref camera);
+            mesh = GetMesh(this, meshVao, meshVbo, meshShaderProgramId, ref camera, ref parentObject);
         }
 
         public static PointLight[] GetPointLights(ref List<PointLight> lights)
@@ -97,9 +97,9 @@ namespace Engine3D
             return pl;
         }
 
-        public static NoTextureMesh GetMesh(PointLight pointLight, VAO vao, VBO vbo, int shaderProgramId, ref Frustum frustum, ref Camera camera)
+        public static NoTextureMesh GetMesh(PointLight pointLight, VAO vao, VBO vbo, int shaderProgramId, ref Camera camera, ref Object parentObject)
         {
-            NoTextureMesh mesh = new NoTextureMesh(vao, vbo, shaderProgramId, "sphereSmall.obj", ref frustum, ref camera, pointLight.color);
+            NoTextureMesh mesh = new NoTextureMesh(vao, vbo, shaderProgramId, "sphereSmall.obj", ref camera, pointLight.color, ref parentObject);
             mesh.Position = pointLight.Position;
             mesh.Scale = new Vector3(0.5f,0.5f,0.5f);
 

@@ -15,8 +15,6 @@ namespace Engine3D
     {
         public static int floatCount = 10;
 
-        public Texture texture;
-
         private Vector2 windowSize;
         private TextGenerator textGenerator;
 
@@ -43,10 +41,11 @@ namespace Engine3D
 
         public string currentText = "";
 
-        public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref TextGenerator tg, ref int textureCount) : base(vao.id, vbo.id, shaderProgramId)
+        public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref TextGenerator tg, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
-            texture = new Texture(textureCount, textureName, false, "nearest");
-            textureCount += texture.textureDescriptor.count;
+            this.parentObject = parentObject;
+
+            parentObject.texture = Engine.textureManager.AddTexture(textureName, false, "nearest");
 
             Vao = vao;
             Vbo = vbo;
@@ -94,7 +93,7 @@ namespace Engine3D
         protected override void SendUniforms()
         {
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
-            GL.Uniform1(uniformLocations["textureSampler"], texture.textureDescriptor.TextureUnit);
+            GL.Uniform1(uniformLocations["textureSampler"], parentObject.texture.TextureUnit);
         }
 
         public List<float> Draw(GameState gameRunning)
@@ -105,9 +104,9 @@ namespace Engine3D
             {
                 SendUniforms();
 
-                if (texture != null)
+                if (parentObject.texture != null)
                 {
-                    texture.Bind(TextureType.Texture);
+                    parentObject.texture.Bind();
                 }
 
                 return vertices;
@@ -135,7 +134,7 @@ namespace Engine3D
             }
 
             SendUniforms();
-            texture.Bind(TextureType.Texture);
+            parentObject.texture.Bind();
 
             return vertices;
         }

@@ -45,38 +45,17 @@
     <None Remove="Models\spiro_small2.obj" />
     <None Remove="Models\teapot.obj" />
     <None Remove="Textures\bmp_24.bmp" />
-    <None Remove="Textures\bmp_24_t.bmp" />
     <None Remove="Textures\font.json" />
     <None Remove="Textures\font2.PNG" />
     <None Remove="Textures\High.png" />
     <None Remove="Textures\High_red.png" />
-    <None Remove="Textures\High_t.png" />
     <None Remove="Textures\High_test.png" />
-    <None Remove="Textures\High_test_t.png" />
-    <None Remove="Textures\level.png" />
     <None Remove="Textures\red.png" />
-    <None Remove="Textures\red_t.png" />
-    <None Remove="Textures\rock_h.png" />
-    <None Remove="Textures\rock_n.png" />
-    <None Remove="Textures\rock_t.png" />
     <None Remove="Textures\rred.png" />
-    <None Remove="Textures\smoke.png" />
-    <None Remove="Textures\space_ao.png" />
-    <None Remove="Textures\space_h.png" />
-    <None Remove="Textures\space_m.png" />
-    <None Remove="Textures\space_n.png" />
-    <None Remove="Textures\space_r.png" />
-    <None Remove="Textures\space_t.png" />
-    <None Remove="Textures\transparent.png" />
+    <None Remove="Textures\ui_missing.png" />
     <None Remove="Textures\ui_pause.png" />
     <None Remove="Textures\ui_screen.png" />
     <None Remove="Textures\ui_stop.png" />
-    <None Remove="Textures\wall_ao.png" />
-    <None Remove="Textures\wall_h.png" />
-    <None Remove="Textures\wall_n.png" />
-    <None Remove="Textures\wall_r.png" />
-    <None Remove="Textures\wall_t.png" />
-    <None Remove="Textures\white.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -144,98 +123,33 @@
     <Content Include="Models\teapot.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Textures\bmp_24_t.bmp">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Fonts\font.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Textures\font.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\font2.PNG">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\High_t.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\High_test_t.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\level.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\red_t.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\rock_h.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\rock_n.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\rock_t.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\smoke.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\space_ao.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\space_h.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\space_m.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\space_n.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\space_r.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\space_t.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\transparent.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\ui_pause.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\ui_play.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\ui_screen.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\ui_stop.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\wall_ao.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\wall_h.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\wall_n.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\wall_r.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\wall_t.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="Textures\font.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Textures\font2.PNG">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Textures\ui_missing.png" />
+    <EmbeddedResource Include="Textures\ui_pause.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Textures\ui_play.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Textures\ui_screen.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Textures\ui_stop.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="OpenAL32.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Textures\white.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

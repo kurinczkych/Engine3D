@@ -18,7 +18,7 @@ namespace Engine3D
         public int vbo;
         public int vaoId;
         public int vboId;
-        protected int shaderProgramId;
+        public int shaderProgramId;
 
         public bool recalculate = false;
 
@@ -33,7 +33,7 @@ namespace Engine3D
 
         protected Camera camera;
 
-        protected Dictionary<string, int> uniformLocations;
+        public Dictionary<string, int> uniformLocations;
 
         public BVH BVHStruct;
 
@@ -59,6 +59,18 @@ namespace Engine3D
 
             //threadSize = (int)(Environment.ProcessorCount * (80 / 100.0));
             //threadSize = 16;
+        }
+
+        public void AddUniformLocation(string name)
+        {
+            if(!uniformLocations.ContainsKey(name) )
+                uniformLocations.Add(name, GL.GetUniformLocation(shaderProgramId, name));
+        }
+
+        public void RemoveTexture(string name1, string name2)
+        {
+            GL.Uniform1(uniformLocations[name1], 0);
+            GL.Uniform1(uniformLocations[name2], 0);
         }
 
         public void RecalculateModelMatrix(bool[] which)

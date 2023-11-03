@@ -96,6 +96,41 @@ namespace Engine3D
             return s;
         }
 
+        public static List<Asset> GetAllAssets()
+        {
+            List<Asset> assets = new List<Asset>();
+            int assetCount = 0;
+
+            foreach(var type in Enum.GetValues(typeof(FileType)))
+            {
+                string fileLocation = Environment.CurrentDirectory + "\\" + type.ToString();
+                if(Directory.Exists(fileLocation))
+                {
+                    var files = Directory.GetFiles(fileLocation);
+                    foreach(var file in files)
+                    {
+                        Asset asset = new Asset(assetCount, Path.GetFileName(file), file, GetAssetType((FileType)type));
+                        assetCount++;
+                        assets.Add(asset);
+                    }
+                }
+            }
+
+            return assets;
+        }
+
+        private static AssetType GetAssetType(FileType fileType)
+        {
+            if (fileType == FileType.Models)
+                return AssetType.Model;
+            else if (fileType == FileType.Audio)
+                return AssetType.Audio;
+            else if (fileType == FileType.Textures)
+                return AssetType.Texture;
+            else
+                return AssetType.Unknown;
+        }
+
         public static void DisposeStreams()
         {
             foreach(Stream s in openedStreams)

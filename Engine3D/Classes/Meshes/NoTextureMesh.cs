@@ -38,13 +38,15 @@ namespace Engine3D
         }
 
 
-        Matrix4 modelMatrix, viewMatrix, projectionMatrix;
+        Matrix4 viewMatrix, projectionMatrix;
 
         private VAO Vao;
         private VBO Vbo;
 
-        public NoTextureMesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ref Frustum frustum, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
+        public NoTextureMesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ref Camera camera, Color4 color, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
+            this.parentObject = parentObject;
+
             this.camera = camera;
 
             Vao = vao;
