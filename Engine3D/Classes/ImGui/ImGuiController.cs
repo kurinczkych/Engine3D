@@ -720,6 +720,23 @@ namespace Engine3D
                                     ImGui.Text("Mesh");
 
                                     #region Mesh
+
+                                    if (ImGui.Checkbox("##useBVH", ref o.useBVH))
+                                    {
+                                        if(o.useBVH)
+                                        {
+                                            o.BuildBVH();
+                                        }
+                                        else
+                                        {
+                                            o.GetMesh().BVHStruct = null;
+                                        }
+                                    }
+                                    ImGui.SameLine();
+                                    ImGui.Text("Use BVH for rendering");
+
+                                    ImGui.Separator();
+
                                     Encoding.UTF8.GetBytes(o.meshName, 0, o.meshName.ToString().Length, _inputBuffers["##meshPath"], 0);
                                     ImGui.InputText("##meshPath", _inputBuffers["##meshPath"], (uint)_inputBuffers["##meshPath"].Length, ImGuiInputTextFlags.ReadOnly);
                                     if (ImGui.IsItemClicked(ImGuiMouseButton.Right))

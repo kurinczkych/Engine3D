@@ -281,6 +281,8 @@ namespace Engine3D
             }
         }
 
+        public bool useBVH = false;
+
         //---------------------------------------------------------------
 
         public Type meshType;
@@ -395,7 +397,6 @@ namespace Engine3D
             DynamicFriction = 0.5f;
             Restitution = 0.1f;
 
-            BuildBVH();
             mesh.CalculateFrustumVisibility();
         }
 

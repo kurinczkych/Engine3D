@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -120,6 +121,15 @@ namespace Engine3D
             return dist < 15.0f;
 
         }
+
+        public bool IsPointClose(Vector3 p)
+        {
+            float dist = (position - p).Length;
+
+            return dist < 15.0f;
+
+        }
+
         public bool IsAnyTriangleClose(List<triangle> tris)
         {
             float dist = float.PositiveInfinity;

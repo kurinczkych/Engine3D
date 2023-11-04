@@ -37,12 +37,12 @@ namespace Engine3D
 
         public Dictionary<string, int> uniformLocations;
 
-        public BVH BVHStruct;
+        public BVH? BVHStruct;
 
         protected Matrix4 scaleMatrix = Matrix4.Identity;
         protected Matrix4 rotationMatrix = Matrix4.Identity;
         protected Matrix4 translationMatrix = Matrix4.Identity;
-        protected Matrix4 modelMatrix = Matrix4.Identity;
+        public Matrix4 modelMatrix = Matrix4.Identity;
 
         //protected int threadSize;
         //private int desiredPercentage = 80;
@@ -94,9 +94,10 @@ namespace Engine3D
             {
                 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 
-                if (GetType() == typeof(Mesh) ||
+                if (BVHStruct != null &&
+                   (GetType() == typeof(Mesh) ||
                     GetType() == typeof(InstancedMesh) ||
-                    GetType() == typeof(NoTextureMesh))
+                    GetType() == typeof(NoTextureMesh)))
                 {
                     BVHStruct.TransformBVH(ref modelMatrix);
                 }
@@ -127,7 +128,24 @@ namespace Engine3D
                     ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize }; // Adjust as needed
                     Parallel.ForEach(tris, parallelOptions, tri =>
                     {
-                        tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
+                        if (modelMatrix != Matrix4.Identity)
+                        {
+                            bool visible = false;
+                            for (int i = 0; i < 3; i++)
+                            {
+                                Vector3 p = Vector3.TransformPosition(tri.p[i], modelMatrix);
+                                if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
+                                {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                            tri.visibile = visible;
+                        }
+                        else
+                        {
+                            tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
+                        }
                     });
                 }
             }

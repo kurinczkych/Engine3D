@@ -37,6 +37,46 @@ namespace Engine3D
             pi = new int[3];
         }
 
+        public triangle(triangle tri)
+        {
+            gotPointNormals = tri.gotPointNormals;
+            p = new Vector3[tri.p.Length];
+            for (int p_ = 0; p_ < tri.p.Length; p_++)
+            {
+                p[p_] = tri.p[p_];
+            }
+            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
+            for (int p_ = 0; p_ < tri.p.Length; p_++)
+            {
+                n[p_] = tri.n[p_];
+            }
+            c = new Color4[tri.p.Length];
+            for (int c_ = 0; c_ < tri.p.Length; c_++)
+            {
+                c[c_] = tri.c[c_];
+            }
+            t = new Vec2d[tri.t.Length];
+            for (int t_ = 0; t_ < tri.t.Length; t_++)
+            {
+                t[t_] = tri.t[t_].GetCopy();
+            }
+            tan = new Vector3[3];
+            for (int tan_ = 0; tan_ < tri.tan.Length; tan_++)
+            {
+                tan[tan_] = tri.tan[tan_];
+            }
+            bitan = new Vector3[3];
+            for (int bitan_ = 0; bitan_ < tri.bitan.Length; bitan_++)
+            {
+                bitan[bitan_] = tri.bitan[bitan_];
+            }
+            pi = new int[3];
+            for (int pi_ = 0; pi_ < tri.pi.Length; pi_++)
+            {
+                pi[pi_] = tri.pi[pi_];
+            }
+        }
+
         public triangle(Vector3[] p)
         {
             gotPointNormals = false;
