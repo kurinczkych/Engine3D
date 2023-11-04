@@ -20,11 +20,13 @@ namespace Engine3D
         public int vboId;
         public int shaderProgramId;
 
+        public string modelName;
+
         public bool recalculate = false;
 
         public int useBillboarding = 0;
 
-        public List<triangle> tris;
+        public List<triangle> tris = new List<triangle>();
         public List<triangle> visibleTris;
         public List<Vector3> allVerts;
         public bool hasIndices = false;
@@ -162,12 +164,12 @@ namespace Engine3D
             }
         }
 
-        public static void ComputeVertexNormals(ref List<triangle> triangles)
+        public void ComputeVertexNormals()
         {
             Dictionary<Vector3, List<Vector3>> vertexToNormals = new Dictionary<Vector3, List<Vector3>>(new Vector3Comparer());
 
             // Initialize mapping
-            foreach (var triangle in triangles)
+            foreach (var triangle in tris)
             {
                 for (int i = 0; i < 3; i++)
                 {
@@ -177,7 +179,7 @@ namespace Engine3D
             }
 
             // Accumulate face normals to the vertices
-            foreach (var triangle in triangles)
+            foreach (var triangle in tris)
             {
                 var faceNormal = ComputeFaceNormal(triangle);
                 for (int i = 0; i < 3; i++)
@@ -187,7 +189,7 @@ namespace Engine3D
             }
 
             // Compute the average normal for each vertex
-            foreach (var triangle in triangles)
+            foreach (var triangle in tris)
             {
                 triangle.gotPointNormals = true;
                 for (int i = 0; i < 3; i++)
@@ -197,7 +199,7 @@ namespace Engine3D
             }
         }
 
-        protected void ComputeTangents(ref List<triangle> tris)
+        public void ComputeTangents()
         {
             // Initialize tangent and bitangent lists with zeros
             Dictionary<Vector3, List<Vector3>> tangentSums = new Dictionary<Vector3, List<Vector3>>();

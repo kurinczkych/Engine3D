@@ -32,7 +32,6 @@ namespace Engine3D
         public WireframeMesh normalMesh;
 
         private List<float> vertices = new List<float>();
-        private string? modelName;
 
         private Vector2 windowSize;
 
@@ -57,8 +56,8 @@ namespace Engine3D
             this.modelName = modelName;
             ProcessObj(modelName);
 
-            ComputeVertexNormals(ref tris);
-            ComputeTangents(ref tris);
+            ComputeVertexNormals();
+            ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();
@@ -78,14 +77,14 @@ namespace Engine3D
             this.modelName = modelName;
             ProcessObj(modelName);
 
-            ComputeVertexNormals(ref tris);
-            ComputeTangents(ref tris);
+            ComputeVertexNormals();
+            ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
             this.shaderProgramId = shaderProgramId;
@@ -98,16 +97,17 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
+            this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals(ref tris);
-            ComputeTangents(ref tris);
+            ComputeVertexNormals();
+            ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
             this.shaderProgramId = shaderProgramId;
@@ -118,10 +118,11 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
+            this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals(ref tris);
-            ComputeTangents(ref tris);
+            ComputeVertexNormals();
+            ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();
@@ -159,9 +160,9 @@ namespace Engine3D
             }
         }
 
-        private PxVec3 ConvertToNDCPxVec3(int index, ref Matrix4 transformMatrix)
+        private PxVec3 ConvertToNDCPxVec3(int index)
         {
-            Vector3 v = Vector3.TransformPosition(allVerts[index], transformMatrix);
+            Vector3 v = Vector3.TransformPosition(allVerts[index], modelMatrix);
 
             PxVec3 vec = new PxVec3();
             vec.x = v.X;
@@ -469,18 +470,9 @@ namespace Engine3D
             verts = new PxVec3[allVerts.Count()];
             indices = new int[vertCount];
 
-            ObjectType type = parentObject.GetObjectType();
-
-            Matrix4 s = Matrix4.CreateScale(parentObject.Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(parentObject.Position);
-
-            Matrix4 transformMatrix = Matrix4.Identity;
-            transformMatrix = s * r * t;
-
             for (int i = 0; i < allVerts.Count(); i++)
             {
-                verts[i] = ConvertToNDCPxVec3(i, ref transformMatrix);
+                verts[i] = ConvertToNDCPxVec3(i);
             }
 
             foreach (triangle tri in tris)

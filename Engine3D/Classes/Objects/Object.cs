@@ -30,6 +30,15 @@ namespace Engine3D
         UIMesh
     }
 
+    public enum ColliderType
+    {
+        None,
+        TriangleMesh,
+        Cube,
+        Capsule,
+        Sphere
+    }
+
     public unsafe class Object : IComparable<Object>
     {
         public string name = "";
@@ -244,6 +253,36 @@ namespace Engine3D
         }
         #endregion
 
+        public string meshName
+        {
+            get
+            {
+                if (mesh != null)
+                    return mesh.modelName;
+
+                return "";
+            }
+            set
+            {
+                mesh.modelName = value;
+                mesh.ProcessObj(mesh.modelName);
+                mesh.ComputeVertexNormals();
+                mesh.ComputeTangents();
+                mesh.recalculate = true;
+            }
+        }
+
+        public int selectedColliderOption = 0;
+        public bool HasCollider
+        {
+            get
+            {
+                return !(dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero);
+            }
+        }
+
+        //---------------------------------------------------------------
+
         public Type meshType;
         private BaseMesh mesh;
         private ObjectType type;
@@ -256,6 +295,19 @@ namespace Engine3D
         public Octree Octree { get; private set; }
         public GridStructure GridStructure { get; private set; }
 
+        public ColliderType colliderType = ColliderType.None;
+        public string colliderStaticType
+        {
+            get
+            {
+                if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
+                    return "";
+                else if (dynamicColliderPtr == IntPtr.Zero)
+                    return "Static";
+                else
+                    return "Dynamic";
+            }
+        }
         public PxRigidDynamic* GetDynamicCollider() { return (PxRigidDynamic*)dynamicColliderPtr.ToPointer(); }
         public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
 
@@ -268,9 +320,6 @@ namespace Engine3D
             get { return Math.Round(Position.X, 2).ToString() + "," + Math.Round(Position.Y, 2).ToString() + "," + Math.Round(Position.Z, 2).ToString(); }
         }
 
-        public Vector3 Size { get; private set; }
-        public float Radius { get; private set; }
-        public float HalfHeight { get; private set; }
 
         public float StaticFriction { get; private set; }
         public float DynamicFriction { get; private set; }
@@ -348,105 +397,6 @@ namespace Engine3D
 
             BuildBVH();
             mesh.CalculateFrustumVisibility();
-
-            if (type == ObjectType.TriangleMeshWithCollider)
-            {
-                Type meshType = mesh.GetType();
-                if (meshType != typeof(Mesh))
-                    throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
-                if (!mesh.hasIndices)
-                    throw new Exception("The mesh doesn't have triangle indices!");
-
-                uint count = (uint)((Mesh)mesh).tris.Count() * 3;
-                PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
-                meshDesc.points.count = count;
-                meshDesc.points.stride = (uint)sizeof(PxVec3);
-                PxVec3[] verts = new PxVec3[mesh.allVerts.Count()];
-                int[] indices = new int[count];
-                ((Mesh)mesh).GetCookedData(out verts, out indices);
-                GCHandle vertsHandle = GCHandle.Alloc(verts, GCHandleType.Pinned);
-                GCHandle indicesHandle = GCHandle.Alloc(indices, GCHandleType.Pinned);
-
-                var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
-                PxCookingParams cookingParams = PxCookingParams_new(&tolerancesScale);
-                //cookingParams.suppressTriangleMeshRemapTable = true;
-                //cookingParams.buildTriangleAdjacencies = false;
-                //cookingParams.meshPreprocessParams = PxMeshPreprocessingFlags.WeldVertices;
-
-                //fixed (PxVec3* vertsPointer = &verts[0])
-
-                bool valid = isValidMesh((PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer(), (int)count, (int*)indicesHandle.AddrOfPinnedObject().ToPointer(), (int)count);
-                if (!valid)
-                    throw new Exception("TriangleMesh cooking data is not right!");
-
-                meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
-
-                meshDesc.triangles.count = (uint)((Mesh)mesh).tris.Count();
-                meshDesc.triangles.stride = 3 * sizeof(int);
-                meshDesc.triangles.data = (int*)indicesHandle.AddrOfPinnedObject().ToPointer();
-
-                PxTriangleMeshCookingResult result;
-                PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
-
-                PxTriangleMesh triMeshPtr = new PxTriangleMesh();
-                PxTriangleMesh* triMesh = &triMeshPtr;
-                try
-                {
-                    // Establish a no GC region. The size parameter specifies how much memory
-                    // to reserve for the small object heap.
-                    if (GC.TryStartNoGCRegion(((Mesh)mesh).tris.Count() * 60))
-                    {
-                        triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
-
-                    }
-                }
-                finally
-                {
-                    // Always make sure to end the no GC region.
-                    if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion)
-                    {
-                        GC.EndNoGCRegion();
-                    }
-                }
-
-                ;
-
-
-                if (triMesh == null || &triMesh == null)
-                {
-                    throw new Exception("TriangleMesh cooking didn't work!");
-                }
-
-                PxVec3 scale = new PxVec3 { x = 1, y = 1, z = 1 };
-                PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
-                PxMeshScale meshScale = PxMeshScale_new_3(&scale, &quat);
-                PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &meshScale, PxMeshGeometryFlags.DoubleSided);
-
-                var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
-                PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
-                PxTransform transform = PxTransform_new_1(&position);
-                var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-                PxRigidStatic* staticCollider = physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&meshGeo, material, &identity);
-                physx.GetScene()->AddActorMut((PxActor*)staticCollider, null);
-                staticColliderPtr = new IntPtr(staticCollider);
-
-                vertsHandle.Free();
-                indicesHandle.Free();
-            }
-
-            if (type == ObjectType.Cube)
-            {
-                Size = new Vector3(5, 5, 5);
-            }
-            if (type == ObjectType.Sphere)
-            {
-                Radius = 5;
-            }
-            if (type == ObjectType.Capsule)
-            {
-                HalfHeight = 5;
-                Radius = 5;
-            }
         }
 
         public void BuildBVH()
@@ -727,99 +677,13 @@ namespace Engine3D
             GetDynamicCollider()->SetAngularVelocityMut(&vec3, true);
         }
 
-        public void SetPosition(Vector3 position)
+        public void UpdatePhysxPositionAndRotation()
         {
-            Position = position;
-            
-
-            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
-                return;
-
-            PxVec3 vec = PxVec3_new_3(position.X, position.Y, position.Z);
-            PxTransform pose = PxTransform_new_1(&vec);
-
-            if(dynamicColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
-            else if(staticColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
-        }
-
-        public void SetPosition(float x, float y, float z)
-        {
-            Position = new Vector3(x,y,z);
-            
-
-            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
-                return;
-
-            PxVec3 vec = PxVec3_new_3(x, y, z);
-            PxTransform pose = PxTransform_new_1(&vec);
-
-            if(dynamicColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
-            else if(staticColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
-        }
-
-        public void AddPosition(Vector3 position)
-        {
-            Position += position;
-            
-
             if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
                 return;
 
             PxVec3 vec = PxVec3_new_3(Position.X, Position.Y, Position.Z);
-            PxTransform pose = PxTransform_new_1(&vec);
-
-            if(dynamicColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
-            else if(staticColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
-        }
-
-        public void AddPosition(float x, float y, float z)
-        {
-            Position += new Vector3(x,y,z);
-            
-
-            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
-                return;
-
-            PxVec3 vec = PxVec3_new_3(Position.X, Position.Y, Position.Z);
-            PxTransform pose = PxTransform_new_1(&vec);
-
-            if(dynamicColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
-            else if(staticColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
-        }
-        public void SetRotation(Quaternion rotation)
-        {
-            Rotation = rotation;
-
-            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
-                return;
-
-            PxQuat quat = QuatHelper.OpenTkToPx(rotation);
-
-            PxTransform pose = PxTransform_new_3(&quat);
-
-            if (dynamicColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetDynamicCollider(), &pose, true);
-            else if (staticColliderPtr != IntPtr.Zero)
-                PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
-        }
-        public void SetPositionAndRotation(Vector3 position, Quaternion rotation)
-        {
-            Position = position;
-            Rotation = rotation;
-
-            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
-                return;
-
-            PxVec3 vec = PxVec3_new_3(position.X, position.Y, position.Z);
-            PxQuat quat = QuatHelper.OpenTkToPx(rotation);
+            PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
 
             PxTransform pose = PxTransform_new_5(&vec, &quat);
 
@@ -829,13 +693,8 @@ namespace Engine3D
                 PxRigidActor_setGlobalPose_mut((PxRigidActor*)GetStaticCollider(), &pose, true);
         }
 
-        public void SetSize(Vector3 size)
+        public void UpdatePhysxScale()
         {
-            if (type != ObjectType.Cube)
-                throw new Exception("Cannot change the size of a '" + type.ToString() + "'!");
-
-            Size = size;
-
             if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
                 return;
 
@@ -843,42 +702,14 @@ namespace Engine3D
             if (dynamicColliderPtr == IntPtr.Zero)
                 isStatic = false;
 
-            AddCubeCollider(isStatic, true);
-        }
-
-        public void SetSize(float halfHeight, float radius)
-        {
-            if (type != ObjectType.Capsule)
-                throw new Exception("Cannot change the half height and radius of a '" + type.ToString() + "'!");
-
-            HalfHeight = halfHeight;
-            Radius = radius;
-
-            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
-                return;
-
-            bool isStatic = true;
-            if (dynamicColliderPtr == IntPtr.Zero)
-                isStatic = false;
-
-            AddCapsuleCollider(isStatic, true);
-        }
-
-        public void SetSize(float radius)
-        {
-            if (type != ObjectType.Sphere)
-                throw new Exception("Cannot change the radius of a '" + type.ToString() + "'!");
-
-            Radius = radius;
-
-            if (dynamicColliderPtr == IntPtr.Zero && staticColliderPtr == IntPtr.Zero)
-                return;
-
-            bool isStatic = true;
-            if (dynamicColliderPtr == IntPtr.Zero)
-                isStatic = false;
-
-            AddSphereCollider(isStatic, true);
+            if (colliderType == ColliderType.TriangleMesh)
+                AddTriangleMeshCollider(true);
+            if (colliderType == ColliderType.Cube)
+                AddCubeCollider(isStatic, true);
+            if (colliderType == ColliderType.Sphere)
+                AddSphereCollider(isStatic, true);
+            if (colliderType == ColliderType.Capsule)
+                AddCapsuleCollider(isStatic, true);
         }
 
         public void SetMaterial(float staticFriction, float dynamicFriction, float restiution)
@@ -920,6 +751,87 @@ namespace Engine3D
             }
         }
 
+        public void AddTriangleMeshCollider(bool removeCollider=false)
+        {
+            if (removeCollider)
+                RemoveCollider();
+
+            Type meshType = mesh.GetType();
+            if (meshType != typeof(Mesh))
+                throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
+            if (!mesh.hasIndices)
+                throw new Exception("The mesh doesn't have triangle indices!");
+
+            uint count = (uint)((Mesh)mesh).tris.Count() * 3;
+            PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
+            meshDesc.points.count = count;
+            meshDesc.points.stride = (uint)sizeof(PxVec3);
+            PxVec3[] verts = new PxVec3[mesh.allVerts.Count()];
+            int[] indices = new int[count];
+            ((Mesh)mesh).GetCookedData(out verts, out indices);
+            GCHandle vertsHandle = GCHandle.Alloc(verts, GCHandleType.Pinned);
+            GCHandle indicesHandle = GCHandle.Alloc(indices, GCHandleType.Pinned);
+
+            var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
+            PxCookingParams cookingParams = PxCookingParams_new(&tolerancesScale);
+
+            bool valid = isValidMesh((PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer(), (int)count, (int*)indicesHandle.AddrOfPinnedObject().ToPointer(), (int)count);
+            if (!valid)
+                throw new Exception("TriangleMesh cooking data is not right!");
+
+            meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
+
+            meshDesc.triangles.count = (uint)((Mesh)mesh).tris.Count();
+            meshDesc.triangles.stride = 3 * sizeof(int);
+            meshDesc.triangles.data = (int*)indicesHandle.AddrOfPinnedObject().ToPointer();
+
+            PxTriangleMeshCookingResult result;
+            PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
+
+            PxTriangleMesh triMeshPtr = new PxTriangleMesh();
+            PxTriangleMesh* triMesh = &triMeshPtr;
+            try
+            {
+                // Establish a no GC region. The size parameter specifies how much memory
+                // to reserve for the small object heap.
+                if (GC.TryStartNoGCRegion(((Mesh)mesh).tris.Count() * 60))
+                {
+                    triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
+
+                }
+            }
+            finally
+            {
+                // Always make sure to end the no GC region.
+                if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion)
+                {
+                    GC.EndNoGCRegion();
+                }
+            }
+
+            if (triMesh == null || &triMesh == null)
+            {
+                throw new Exception("TriangleMesh cooking didn't work!");
+            }
+
+            PxVec3 scale = new PxVec3 { x = 1, y = 1, z = 1 };
+            PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
+            PxMeshScale meshScale = PxMeshScale_new_3(&scale, &quat);
+            PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &meshScale, PxMeshGeometryFlags.DoubleSided);
+
+            var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+            PxVec3 position = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
+            PxTransform transform = PxTransform_new_1(&position);
+            var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
+            PxRigidStatic* staticCollider = physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&meshGeo, material, &identity);
+            physx.GetScene()->AddActorMut((PxActor*)staticCollider, null);
+            staticColliderPtr = new IntPtr(staticCollider);
+            colliderType = ColliderType.TriangleMesh;
+
+            vertsHandle.Free();
+            indicesHandle.Free();
+        }
+
         public void AddCapsuleCollider(bool isStatic, bool removeCollider=false)
         {
             if (removeCollider)
@@ -932,12 +844,9 @@ namespace Engine3D
             if(GetStaticCollider() != null && !isStatic)
                 throw new Exception("You can only add one type of collider. This object has a static collider");
 
-            PxCapsuleGeometry capsuleGeo = new PxCapsuleGeometry();
-
-            if(type == ObjectType.Capsule)
-                capsuleGeo = PxCapsuleGeometry_new(HalfHeight, Radius);
-            else
-                capsuleGeo = PxCapsuleGeometry_new(5, 5);
+            float radius = Math.Min(Scale.X, Scale.Z) / 2.0f;
+            float halfHeight = (Scale.Y / 2.0f) - radius;
+            PxCapsuleGeometry capsuleGeo = PxCapsuleGeometry_new(halfHeight, radius);
 
             PxVec3 vec3 = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
@@ -956,6 +865,7 @@ namespace Engine3D
                 PxRigidBody_setAngularDamping_mut((PxRigidBody*)GetDynamicCollider(), 0.5f);
                 physx.GetScene()->AddActorMut((PxActor*)GetDynamicCollider(), null);
             }
+            colliderType = ColliderType.Capsule;
         }
 
         public void AddCubeCollider(bool isStatic, bool removeCollider = false)
@@ -970,11 +880,7 @@ namespace Engine3D
             if (GetStaticCollider() != null && !isStatic)
                 throw new Exception("You can only add one type of collider. This object has a static collider");
 
-            PxBoxGeometry cubeGeo = new PxBoxGeometry();
-            if (type == ObjectType.Cube)
-                cubeGeo = PxBoxGeometry_new(Size.X / 2f, Size.Y / 2f, Size.Z / 2f);
-            else
-                cubeGeo = PxBoxGeometry_new(10 / 2f, 10 / 2f, 10 / 2f);
+            PxBoxGeometry cubeGeo = PxBoxGeometry_new(Scale.X / 2f, Scale.Y / 2f, Scale.Z / 2f);
 
             PxVec3 vec3 = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
@@ -993,6 +899,7 @@ namespace Engine3D
                 PxRigidBody_setAngularDamping_mut((PxRigidBody*)GetDynamicCollider(), 0.5f);
                 physx.GetScene()->AddActorMut((PxActor*)GetDynamicCollider(), null);
             }
+            colliderType = ColliderType.Cube;
         }
 
         public void AddSphereCollider(bool isStatic, bool removeCollider = false)
@@ -1007,11 +914,8 @@ namespace Engine3D
             if (GetStaticCollider() != null && !isStatic)
                 throw new Exception("You can only add one type of collider. This object has a static collider");
 
-            PxSphereGeometry sphereGeo = new PxSphereGeometry();
-            if(type == ObjectType.Sphere)
-                sphereGeo = PxSphereGeometry_new(Radius);
-            else
-                sphereGeo = PxSphereGeometry_new(5);
+            float radius = Math.Min(Scale.X, Math.Min(Scale.Y, Scale.Z));
+            PxSphereGeometry sphereGeo = PxSphereGeometry_new(radius);
 
             PxVec3 vec3 = new PxVec3 { x = Position.X, y = Position.Y, z = Position.Z };
             PxQuat quat = QuatHelper.OpenTkToPx(Rotation);
@@ -1030,6 +934,7 @@ namespace Engine3D
                 PxRigidBody_setAngularDamping_mut((PxRigidBody*)GetDynamicCollider(), 0.5f);
                 physx.GetScene()->AddActorMut((PxActor*)GetDynamicCollider(), null);
             }
+            colliderType = ColliderType.Sphere;
         }
         #endregion
 

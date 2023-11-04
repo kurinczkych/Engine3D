@@ -33,7 +33,6 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
         private List<float> instancedVertices = new List<float>();
-        private string? modelName;
 
         private Vector2 windowSize;
 
@@ -59,14 +58,14 @@ namespace Engine3D
             this.modelName = modelName;
             ProcessObj(modelName);
 
-            ComputeVertexNormals(ref tris);
-            ComputeTangents(ref tris);
+            ComputeVertexNormals();
+            ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();
         }
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
@@ -78,16 +77,17 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
+            this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals(ref tris);
-            ComputeTangents(ref tris);
+            ComputeVertexNormals();
+            ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();
         }
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, List<triangle> tris, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
@@ -97,10 +97,11 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
+            this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals(ref tris);
-            ComputeTangents(ref tris);
+            ComputeVertexNormals();
+            ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();

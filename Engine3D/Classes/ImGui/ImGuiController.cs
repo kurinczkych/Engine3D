@@ -94,18 +94,19 @@ namespace Engine3D
             _inputBuffers.Add("##positionX", new byte[100]);
             _inputBuffers.Add("##positionY", new byte[100]);
             _inputBuffers.Add("##positionZ", new byte[100]);
-            _inputBuffers.Add("##rotationX", new byte[200]);
-            _inputBuffers.Add("##rotationY", new byte[200]);
-            _inputBuffers.Add("##rotationZ", new byte[200]);
-            _inputBuffers.Add("##scaleX", new byte[200]);
-            _inputBuffers.Add("##scaleY", new byte[200]);
-            _inputBuffers.Add("##scaleZ", new byte[200]);
-            _inputBuffers.Add("##texturePath", new byte[200]);
-            _inputBuffers.Add("##textureNormalPath", new byte[200]);
-            _inputBuffers.Add("##textureHeightPath", new byte[200]);
-            _inputBuffers.Add("##textureAOPath", new byte[200]);
-            _inputBuffers.Add("##textureRoughPath", new byte[200]);
-            _inputBuffers.Add("##textureMetalPath", new byte[200]);
+            _inputBuffers.Add("##rotationX", new byte[100]);
+            _inputBuffers.Add("##rotationY", new byte[100]);
+            _inputBuffers.Add("##rotationZ", new byte[100]);
+            _inputBuffers.Add("##scaleX", new byte[100]);
+            _inputBuffers.Add("##scaleY", new byte[100]);
+            _inputBuffers.Add("##scaleZ", new byte[100]);
+            _inputBuffers.Add("##texturePath", new byte[100]);
+            _inputBuffers.Add("##textureNormalPath", new byte[100]);
+            _inputBuffers.Add("##textureHeightPath", new byte[100]);
+            _inputBuffers.Add("##textureAOPath", new byte[100]);
+            _inputBuffers.Add("##textureRoughPath", new byte[100]);
+            _inputBuffers.Add("##textureMetalPath", new byte[100]);
+            _inputBuffers.Add("##meshPath", new byte[100]);
 
             #endregion
         }
@@ -468,6 +469,7 @@ namespace Engine3D
                                             o.Position.X = value;
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
+                                            o.UpdatePhysxPositionAndRotation();
                                         }
                                     }
                                     ImGui.SameLine();
@@ -494,6 +496,7 @@ namespace Engine3D
                                             o.Position.Y = value;
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
+                                            o.UpdatePhysxPositionAndRotation();
                                         }
                                     }
                                     ImGui.SameLine();
@@ -520,6 +523,7 @@ namespace Engine3D
                                             o.Position.Z = value;
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
+                                            o.UpdatePhysxPositionAndRotation();
                                         }
                                     }
                                     #endregion
@@ -554,6 +558,7 @@ namespace Engine3D
                                             o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { false, true, false });
+                                            o.UpdatePhysxPositionAndRotation();
                                         }
                                     }
                                     ImGui.SameLine();
@@ -581,6 +586,7 @@ namespace Engine3D
                                             o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { false, true, false });
+                                            o.UpdatePhysxPositionAndRotation();
                                         }
                                     }
                                     ImGui.SameLine();
@@ -608,6 +614,7 @@ namespace Engine3D
                                             o.Rotation = Helper.QuaternionFromEuler(rotation);
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { false, true, false });
+                                            o.UpdatePhysxPositionAndRotation();
                                         }
                                     }
                                     #endregion
@@ -639,6 +646,7 @@ namespace Engine3D
                                             o.Scale.X = value;
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { false, false, true });
+                                            o.UpdatePhysxScale();
                                         }
                                     }
                                     ImGui.SameLine();
@@ -665,6 +673,7 @@ namespace Engine3D
                                             o.Scale.Y = value;
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { false, false, true });
+                                            o.UpdatePhysxScale();
                                         }
                                     }
                                     ImGui.SameLine();
@@ -691,6 +700,7 @@ namespace Engine3D
                                             o.Scale.Z = value;
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { false, false, true });
+                                            o.UpdatePhysxScale();
                                         }
                                     }
                                     #endregion
@@ -705,6 +715,36 @@ namespace Engine3D
                                 ImGui.SetNextItemOpen(true, ImGuiCond.Once);
                                 if(ImGui.TreeNode("Render"))
                                 {
+                                    ImGui.Separator();
+
+                                    ImGui.Text("Mesh");
+
+                                    #region Mesh
+                                    Encoding.UTF8.GetBytes(o.meshName, 0, o.meshName.ToString().Length, _inputBuffers["##meshPath"], 0);
+                                    ImGui.InputText("##meshPath", _inputBuffers["##meshPath"], (uint)_inputBuffers["##meshPath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        o.meshName = "";
+                                        _inputBuffers["##meshPath"][0] = 0;
+                                    }
+
+                                    if (ImGui.BeginDragDropTarget())
+                                    {
+                                        ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("MESH_NAME");
+                                        unsafe
+                                        {
+                                            if (payload.NativePtr != null)
+                                            {
+                                                byte[] pathBytes = new byte[payload.DataSize];
+                                                System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                CopyDataToBuffer("##meshPath", pathBytes);
+                                                o.meshName = GetStringFromByte(pathBytes);
+                                            }
+                                        }
+                                        ImGui.EndDragDropTarget();
+                                    }
+                                    #endregion
+
                                     ImGui.Separator();
 
                                     #region Textures
@@ -860,12 +900,83 @@ namespace Engine3D
                                     }
                                     #endregion
 
-                                    ImGui.Separator();
+                                    ImGui.TreePop();
+                                }
 
-                                    
+                                ImGui.Separator();
+
+                                ImGui.SetNextItemOpen(true, ImGuiCond.Once);
+                                if (ImGui.TreeNode("Physics"))
+                                {
+                                    ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 5.0f);
+                                    var buttonColor = style.Colors[(int)ImGuiCol.Button];
+                                    style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
+
+                                    if (o.HasCollider)
+                                    {
+                                        System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 40);
+                                        if (ImGui.Button("Remove\n" + o.colliderStaticType + " " + o.colliderType + " Collider", buttonSize))
+                                        {
+                                            o.RemoveCollider();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 20);
+                                        string[] options = { "Static", "Dynamic" };
+                                        for (int i = 0; i < options.Length; i++)
+                                        {
+                                            if (ImGui.RadioButton(options[i], o.selectedColliderOption == i))
+                                            {
+                                                o.selectedColliderOption = i;
+                                            }
+
+                                            if(i != options.Length - 1)
+                                                ImGui.SameLine();
+                                        }
+
+                                        if (o.selectedColliderOption == 0)
+                                        {
+                                            if (ImGui.Button("Add Triangle Mesh Collider", buttonSize))
+                                            {
+                                                o.AddTriangleMeshCollider();
+                                            }
+                                            if (ImGui.Button("Add Cube Collider", buttonSize))
+                                            {
+                                                o.AddCubeCollider(true);
+                                            }
+                                            if (ImGui.Button("Add Sphere Collider", buttonSize))
+                                            {
+                                                o.AddSphereCollider(true);
+                                            }
+                                            if (ImGui.Button("Add Capsule Collider", buttonSize))
+                                            {
+                                                o.AddCapsuleCollider(true);
+                                            }
+                                        }
+                                        else if(o.selectedColliderOption == 1)
+                                        {
+                                            if (ImGui.Button("Add Cube Collider", buttonSize))
+                                            {
+                                                o.AddCubeCollider(false);
+                                            }
+                                            if (ImGui.Button("Add Sphere Collider", buttonSize))
+                                            {
+                                                o.AddSphereCollider(false);
+                                            }
+                                            if (ImGui.Button("Add Capsule Collider", buttonSize))
+                                            {
+                                                o.AddCapsuleCollider(false);
+                                            }
+                                        }
+                                    }
+                                    style.Colors[(int)ImGuiCol.Button] = buttonColor;
+                                    ImGui.PopStyleVar();
 
                                     ImGui.TreePop();
                                 }
+
+                                ImGui.Dummy(new System.Numerics.Vector2(0, 50));
                             }
                         }
 
@@ -992,15 +1103,16 @@ namespace Engine3D
                     {
                         if(ImGui.BeginTabBar("Assets"))
                         {
+                            float imageWidth = 100;
+                            float imageHeight = 100;
+                            System.Numerics.Vector2 imageSize = new System.Numerics.Vector2(imageWidth, imageHeight);
+
                             var groupedAssets = editorData.assets.GroupBy(asset => asset.Type).ToDictionary(group => group.Key, group => group.ToList());
                             if (ImGui.BeginTabItem("Textures"))
                             {
 
                                 if (groupedAssets.TryGetValue(AssetType.Texture, out var textureAssets))
                                 {
-                                    float imageWidth = 100;
-                                    float imageHeight = 100;
-                                    System.Numerics.Vector2 imageSize = new System.Numerics.Vector2(imageWidth, imageHeight);
                                     float padding = ImGui.GetStyle().WindowPadding.X;
                                     float spacing = ImGui.GetStyle().ItemSpacing.X;
 
@@ -1028,7 +1140,7 @@ namespace Engine3D
 
                                             ImGui.InvisibleButton("##invisible", imageSize);
 
-                                            DragDropImageSource(ref Engine.textureManager, "TEXTURE_NAME", textureAssets[i].Name, imageSize);
+                                            DragDropImageSourceUI(ref Engine.textureManager, "TEXTURE_NAME", textureAssets[i].Name, imageSize);
 
                                             ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
                                             ImGui.TextWrapped(textureAssets[i].Name);
@@ -1048,8 +1160,6 @@ namespace Engine3D
                             {
                                 if (groupedAssets.TryGetValue(AssetType.Model, out var modelAssets))
                                 {
-                                    float imageWidth = 100;
-                                    float imageHeight = 100;
                                     float padding = ImGui.GetStyle().WindowPadding.X;
                                     float spacing = ImGui.GetStyle().ItemSpacing.X;
 
@@ -1075,7 +1185,13 @@ namespace Engine3D
                                         ImGui.BeginGroup();
                                         ImGui.PushID(modelAssets[i].Id);
 
-                                        ImGui.Image((IntPtr)Engine.textureManager.textures[modelName].TextureId, new System.Numerics.Vector2(imageWidth, imageHeight));
+                                        System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
+                                        ImGui.Image((IntPtr)Engine.textureManager.textures[modelName].TextureId, imageSize);
+                                        ImGui.SetCursorPos(cursorPos);
+
+                                        ImGui.InvisibleButton("##invisible", imageSize);
+
+                                        DragDropImageSource(ref Engine.textureManager, "MESH_NAME", modelAssets[i].Name, modelName, imageSize);
 
                                         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
                                         ImGui.TextWrapped(modelAssets[i].Name);
@@ -1141,7 +1257,7 @@ namespace Engine3D
             #endregion
         }
 
-        private void DragDropImageSource(ref TextureManager textureManager, string payloadName, string assetName, System.Numerics.Vector2 size)
+        private void DragDropImageSourceUI(ref TextureManager textureManager, string payloadName, string assetName, System.Numerics.Vector2 size)
         {
             if (ImGui.IsItemActive())
             {
@@ -1156,6 +1272,29 @@ namespace Engine3D
                         }
                     }
                     ImGui.Image((IntPtr)textureManager.textures["ui_" + assetName].TextureId, size);
+                    ImGui.TextWrapped(assetName);
+
+                    ImGui.EndDragDropSource();
+                }
+            }
+        }
+
+        private void DragDropImageSource(ref TextureManager textureManager, string payloadName, string assetName, string textureName, System.Numerics.Vector2 size)
+        {
+            if (ImGui.IsItemActive())
+            {
+                if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
+                {
+                    byte[] pathBytes = Encoding.UTF8.GetBytes(assetName);
+                    unsafe
+                    {
+                        fixed (byte* pPath = pathBytes)
+                        {
+                            ImGui.SetDragDropPayload(payloadName, (IntPtr)pPath, (uint)pathBytes.Length);
+                        }
+                    }
+                    ImGui.Image((IntPtr)textureManager.textures[textureName].TextureId, size);
+                    ImGui.TextWrapped(assetName);
 
                     ImGui.EndDragDropSource();
                 }
