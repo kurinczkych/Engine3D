@@ -16,31 +16,20 @@ using static System.Formats.Asn1.AsnWriter;
 #pragma warning disable CA1416
 #pragma warning disable CS8604
 #pragma warning disable CS8603
+#pragma warning disable CS0728
 
 namespace Engine3D
 {
 
     public class WireframeMesh : BaseMesh
     {
-        public static int floatCount = 8;
+        public static int floatCount = 7;
 
         private List<float> vertices = new List<float>();
 
-        Matrix4 modelMatrix, viewMatrix, projectionMatrix;
-
-        private bool IsTransformed
-        {
-            get
-            {
-                if(parentObject == null)
-                    return !(Position == Vector3.Zero && Rotation == Quaternion.Identity);
-                else
-                    return !(parentObject.Position == Vector3.Zero && parentObject.Rotation == Quaternion.Identity);
-            }
-        }
+        Matrix4 viewMatrix, projectionMatrix;
 
         public List<Line> lines;
-        private Color4 color;
 
         public Vector3 Position;
         public Quaternion Rotation;
@@ -48,7 +37,7 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
-        public WireframeMesh(VAO vao, VBO vbo, int shaderProgramId, ref Camera camera, Color4 color) : base(vao.id, vbo.id, shaderProgramId)
+        public WireframeMesh(VAO vao, VBO vbo, int shaderProgramId, ref Camera camera) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.camera = camera;
 
@@ -59,7 +48,6 @@ namespace Engine3D
             Rotation = Quaternion.Identity;
 
             lines = new List<Line>();
-            this.color = color;
 
             GetUniformLocations();
             SendUniforms();
@@ -71,12 +59,10 @@ namespace Engine3D
             uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
             uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
-
         }
 
         protected override void SendUniforms()
         {
-            modelMatrix = Matrix4.Identity;
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
 
@@ -84,23 +70,27 @@ namespace Engine3D
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
         }
-        private List<float> ConvertToNDC(Vector3 point, ref Matrix4 transformMatrix)
+        private void ConvertToNDC(ref List<float> vertices, Vector3 point, Color4 color)
         {
-            Vector3 v = Vector3.TransformPosition(point, transformMatrix);
-
-            List<float> result = new List<float>()
+            vertices.AddRange(new float[]
             {
-                v.X, v.Y, v.Z, 1.0f,
+                point.X, point.Y, point.Z,
                 color.R, color.G, color.B, color.A
-            };
+            });
+        }
 
-            return result;
+        private void AddVertices(List<float> vertices, Line line)
+        {
+            lock (vertices) // Lock to ensure thread-safety when modifying the list
+            {
+                ConvertToNDC(ref vertices, line.Start, line.StartColor);
+                ConvertToNDC(ref vertices, line.End, line.EndColor);
+            }
         }
 
         public List<float> Draw(GameState gameRunning)
         {
             Vao.Bind();
-
 
             if (gameRunning == GameState.Stopped && vertices.Count > 0)
             {
@@ -111,31 +101,22 @@ namespace Engine3D
 
             vertices = new List<float>();
 
-            Matrix4 r = Matrix4.Identity;
-            Matrix4 t = Matrix4.Identity;
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(lines, parallelOptions,
+                () => new List<float>(),
+                 (line, loopState, localVertices) =>
+                 {
+                     AddVertices(localVertices, line);
 
-            if(parentObject == null)
-            {
-                r = Matrix4.CreateFromQuaternion(Rotation);
-                t = Matrix4.CreateTranslation(Position);
-            }
-            else
-            {
-                r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
-                t = Matrix4.CreateTranslation(parentObject.Position);
-            }
-
-            Matrix4 transformMatrix = Matrix4.Identity;
-            if (IsTransformed)
-            {
-                transformMatrix = r * t;
-            }
-
-            foreach (Line line in lines)
-            {
-                vertices.AddRange(ConvertToNDC(line.Start, ref transformMatrix));
-                vertices.AddRange(ConvertToNDC(line.End, ref transformMatrix));
-            }
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (vertices)
+                     {
+                         vertices.AddRange(localVertices);
+                     }
+                 });
 
             SendUniforms();
 

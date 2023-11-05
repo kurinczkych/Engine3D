@@ -11,13 +11,31 @@ namespace Engine3D
     {
         public Vector3 Start;
         public Vector3 End;
-        public Color4 Color;
+        public Color4 StartColor;
+        public Color4 EndColor;
 
         public Line(Vector3 start, Vector3 end)
         {
             Start = start;
             End = end;
-            Color = new Color4(1, 1, 1, 1f);
+            StartColor = new Color4(1, 1, 1, 1f);
+            EndColor = new Color4(1, 1, 1, 1f);
+        }
+
+        public Line(Vector3 start, Vector3 end, Color4 color)
+        {
+            Start = start;
+            End = end;
+            StartColor = color;
+            EndColor = color;
+        }
+
+        public Line(Vector3 start, Vector3 end, Color4 startColor, Color4 endColor)
+        {
+            Start = start;
+            End = end;
+            StartColor = startColor;
+            EndColor = endColor;
         }
 
         public static Vector3 ClosestPointOnLineSegment(Vector3 A, Vector3 B, Vector3 Point)

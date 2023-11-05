@@ -52,6 +52,8 @@ uniform int useAO;
 uniform int useRough;
 uniform int useMetal;
 
+uniform int useShading;
+
 const float heightScale = 0.1;
 const float metallnessVar = 0.04;
 
@@ -193,14 +195,17 @@ void main()
     dirLight.specular = vec3(1.0,1.0,1.0);
     dirLight.specularPow = 2;
 
-    vec3 result = vec3(0,0,0);
+    vec3 result = vec3(1,1,1);
 
-    // phase 1: Directional lighting
-    result = CalcDirLight(dirLight, normalFromMap, viewDir, metalness);
+    if(useShading == 1)
+    {
+        // phase 1: Directional lighting
+        result = CalcDirLight(dirLight, normalFromMap, viewDir, metalness);
 
-    // phase 2: Point lights
-    for(int i = 0; i < actualNumOfLights; i++)
-        result += CalcPointLight(pointLights[i], normalFromMap, gsFragPos, viewDir, metalness);
+        // phase 2: Point lights
+        for(int i = 0; i < actualNumOfLights; i++)
+            result += CalcPointLight(pointLights[i], normalFromMap, gsFragPos, viewDir, metalness);
+    }
 
     FragColor = vec4(result, 1.0) * gsFragColor;
     if(useTexture == 1)

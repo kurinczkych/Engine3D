@@ -255,7 +255,8 @@ namespace Engine3D
             {
 
                 //WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White
-                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
+                //WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
+                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera);
                 AABB box = node.bounds;
 
                 // Create lines for each edge of the bounding box
@@ -319,7 +320,8 @@ namespace Engine3D
             {
 
                 //WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref frustum, ref camera, Color4.White
-                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
+                //WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera, Color4.Red);
+                WireframeMesh currentMesh = new WireframeMesh(wireVao, wireVbo, shaderId, ref camera);
                 AABB box = node.bounds;
 
                 // Create lines for each edge of the bounding box

@@ -106,6 +106,41 @@ namespace Engine3D
             return (float)Math.Sqrt(longestDistanceSquared);
         }
 
+        public bool RayIntersects(Vector3 rayOrigin, Vector3 rayDirection, out float distance)
+        {
+            distance = 0.0f;
+            float tmin = float.NegativeInfinity;
+            float tmax = float.PositiveInfinity;
+
+            // Check for intersection with all six bounds
+            for (int i = 0; i < 3; ++i)
+            {
+                if (Math.Abs(rayDirection[i]) < float.Epsilon)
+                {
+                    // Ray is parallel to slab. No hit if origin not within slab
+                    if (rayOrigin[i] < Min[i] || rayOrigin[i] > Max[i]) return false;
+                }
+                else
+                {
+                    // Compute intersection t value of ray with near and far plane of slab
+                    float ood = 1.0f / rayDirection[i];
+                    float t1 = (Min[i] - rayOrigin[i]) * ood;
+                    float t2 = (Max[i] - rayOrigin[i]) * ood;
+                    // Make t1 be intersection with near plane, t2 with far plane
+                    if (t1 > t2) (t1, t2) = (t2, t1);
+                    // Compute the intersection of slab intersection intervals
+                    tmin = Math.Max(tmin, t1);
+                    tmax = Math.Min(tmax, t2);
+                    // Exit with no collision as soon as slab intersection becomes empty
+                    if (tmin > tmax) return false;
+                }
+            }
+
+            // Ray intersects all 3 slabs. Return point (q) and intersection t value (tmin)
+            distance = tmin;
+            return true;
+        }
+
         public Vector3 FurthestCorner(Vector3 position)
         {
             // Find all corners of the AABB

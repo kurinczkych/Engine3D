@@ -27,7 +27,7 @@ namespace Engine3D
 
     public class Mesh : BaseMesh
     {
-        public static int floatCount = 16;
+        public static int floatCount = 15;
 
         public bool drawNormals = false;
         public WireframeMesh normalMesh;
@@ -138,7 +138,7 @@ namespace Engine3D
         {
             vertices.AddRange(new float[]
                 {
-                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
+                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
                     tri.t[index].u, tri.t[index].v,
                     tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
@@ -174,6 +174,7 @@ namespace Engine3D
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
+            uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
             if (parentObject.texture != null)
             {
@@ -217,6 +218,7 @@ namespace Engine3D
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["useBillboarding"], useBillboarding);
+            GL.Uniform1(uniformLocations["useShading"], useShading ? 1 : 0);
             GL.Uniform1(uniformLocations["useTexture"], parentObject.texture != null ? 1 : 0);
             if (parentObject.texture != null)
             {

@@ -1,6 +1,6 @@
 #version 330 core
 
-layout (location = 0) in vec4 inPosition;
+layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
 layout(location = 3) in vec4 inColor;
@@ -25,12 +25,14 @@ uniform int useBillboarding;
 
 void main()
 {
-	gl_Position = inPosition * modelMatrix * viewMatrix * projectionMatrix;
-	vec4 fragPos4 = inPosition * modelMatrix;
+	vec4 position = vec4(inPosition,1.0);
+
+	gl_Position = position * modelMatrix * viewMatrix * projectionMatrix;
+	vec4 fragPos4 = position * modelMatrix;
 
 	if(useBillboarding == 1)
 	{
-		vec3 look = normalize(cameraPosition - vec3(modelMatrix * inPosition));
+		vec3 look = normalize(cameraPosition - vec3(modelMatrix * position));
 		vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), look));
 		vec3 up = cross(look, right);
 
@@ -42,8 +44,8 @@ void main()
 			vec4(0.0, 0.0, 0.0, 1.0)
 		);
 
-		gl_Position = inPosition * billboardMat * modelMatrix * viewMatrix * projectionMatrix;
-		fragPos4 = inPosition * billboardMat * modelMatrix;
+		gl_Position = position * billboardMat * modelMatrix * viewMatrix * projectionMatrix;
+		fragPos4 = position * billboardMat * modelMatrix;
 	}
 
 	gsFragPos = vec3(fragPos4.x,fragPos4.y, fragPos4.z);

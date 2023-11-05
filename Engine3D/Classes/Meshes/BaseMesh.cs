@@ -44,6 +44,8 @@ namespace Engine3D
         public Object parentObject;
         public AABB Bounds = new AABB();
 
+        public bool useShading = true;
+
         protected Camera camera;
 
         public Dictionary<string, int> uniformLocations;
@@ -86,22 +88,39 @@ namespace Engine3D
             GL.Uniform1(uniformLocations[name2], 0);
         }
 
-        public void RecalculateModelMatrix(bool[] which)
+        public void RecalculateModelMatrix(bool[] which, bool onlyModelMatrix=false)
         {
-            if (which.Length != 3)
-                throw new Exception("Which matrix bool[] must be a length of 3");
+            if (!onlyModelMatrix)
+            {
 
-            if (which[2])
-                scaleMatrix = Matrix4.CreateScale(parentObject.Scale);
+                if (which.Length != 3)
+                    throw new Exception("Which matrix bool[] must be a length of 3");
 
-            if (which[1])
-                rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+                if (which[2])
+                    scaleMatrix = Matrix4.CreateScale(parentObject.Scale);
 
-            if (which[0])
-                translationMatrix = Matrix4.CreateTranslation(parentObject.Position);
+                if (which[1])
+                    rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.Rotation);
 
+                if (which[0])
+                    translationMatrix = Matrix4.CreateTranslation(parentObject.Position);
 
-            if (which[0] || which[1] || which[2])
+                if (which[0] || which[1] || which[2])
+                {
+                    modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+
+                    if (BVHStruct != null &&
+                       (GetType() == typeof(Mesh) ||
+                        GetType() == typeof(InstancedMesh) ||
+                        GetType() == typeof(NoTextureMesh)))
+                    {
+                        BVHStruct.TransformBVH(ref modelMatrix);
+                    }
+
+                    CalculateFrustumVisibility();
+                }
+            }
+            else
             {
                 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 

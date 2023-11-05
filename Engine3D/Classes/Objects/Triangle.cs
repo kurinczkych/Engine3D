@@ -139,6 +139,30 @@ namespace Engine3D
             pi = new int[3];
         }
 
+        public triangle(Vector3[] p, Vec2d[] t, Color4[] color)
+        {
+            gotPointNormals = false;
+            this.p = new Vector3[p.Length];
+            for (int p_ = 0; p_ < p.Length; p_++)
+            {
+                this.p[p_] = p[p_];
+            }
+            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
+            c = new Color4[p.Length];
+            for (int c_ = 0; c_ < p.Length; c_++)
+            {
+                c[c_] = color[c_];
+            }
+            this.t = new Vec2d[t.Length];
+            for (int t_ = 0; t_ < t.Length; t_++)
+            {
+                this.t[t_] = t[t_].GetCopy();
+            }
+            tan = new Vector3[3];
+            bitan = new Vector3[3];
+            pi = new int[3];
+        }
+
         public triangle(Vector3[] p, Vector3[] n, Vec2d[] t)
         {
             gotPointNormals = true;

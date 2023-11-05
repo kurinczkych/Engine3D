@@ -13,6 +13,7 @@ namespace Engine3D
 {
     public class Camera
     {
+        public Vector2 screenSize;
         public float near;
         public float far;
         public float fov;
@@ -32,10 +33,12 @@ namespace Engine3D
         public Matrix4 viewMatrix;
         public Matrix4 projectionMatrix;
         public Matrix4 projectionMatrixBigger;
+        public Matrix4 projectionMatrixOrtho;
         public Frustum frustum;
 
         public Camera(Vector2 screenSize)
         {
+            this.screenSize = screenSize;
             position = new Vector3();
 
             near = 0.1f;
@@ -46,6 +49,7 @@ namespace Engine3D
             viewMatrix = GetViewMatrix();
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
+            projectionMatrixOrtho = GetProjectionMatrixOrtho();
         }
 
         #region Setters and getters
@@ -106,6 +110,11 @@ namespace Engine3D
         public Matrix4 GetProjectionMatrixBigger(float fovMult = 1.1f)
         {
             return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov * fovMult), aspectRatio, near, far);
+        }
+
+        public Matrix4 GetProjectionMatrixOrtho()
+        {
+            return Matrix4.CreateOrthographic(screenSize.X, screenSize.Y, near, far);
         }
 
         public bool IsTriangleClose(triangle tri)
@@ -273,6 +282,7 @@ namespace Engine3D
             viewMatrix = GetViewMatrix();
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
+            projectionMatrixOrtho = GetProjectionMatrixOrtho();
             frustum = GetFrustum();
         }
     }

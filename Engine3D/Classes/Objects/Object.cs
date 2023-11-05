@@ -45,6 +45,8 @@ namespace Engine3D
 
         public bool isEnabled = true;
         public bool isSelected = false;
+        public List<Object>? moverGizmos;
+        public AABB Bounds;
 
         public Texture? texture;
         public Texture? textureNormal;
@@ -389,10 +391,24 @@ namespace Engine3D
             Rotation = Quaternion.Identity;
         }
 
+        public Object(ObjectType type)
+        {
+            this.type = type;
+
+            Position = Vector3.Zero;
+            Rotation = Quaternion.Identity;
+        }
+
         public void AddMesh(BaseMesh mesh)
         {
             this.mesh = mesh;
             meshType = mesh.GetType();
+
+            Bounds = new AABB();
+            foreach(triangle tri in mesh.tris)
+            {
+                Bounds.Enclose(tri);
+            }
 
             StaticFriction = 0.5f;
             DynamicFriction = 0.5f;
@@ -941,8 +957,10 @@ namespace Engine3D
         #endregion
 
         #region SimpleMeshes
-        public static List<triangle> GetUnitCube()
+        public static List<triangle> GetUnitCube(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
+            Color4 c = new Color4(r, g, b, a);
+
             List<triangle> tris = new List<triangle>();
 
             float halfSize = 0.5f;
@@ -963,28 +981,28 @@ namespace Engine3D
             Vec2d t4 = new Vec2d(0, 1);
 
             // Back face
-            tris.Add(new triangle(new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }, new Color4[] { c, c, c }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }, new Color4[] { c, c, c }) { visibile = true });
 
             // Front face
-            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, new Color4[] { c, c, c }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, new Color4[] { c, c, c }) { visibile = true });
 
             // Left face
-            tris.Add(new triangle(new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }, new Color4[] { c, c, c }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }, new Color4[] { c, c, c }) { visibile = true });
 
             // Right face
-            tris.Add(new triangle(new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }, new Color4[] { c, c, c }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }, new Color4[] { c, c, c }) { visibile = true });
 
             // Top face
-            tris.Add(new triangle(new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }, new Color4[] { c, c, c }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }, new Color4[] { c, c, c }) { visibile = true });
 
             // Bottom face
-            tris.Add(new triangle(new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }, new Color4[] { c, c, c }) { visibile = true });
+            tris.Add(new triangle(new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }, new Color4[] { c, c, c }) { visibile = true });
 
             return tris;
         }

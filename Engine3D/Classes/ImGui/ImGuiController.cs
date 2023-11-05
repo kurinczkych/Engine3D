@@ -119,6 +119,8 @@ namespace Engine3D
         public int currentAssetTexture = 0;
         public List<Asset> AssetTextures;
 
+        public GizmoManager gizmoManager;
+
         public EditorData() { }
     }
 
@@ -384,10 +386,12 @@ namespace Engine3D
                                         if (editorData.selectedItem != null)
                                         {
                                             if (editorData.selectedItem is Object o)
+                                            {
                                                 o.isSelected = false;
+                                            }
                                             else if (editorData.selectedItem is ParticleSystem p)
                                                 p.isSelected = false;
-                                            else if(editorData.selectedItem is PointLight pl)
+                                            else if (editorData.selectedItem is PointLight pl)
                                                 pl.isSelected = false;
                                         }
 

@@ -93,6 +93,7 @@ namespace Engine3D
         private Shader instancedShaderProgram;
         private Shader posTexShader;
         private Shader noTextureShaderProgram;
+        private Shader gizmoShaderProgram;
         private Shader aabbShaderProgram;
         #endregion
 
@@ -313,7 +314,7 @@ namespace Engine3D
 
 
             GL.ClearColor(Color4.Cyan);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             shaderProgram.Use();
             //GL.Enable(EnableCap.StencilTest);
             //GL.StencilMask(0xFF);
@@ -371,7 +372,7 @@ namespace Engine3D
 
                             //GL.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
 
-                            if(o.isSelected && mesh.verticesOnlyPos.Count > 0)
+                            if(o.isSelected && o.isEnabled && mesh.verticesOnlyPos.Count > 0)
                             {
                                 GL.DepthMask(false);
                                 outlineShader.Use();
@@ -502,8 +503,26 @@ namespace Engine3D
             }
             //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
+                
             if(editorProperties.gameRunning == GameState.Stopped)
             {
+                if (editorData.selectedItem != null && editorData.selectedItem is Object o)
+                {
+                    GL.Clear(ClearBufferMask.DepthBufferBit);
+                    shaderProgram.Use();
+                    editorData.gizmoManager.UpdateMoverGizmo(o.Position);
+                    vertices.Clear();
+                    foreach(Object moverGizmo in editorData.gizmoManager.moverGizmos)
+                    {
+                        vertices.AddRange(((Mesh)moverGizmo.GetMesh()).Draw(editorProperties.gameRunning));
+                    }
+                    meshVbo.Buffer(vertices);
+                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                    vertices.Clear();
+
+                    bool[] axisSelected = GizmoRaycast.GetSelectedAxis(editorData.gizmoManager.moverGizmos, MouseState, ref character.camera);
+                }
+
                 //if(editorData.selectedItem != null && editorData.selectedItem is Object o && o.meshType == typeof(Mesh))
                 //{
                 //    int outlineLoc = GL.GetUniformLocation(outlineShader.id, "useScaleFactor");
@@ -752,7 +771,7 @@ namespace Engine3D
 
             meshVbo = new VBO();
             meshVao = new VAO(Mesh.floatCount);
-            meshVao.LinkToVAO(0, 4, meshVbo);
+            meshVao.LinkToVAO(0, 3, meshVbo);
             meshVao.LinkToVAO(1, 3, meshVbo);
             meshVao.LinkToVAO(2, 2, meshVbo);
             meshVao.LinkToVAO(3, 4, meshVbo);
@@ -794,7 +813,7 @@ namespace Engine3D
 
             wireVbo = new VBO();
             wireVao = new VAO(WireframeMesh.floatCount);
-            wireVao.LinkToVAO(0, 4, wireVbo);
+            wireVao.LinkToVAO(0, 3, wireVbo);
             wireVao.LinkToVAO(1, 4, wireVbo);
 
             aabbVbo = new VBO();
@@ -810,6 +829,7 @@ namespace Engine3D
             posTexShader = new Shader(new List<string>() { "postex.vert", "postex.frag" });
             noTextureShaderProgram = new Shader(new List<string>() { "noTexture.vert", "noTexture.frag" });
             aabbShaderProgram = new Shader(new List<string>() { "aabb.vert", "aabb.frag" });
+            gizmoShaderProgram = new Shader(new List<string>() { "noTexture.vert", "noTexture.frag" });
 
             // Create Physx context
             physx = new Physx(true);
@@ -834,10 +854,13 @@ namespace Engine3D
 
             noTextureShaderProgram.Use();
             //Vector3 characterPos = new Vector3(0, 20, 0);
-            Vector3 characterPos = new Vector3(4.5f, 1.3f, 0);
-            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref camera, Color4.White), ref physx, characterPos, camera);
-            character.camera.SetYaw(180f);
+            //Vector3 characterPos = new Vector3(4.5f, 1.3f, 0);
+            Vector3 characterPos = new Vector3(0, 0, -10);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref camera), ref physx, characterPos, camera);
+            character.camera.SetYaw(90f);
             character.camera.SetPitch(0f);
+
+            editorData.gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref camera);
 
             //Point Lights
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
@@ -854,9 +877,9 @@ namespace Engine3D
             o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             objects.Add(o);
 
-            Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
-            objects.Add(o2);
+            //Object o2 = new Object(ObjectType.Cube, ref physx);
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            //objects.Add(o2);
 
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
