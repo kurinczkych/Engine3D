@@ -18,6 +18,86 @@ using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
 
 namespace Engine3D
 {
+    public class FPS
+    {
+        public int fps;
+
+        public int minFps = int.MaxValue;
+        public int maxFps = 0;
+        public double totalTime;
+
+        private const int SAMPLE_SIZE = 30;
+        private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
+
+        private Stopwatch maxminStopwatch;
+
+        private bool limitFps = false;
+        private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
+        private Stopwatch stopwatch;
+
+        public const int fpsLength = 5;
+
+        public FPS()
+        {
+            maxminStopwatch = new Stopwatch();
+            maxminStopwatch.Start();
+        }
+
+        public void Update(float delta)
+        {
+            if (sampleTimes.Count >= SAMPLE_SIZE)
+            {
+                totalTime -= sampleTimes.Dequeue();
+            }
+
+            sampleTimes.Enqueue(delta);
+            totalTime += delta;
+
+            double averageDeltaTime = totalTime / sampleTimes.Count;
+            double fps = 1.0 / averageDeltaTime;
+            this.fps = (int)fps;
+
+            if (!maxminStopwatch.IsRunning)
+            {
+                if (fps > maxFps)
+                    maxFps = (int)fps;
+                if (fps < minFps)
+                    minFps = (int)fps;
+            }
+            else
+            {
+                if (maxminStopwatch.ElapsedMilliseconds > 3000)
+                    maxminStopwatch.Stop();
+            }
+        }
+
+        public string GetFpsString()
+        {
+            string fpsStr = fps.ToString();
+            string maxFpsStr = maxFps.ToString();
+            string minFpsStr = minFps.ToString();
+            if(fpsStr.Length < fpsLength)
+            {
+                for (int i = 0; i < (fpsLength + 1 - fpsStr.Length); i++)
+                    fpsStr = " " + fpsStr;
+            }
+            if(maxFpsStr.Length < fpsLength)
+            {
+                for (int i = 0; i < (fpsLength + 1 - maxFpsStr.Length); i++)
+                    maxFpsStr = " " + maxFpsStr;
+            }
+            if(minFpsStr.Length < fpsLength)
+            {
+                for (int i = 0; i < (fpsLength + 1 - minFpsStr.Length); i++)
+                    minFpsStr = " " + minFpsStr;
+            }
+
+            string fpsFullStr = "FPS: " + fpsStr + "    |    MaxFPS: " + maxFpsStr + "    |    MinFPS: " + minFpsStr;
+
+            return fpsFullStr;
+        }
+    }
+
     public enum GameState
     {
         Running,
@@ -29,6 +109,8 @@ namespace Engine3D
         public List<Object> objects;
         public List<ParticleSystem> particleSystems;
         public List<PointLight> pointLights;
+
+        public FPS fps = new FPS();
 
         public object selectedItem;
 
@@ -156,6 +238,20 @@ namespace Engine3D
             }
         }
 
+        private void ClearBuffers()
+        {
+            foreach(var buffer in _inputBuffers)
+            {
+                int i = 0;
+                while (buffer.Value[i] != '\0' && buffer.Value.Length != i)
+                {
+                    buffer.Value[i] = 0;
+                    i++;
+                }
+            }
+            ;
+        }
+
         public void EditorWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData, KeyboardState keyboardState)
         {
             var io = ImGui.GetIO();
@@ -264,6 +360,7 @@ namespace Engine3D
             List<Object> meshes = editorData.objects.Where(x => x.meshType == typeof(Mesh)).ToList();
             List<Object> instMeshes = editorData.objects.Where(x => x.meshType == typeof(InstancedMesh)).ToList();
             List<ParticleSystem> particleSystems = editorData.particleSystems;
+            List<PointLight> pointLights = editorData.pointLights;
 
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth * gameWindow.leftPanelPercent, 
                                                                 _windowHeight - gameWindow.topPanelSize - gameWindow.bottomPanelSize - (_windowHeight * gameWindow.bottomPanelPercent)));
@@ -282,9 +379,26 @@ namespace Engine3D
                                 for (int i = 0; i < meshes.Count; i++)
                                 {
                                     string name = meshes[i].name == "" ? "Object " + i.ToString() : meshes[i].name;
-                                    if(ImGui.Selectable(name))
+                                    if (ImGui.Selectable(name))
                                     {
+                                        if (editorData.selectedItem != null)
+                                        {
+                                            if (editorData.selectedItem is Object o)
+                                                o.isSelected = false;
+                                            else if (editorData.selectedItem is ParticleSystem p)
+                                                p.isSelected = false;
+                                            else if(editorData.selectedItem is PointLight pl)
+                                                pl.isSelected = false;
+                                        }
+
+                                        ClearBuffers();
+                                            
                                         editorData.selectedItem = meshes[i];
+                                        meshes[i].isSelected = true;
+
+                                        meshes[i].GetMesh().recalculate = true;
+                                        meshes[i].GetMesh().RecalculateModelMatrix(new bool[] { true, true, true });
+                                        meshes[i].UpdatePhysxPositionAndRotation();
                                     }
                                 }
 
@@ -301,7 +415,24 @@ namespace Engine3D
                                     string name = instMeshes[i].name == "" ? "Object " + i.ToString() : instMeshes[i].name;
                                     if (ImGui.Selectable(name))
                                     {
-                                        editorData.selectedItem = meshes[i];
+                                        if (editorData.selectedItem != null)
+                                        {
+                                            if (editorData.selectedItem is Object o)
+                                                o.isSelected = false;
+                                            else if (editorData.selectedItem is ParticleSystem p)
+                                                p.isSelected = false;
+                                            else if (editorData.selectedItem is PointLight pl)
+                                                pl.isSelected = false;
+                                        }
+
+                                        ClearBuffers();
+
+                                        editorData.selectedItem = instMeshes[i];
+                                        instMeshes[i].isSelected = true;
+
+                                        instMeshes[i].GetMesh().recalculate = true;
+                                        instMeshes[i].GetMesh().RecalculateModelMatrix(new bool[] { true, true, true });
+                                        instMeshes[i].UpdatePhysxPositionAndRotation();
                                     }
                                 }
 
@@ -309,16 +440,29 @@ namespace Engine3D
                             }
                         }
 
-                        if (editorData.particleSystems.Count > 0)
+                        if (particleSystems.Count > 0)
                         {
                             if (ImGui.TreeNode("Particle systems"))
                             {
-                                for (int i = 0; i < editorData.particleSystems.Count; i++)
+                                for (int i = 0; i < particleSystems.Count; i++)
                                 {
-                                    string name = editorData.particleSystems[i].name == "" ? "Particle system " + i.ToString() : editorData.particleSystems[i].name;
+                                    string name = particleSystems[i].name == "" ? "Particle system " + i.ToString() : particleSystems[i].name;
                                     if (ImGui.Selectable(name))
                                     {
-                                        editorData.selectedItem = meshes[i];
+                                        if (editorData.selectedItem != null)
+                                        {
+                                            if (editorData.selectedItem is Object o)
+                                                o.isSelected = false;
+                                            else if (editorData.selectedItem is ParticleSystem p)
+                                                p.isSelected = false;
+                                            else if (editorData.selectedItem is PointLight pl)
+                                                pl.isSelected = false;
+                                        }
+
+                                        ClearBuffers();
+
+                                        editorData.selectedItem = particleSystems[i];
+                                        particleSystems[i].isSelected = true;
                                     }
                                 }
 
@@ -330,12 +474,25 @@ namespace Engine3D
                         {
                             if (ImGui.TreeNode("Point lights"))
                             {
-                                for (int i = 0; i < editorData.pointLights.Count; i++)
+                                for (int i = 0; i < pointLights.Count; i++)
                                 {
-                                    string name = editorData.pointLights[i].name == "" ? "Point light " + i.ToString() : editorData.pointLights[i].name;
+                                    string name = pointLights[i].name == "" ? "Point light " + i.ToString() : pointLights[i].name;
                                     if (ImGui.Selectable(name))
                                     {
-                                        editorData.selectedItem = meshes[i];
+                                        if (editorData.selectedItem != null)
+                                        {
+                                            if (editorData.selectedItem is Object o)
+                                                o.isSelected = false;
+                                            else if (editorData.selectedItem is ParticleSystem p)
+                                                p.isSelected = false;
+                                            else if (editorData.selectedItem is PointLight pl)
+                                                pl.isSelected = false;
+                                        }
+
+                                        ClearBuffers();
+
+                                        editorData.selectedItem = pointLights[i];
+                                        pointLights[i].isSelected = true;
                                     }
                                 }
 
@@ -434,6 +591,9 @@ namespace Engine3D
                                 if (ImGui.InputText("##name", _inputBuffers["##name"], (uint)_inputBuffers["##name"].Length))
                                 {
                                     o.name = GetStringFromBuffer("##name");
+                                    o.GetMesh().recalculate = true;
+                                    o.GetMesh().RecalculateModelMatrix(new bool[] { true, true, true });
+                                    o.UpdatePhysxPositionAndRotation();
                                 }
 
                                 ImGui.SetNextItemOpen(true, ImGuiCond.Once);
@@ -925,6 +1085,7 @@ namespace Engine3D
                                 ImGui.SetNextItemOpen(true, ImGuiCond.Once);
                                 if (ImGui.TreeNode("Physics"))
                                 {
+                                    #region Physx
                                     ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 5.0f);
                                     var buttonColor = style.Colors[(int)ImGuiCol.Button];
                                     style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
@@ -989,6 +1150,7 @@ namespace Engine3D
                                     }
                                     style.Colors[(int)ImGuiCol.Button] = buttonColor;
                                     ImGui.PopStyleVar();
+                                    #endregion
 
                                     ImGui.TreePop();
                                 }
@@ -1261,6 +1423,12 @@ namespace Engine3D
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(ImGui.GetStyle().WindowPadding.X, 0));
             if (ImGui.Begin("BottomPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar))
             {
+                string fpsStr = editorData.fps.GetFpsString();
+                System.Numerics.Vector2 bottomPanelSize = ImGui.GetContentRegionAvail();
+                System.Numerics.Vector2 textSize = ImGui.CalcTextSize(fpsStr);
+                ImGui.SetCursorPosX(bottomPanelSize.X - textSize.X);
+                ImGui.SetCursorPosY((bottomPanelSize.Y - textSize.Y) * 0.5f);
+                ImGui.Text(fpsStr);
             }
             #endregion
 

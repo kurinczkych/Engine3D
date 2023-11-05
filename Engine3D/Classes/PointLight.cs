@@ -13,6 +13,7 @@ namespace Engine3D
     public class PointLight
     {
         public string name = "";
+        public bool isSelected = false;
 
         public int positionLoc;
 

@@ -16,6 +16,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
 using Cyotek.Drawing.BitmapFont;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable CS8600
 #pragma warning disable CS8604
@@ -32,6 +33,7 @@ namespace Engine3D
         public WireframeMesh normalMesh;
 
         private List<float> vertices = new List<float>();
+        public List<float> verticesOnlyPos = new List<float>();
 
         private Vector2 windowSize;
 
@@ -43,6 +45,7 @@ namespace Engine3D
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
+            this.parentObject.name = modelName;
             this.shaderProgramId = shaderProgramId;
 
             parentObject.texture = Engine.textureManager.AddTexture(textureName);
@@ -66,6 +69,7 @@ namespace Engine3D
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
+            this.parentObject.name = modelName;
             this.shaderProgramId = shaderProgramId;
 
             Vao = vao;
@@ -87,6 +91,7 @@ namespace Engine3D
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
+            this.parentObject.name = modelName;
             this.shaderProgramId = shaderProgramId;
 
             parentObject.texture = Engine.textureManager.AddTexture(textureName);
@@ -107,9 +112,10 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, Vector2 windowSize, ref Frustum frustum, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
+            this.parentObject.name = modelName;
             this.shaderProgramId = shaderProgramId;
 
             Vao = vao;
@@ -140,24 +146,12 @@ namespace Engine3D
                 });
         }
 
-        private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index, ref Matrix4 transformMatrix, bool isTransformed = false)
+        private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index)
         {
-            if (isTransformed)
+            vertices.AddRange(new float[] // Setting initial capacity to 3
             {
-                Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
-
-                vertices.AddRange(new float[] // Setting initial capacity to 3
-                {
-                    v.X, v.Y, v.Z
-                });
-            }
-            else
-            {
-                vertices.AddRange(new float[] // Setting initial capacity to 3
-                {
-                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-                });
-            }
+                tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+            });
         }
 
         private PxVec3 ConvertToNDCPxVec3(int index)
@@ -255,7 +249,7 @@ namespace Engine3D
             }
         }
 
-        protected void SendUniformsOnlyPos(Shader shader)
+        public void SendUniformsOnlyPos(Shader shader)
         {
             int modelLoc = GL.GetUniformLocation(shader.id, "modelMatrix");
             int viewLoc = GL.GetUniformLocation(shader.id, "viewMatrix");
@@ -279,13 +273,13 @@ namespace Engine3D
             }
         }
 
-        private void AddVerticesOnlyPos(List<float> vertices, triangle tri, ref Matrix4 transformMatrix)
+        private void AddVerticesOnlyPos(List<float> vertices, triangle tri)
         {
             lock (vertices) // Lock to ensure thread-safety when modifying the list
             {
-                ConvertToNDCOnlyPos(ref vertices, tri, 0, ref transformMatrix);
-                ConvertToNDCOnlyPos(ref vertices, tri, 1, ref transformMatrix);
-                ConvertToNDCOnlyPos(ref vertices, tri, 2, ref transformMatrix);
+                ConvertToNDCOnlyPos(ref vertices, tri, 0);
+                ConvertToNDCOnlyPos(ref vertices, tri, 1);
+                ConvertToNDCOnlyPos(ref vertices, tri, 2);
             }
         }
 
@@ -293,6 +287,8 @@ namespace Engine3D
         {
             if (!parentObject.isEnabled)
                 return new List<float>();
+
+            var a = parentObject.name;
 
             Vao.Bind();
 
@@ -327,6 +323,8 @@ namespace Engine3D
             }
 
             vertices = new List<float>();
+            if (parentObject.isSelected)
+                verticesOnlyPos.Clear();
 
             if (parentObject.BSPStruct != null)
             {
@@ -339,20 +337,31 @@ namespace Engine3D
 
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             Parallel.ForEach(tris, parallelOptions,
-                 () => new List<float>(),
+                () => new LocalVertexCollections(),
                  (tri, loopState, localVertices) =>
                  {
                      if (tri.visibile)
                      {
-                         AddVertices(localVertices, tri);
-                     }
+                         AddVertices(localVertices.LocalVertices1, tri);
+                         if(parentObject.isSelected)
+                         {
+                             AddVerticesOnlyPos(localVertices.LocalVertices2, tri);
+                         }
+                     }  
                      return localVertices;
                  },
                  localVertices =>
                  {
                      lock (vertices)
                      {
-                         vertices.AddRange(localVertices);
+                         vertices.AddRange(localVertices.LocalVertices1);
+                     }
+                     if (parentObject.isSelected)
+                     {
+                         lock (verticesOnlyPos)
+                         {
+                             verticesOnlyPos.AddRange(localVertices.LocalVertices2);
+                         }
                      }
                  });
 
@@ -424,44 +433,44 @@ namespace Engine3D
         }
 
         
-        public List<float> DrawOnlyPos(VAO aabbVao, Shader shader)
-        {
-            aabbVao.Bind();
+        //public List<float> DrawOnlyPos(VAO aabbVao, Shader shader)
+        //{
+        //    aabbVao.Bind();
 
-            vertices = new List<float>();
+        //    vertices = new List<float>();
 
-            ObjectType type = parentObject.GetObjectType();
+        //    ObjectType type = parentObject.GetObjectType();
 
-            Matrix4 s = Matrix4.CreateScale(parentObject.Scale);
-            Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
-            Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
+        //    Matrix4 s = Matrix4.CreateScale(parentObject.Scale);
+        //    Matrix4 r = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+        //    Matrix4 t = Matrix4.CreateTranslation(parentObject.GetPosition());
 
-            Matrix4 transformMatrix = Matrix4.Identity;
-            transformMatrix = s * r * t;
+        //    Matrix4 transformMatrix = Matrix4.Identity;
+        //    transformMatrix = s * r * t;
 
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(tris, parallelOptions,
-                 () => new List<float>(),
-                 (tri, loopState, localVertices) =>
-                 {
-                     if (tri.visibile)
-                     {
-                         AddVerticesOnlyPos(localVertices, tri, ref transformMatrix);
-                     }
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (vertices)
-                     {
-                         vertices.AddRange(localVertices);
-                     }
-                 });
+        //    ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+        //    Parallel.ForEach(tris, parallelOptions,
+        //         () => new List<float>(),
+        //         (tri, loopState, localVertices) =>
+        //         {
+        //             if (tri.visibile)
+        //             {
+        //                 AddVerticesOnlyPos(localVertices, tri, ref transformMatrix);
+        //             }
+        //             return localVertices;
+        //         },
+        //         localVertices =>
+        //         {
+        //             lock (vertices)
+        //             {
+        //                 vertices.AddRange(localVertices);
+        //             }
+        //         });
 
-            SendUniformsOnlyPos(shader);
+        //    SendUniformsOnlyPos(shader);
 
-            return vertices;
-        }
+        //    return vertices;
+        //}
 
         public void GetCookedData(out PxVec3[] verts, out int[] indices)
         {

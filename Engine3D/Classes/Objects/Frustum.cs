@@ -80,6 +80,19 @@ namespace Engine3D
             return a || b;
         }
 
+        public List<float> GetData()
+        {
+            List<float> data = new List<float>();
+            for (int i = 0;i < 6;i++)
+            {
+                data.Add(planes[i].normal.X);
+                data.Add(planes[i].normal.Y);
+                data.Add(planes[i].normal.Z);
+                data.Add(planes[i].distance);
+            }
+            return data;
+        }
+
         public List<triangle> GetTriangles()
         {
             List<triangle> triangles = new List<triangle>();

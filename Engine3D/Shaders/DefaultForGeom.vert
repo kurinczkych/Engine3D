@@ -6,12 +6,12 @@ layout(location = 2) in vec2 inUV;
 layout(location = 3) in vec4 inColor;
 layout(location = 4) in vec3 inTangent;
 
-out vec3 gsFragPos;
-out vec3 gsFragNormal;
-out vec2 gsFragTexCoord;
-out vec4 gsFragColor;
-out mat3 gsTBN; 
-out vec3 gsTangentViewDir;
+out vec3 fragPos;
+out vec3 fragNormal;
+out vec2 fragTexCoord;
+out vec4 fragColor;
+out mat3 TBN; 
+out vec3 TangentViewDir;
 
 uniform vec3 cameraPosition;
 uniform vec2 windowSize;
@@ -46,10 +46,10 @@ void main()
 		fragPos4 = inPosition * billboardMat * modelMatrix;
 	}
 
-	gsFragPos = vec3(fragPos4.x,fragPos4.y, fragPos4.z);
-	gsFragTexCoord = inUV;
-	gsFragNormal = inNormal;
-	gsFragColor = inColor;
+	fragPos = vec3(fragPos4.x,fragPos4.y, fragPos4.z);
+	fragTexCoord = inUV;
+	fragNormal = inNormal;
+	fragColor = inColor;
 
 	//normal
 	vec3 T = vec3(0,0,0);
@@ -61,13 +61,13 @@ void main()
 		T = normalize(mat3(modelMatrix) * inTangent);
 		T = normalize(T - dot(T, N) * N);
 		B = cross(N, T); 
-		gsTBN = mat3(T, B, N);
+		TBN = mat3(T, B, N);
 	}
 
 	//height
 	if(useNormal == 1 && useHeight == 1)
 	{
-		vec3 viewDir = cameraPosition - gsFragPos;
-		gsTangentViewDir = normalize(vec3(dot(viewDir, T), dot(viewDir, B), dot(viewDir, N)));
+		vec3 viewDir = cameraPosition - fragPos;
+		TangentViewDir = normalize(vec3(dot(viewDir, T), dot(viewDir, B), dot(viewDir, N)));
 	}
 }

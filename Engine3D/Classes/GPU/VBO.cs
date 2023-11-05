@@ -11,18 +11,24 @@ namespace Engine3D
     public class VBO
     {
         public int id;
+        private bool dynamicCopy;
 
-        public VBO()
+        public VBO(bool DynamicCopy = false)
         {
             id = GL.GenBuffer();
+
+            dynamicCopy = DynamicCopy;
 
             Buffer(new List<float>());
         }
 
-        public void Buffer(List<float> data)
+        public virtual void Buffer(List<float> data)
         {
             Bind();
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Count * sizeof(float), data.ToArray(), BufferUsageHint.DynamicDraw);
+            if(!dynamicCopy)
+                GL.BufferData(BufferTarget.ArrayBuffer, data.Count * sizeof(float), data.ToArray(), BufferUsageHint.DynamicDraw);
+            else
+                GL.BufferData(BufferTarget.ArrayBuffer, data.Count * sizeof(float), data.ToArray(), BufferUsageHint.DynamicCopy);
         }
 
         public void Bind()

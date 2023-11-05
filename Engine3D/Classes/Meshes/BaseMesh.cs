@@ -12,6 +12,11 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Engine3D
 {
+    public class LocalVertexCollections
+    {
+        public List<float> LocalVertices1 { get; set; } = new List<float>();
+        public List<float> LocalVertices2 { get; set; } = new List<float>();
+    }
 
     public abstract class BaseMesh
     {
@@ -22,7 +27,13 @@ namespace Engine3D
 
         public string modelName;
 
-        public bool recalculate = false;
+        private bool _recalculate = false;
+        public bool recalculate
+        {
+            get { return _recalculate; }
+            set { _recalculate = value; recalculateOnlyPos = true; }
+        }
+        protected bool recalculateOnlyPos;
 
         public int useBillboarding = 0;
 

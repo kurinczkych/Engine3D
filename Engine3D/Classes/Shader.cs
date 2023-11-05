@@ -7,43 +7,35 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
+    
     public class Shader
     {
         public int id;
 
-        private int vertexShader;
-        private int fragmentShader;
+        private List<int> shaderIds = new List<int>();
 
-        private string? embeddedVertexShaderName;
-        private string? embeddedFragmentShaderName;
+        public List<string> shaderNames = new List<string>();
 
         public Shader() { }
 
-        public Shader(string embeddedVertexShaderName, string embeddedFragmentShaderName)
+        public Shader(List<string> shaders)
         {
-            this.embeddedVertexShaderName = embeddedVertexShaderName;
-            this.embeddedFragmentShaderName = embeddedFragmentShaderName;
-
             id = GL.CreateProgram();
+            shaderNames = new List<string>(shaders);
 
-            vertexShader = GL.CreateShader(ShaderType.VertexShader);
-            // add the source code from "Default.vert" in the Shaders file
-            GL.ShaderSource(vertexShader, LoadShaderSource(embeddedVertexShaderName));
-            // Compile the Shader
-            GL.CompileShader(vertexShader);
+            for(int i = 0; i < shaderNames.Count(); i++)
+            {
+                int shader = GL.CreateShader(GetShaderType(shaderNames[i]));
+                GL.ShaderSource(shader, LoadShaderSource(shaderNames[i]));
+                GL.CompileShader(shader);
+                shaderIds.Add(shader);
+            }
 
-            // Same as vertex shader
-            fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShader, LoadShaderSource(embeddedFragmentShaderName));
-            GL.CompileShader(fragmentShader);
+            for (int i = 0; i < shaderIds.Count(); i++)
+                GL.AttachShader(id, shaderIds[i]);
 
-            // Attach the shaders to the shader program
-            GL.AttachShader(id, vertexShader);
-            GL.AttachShader(id, fragmentShader);
-
-            // Link the program to OpenGL
             GL.LinkProgram(id);
-            GL.UseProgram(id); // bind vao
+            GL.UseProgram(id);
         }
 
         public void Use()
@@ -53,9 +45,27 @@ namespace Engine3D
 
         public void Unload()
         {
-            GL.DeleteProgram(vertexShader);
-            GL.DeleteProgram(fragmentShader);
+            for(int i = 0;i < shaderIds.Count();i++)
+                GL.DeleteProgram(shaderIds[i]);
             GL.DeleteProgram(id);
+        }
+
+        private ShaderType GetShaderType(string shaderName)
+        {
+            string ext = Path.GetExtension(shaderName);
+            switch (ext)
+            {
+                case ".vert":
+                    return ShaderType.VertexShader;
+                case ".geom":
+                    return ShaderType.GeometryShader;
+                case ".frag":
+                    return ShaderType.FragmentShader;
+                case ".comp":
+                    return ShaderType.ComputeShader;
+                default:
+                    return ShaderType.VertexShader;
+            }
         }
 
         public string LoadShaderSource(string filePath)

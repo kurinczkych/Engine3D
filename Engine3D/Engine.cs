@@ -28,6 +28,7 @@ using System.Linq.Expressions;
 using MagicPhysX;
 using ImGuiNET;
 using OpenTK.Windowing.Common.Input;
+using System.ComponentModel.DataAnnotations;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -57,6 +58,14 @@ namespace Engine3D
         }
 
         #region OPENGL
+        private IndirectBuffer indirectBuffer;
+        private VBO visibilityVbo;
+        private VBO drawCommandsVbo;
+        private VBO frustumVbo;
+
+        private VAO outlineVao;
+        private VBO outlineVbo;
+
         private VAO meshVao;
         private VBO meshVbo;
 
@@ -78,6 +87,8 @@ namespace Engine3D
         private VAO aabbVao;
         private VBO aabbVbo;
 
+        private Shader cullingProgram;
+        private Shader outlineShader;
         private Shader shaderProgram;
         private Shader instancedShaderProgram;
         private Shader posTexShader;
@@ -102,6 +113,12 @@ namespace Engine3D
         private Dictionary<string, TextMesh> texts;
         #endregion
 
+        #region Editor moving
+        private Vector2 lastPos;
+        private bool firstMove = true;
+        private float sensitivity = 130;
+        #endregion
+
         #region UI variables
         private EditorData editorData = new EditorData();
         private EditorProperties editorProperties = new EditorProperties();
@@ -121,22 +138,10 @@ namespace Engine3D
         private Dictionary<int, Tuple<int, BVHNode>> pendingQueries;
         #endregion
 
-        #region FPS and Frame limiting
-        private double totalTime;
-        private const int SAMPLE_SIZE = 30;
-        private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
-
-        private int maxFps = 0;
-        private int minFps = int.MaxValue;
-        private Stopwatch maxminStopwatch;
-
-        private bool limitFps = false;
-        private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
-        private Stopwatch stopwatch;
-        #endregion
-
-        public Engine(int width, int height) : base(GameWindowSettings.Default, NativeWindowSettings.Default)
+        public Engine(int width, int height) : base(GameWindowSettings.Default, new NativeWindowSettings() { StencilBits = 8 })
         {
+            Title = "3D Engine";
+
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
 
             gameWindowProperty = new GameWindowProperty();
@@ -154,47 +159,9 @@ namespace Engine3D
             texts = new Dictionary<string, TextMesh>();
             textureManager = new TextureManager();
 
-            maxminStopwatch = new Stopwatch();
-            maxminStopwatch.Start();
-
             objects = new List<Object>();
             queryPool = new QueryPool(1000);
             pendingQueries = new Dictionary<int, Tuple<int, BVHNode>>();
-        }
-
-        private double DrawFps(double deltaTime)
-        {
-            if (sampleTimes.Count >= SAMPLE_SIZE)
-            {
-                // Remove the oldest time (from the front of the queue)
-                totalTime -= sampleTimes.Dequeue();
-            }
-
-            // Add the newest time (to the back of the queue)
-            sampleTimes.Enqueue(deltaTime);
-            totalTime += deltaTime;
-
-            double averageDeltaTime = totalTime / sampleTimes.Count;
-            double fps = 1.0 / averageDeltaTime;
-
-
-            if (!maxminStopwatch.IsRunning)
-            {
-                if (fps > maxFps)
-                    maxFps = (int)fps;
-                if (fps < minFps)
-                    minFps = (int)fps;
-            }
-            else
-            {
-                if (maxminStopwatch.ElapsedMilliseconds > 2000)
-                    maxminStopwatch.Stop();
-            }
-
-            Title = "3D Engine    |    FPS: " + Math.Round(fps, 2).ToString() +
-                             "    |    MaxFPS: " + maxFps.ToString() + "    |    MinFPS: " + minFps.ToString();
-
-            return fps;
         }
 
         private void AddObject(Object obj)
@@ -263,8 +230,6 @@ namespace Engine3D
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            double fps = DrawFps(args.Time);
-
             imGuiController.Update(this, (float)args.Time);
 
             if (!editorProperties.isGameFullscreen)
@@ -306,7 +271,7 @@ namespace Engine3D
                     List<float> posVertices = new List<float>();
                     foreach (Object obj in triangleMeshObjects)
                     {
-                        posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
+                        //posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
                     }
                     aabbVbo.Buffer(posVertices);
                     GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
@@ -348,8 +313,12 @@ namespace Engine3D
 
 
             GL.ClearColor(Color4.Cyan);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
             shaderProgram.Use();
+            //GL.Enable(EnableCap.StencilTest);
+            //GL.StencilMask(0xFF);
+            //GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
+            //GL.StencilFunc(StencilFunction.Always, 1, 0xFF);
 
             PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorProperties.gameRunning);
 
@@ -393,9 +362,27 @@ namespace Engine3D
                             vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
                             currentMeshType = typeof(Mesh);
 
-                            //float a = vertices.Count() / Mesh.floatCount / 3;
-                            //float b = mesh.tris.Count();
+                            //cullingProgram.Use();
 
+                            //visibilityVbo.Buffer(vertices);
+                            //frustumVbo.Buffer(character.camera.frustum.GetData());
+                            //GL.DispatchCompute(256, 1, 1);
+                            //GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit); 
+
+                            //GL.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
+
+                            if(o.isSelected && mesh.verticesOnlyPos.Count > 0)
+                            {
+                                GL.DepthMask(false);
+                                outlineShader.Use();
+                                outlineVao.Bind();
+                                mesh.SendUniformsOnlyPos(outlineShader);
+                                outlineVbo.Buffer(mesh.verticesOnlyPos);
+                                GL.DrawArrays(PrimitiveType.Triangles, 0, mesh.verticesOnlyPos.Count);
+                                shaderProgram.Use();
+                                GL.DepthMask(true);
+                            }
+                            meshVao.Bind();
                             meshVbo.Buffer(vertices);
                             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                             vertices.Clear();
@@ -515,6 +502,30 @@ namespace Engine3D
             }
             //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
+            if(editorProperties.gameRunning == GameState.Stopped)
+            {
+                //if(editorData.selectedItem != null && editorData.selectedItem is Object o && o.meshType == typeof(Mesh))
+                //{
+                //    int outlineLoc = GL.GetUniformLocation(outlineShader.id, "useScaleFactor");
+
+                //    GL.ColorMask(false, false, false, false);
+                //    GL.DepthMask(false);
+
+                //    GL.StencilMask(0x00);
+                //    GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
+
+                //    outlineShader.Use();
+                //    GL.Uniform1(outlineLoc, 1);
+                //    Mesh mesh = (Mesh)o.GetMesh();
+                //    List<float> outlineVerts = mesh.DrawOnlyPos(editorProperties.gameRunning, outlineVao, outlineShader);
+                //    outlineVbo.Buffer(outlineVerts);
+                //    GL.DrawArrays(PrimitiveType.Triangles, 0, outlineVerts.Count);
+
+                //    GL.ColorMask(true, true, true, true);
+                //    GL.DepthMask(true);
+                //}
+            }
+
             //BVH bvh = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).First().BVHStruct;
             //List<WireframeMesh> bvhs = bvh.ExtractWireframesWithPos(bvh.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref character.camera, character.Position);
 
@@ -538,10 +549,10 @@ namespace Engine3D
             //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
             //vertices = new List<float>();
 
-            texts["Position"].ChangeText("Position = (" + character.PStr + ")");
-            texts["Velocity"].ChangeText("Velocity = (" + character.VStr + ")");
-            texts["Looking"].ChangeText("Looking = (" + character.LStr + ")");
-            texts["Noclip"].ChangeText("Noclip = (" + character.noClip.ToString() + ")");
+            //texts["Position"].ChangeText("Position = (" + character.PStr + ")");
+            //texts["Velocity"].ChangeText("Velocity = (" + character.VStr + ")");
+            //texts["Looking"].ChangeText("Looking = (" + character.LStr + ")");
+            //texts["Noclip"].ChangeText("Noclip = (" + character.noClip.ToString() + ")");
 
             #endregion
 
@@ -552,7 +563,7 @@ namespace Engine3D
             }
 
             textureManager.GetAssetTextureIfNeeded(ref editorData);
-            if(!editorProperties.isGameFullscreen)
+            if (!editorProperties.isGameFullscreen)
                 imGuiController.EditorWindow(gameWindowProperty, ref editorData, KeyboardState);
             else
                 imGuiController.FullscreenWindow(gameWindowProperty, ref editorData);
@@ -567,23 +578,25 @@ namespace Engine3D
 
             base.OnRenderFrame(args);
 
-            if (limitFps)
-            {
-                double elapsed = stopwatch.Elapsed.TotalSeconds;
-                if (elapsed < TargetDeltaTime)
-                {
-                    double sleepTime = TargetDeltaTime - elapsed;
-                    Thread.Sleep((int)(sleepTime * 1000));
-                }
-                stopwatch.Restart();
-            }
+            //if (limitFps)
+            //{
+            //    double elapsed = stopwatch.Elapsed.TotalSeconds;
+            //    if (elapsed < TargetDeltaTime)
+            //    {
+            //        double sleepTime = TargetDeltaTime - elapsed;
+            //        Thread.Sleep((int)(sleepTime * 1000));
+            //    }
+            //    stopwatch.Restart();
+            //}
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
             base.OnUpdateFrame(args);
 
-            if(editorProperties.gameRunning == GameState.Stopped &&
+            editorData.fps.Update((float)args.Time);
+
+            if (editorProperties.gameRunning == GameState.Stopped &&
                editorProperties.justSetGameState)
             {
                 editorProperties.manualCursor = false;
@@ -591,11 +604,11 @@ namespace Engine3D
                 editorProperties.justSetGameState = false;
             }
 
-            if(editorProperties.gameRunning == GameState.Running && CursorState != CursorState.Grabbed && !editorProperties.manualCursor)
+            if (editorProperties.gameRunning == GameState.Running && CursorState != CursorState.Grabbed && !editorProperties.manualCursor)
             {
                 CursorState = CursorState.Grabbed;
             }
-            else if(editorProperties.gameRunning == GameState.Stopped && CursorState != CursorState.Normal)
+            else if (editorProperties.gameRunning == GameState.Stopped && CursorState != CursorState.Normal)
             {
                 CursorState = CursorState.Normal;
             }
@@ -607,33 +620,92 @@ namespace Engine3D
 
             if (KeyboardState.IsKeyReleased(Keys.F2))
             {
-                if(CursorState == CursorState.Normal)
+                if (CursorState == CursorState.Normal)
                 {
                     CursorState = CursorState.Grabbed;
                     editorProperties.manualCursor = false;
                 }
-                else if(CursorState == CursorState.Grabbed)
+                else if (CursorState == CursorState.Grabbed)
                 {
                     CursorState = CursorState.Normal;
                     editorProperties.manualCursor = true;
                 }
             }
 
+            float deltaX = 0, deltaY = 0;
+            if (firstMove)
+            {
+                lastPos = new Vector2(MouseState.X, MouseState.Y);
+                firstMove = false;
+            }
+            else
+            {
+                deltaX = MouseState.X - lastPos.X;
+                deltaY = MouseState.Y - lastPos.Y;
+                if (deltaX != 0 || deltaY != 0)
+                {
+                    lastPos = new Vector2(MouseState.X, MouseState.Y);
+                }
+            }
             if (editorProperties.gameRunning == GameState.Running)
             {
                 character.CalculateVelocity(KeyboardState, MouseState, args);
                 character.UpdatePosition(KeyboardState, MouseState, args);
 
-                foreach(ParticleSystem ps in particleSystems)
+                foreach (ParticleSystem ps in particleSystems)
                 {
                     ps.Update((float)args.Time);
                 }
 
                 soundManager.SetListener(character.camera.GetPosition());
             }
+            else
+            {
+                bool moved = false;
+                if (Math.Abs(MouseState.ScrollDelta.Y) > 0)
+                {
+                    character.Position += character.camera.front * MouseState.ScrollDelta.Y * 2;
+                    character.camera.SetPosition(character.Position);
+
+                    moved = true;
+                }
+                if(MouseState.IsButtonDown(MouseButton.Right) && !MouseState.IsButtonDown(MouseButton.Middle))
+                {
+                    if (deltaX != 0 || deltaY != 0)
+                    {
+                        lastPos = new Vector2(MouseState.X, MouseState.Y);
+
+                        character.camera.SetYaw(character.camera.GetYaw() + deltaX * sensitivity * (float)args.Time);
+                        character.camera.SetPitch(character.camera.GetPitch() - deltaY * sensitivity * (float)args.Time);
+                        moved = true;
+                    }
+                }
+                else if(MouseState.IsButtonDown(MouseButton.Middle))
+                {
+                    if (deltaX != 0 || deltaY != 0)
+                    {
+                        lastPos = new Vector2(MouseState.X, MouseState.Y);
+
+                        character.Position += (character.camera.up * deltaY) - (character.camera.right * deltaX);
+                        character.camera.SetPosition(character.Position);
+                        moved = true;
+                    }
+                }
+
+                if(moved)
+                {
+                    ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
+                    Parallel.ForEach(objects, parallelOptions, obj =>
+                    {
+                        obj.GetMesh().recalculate = true;
+                    });
+                }
+            }
+
+
             character.AfterUpdate(MouseState, args, editorProperties.gameRunning);
 
-            if (totalTime > 0)
+            if (editorData.fps.totalTime > 0)
             {
                 physx.Simulate((float)args.Time);
                 foreach (Object o in objects)
@@ -648,8 +720,8 @@ namespace Engine3D
             base.OnLoad();
             CursorState = CursorState.Normal; 
 
-            if (limitFps)
-                stopwatch = Stopwatch.StartNew();
+            //if (limitFps)
+            //    stopwatch = Stopwatch.StartNew();
 
             textGenerator = new TextGenerator();
             imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorProperties);
@@ -669,6 +741,15 @@ namespace Engine3D
             GL.Enable(EnableCap.CullFace);
 
             // OPENGL init
+            //indirectBuffer = new IndirectBuffer();
+            visibilityVbo = new VisibilityVBO(DynamicCopy: true);
+            frustumVbo = new VBO(DynamicCopy: true);
+            //drawCommandsVbo = new DrawCommandVBO(DynamicCopy: true);
+
+            outlineVbo = new VBO();
+            outlineVao = new VAO(3);
+            outlineVao.LinkToVAO(0, 3, outlineVbo);
+
             meshVbo = new VBO();
             meshVao = new VAO(Mesh.floatCount);
             meshVao.LinkToVAO(0, 4, meshVbo);
@@ -676,6 +757,11 @@ namespace Engine3D
             meshVao.LinkToVAO(2, 2, meshVbo);
             meshVao.LinkToVAO(3, 4, meshVbo);
             meshVao.LinkToVAO(4, 3, meshVbo);
+
+            //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, drawCommandsVbo.id);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, visibilityVbo.id);
+            //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, meshVbo.id);
+            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 2, frustumVbo.id);
 
             instancedMeshVbo = new VBO();
             instancedMeshVao = new InstancedVAO(InstancedMesh.floatCount, InstancedMesh.instancedFloatCount);
@@ -716,11 +802,14 @@ namespace Engine3D
             aabbVao.LinkToVAO(0, 3, aabbVbo);
 
             // Create the shader program
-            shaderProgram = new Shader("Default.vert", "Default.frag");
-            instancedShaderProgram = new Shader("Instanced.vert", "Default.frag");
-            posTexShader = new Shader("postex.vert", "postex.frag");
-            noTextureShaderProgram = new Shader("noTexture.vert", "noTexture.frag");
-            aabbShaderProgram = new Shader("aabb.vert", "aabb.frag");
+            cullingProgram = new Shader(new List<string>() { "cullingshader.comp" });
+            //shaderProgram = new Shader(new List<string>() { "DefaultForGeom.vert", "outline.geom", "Default.frag" });
+            outlineShader = new Shader(new List<string>() { "outline.vert", "outline.frag" });
+            shaderProgram = new Shader(new List<string>() { "Default.vert", "Default.frag" });
+            instancedShaderProgram = new Shader(new List<string>() { "Instanced.vert", "Default.frag" });
+            posTexShader = new Shader(new List<string>() { "postex.vert", "postex.frag" });
+            noTextureShaderProgram = new Shader(new List<string>() { "noTexture.vert", "noTexture.frag" });
+            aabbShaderProgram = new Shader(new List<string>() { "aabb.vert", "aabb.frag" });
 
             // Create Physx context
             physx = new Physx(true);
@@ -762,8 +851,13 @@ namespace Engine3D
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
             Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
+            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             objects.Add(o);
-            objects.Last().AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
+
+            Object o2 = new Object(ObjectType.Cube, ref physx);
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            objects.Add(o2);
+
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
             //objects.Last().BuildOctree();
@@ -821,37 +915,37 @@ namespace Engine3D
 
             //posTexShader.Use();
 
-            Object textObj1 = new Object(ObjectType.TextMesh, ref physx);
-            TextMesh m1 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj1);
-            textObj1.AddMesh(m1);
-            ((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
-            ((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
-            ((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddText(textObj1, "Position");
+            //Object textObj1 = new Object(ObjectType.TextMesh, ref physx);
+            //TextMesh m1 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj1);
+            //textObj1.AddMesh(m1);
+            //((TextMesh)textObj1.GetMesh()).ChangeText("Position = (" + character.PStr + ")");
+            //((TextMesh)textObj1.GetMesh()).Position = new Vector2(10, windowSize.Y - 35);
+            //((TextMesh)textObj1.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddText(textObj1, "Position");
 
-            Object textObj2 = new Object(ObjectType.TextMesh, ref physx);
-            TextMesh m2 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj2);
-            textObj2.AddMesh(m2);
-            ((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
-            ((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
-            ((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddText(textObj2, "Velocity");
+            //Object textObj2 = new Object(ObjectType.TextMesh, ref physx);
+            //TextMesh m2 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj2);
+            //textObj2.AddMesh(m2);
+            //((TextMesh)textObj2.GetMesh()).ChangeText("Velocity = (" + character.VStr + ")");
+            //((TextMesh)textObj2.GetMesh()).Position = new Vector2(10, windowSize.Y - 65);
+            //((TextMesh)textObj2.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddText(textObj2, "Velocity");
 
-            Object textObj3 = new Object(ObjectType.TextMesh, ref physx);
-            TextMesh m3 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj3);
-            textObj3.AddMesh(m3);
-            ((TextMesh)textObj3.GetMesh()).ChangeText("Looking = (" + character.LStr + ")");
-            ((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
-            ((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddText(textObj3, "Looking");
+            //Object textObj3 = new Object(ObjectType.TextMesh, ref physx);
+            //TextMesh m3 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj3);
+            //textObj3.AddMesh(m3);
+            //((TextMesh)textObj3.GetMesh()).ChangeText("Looking = (" + character.LStr + ")");
+            //((TextMesh)textObj3.GetMesh()).Position = new Vector2(10, windowSize.Y - 95);
+            //((TextMesh)textObj3.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddText(textObj3, "Looking");
 
-            Object textObj4 = new Object(ObjectType.TextMesh, ref physx);
-            TextMesh m4 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj4);
-            textObj4.AddMesh(m4);
-            ((TextMesh)textObj4.GetMesh()).ChangeText("Noclip = (" + character.noClip.ToString() + ")");
-            ((TextMesh)textObj4.GetMesh()).Position = new Vector2(10, windowSize.Y - 125);
-            ((TextMesh)textObj4.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
-            AddText(textObj4, "Noclip");
+            //Object textObj4 = new Object(ObjectType.TextMesh, ref physx);
+            //TextMesh m4 = new TextMesh(textVao, textVbo, posTexShader.id, "font.png", windowSize, ref textGenerator, ref textObj4);
+            //textObj4.AddMesh(m4);
+            //((TextMesh)textObj4.GetMesh()).ChangeText("Noclip = (" + character.noClip.ToString() + ")");
+            //((TextMesh)textObj4.GetMesh()).Position = new Vector2(10, windowSize.Y - 125);
+            //((TextMesh)textObj4.GetMesh()).Scale = new Vector2(1.5f, 1.5f);
+            //AddText(textObj4, "Noclip");
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
 

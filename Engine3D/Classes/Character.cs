@@ -19,7 +19,7 @@ namespace Engine3D
 
     public unsafe class Character
     {
-        private float sensitivity = 180f;
+        public float sensitivity = 180f;
         private float speed = 2f;
         //private float flySpeed = 10f;
         private float flySpeed = 2.5f;

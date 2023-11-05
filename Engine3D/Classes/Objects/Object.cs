@@ -44,6 +44,7 @@ namespace Engine3D
         public string name = "";
 
         public bool isEnabled = true;
+        public bool isSelected = false;
 
         public Texture? texture;
         public Texture? textureNormal;
