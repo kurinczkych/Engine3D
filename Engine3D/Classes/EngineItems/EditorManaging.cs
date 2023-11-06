@@ -11,7 +11,7 @@ namespace Engine3D
         private void EditorManaging()
         {
             if (!editorData.isGameFullscreen)
-                imGuiController.EditorWindow(gameWindowProperty, ref editorData, KeyboardState);
+                imGuiController.EditorWindow(gameWindowProperty, ref editorData, KeyboardState, this);
             else
                 imGuiController.FullscreenWindow(gameWindowProperty, ref editorData);
 

@@ -175,12 +175,38 @@ namespace Engine3D
             pendingQueries = new Dictionary<int, Tuple<int, BVHNode>>();
         }
 
-        private void AddObject(Object obj)
+        public void AddObject(ObjectType type)
         {
-            if (obj.GetObjectType() == ObjectType.TextMesh)
-                haveText = true;
-            objects.Add(obj);
-            objects.Sort();
+            if (type == ObjectType.Cube)
+            {
+                Object o = new Object(type, ref physx);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), windowSize, ref character.camera, ref o));
+                editorData.objects.Add(o);
+            }
+            else if (type == ObjectType.Sphere)
+            {
+                Object o = new Object(type, ref physx);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", Object.GetUnitSphere(), windowSize, ref character.camera, ref o));
+                editorData.objects.Add(o);
+            }
+            else if (type == ObjectType.Capsule)
+            {
+                Object o = new Object(type, ref physx);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", Object.GetUnitCapsule(), windowSize, ref character.camera, ref o));
+                editorData.objects.Add(o);
+            }
+            else if (type == ObjectType.Plane)
+            {
+                Object o = new Object(type, ref physx);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", Object.GetUnitFace(), windowSize, ref character.camera, ref o));
+                editorData.objects.Add(o);
+            }
+            else if (type == ObjectType.TriangleMesh)
+            {
+                Object o = new Object(type, ref physx);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new List<triangle>(), windowSize, ref character.camera, ref o));
+                editorData.objects.Add(o);
+            }
         }
 
         private void AddText(Object obj, string tag)
@@ -430,9 +456,9 @@ namespace Engine3D
             o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             objects.Add(o);
 
-            Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
-            objects.Add(o2);
+            //Object o2 = new Object(ObjectType.Cube, ref physx);
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            //objects.Add(o2);
 
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
@@ -576,7 +602,7 @@ namespace Engine3D
             onlyPosShaderProgram.Unload();
             aabbShaderProgram.Unload();
 
-        FileManager.DisposeStreams();
+            FileManager.DisposeStreams();
             textureManager.DeleteTextures();
         }
 

@@ -286,7 +286,7 @@ namespace Engine3D
             //TODO pointlight and particle system selection
         }
 
-        public void EditorWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData, KeyboardState keyboardState)
+        public void EditorWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData, KeyboardState keyboardState, Engine engine)
         {
             var io = ImGui.GetIO();
 
@@ -309,7 +309,9 @@ namespace Engine3D
             style.Colors[(int)ImGuiCol.ButtonActive] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 1.0f);
             style.Colors[(int)ImGuiCol.CheckMark] = new System.Numerics.Vector4(1f, 1f, 1f, 1.0f);
             style.Colors[(int)ImGuiCol.FrameBg] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
+            style.Colors[(int)ImGuiCol.PopupBg] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f); // RGBA
             style.WindowRounding = 5f;
+            style.PopupRounding = 5f;
 
             #region Top panel with menubar
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, gameWindow.topPanelSize));
@@ -406,6 +408,45 @@ namespace Engine3D
                 {
                     if (ImGui.BeginTabItem("Objects"))
                     {
+                        var windowPadding = style.WindowPadding;
+                        var popupRounding = style.PopupRounding;
+                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
+                        style.PopupRounding = 2f;
+                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
+                        {
+                            if (ImGui.BeginMenu("3D Object"))
+                            {
+                                if (ImGui.MenuItem("Cube"))
+                                {
+                                    engine.AddObject(ObjectType.Cube);
+                                }
+                                if (ImGui.MenuItem("Sphere"))
+                                {
+                                    engine.AddObject(ObjectType.Sphere);
+                                }
+                                if (ImGui.MenuItem("Capsule"))
+                                {
+                                    engine.AddObject(ObjectType.Capsule);
+                                }
+                                if (ImGui.MenuItem("Plane"))
+                                {
+                                    engine.AddObject(ObjectType.Plane);
+                                }
+                                if (ImGui.MenuItem("Mesh"))
+                                {
+                                    engine.AddObject(ObjectType.TriangleMesh);
+                                }
+
+                                ImGui.EndMenu();
+                            }
+
+                            // More menu items can be added here.
+
+                            ImGui.EndPopup();
+                        }
+                        style.WindowPadding = windowPadding;
+                        style.PopupRounding = popupRounding;
+
                         if (meshes.Count > 0)
                         {
                             if (ImGui.TreeNode("Meshes"))

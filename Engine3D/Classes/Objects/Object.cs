@@ -27,7 +27,8 @@ namespace Engine3D
         NoTexture,
         Wireframe,
         TextMesh,
-        UIMesh
+        UIMesh,
+        Plane
     }
 
     public enum ColliderType
