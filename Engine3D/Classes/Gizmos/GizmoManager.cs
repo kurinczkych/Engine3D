@@ -87,7 +87,7 @@ namespace Engine3D
             float otherAxisScale = 0.5f;
 
             List<triangle> xTris = Object.GetUnitCube(1,0,0,1);
-            Object moverGizmoX = new Object(ObjectType.Cube);
+            Object moverGizmoX = new Object(ObjectType.Cube, 1);
             Matrix4 xMat = Matrix4.CreateScale(new Vector3(moverGizmoSize, otherAxisScale, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(2, 0, 0));
             foreach (triangle tri in xTris)
             {
@@ -102,7 +102,7 @@ namespace Engine3D
             moverGizmos.Add(moverGizmoX);
 
             List<triangle> yTris = Object.GetUnitCube(0, 1, 0, 1);
-            Object moverGizmoY = new Object(ObjectType.Cube);
+            Object moverGizmoY = new Object(ObjectType.Cube, 2);
             Matrix4 yMat = Matrix4.CreateScale(new Vector3(otherAxisScale, moverGizmoSize, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(0, 2, 0));
             foreach (triangle tri in yTris)
             {
@@ -117,7 +117,7 @@ namespace Engine3D
             moverGizmos.Add(moverGizmoY);
 
             List<triangle> zTris = Object.GetUnitCube(0, 0, 1, 1);
-            Object moverGizmoZ = new Object(ObjectType.Cube);
+            Object moverGizmoZ = new Object(ObjectType.Cube, 3);
             Matrix4 zMat = Matrix4.CreateScale(new Vector3(otherAxisScale, otherAxisScale, moverGizmoSize)) * Matrix4.CreateTranslation(new Vector3(0, 0, 2));
             foreach (triangle tri in zTris)
             {

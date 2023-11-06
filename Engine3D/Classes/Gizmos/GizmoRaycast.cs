@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using Newtonsoft.Json.Serialization;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,8 @@ namespace Engine3D
 {
     public static class GizmoRaycast
     {
-        public static bool[] GetSelectedAxis(List<Object> gizmos, MouseState mouseState, ref Camera camera)
+        public static WireframeMesh GetSelectedAxis(List<Object> gizmos, MouseState mouseState, ref Camera camera,
+                                                    VAO vao, VBO vbo, Shader shader)
         {
             // Array to store which gizmos are selected
             bool[] selectedGizmos = new bool[gizmos.Count];
@@ -36,21 +38,27 @@ namespace Engine3D
             //Vector3 rayOrigin = new Vector3(nearWorld.X, nearWorld.Y, nearWorld.Z);
             //Vector3 rayDirection = new Vector3(farWorld.X - nearWorld.X, farWorld.Y - nearWorld.Y, farWorld.Z - nearWorld.Z).Normalized();
 
-            Vector3 mousePos = new Vector3(mouseState.Position.X, mouseState.Position.Y, 10.0f);
+            Vector3 mousePos = new Vector3(mouseState.Position.X, mouseState.Position.Y, 1.0f);
+            Vector3 rayDir = camera.ScreenToWorldPoint(mousePos);
+            ;
 
+            WireframeMesh mesh = new WireframeMesh(vao, vbo, shader.id, ref camera);
+            mesh.lines.Add(new Line(camera.GetPosition() + (camera.front), rayDir * 10, Color4.White, Color4.Red));
+
+            return mesh;
 
             // Step 3: Check for intersections with gizmo AABBs
-            for (int i = 0; i < gizmos.Count; i++)
-            {
-                Object gizmo = gizmos[i];
-                float dist = float.MaxValue;
-                if(gizmo.Bounds.RayIntersects(rayOrigin, rayDirection, out dist))
-                {
-                    selectedGizmos[i] = true;
-                }
-            }
+            //for (int i = 0; i < gizmos.Count; i++)
+            //{
+            //    Object gizmo = gizmos[i];
+            //    float dist = float.MaxValue;
+            //    //if(gizmo.Bounds.RayIntersects(rayOrigin, rayDirection, out dist))
+            //    //{
+            //    //    selectedGizmos[i] = true;
+            //    //}
+            //}
 
-            return selectedGizmos;
+            //return selectedGizmos;
         }
     }
 }

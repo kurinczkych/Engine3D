@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -13,7 +14,9 @@ namespace Engine3D
 {
     public class Camera
     {
-        public Vector2 screenSize;
+        public Vector2 screenSize { get; private set; }
+        public Vector2 gameScreenSize { get; private set; }
+        public Vector2 gameScreenPos { get; private set; }
         public float near;
         public float far;
         public float fov;
@@ -95,6 +98,20 @@ namespace Engine3D
                 UpdateVectors();
             }
         }
+
+        public void SetScreenSize(Vector2 size, Vector2 gameSize, Vector2 gamePos)
+        {
+            screenSize = size;
+            gameScreenSize = gameSize;
+            gameScreenPos = gamePos;
+
+            aspectRatio = screenSize.X / screenSize.Y;
+
+            viewMatrix = GetViewMatrix();
+            projectionMatrix = GetProjectionMatrix();
+            projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
+            projectionMatrixOrtho = GetProjectionMatrixOrtho();
+        }
         #endregion
 
         public Matrix4 GetViewMatrix()
@@ -115,6 +132,26 @@ namespace Engine3D
         public Matrix4 GetProjectionMatrixOrtho()
         {
             return Matrix4.CreateOrthographic(screenSize.X, screenSize.Y, near, far);
+        }
+
+        public Vector3 ScreenToWorldPoint(Vector3 screenPoint)
+        {
+            float nscX = screenPoint.X - gameScreenPos.X;
+            float nscY = Helper.InterpolateComponent(screenPoint.Y, screenSize.Y - gameScreenSize.Y - gameScreenPos.Y, screenSize.Y - gameScreenSize.Y - gameScreenPos.Y + gameScreenSize.Y, 0, gameScreenSize.Y);
+
+            float x = (2.0f * nscX) / gameScreenSize.X - 1.0f;
+            float y = 1.0f - (2.0f * nscY) / gameScreenSize.Y;
+            float z = 1.0f;
+
+            Vector4 ray_clip = new Vector4(x, y, -1.0f, 1.0f);
+            Vector4 ray_eye = Matrix4.Invert(projectionMatrix) * ray_clip;
+
+            ray_eye = new Vector4(ray_eye.X, ray_eye.Y, -1.0f, 0.0f);
+             
+            Vector3 ray_wor = new Vector3(Matrix4.Invert(viewMatrix) * ray_eye);
+            ray_wor = ray_wor.Normalized();
+
+            return ray_wor;
         }
 
         public bool IsTriangleClose(triangle tri)

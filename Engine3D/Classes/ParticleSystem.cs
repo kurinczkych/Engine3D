@@ -80,10 +80,9 @@ namespace Engine3D
         }
     }
 
-    public class ParticleSystem
+    public class ParticleSystem : Selectable
     {
         public string name = "";
-        public bool isSelected = false;
 
         public float duration = 5;
         public bool looping = true;

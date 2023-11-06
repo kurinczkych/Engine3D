@@ -112,7 +112,7 @@ namespace Engine3D
 
         public FPS fps = new FPS();
 
-        public object selectedItem;
+        public object? selectedItem;
 
         public List<Asset> assets = new List<Asset>();
 
@@ -240,7 +240,7 @@ namespace Engine3D
             }
         }
 
-        private void ClearBuffers()
+        public void ClearBuffers()
         {
             foreach(var buffer in _inputBuffers)
             {
@@ -252,6 +252,40 @@ namespace Engine3D
                 }
             }
             ;
+        }
+
+        public void SelectItem(object? selectedObject, EditorData editorData)
+        {
+            if (editorData.selectedItem != null)
+            {
+                if (editorData.selectedItem is Object o)
+                {
+                    o.isSelected = false;
+                }
+                else if (editorData.selectedItem is ParticleSystem p)
+                    p.isSelected = false;
+                else if (editorData.selectedItem is PointLight pl)
+                    pl.isSelected = false;
+            }
+
+            ClearBuffers();
+
+            if (selectedObject == null)
+            {
+                editorData.selectedItem = null;
+                return;
+            }
+
+            editorData.selectedItem = selectedObject;
+            ((Selectable)selectedObject).isSelected = true;
+
+            if (selectedObject is Object castedO)
+            {
+                castedO.GetMesh().recalculate = true;
+                castedO.GetMesh().RecalculateModelMatrix(new bool[] { true, true, true });
+                castedO.UpdatePhysxPositionAndRotation();
+            }
+            //TODO pointlight and particle system selection
         }
 
         public void EditorWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData, KeyboardState keyboardState)
@@ -383,26 +417,7 @@ namespace Engine3D
                                     string name = meshes[i].name == "" ? "Object " + i.ToString() : meshes[i].name;
                                     if (ImGui.Selectable(name))
                                     {
-                                        if (editorData.selectedItem != null)
-                                        {
-                                            if (editorData.selectedItem is Object o)
-                                            {
-                                                o.isSelected = false;
-                                            }
-                                            else if (editorData.selectedItem is ParticleSystem p)
-                                                p.isSelected = false;
-                                            else if (editorData.selectedItem is PointLight pl)
-                                                pl.isSelected = false;
-                                        }
-
-                                        ClearBuffers();
-                                            
-                                        editorData.selectedItem = meshes[i];
-                                        meshes[i].isSelected = true;
-
-                                        meshes[i].GetMesh().recalculate = true;
-                                        meshes[i].GetMesh().RecalculateModelMatrix(new bool[] { true, true, true });
-                                        meshes[i].UpdatePhysxPositionAndRotation();
+                                        SelectItem(meshes[i], editorData);
                                     }
                                 }
 
@@ -419,24 +434,7 @@ namespace Engine3D
                                     string name = instMeshes[i].name == "" ? "Object " + i.ToString() : instMeshes[i].name;
                                     if (ImGui.Selectable(name))
                                     {
-                                        if (editorData.selectedItem != null)
-                                        {
-                                            if (editorData.selectedItem is Object o)
-                                                o.isSelected = false;
-                                            else if (editorData.selectedItem is ParticleSystem p)
-                                                p.isSelected = false;
-                                            else if (editorData.selectedItem is PointLight pl)
-                                                pl.isSelected = false;
-                                        }
-
-                                        ClearBuffers();
-
-                                        editorData.selectedItem = instMeshes[i];
-                                        instMeshes[i].isSelected = true;
-
-                                        instMeshes[i].GetMesh().recalculate = true;
-                                        instMeshes[i].GetMesh().RecalculateModelMatrix(new bool[] { true, true, true });
-                                        instMeshes[i].UpdatePhysxPositionAndRotation();
+                                        SelectItem(instMeshes[i], editorData);
                                     }
                                 }
 
@@ -453,20 +451,7 @@ namespace Engine3D
                                     string name = particleSystems[i].name == "" ? "Particle system " + i.ToString() : particleSystems[i].name;
                                     if (ImGui.Selectable(name))
                                     {
-                                        if (editorData.selectedItem != null)
-                                        {
-                                            if (editorData.selectedItem is Object o)
-                                                o.isSelected = false;
-                                            else if (editorData.selectedItem is ParticleSystem p)
-                                                p.isSelected = false;
-                                            else if (editorData.selectedItem is PointLight pl)
-                                                pl.isSelected = false;
-                                        }
-
-                                        ClearBuffers();
-
-                                        editorData.selectedItem = particleSystems[i];
-                                        particleSystems[i].isSelected = true;
+                                        SelectItem(particleSystems[i], editorData);
                                     }
                                 }
 
@@ -483,20 +468,7 @@ namespace Engine3D
                                     string name = pointLights[i].name == "" ? "Point light " + i.ToString() : pointLights[i].name;
                                     if (ImGui.Selectable(name))
                                     {
-                                        if (editorData.selectedItem != null)
-                                        {
-                                            if (editorData.selectedItem is Object o)
-                                                o.isSelected = false;
-                                            else if (editorData.selectedItem is ParticleSystem p)
-                                                p.isSelected = false;
-                                            else if (editorData.selectedItem is PointLight pl)
-                                                pl.isSelected = false;
-                                        }
-
-                                        ClearBuffers();
-
-                                        editorData.selectedItem = pointLights[i];
-                                        pointLights[i].isSelected = true;
+                                        SelectItem(pointLights[i], editorData);
                                     }
                                 }
 
@@ -544,7 +516,7 @@ namespace Engine3D
                     gameWindow.leftPanelPercent = mouseX / _windowWidth;
                     if (gameWindow.leftPanelPercent + gameWindow.rightPanelPercent > 0.75)
                     {
-                        gameWindow.leftPanelPercent = 1 - gameWindow.rightPanelPercent - 0.15f;
+                        gameWindow.leftPanelPercent = 1 - gameWindow.rightPanelPercent - 0.25f;
                     }
                     else
                     {
@@ -1203,7 +1175,7 @@ namespace Engine3D
                     gameWindow.rightPanelPercent = 1 - mouseX / _windowWidth;
                     if (gameWindow.leftPanelPercent + gameWindow.rightPanelPercent > 0.75)
                     {
-                        gameWindow.rightPanelPercent = 1 - gameWindow.leftPanelPercent - 0.15f;
+                        gameWindow.rightPanelPercent = 1 - gameWindow.leftPanelPercent - 0.25f;
                     }
                     else
                     {
@@ -1272,6 +1244,7 @@ namespace Engine3D
             style.WindowMinSize = new System.Numerics.Vector2(32, 32);
             style.Colors[(int)ImGuiCol.WindowBg] = baseBGColor;
             #endregion
+
 
             #region Bottom asset panel
             style.WindowRounding = 0f;

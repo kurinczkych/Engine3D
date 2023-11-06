@@ -10,10 +10,9 @@ using System.Threading.Tasks;
 namespace Engine3D
 {
 
-    public class PointLight
+    public class PointLight : Selectable
     {
         public string name = "";
-        public bool isSelected = false;
 
         public int positionLoc;
 

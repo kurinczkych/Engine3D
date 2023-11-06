@@ -387,6 +387,54 @@ namespace Engine3D
             return vertices;
         }
 
+        public List<float> DrawOnlyPos(GameState gameRunning, Shader shader, VAO _vao)
+        {
+            if (!parentObject.isEnabled)
+                return new List<float>();
+
+            _vao.Bind();
+
+            if (!recalculateOnlyPos)
+            {
+                if (gameRunning == GameState.Stopped && verticesOnlyPos.Count > 0)
+                {
+                    SendUniformsOnlyPos(shader);
+
+                    return verticesOnlyPos;
+                }
+            }
+            else
+            {
+                recalculateOnlyPos = false;
+                CalculateFrustumVisibility();
+            }
+
+            verticesOnlyPos = new List<float>();
+
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(tris, parallelOptions,
+                () => new List<float>(),
+                 (tri, loopState, localVertices) =>
+                 {
+                     if (tri.visibile)
+                     {
+                         AddVerticesOnlyPos(localVertices, tri);
+                     }
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (verticesOnlyPos)
+                     {
+                         verticesOnlyPos.AddRange(localVertices);
+                     }
+                 });
+
+            SendUniformsOnlyPos(shader);
+
+            return verticesOnlyPos;
+        }
+
         public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
         {
             Vao.Bind();

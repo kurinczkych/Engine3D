@@ -39,12 +39,12 @@ namespace Engine3D
         Sphere
     }
 
-    public unsafe class Object : IComparable<Object>
+    public unsafe class Object : Selectable, IComparable<Object>
     {
+        public int id;
         public string name = "";
 
         public bool isEnabled = true;
-        public bool isSelected = false;
         public List<Object>? moverGizmos;
         public AABB Bounds;
 
@@ -382,8 +382,18 @@ namespace Engine3D
             }
         }
 
-        public Object(ObjectType type, ref Physx physx)
+        public Object(ObjectType type, ref Physx physx, int id = -1)
         {
+            if (id == -1)
+            {
+                this.id = Engine.objectID;
+                Engine.objectID++;
+            }
+            else
+            {
+                this.id = id;
+            }
+
             this.type = type;
             this.physx = physx;
 
@@ -391,8 +401,18 @@ namespace Engine3D
             Rotation = Quaternion.Identity;
         }
 
-        public Object(ObjectType type)
+        public Object(ObjectType type, int id = -1)
         {
+            if (id == -1)
+            {
+                this.id = Engine.objectID;
+                Engine.objectID++;
+            }
+            else
+            {
+                this.id = id;
+            }
+
             this.type = type;
 
             Position = Vector3.Zero;
