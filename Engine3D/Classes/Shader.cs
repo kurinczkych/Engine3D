@@ -71,17 +71,22 @@ namespace Engine3D
         public string LoadShaderSource(string filePath)
         {
             string shaderSource = "";
+            string folderName = Path.GetFileNameWithoutExtension(filePath);
+            if (Path.GetExtension(filePath) == ".comp")
+                folderName = "ComputeShaders";
+
+            string path = "../../../Shaders/" + folderName + "/" + filePath;
 
             try
             {
-                using (StreamReader reader = new StreamReader("../../../Shaders/" + filePath))
+                using (StreamReader reader = new StreamReader(path))
                 {
                     shaderSource = reader.ReadToEnd();
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("Failed to load shader source file: " + e.Message);
+                throw new Exception("Can't find shader at '" + filePath + "'!");
             }
 
             return shaderSource;

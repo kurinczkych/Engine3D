@@ -94,8 +94,7 @@ namespace Engine3D
         private Shader shaderProgram;
         private Shader instancedShaderProgram;
         private Shader posTexShader;
-        private Shader noTextureShaderProgram;
-        private Shader gizmoShaderProgram;
+        private Shader onlyPosShaderProgram;
         private Shader aabbShaderProgram;
         #endregion
 
@@ -417,15 +416,13 @@ namespace Engine3D
 
             // Create the shader program
             cullingProgram = new Shader(new List<string>() { "cullingshader.comp" });
-            //shaderProgram = new Shader(new List<string>() { "DefaultForGeom.vert", "outline.geom", "Default.frag" });
             outlineShader = new Shader(new List<string>() { "outline.vert", "outline.frag" });
             pickingShader = new Shader(new List<string>() { "picking.vert", "picking.frag" });
             shaderProgram = new Shader(new List<string>() { "Default.vert", "Default.frag" });
             instancedShaderProgram = new Shader(new List<string>() { "Instanced.vert", "Default.frag" });
             posTexShader = new Shader(new List<string>() { "postex.vert", "postex.frag" });
-            noTextureShaderProgram = new Shader(new List<string>() { "noTexture.vert", "noTexture.frag" });
+            onlyPosShaderProgram = new Shader(new List<string>() { "onlyPos.vert", "onlyPos.frag" });
             aabbShaderProgram = new Shader(new List<string>() { "aabb.vert", "aabb.frag" });
-            gizmoShaderProgram = new Shader(new List<string>() { "noTexture.vert", "noTexture.frag" });
             #endregion
 
             pickingTexture = new PickingTexture(windowSize);
@@ -444,9 +441,9 @@ namespace Engine3D
             Camera camera = new Camera(windowSize);
             camera.UpdateVectors();
 
-            noTextureShaderProgram.Use();
+            onlyPosShaderProgram.Use();
             Vector3 characterPos = new Vector3(0, 0, -10);
-            character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref camera), ref physx, characterPos, camera);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
             character.camera.SetYaw(90f);
             character.camera.SetPitch(0f);
 
@@ -467,9 +464,9 @@ namespace Engine3D
             o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             objects.Add(o);
 
-            Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
-            objects.Add(o2);
+            //Object o2 = new Object(ObjectType.Cube, ref physx);
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            //objects.Add(o2);
 
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
@@ -604,11 +601,16 @@ namespace Engine3D
                 GL.DeleteBuffer(mesh.vbo);               
             }
 
+            cullingProgram.Unload();
+            outlineShader.Unload();
+            pickingShader.Unload();
             shaderProgram.Unload();
-            noTextureShaderProgram.Unload();
+            instancedShaderProgram.Unload();
             posTexShader.Unload();
+            onlyPosShaderProgram.Unload();
+            aabbShaderProgram.Unload();
 
-            FileManager.DisposeStreams();
+        FileManager.DisposeStreams();
             textureManager.DeleteTextures();
         }
 
