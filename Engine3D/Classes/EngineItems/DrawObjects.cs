@@ -83,7 +83,7 @@ namespace Engine3D
                                 GL.StencilMask(0x00);
                                 GL.Disable(EnableCap.DepthTest);
 
-                                outlineShader.Use(); 
+                                outlineShader.Use();
 
                                 vertices = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
                                 onlyPosAndNormalVbo.Buffer(vertices);
@@ -189,5 +189,50 @@ namespace Engine3D
             if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(int) : currentMeshType, typeof(int), null))
                 vertices = new List<float>();
         }
+        private bool DrawCorrectMesh(ref List<float> vertices, Type prevMeshType, Type currentMeshType, BaseMesh? prevMesh)
+        {
+            if (prevMeshType == null || currentMeshType == null)
+                return false;
+
+            if (prevMeshType == typeof(Mesh) && prevMeshType != currentMeshType)
+            {
+                meshVbo.Buffer(vertices);
+            }
+            if (prevMeshType == typeof(InstancedMesh) && prevMeshType != currentMeshType)
+            {
+                instancedMeshVbo.Buffer(vertices);
+            }
+            else if (prevMeshType == typeof(NoTextureMesh) && prevMeshType != currentMeshType)
+            {
+                noTexVbo.Buffer(vertices);
+            }
+            else if (prevMeshType == typeof(WireframeMesh) && prevMeshType != currentMeshType)
+            {
+                wireVbo.Buffer(vertices);
+            }
+            else if (prevMeshType == typeof(UITextureMesh) && prevMeshType != currentMeshType)
+            {
+                uiTexVbo.Buffer(vertices);
+            }
+            else if (prevMeshType == typeof(TextMesh) && prevMeshType != currentMeshType)
+            {
+                textVbo.Buffer(vertices);
+            }
+            else
+                return false;
+
+            if (prevMeshType == typeof(WireframeMesh))
+                GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
+            else if (prevMeshType == typeof(InstancedMesh))
+            {
+                if (prevMesh != null)
+                    GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, ((InstancedMesh)prevMesh).instancedData.Count());
+            }
+            else
+                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+            return true;
+
+        }
+
     }
 }

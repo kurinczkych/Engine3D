@@ -11,7 +11,7 @@ namespace Engine3D
 {
     public partial class Engine
     {
-        private void EditorMoving(float deltaX, float deltaY, FrameEventArgs args)
+        private void EditorMoving(FrameEventArgs args)
         {
             if (IsMouseInGameWindow(MouseState))
             {

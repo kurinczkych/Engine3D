@@ -39,11 +39,12 @@ namespace Engine3D
         Sphere
     }
 
-    public unsafe class Object : Selectable, IComparable<Object>
+    public unsafe class Object : ISelectable, IComparable<Object>
     {
         public int id;
         public string name = "";
 
+        public bool isSelected { get; set; }
         public bool isEnabled = true;
         public List<Object>? moverGizmos;
         public AABB Bounds;
@@ -316,7 +317,7 @@ namespace Engine3D
         public PxRigidDynamic* GetDynamicCollider() { return (PxRigidDynamic*)dynamicColliderPtr.ToPointer(); }
         public PxRigidStatic* GetStaticCollider() { return (PxRigidStatic*)staticColliderPtr.ToPointer(); }
 
-        public Vector3 Position;
+        public Vector3 Position { get; set; }
         public Quaternion Rotation { get; set; }
         public Vector3 Scale = Vector3.One;
 
@@ -595,9 +596,7 @@ namespace Engine3D
 
                 PxTransform transform = PxRigidActor_getGlobalPose((PxRigidActor*)GetDynamicCollider());
 
-                Position.X = transform.p.x;
-                Position.Y = transform.p.y;
-                Position.Z = transform.p.z;
+                Position = new Vector3(transform.p.x, transform.p.y, transform.p.z);
 
                 Rotation = QuatHelper.PxToOpenTk(transform.q);
             }

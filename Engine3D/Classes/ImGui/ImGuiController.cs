@@ -275,7 +275,7 @@ namespace Engine3D
             }
 
             editorData.selectedItem = selectedObject;
-            ((Selectable)selectedObject).isSelected = true;
+            ((ISelectable)selectedObject).isSelected = true;
 
             if (selectedObject is Object castedO)
             {
@@ -600,7 +600,7 @@ namespace Engine3D
                                         float value = o.Position.X;
                                         if (float.TryParse(valueStr, out value))
                                         {
-                                            o.Position.X = value;
+                                            o.Position = o.Position + new Vector3(value, 0, 0);
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
                                             o.UpdatePhysxPositionAndRotation();
@@ -627,7 +627,7 @@ namespace Engine3D
                                         float value = o.Position.Y;
                                         if (float.TryParse(valueStr, out value))
                                         {
-                                            o.Position.Y = value;
+                                            o.Position = o.Position + new Vector3(0, value, 0);
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
                                             o.UpdatePhysxPositionAndRotation();
@@ -654,7 +654,7 @@ namespace Engine3D
                                         float value = o.Position.Z;
                                         if (float.TryParse(valueStr, out value))
                                         {
-                                            o.Position.Z = value;
+                                            o.Position = o.Position + new Vector3(0,0,value);
                                             o.GetMesh().recalculate = true;
                                             o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
                                             o.UpdatePhysxPositionAndRotation();

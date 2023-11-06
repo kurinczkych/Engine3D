@@ -15,7 +15,34 @@ namespace Engine3D
         {
             if (editorData.gameRunning == GameState.Stopped)
             {
-                if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonReleased(MouseButton.Left))
+                if (objectMovingAxis != null && MouseState.IsButtonDown(MouseButton.Left) && editorData.selectedItem != null)
+                {
+                    // Moving
+                    if (objectMovingAxis == Vector3.UnitX)
+                    {
+                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(deltaX / 10, 0, 0);
+                    }
+                    else if (objectMovingAxis == Vector3.UnitY)
+                    {
+                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(0, deltaY / 10, 0);
+                    }
+                    else if (objectMovingAxis == Vector3.UnitZ)
+                    {
+                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(0, 0, deltaX / 10);
+                    }
+
+                    if (editorData.selectedItem is Object o)
+                    {
+                        o.GetMesh().recalculate = true;
+                        o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
+                        o.UpdatePhysxPositionAndRotation();
+                    }
+                }
+                else if(objectMovingAxis != null && MouseState.IsButtonReleased(MouseButton.Left))
+                {
+                    objectMovingAxis = null;
+                }
+                else if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
                 {
                     #region Object Selection
                     pickingTexture.EnableWriting(); 
@@ -68,13 +95,17 @@ namespace Engine3D
                         PixelInfo pixel2 = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
                         if (pixel2.objectId != 0)
                         {
-                            axisClicked = true;
-                            ;
+                            if (pixel2.objectId == 1)
+                                objectMovingAxis = Vector3.UnitX;
+                            else if (pixel2.objectId == 2)
+                                objectMovingAxis = Vector3.UnitY;
+                            else if (pixel2.objectId == 3)
+                                objectMovingAxis = Vector3.UnitZ;
                         }
                     }
 
                     #endregion
-                    if (!axisClicked)
+                    if (!axisClicked && objectMovingAxis == null)
                     {
                         if (pixel.objectId != 0)
                         {

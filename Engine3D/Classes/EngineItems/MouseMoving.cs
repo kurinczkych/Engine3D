@@ -9,7 +9,7 @@ namespace Engine3D
 {
     public partial class Engine
     {
-        private void MouseMoving(ref float deltaX, ref float deltaY)
+        private void MouseMoving()
         {
             if (firstMove)
             {

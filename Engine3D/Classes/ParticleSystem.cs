@@ -80,9 +80,23 @@ namespace Engine3D
         }
     }
 
-    public class ParticleSystem : Selectable
+    public class ParticleSystem : ISelectable
     {
         public string name = "";
+
+        public bool isSelected { get; set; }
+
+        public Vector3 Position
+        {
+            get
+            {
+                return meshObject.Position;
+            }
+            set
+            {
+                meshObject.Position = value;
+            }
+        }
 
         public float duration = 5;
         public bool looping = true;

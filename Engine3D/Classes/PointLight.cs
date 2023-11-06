@@ -10,10 +10,11 @@ using System.Threading.Tasks;
 namespace Engine3D
 {
 
-    public class PointLight : Selectable
+    public class PointLight : ISelectable
     {
         public string name = "";
 
+        public bool isSelected { get; set; }
         public int positionLoc;
 
         private Vector3 _position;
