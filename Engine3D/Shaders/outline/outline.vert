@@ -1,14 +1,15 @@
 #version 330 core
 
 layout (location = 0) in vec3 inPosition;
+layout (location = 1) in vec3 inNormal;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
+uniform float scalingFactor;
+
 void main()
 {
-//	gl_Position = vec4(inPosition,1.0) * modelMatrix * viewMatrix * projectionMatrix;
-	float scaleFactor = 1.1;
-	gl_Position = vec4(inPosition * scaleFactor, 1.0) * modelMatrix * viewMatrix * projectionMatrix;
+	gl_Position = vec4(inPosition + inNormal * scalingFactor, 1.0) * modelMatrix * viewMatrix * projectionMatrix;
 }

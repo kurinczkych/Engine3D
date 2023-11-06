@@ -14,10 +14,9 @@ namespace Engine3D
         {
             if (editorData.gameRunning == GameState.Stopped)
             {
-                if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonReleased(MouseButton.Left))
+                if (IsMouseInGameWindow(MouseState)/* && MouseState.IsButtonReleased(MouseButton.Left)*/)
                 {
                     GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-                    GL.DepthFunc(DepthFunction.Always);
                     #region Object Selection
                     pickingTexture.EnableWriting();
 
@@ -87,8 +86,6 @@ namespace Engine3D
                             imGuiController.SelectItem(null, editorData);
                         }
                     }
-
-                    GL.DepthFunc(DepthFunction.Less);
                 }
             }
         }

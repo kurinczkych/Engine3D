@@ -50,7 +50,6 @@ namespace Engine3D
                         }
                         else
                         {
-                            vertices.AddRange(mesh.Draw(editorData.gameRunning));
                             currentMeshType = typeof(Mesh);
 
                             //cullingProgram.Use();
@@ -71,6 +70,7 @@ namespace Engine3D
                                 GL.StencilMask(0xFF);
                             }
 
+                            vertices.AddRange(mesh.Draw(editorData.gameRunning));
                             meshVao.Bind();
                             meshVbo.Buffer(vertices);
                             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
@@ -84,14 +84,21 @@ namespace Engine3D
                                 GL.Disable(EnableCap.DepthTest);
 
                                 outlineShader.Use();
-                                vertices.Clear();
-                                vertices = mesh.DrawOnlyPos(editorData.gameRunning, outlineShader, onlyPosVao);
-                                onlyPosVbo.Buffer(vertices);
+
+                                float scalingFactor = 2;
+                                int scalingFactorLoc = GL.GetUniformLocation(outlineShader.id, "scalingFactor");
+                                GL.Uniform1(scalingFactorLoc, scalingFactor);
+
+                                vertices = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
+                                onlyPosAndNormalVbo.Buffer(vertices);
                                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
 
                                 GL.StencilMask(0xFF);
                                 GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
                                 GL.Enable(EnableCap.DepthTest);
+
+                                shaderProgram.Use();
+                                vertices.Clear();
                             }
                         }
                     }

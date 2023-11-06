@@ -31,9 +31,10 @@ namespace Engine3D
         public bool recalculate
         {
             get { return _recalculate; }
-            set { _recalculate = value; recalculateOnlyPos = true; }
+            set { _recalculate = value; recalculateOnlyPos = true; recalculateOnlyPosAndNormal = true; }
         }
         protected bool recalculateOnlyPos;
+        protected bool recalculateOnlyPosAndNormal;
 
         public int useBillboarding = 0;
 

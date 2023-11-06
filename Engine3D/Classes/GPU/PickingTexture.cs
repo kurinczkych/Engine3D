@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
+    [StructLayout(LayoutKind.Sequential)]
     public struct PixelInfo
     {
         public int objectId;
@@ -65,10 +66,17 @@ namespace Engine3D
             GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, fbo);
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
 
+            IntPtr pixelInfoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PixelInfo)));
             PixelInfo pixel = new PixelInfo();
-            unsafe
+
+            try
             {
-                GL.ReadPixels(x, y, 1, 1, PixelFormat.RgbInteger, PixelType.UnsignedInt, new IntPtr(&pixel));
+                GL.ReadPixels(x, y, 1, 1, PixelFormat.RgbInteger, PixelType.UnsignedInt, pixelInfoPtr);
+                pixel = Marshal.PtrToStructure<PixelInfo>(pixelInfoPtr);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(pixelInfoPtr);
             }
 
             GL.ReadBuffer(ReadBufferMode.None);

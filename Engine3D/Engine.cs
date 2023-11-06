@@ -67,6 +67,9 @@ namespace Engine3D
         private VAO onlyPosVao;
         private VBO onlyPosVbo;
 
+        private VAO onlyPosAndNormalVao;
+        private VBO onlyPosAndNormalVbo;
+
         private VAO meshVao;
         private VBO meshVbo;
 
@@ -359,6 +362,11 @@ namespace Engine3D
             onlyPosVao = new VAO(3);
             onlyPosVao.LinkToVAO(0, 3, onlyPosVbo);
 
+            onlyPosAndNormalVbo = new VBO();
+            onlyPosAndNormalVao = new VAO(6);
+            onlyPosAndNormalVao.LinkToVAO(0, 3, onlyPosAndNormalVbo);
+            onlyPosAndNormalVao.LinkToVAO(1, 3, onlyPosAndNormalVbo);
+
             meshVbo = new VBO();
             meshVao = new VAO(Mesh.floatCount);
             meshVao.LinkToVAO(0, 3, meshVbo);
@@ -464,9 +472,9 @@ namespace Engine3D
             o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             objects.Add(o);
 
-            //Object o2 = new Object(ObjectType.Cube, ref physx);
-            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
-            //objects.Add(o2);
+            Object o2 = new Object(ObjectType.Cube, ref physx);
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            objects.Add(o2);
 
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();

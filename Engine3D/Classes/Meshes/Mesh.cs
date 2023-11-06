@@ -34,6 +34,7 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
         public List<float> verticesOnlyPos = new List<float>();
+        public List<float> verticesOnlyPosAndNormal = new List<float>();
 
         private Vector2 windowSize;
 
@@ -148,9 +149,18 @@ namespace Engine3D
 
         private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index)
         {
-            vertices.AddRange(new float[] // Setting initial capacity to 3
+            vertices.AddRange(new float[]
             {
                 tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+            });
+        }
+
+        private void ConvertToNDCOnlyPosAndNormal(ref List<float> vertices, triangle tri, int index)
+        {
+            vertices.AddRange(new float[]
+            {
+                tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+                tri.n[index].X, tri.n[index].Y, tri.n[index].Z
             });
         }
 
@@ -282,6 +292,16 @@ namespace Engine3D
                 ConvertToNDCOnlyPos(ref vertices, tri, 0);
                 ConvertToNDCOnlyPos(ref vertices, tri, 1);
                 ConvertToNDCOnlyPos(ref vertices, tri, 2);
+            }
+        }
+
+        private void AddVerticesOnlyPosAndNormal(List<float> vertices, triangle tri)
+        {
+            lock (vertices) // Lock to ensure thread-safety when modifying the list
+            {
+                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 0);
+                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 1);
+                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 2);
             }
         }
 
@@ -433,6 +453,54 @@ namespace Engine3D
             SendUniformsOnlyPos(shader);
 
             return verticesOnlyPos;
+        }
+        
+        public List<float> DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO _vao)
+        {
+            if (!parentObject.isEnabled)
+                return new List<float>();
+
+            _vao.Bind();
+
+            if (!recalculateOnlyPosAndNormal)
+            {
+                if (gameRunning == GameState.Stopped && verticesOnlyPosAndNormal.Count > 0)
+                {
+                    SendUniformsOnlyPos(shader);
+
+                    return verticesOnlyPosAndNormal;
+                }
+            }
+            else
+            {
+                recalculateOnlyPosAndNormal = false;
+                CalculateFrustumVisibility();
+            }
+
+            verticesOnlyPosAndNormal = new List<float>();
+
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(tris, parallelOptions,
+                () => new List<float>(),
+                 (tri, loopState, localVertices) =>
+                 {
+                     if (tri.visibile)
+                     {
+                         AddVerticesOnlyPosAndNormal(localVertices, tri);
+                     }
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (verticesOnlyPosAndNormal)
+                     {
+                         verticesOnlyPosAndNormal.AddRange(localVertices);
+                     }
+                 });
+
+            SendUniformsOnlyPos(shader);
+
+            return verticesOnlyPosAndNormal;
         }
 
         public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
