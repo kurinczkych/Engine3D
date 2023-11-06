@@ -1,4 +1,5 @@
 ﻿using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
@@ -14,11 +15,11 @@ namespace Engine3D
         {
             if (editorData.gameRunning == GameState.Stopped)
             {
-                if (IsMouseInGameWindow(MouseState)/* && MouseState.IsButtonReleased(MouseButton.Left)*/)
+                if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonReleased(MouseButton.Left))
                 {
-                    GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                     #region Object Selection
-                    pickingTexture.EnableWriting();
+                    pickingTexture.EnableWriting(); 
+                    GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                     pickingShader.Use();
 
@@ -46,8 +47,8 @@ namespace Engine3D
                     bool axisClicked = false;
                     if (editorData.selectedItem != null && editorData.selectedItem is Object selectedO)
                     {
-                        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                         pickingTexture.EnableWriting();
+                        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                         //pickingShader.Use();
 
                         foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)

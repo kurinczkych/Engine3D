@@ -146,7 +146,7 @@ namespace Engine3D
         private Dictionary<int, Tuple<int, BVHNode>> pendingQueries;
         #endregion
 
-        public Engine(int width, int height) : base(GameWindowSettings.Default, new NativeWindowSettings() { StencilBits = 8 })
+        public Engine(int width, int height) : base(GameWindowSettings.Default, new NativeWindowSettings() { StencilBits = 8, DepthBits = 32 })
         {
             Title = "3D Engine";
 

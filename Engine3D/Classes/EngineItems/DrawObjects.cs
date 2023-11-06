@@ -83,11 +83,7 @@ namespace Engine3D
                                 GL.StencilMask(0x00);
                                 GL.Disable(EnableCap.DepthTest);
 
-                                outlineShader.Use();
-
-                                float scalingFactor = 2;
-                                int scalingFactorLoc = GL.GetUniformLocation(outlineShader.id, "scalingFactor");
-                                GL.Uniform1(scalingFactorLoc, scalingFactor);
+                                outlineShader.Use(); 
 
                                 vertices = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
                                 onlyPosAndNormalVbo.Buffer(vertices);
@@ -95,6 +91,7 @@ namespace Engine3D
 
                                 GL.StencilMask(0xFF);
                                 GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
+                                GL.Disable(EnableCap.StencilTest);
                                 GL.Enable(EnableCap.DepthTest);
 
                                 shaderProgram.Use();
