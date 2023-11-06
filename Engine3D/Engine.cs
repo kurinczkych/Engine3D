@@ -36,7 +36,7 @@ using System.Threading;
 
 namespace Engine3D
 {
-    public class Engine : GameWindow
+    public partial class Engine : GameWindow
     {
         public class SavedStart
         {
@@ -126,7 +126,6 @@ namespace Engine3D
 
         #region UI variables
         private EditorData editorData = new EditorData();
-        private EditorProperties editorProperties = new EditorProperties();
         private ImGuiController imGuiController;
         #endregion
 
@@ -239,7 +238,8 @@ namespace Engine3D
         {
             imGuiController.Update(this, (float)args.Time);
 
-            if (!editorProperties.isGameFullscreen)
+            #region Fullscreen scissoring
+            if (!editorData.isGameFullscreen)
             {
                 GL.Viewport((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y,
                             (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
@@ -247,426 +247,42 @@ namespace Engine3D
                 GL.Scissor((int)gameWindowProperty.gameWindowPos.X, (int)gameWindowProperty.gameWindowPos.Y,
                            (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
             }
-
-            #region GameWindow
-
-            vertices.Clear();
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            GL.Enable(EnableCap.DepthTest);
-
-            // Triangle frustum visibility calculation
-            if (editorProperties.gameRunning == GameState.Running || firstRun)
-            {
-                foreach (Object obj in objects)
-                {
-                    obj.GetMesh().CalculateFrustumVisibility();
-                }
-                firstRun = false;
-            }
-
-            #region Occlusion Culling
-            if (editorProperties.gameRunning == GameState.Running)
-            {
-                if (useOcclusionCulling)
-                {
-                    //Occlusion
-                    GL.ColorMask(false, false, false, false);  // Disable writing to the color buffer
-                    GL.Clear(ClearBufferMask.DepthBufferBit);
-                    GL.ClearDepth(1.0);
-
-                    List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
-                    aabbShaderProgram.Use();
-                    List<float> posVertices = new List<float>();
-                    foreach (Object obj in triangleMeshObjects)
-                    {
-                        //posVertices.AddRange(((Mesh)obj.GetMesh()).DrawOnlyPos(aabbVao, aabbShaderProgram));
-                    }
-                    aabbVbo.Buffer(posVertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, posVertices.Count);
-
-
-                    //GL.ColorMask(true, true, true, true);
-                    //GL.ClearColor(Color4.Cyan);
-                    //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-                    GL.Disable(EnableCap.CullFace);
-                    if (pendingQueries.Count() == 0)
-                    {
-                        foreach (Object obj in triangleMeshObjects)
-                        {
-                            //OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, true);
-                        }
-                    }
-                    else
-                    {
-                        ;
-                        foreach (Object obj in triangleMeshObjects)
-                        {
-                            //OcclusionCulling.PerformOcclusionQueriesForBVH(obj.BVHStruct, aabbVbo, aabbVao, aabbShaderProgram, character.camera, ref queryPool, ref pendingQueries, false);
-                        }
-                    }
-                    GL.Enable(EnableCap.CullFace);
-
-
-                    GL.ColorMask(true, true, true, true);
-                }
-            }
             #endregion
 
-            //------------------------------------------------------------
+            vertices.Clear();
 
+            FrustumCalculating();
 
-            if (editorProperties.gameRunning == GameState.Stopped)
-            {
-                if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonReleased(MouseButton.Left))
-                {
-                    GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-                    GL.DepthFunc(DepthFunction.Always);
-                    #region Object Selection
-                    pickingTexture.EnableWriting();
+            OcclusionCuller();
 
-                    pickingShader.Use();
+            ObjectPicking();
 
-                    foreach (Object o in objects.Where(x => x.meshType == typeof(Mesh)))
-                    {
-                        Mesh mesh = (Mesh)o.GetMesh();
-
-                        int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
-                        int drawIdLoc = GL.GetUniformLocation(pickingShader.id, "drawIndex");
-                        GL.Uniform1(objectIdLoc, (uint)o.id);
-                        GL.Uniform1(drawIdLoc, (uint)0);
-
-                        vertices.Clear();
-                        vertices = mesh.DrawOnlyPos(editorProperties.gameRunning, pickingShader, onlyPosVao);
-                        onlyPosVbo.Buffer(vertices);
-                        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    }
-
-                    pickingTexture.DisableWriting();
-
-                    PixelInfo pixel = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
-                    #endregion
-
-                    #region Object moving
-                    bool axisClicked = false;
-                    if(editorData.selectedItem != null && editorData.selectedItem is Object selectedO)
-                    {
-                        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-                        pickingTexture.EnableWriting();
-                        //pickingShader.Use();
-
-                        foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
-                        {
-                            int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
-                            int drawIdLoc = GL.GetUniformLocation(pickingShader.id, "drawIndex");
-                            GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
-                            GL.Uniform1(drawIdLoc, (uint)0);
-
-                            vertices = ((Mesh)moverGizmo.GetMesh()).DrawOnlyPos(editorProperties.gameRunning, pickingShader, onlyPosVao);
-                            onlyPosVbo.Buffer(vertices);
-                            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                        }
-
-                        pickingTexture.DisableWriting();
-
-                        PixelInfo pixel2 = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
-                        if (pixel2.objectId != 0)
-                        {
-                            axisClicked = true;
-                            ;
-                        }
-                    }
-
-                    #endregion
-                    if (!axisClicked)
-                    {
-                        if (pixel.objectId != 0)
-                        {
-                            Object selectedObject = objects.Where(x => x.id == pixel.objectId).First();
-
-                            imGuiController.SelectItem(selectedObject, editorData);
-                        }
-                        else
-                        {
-                            imGuiController.SelectItem(null, editorData);
-                        }
-                    }
-
-                    GL.DepthFunc(DepthFunction.Less);
-                }
-            }
-
-            GL.ClearColor(Color4.Cyan);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             shaderProgram.Use();
-            //GL.Enable(EnableCap.StencilTest);
-            //GL.StencilMask(0xFF);
-            //GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
-            //GL.StencilFunc(StencilFunction.Always, 1, 0xFF);
+            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
 
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorProperties.gameRunning);
+            DrawObjects();
 
-            vertices.Clear();
-            Type? currentMeshType = null;
-            foreach (Object o in objects)
-            {
-                ObjectType objectType = o.GetObjectType();
-                if (objectType == ObjectType.Cube ||
-                   objectType == ObjectType.Sphere ||
-                   objectType == ObjectType.Capsule ||
-                   objectType == ObjectType.TriangleMesh ||
-                   objectType == ObjectType.TriangleMeshWithCollider)
-                {
-                    if (o.GetMesh().GetType() == typeof(Mesh))
-                    {
-                        Mesh mesh = (Mesh)o.GetMesh();
-                        if (currentMeshType == null || currentMeshType != mesh.GetType())
-                        {
-                            shaderProgram.Use();
-                        }
+            DrawParticleSystems();
 
-                        if (editorProperties.gameRunning == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
-                        {
-                            //List<triangle> notOccludedTris = new List<triangle>();
-                            //OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
+            DrawMoverGizmo();
 
-                            //vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
-                            //currentMeshType = typeof(Mesh);
+            TextUpdating();
 
-                            //if (vertices.Count > 0)
-                            //{
-                            //    meshVbo.Buffer(vertices);
-                            //    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                            //    vertices.Clear();
-                            //}
-                        }
-                        else
-                        {
-                            vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
-                            currentMeshType = typeof(Mesh);
-
-                            //cullingProgram.Use();
-
-                            //visibilityVbo.Buffer(vertices);
-                            //frustumVbo.Buffer(character.camera.frustum.GetData());
-                            //GL.DispatchCompute(256, 1, 1);
-                            //GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit); 
-
-                            //GL.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
-
-                            if(o.isSelected && o.isEnabled && mesh.verticesOnlyPos.Count > 0)
-                            {
-                                GL.DepthMask(false);
-                                outlineShader.Use();
-                                onlyPosVao.Bind();
-                                mesh.SendUniformsOnlyPos(outlineShader);
-                                onlyPosVbo.Buffer(mesh.verticesOnlyPos);
-                                GL.DrawArrays(PrimitiveType.Triangles, 0, mesh.verticesOnlyPos.Count);
-                                shaderProgram.Use();
-                                GL.DepthMask(true);
-                            }
-                            meshVao.Bind();
-                            meshVbo.Buffer(vertices);
-                            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                            vertices.Clear();
-                        }
-                    }
-                    else if (o.GetMesh().GetType() == typeof(InstancedMesh))
-                    {
-                        InstancedMesh mesh = (InstancedMesh)o.GetMesh();
-                        if (currentMeshType == null || currentMeshType != mesh.GetType())
-                        {
-                            instancedShaderProgram.Use();
-                        }
-
-                        List<float> instancedVertices = new List<float>();
-                        (vertices, instancedVertices) = mesh.Draw(editorProperties.gameRunning);
-                        currentMeshType = typeof(InstancedMesh);
-
-                        meshVbo.Buffer(vertices);
-                        instancedMeshVbo.Buffer(instancedVertices);
-                        GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
-                        vertices.Clear();
-                    }
-                }
-                else if (objectType == ObjectType.NoTexture)
-                {
-                    NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
-
-                    if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(NoTextureMesh) : currentMeshType, typeof(NoTextureMesh), null))
-                        vertices = new List<float>();
-
-                    if (currentMeshType == null || currentMeshType != mesh.GetType())
-                    {
-                        noTextureShaderProgram.Use();
-                    }
-
-                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
-                    currentMeshType = typeof(NoTextureMesh);
-                }
-                else if (objectType == ObjectType.Wireframe)
-                {
-                    WireframeMesh mesh = (WireframeMesh)o.GetMesh();
-
-                    if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(WireframeMesh) : currentMeshType, typeof(WireframeMesh), null))
-                        vertices = new List<float>();
-
-                    if (currentMeshType == null || currentMeshType != mesh.GetType())
-                    {
-                        noTextureShaderProgram.Use();
-                    }
-
-                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
-                    currentMeshType = typeof(WireframeMesh);
-                }
-                else if (objectType == ObjectType.UIMesh)
-                {
-                    UITextureMesh mesh = (UITextureMesh)o.GetMesh();
-
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
-                    //    vertices = new List<float>();
-
-                    if (currentMeshType == null || currentMeshType != mesh.GetType())
-                    {
-                        GL.Disable(EnableCap.DepthTest);
-                        posTexShader.Use();
-                    }
-
-                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
-                    currentMeshType = typeof(UITextureMesh);
-
-                    uiTexVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
-                }
-                else if (objectType == ObjectType.TextMesh)
-                {
-                    TextMesh mesh = (TextMesh)o.GetMesh();
-
-                    if (currentMeshType == null || currentMeshType != mesh.GetType())
-                    {
-                        GL.Disable(EnableCap.DepthTest);
-                        posTexShader.Use();
-                    }
-
-                    if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(TextMesh) : currentMeshType, typeof(TextMesh), null))
-                        vertices = new List<float>();
-
-                    vertices.AddRange(mesh.Draw(editorProperties.gameRunning));
-                    currentMeshType = typeof(TextMesh);
-                }
-            }
-
-
-            if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(int) : currentMeshType, typeof(int), null))
-                vertices = new List<float>();
-
-            //GL.BlendFunc(BlendingFactor.SrcColor, BlendingFactor.OneMinusSrcColor);
-            foreach (ParticleSystem ps in particleSystems)
-            {
-                Object psO = ps.GetObject();
-                psO.GetMesh().CalculateFrustumVisibility();
-
-                InstancedMesh mesh = (InstancedMesh)psO.GetMesh();
-                if (currentMeshType == null || currentMeshType != mesh.GetType())
-                {
-                    instancedShaderProgram.Use();
-                }
-                mesh.UpdateFrustumAndCamera(ref character.camera);
-
-                List<float> instancedVertices = new List<float>();
-                (vertices, instancedVertices) = mesh.Draw(editorProperties.gameRunning);
-                currentMeshType = typeof(InstancedMesh);
-
-                meshVbo.Buffer(vertices);
-                instancedMeshVbo.Buffer(instancedVertices);
-                GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
-                vertices.Clear();
-            }
-            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-                
-            if(editorProperties.gameRunning == GameState.Stopped)
-            {
-                if (editorData.selectedItem != null && editorData.selectedItem is Object o)
-                {
-                    GL.Clear(ClearBufferMask.DepthBufferBit);
-                    shaderProgram.Use();
-                    editorData.gizmoManager.UpdateMoverGizmo(o.Position);
-                    vertices.Clear();
-                    foreach(Object moverGizmo in editorData.gizmoManager.moverGizmos)
-                    {
-                        vertices.AddRange(((Mesh)moverGizmo.GetMesh()).Draw(editorProperties.gameRunning));
-                    }
-                    meshVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
-                }
-            }
-
-            //BVH bvh = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).First().BVHStruct;
-            //List<WireframeMesh> bvhs = bvh.ExtractWireframesWithPos(bvh.Root, wireVao, wireVbo, noTextureShaderProgram.id, ref character.camera, character.Position);
-
-            //noTextureShaderProgram.Use();
-            //vertices.Clear();
-            //WireframeMesh wfm = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).First().GridStructure.
-            //    ExtractWireframeRange(wireVao, wireVbo, noTextureShaderProgram.id, ref character.camera);
-
-            //wfm.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //vertices.AddRange(wfm.Draw());
-
-            //wireVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
-
-            //Drawing character wireframe
-            //WireframeMesh characterWiremesh = character.mesh;
-            //noTextureShaderProgram.Use();
-            //characterWiremesh.UpdateFrustumAndCamera(ref frustum, ref character.camera);
-            //vertices.AddRange(characterWiremesh.Draw());
-            //wireVbo.Buffer(vertices);
-            //GL.DrawArrays(PrimitiveType.Lines, 0, vertices.Count);
-            //vertices = new List<float>();
-
-            //texts["Position"].ChangeText("Position = (" + character.PStr + ")");
-            //texts["Velocity"].ChangeText("Velocity = (" + character.VStr + ")");
-            //texts["Looking"].ChangeText("Looking = (" + character.LStr + ")");
-            //texts["Noclip"].ChangeText("Noclip = (" + character.noClip.ToString() + ")");
-
-            #endregion
-
-            if (!editorProperties.isGameFullscreen)
+            #region Fullscreen scissoring
+            if (!editorData.isGameFullscreen)
             {
                 GL.Disable(EnableCap.ScissorTest);
                 GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
             }
+            #endregion
 
             textureManager.GetAssetTextureIfNeeded(ref editorData);
-            if (!editorProperties.isGameFullscreen)
-                imGuiController.EditorWindow(gameWindowProperty, ref editorData, KeyboardState);
-            else
-                imGuiController.FullscreenWindow(gameWindowProperty, ref editorData);
 
-            if (editorProperties.windowResized)
-                ResizedEditorWindow();
-            if (Cursor != editorProperties.mouseType)
-                Cursor = editorProperties.mouseType;
-            imGuiController.Render();
+            EditorManaging();
 
             Context.SwapBuffers();
 
             base.OnRenderFrame(args);
-
-            //if (limitFps)
-            //{
-            //    double elapsed = stopwatch.Elapsed.TotalSeconds;
-            //    if (elapsed < TargetDeltaTime)
-            //    {
-            //        double sleepTime = TargetDeltaTime - elapsed;
-            //        Thread.Sleep((int)(sleepTime * 1000));
-            //    }
-            //    stopwatch.Restart();
-            //}
         }
 
         protected override void OnUpdateFrame(FrameEventArgs args)
@@ -675,58 +291,12 @@ namespace Engine3D
 
             editorData.fps.Update((float)args.Time);
 
-            if (editorProperties.gameRunning == GameState.Stopped &&
-               editorProperties.justSetGameState)
-            {
-                editorProperties.manualCursor = false;
-
-                editorProperties.justSetGameState = false;
-            }
-
-            if (editorProperties.gameRunning == GameState.Running && CursorState != CursorState.Grabbed && !editorProperties.manualCursor)
-            {
-                CursorState = CursorState.Grabbed;
-            }
-            else if (editorProperties.gameRunning == GameState.Stopped && CursorState != CursorState.Normal)
-            {
-                CursorState = CursorState.Normal;
-            }
-
-            if (KeyboardState.IsKeyReleased(Keys.F5))
-            {
-                editorProperties.gameRunning = editorProperties.gameRunning == GameState.Stopped ? GameState.Running : GameState.Stopped;
-            }
-
-            if (KeyboardState.IsKeyReleased(Keys.F2))
-            {
-                if (CursorState == CursorState.Normal)
-                {
-                    CursorState = CursorState.Grabbed;
-                    editorProperties.manualCursor = false;
-                }
-                else if (CursorState == CursorState.Grabbed)
-                {
-                    CursorState = CursorState.Normal;
-                    editorProperties.manualCursor = true;
-                }
-            }
+            CursorAndGameStateSetting();
 
             float deltaX = 0, deltaY = 0;
-            if (firstMove)
-            {
-                lastPos = new Vector2(MouseState.X, MouseState.Y);
-                firstMove = false;
-            }
-            else
-            {
-                deltaX = MouseState.X - lastPos.X;
-                deltaY = MouseState.Y - lastPos.Y;
-                if (deltaX != 0 || deltaY != 0)
-                {
-                    lastPos = new Vector2(MouseState.X, MouseState.Y);
-                }
-            }
-            if (editorProperties.gameRunning == GameState.Running)
+            MouseMoving(ref deltaX, ref deltaY);
+
+            if (editorData.gameRunning == GameState.Running)
             {
                 character.CalculateVelocity(KeyboardState, MouseState, args);
                 character.UpdatePosition(KeyboardState, MouseState, args);
@@ -740,52 +310,10 @@ namespace Engine3D
             }
             else
             {
-                if (IsMouseInGameWindow(MouseState))
-                {
-                    bool moved = false;
-                    if (Math.Abs(MouseState.ScrollDelta.Y) > 0)
-                    {
-                        character.Position += character.camera.front * MouseState.ScrollDelta.Y * 2;
-                        character.camera.SetPosition(character.Position);
-
-                        moved = true;
-                    }
-                    if (MouseState.IsButtonDown(MouseButton.Right) && !MouseState.IsButtonDown(MouseButton.Middle))
-                    {
-                        if (deltaX != 0 || deltaY != 0)
-                        {
-                            lastPos = new Vector2(MouseState.X, MouseState.Y);
-
-                            character.camera.SetYaw(character.camera.GetYaw() + deltaX * sensitivity * (float)args.Time);
-                            character.camera.SetPitch(character.camera.GetPitch() - deltaY * sensitivity * (float)args.Time);
-                            moved = true;
-                        }
-                    }
-                    else if (MouseState.IsButtonDown(MouseButton.Middle))
-                    {
-                        if (deltaX != 0 || deltaY != 0)
-                        {
-                            lastPos = new Vector2(MouseState.X, MouseState.Y);
-
-                            character.Position += (character.camera.up * deltaY) - (character.camera.right * deltaX);
-                            character.camera.SetPosition(character.Position);
-                            moved = true;
-                        }
-                    }
-
-                    if (moved)
-                    {
-                        ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
-                        Parallel.ForEach(objects, parallelOptions, obj =>
-                        {
-                            obj.GetMesh().recalculate = true;
-                        });
-                    }
-                }
+                EditorMoving(deltaX, deltaY, args);
             }
 
-
-            character.AfterUpdate(MouseState, args, editorProperties.gameRunning);
+            character.AfterUpdate(MouseState, args, editorData.gameRunning);
 
             if (editorData.fps.totalTime > 0)
             {
@@ -802,11 +330,10 @@ namespace Engine3D
             base.OnLoad();
             CursorState = CursorState.Normal; 
 
-            //if (limitFps)
-            //    stopwatch = Stopwatch.StartNew();
-
             textGenerator = new TextGenerator();
-            imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorProperties);
+
+            #region Editor data
+            imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorData);
             textureManager.AddTexture("ui_play.png", flipY:false);
             textureManager.AddTexture("ui_play.png", flipY: false);
             textureManager.AddTexture("ui_stop.png", flipY:false);
@@ -818,11 +345,12 @@ namespace Engine3D
             editorData.pointLights = pointLights;
             editorData.assets = FileManager.GetAllAssets();
             textureManager.GetAssetTextures(editorData);
+            #endregion
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
 
-            // OPENGL init
+            #region VBO and VAO Init
             //indirectBuffer = new IndirectBuffer();
             visibilityVbo = new VisibilityVBO(DynamicCopy: true);
             frustumVbo = new VBO(DynamicCopy: true);
@@ -841,9 +369,9 @@ namespace Engine3D
             meshVao.LinkToVAO(4, 3, meshVbo);
 
             //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, drawCommandsVbo.id);
-            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, visibilityVbo.id);
+            //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, visibilityVbo.id);
             //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, meshVbo.id);
-            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 2, frustumVbo.id);
+            //GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 2, frustumVbo.id);
 
             instancedMeshVbo = new VBO();
             instancedMeshVao = new InstancedVAO(InstancedMesh.floatCount, InstancedMesh.instancedFloatCount);
@@ -883,6 +411,10 @@ namespace Engine3D
             aabbVao = new VAO(3);
             aabbVao.LinkToVAO(0, 3, aabbVbo);
 
+            #endregion
+
+            #region Shader Init
+
             // Create the shader program
             cullingProgram = new Shader(new List<string>() { "cullingshader.comp" });
             //shaderProgram = new Shader(new List<string>() { "DefaultForGeom.vert", "outline.geom", "Default.frag" });
@@ -894,6 +426,7 @@ namespace Engine3D
             noTextureShaderProgram = new Shader(new List<string>() { "noTexture.vert", "noTexture.frag" });
             aabbShaderProgram = new Shader(new List<string>() { "aabb.vert", "aabb.frag" });
             gizmoShaderProgram = new Shader(new List<string>() { "noTexture.vert", "noTexture.frag" });
+            #endregion
 
             pickingTexture = new PickingTexture(windowSize);
 
@@ -911,16 +444,7 @@ namespace Engine3D
             Camera camera = new Camera(windowSize);
             camera.UpdateVectors();
 
-            //TEMP---------------------------------------
-            //camera.position.X = -6.97959471f;
-            //camera.position.Z = -7.161373f;
-            //camera.yaw = 45.73648f;
-            //camera.pitch = -18.75002f;
-            //-------------------------------------------
-
             noTextureShaderProgram.Use();
-            //Vector3 characterPos = new Vector3(0, 20, 0);
-            //Vector3 characterPos = new Vector3(4.5f, 1.3f, 0);
             Vector3 characterPos = new Vector3(0, 0, -10);
             character = new Character(new WireframeMesh(wireVao, wireVbo, noTextureShaderProgram.id, ref camera), ref physx, characterPos, camera);
             character.camera.SetYaw(90f);
@@ -932,7 +456,7 @@ namespace Engine3D
             //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
 
             shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorProperties.gameRunning);
+            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
 
             // Projection matrix and mesh loading
 

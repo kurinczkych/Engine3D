@@ -106,6 +106,7 @@ namespace Engine3D
 
     public class EditorData
     {
+        #region Data
         public List<Object> objects;
         public List<ParticleSystem> particleSystems;
         public List<PointLight> pointLights;
@@ -120,12 +121,9 @@ namespace Engine3D
         public List<Asset> AssetTextures;
 
         public GizmoManager gizmoManager;
+        #endregion
 
-        public EditorData() { }
-    }
-
-    public class EditorProperties
-    {
+        #region Properties 
         public bool windowResized = false;
         public MouseCursor mouseType = MouseCursor.Default;
 
@@ -147,8 +145,9 @@ namespace Engine3D
                 _gameRunning = value;
             }
         }
+        #endregion
 
-        public EditorProperties()
+        public EditorData()
         {
             _gameRunning = GameState.Stopped;
         }
@@ -156,8 +155,7 @@ namespace Engine3D
 
     public class ImGuiController : BaseImGuiController
     {
-
-        private EditorProperties editorProperties;
+        private EditorData editorData;
 
         private Dictionary<string, byte[]> _inputBuffers = new Dictionary<string, byte[]>();
 
@@ -168,9 +166,9 @@ namespace Engine3D
         private System.Numerics.Vector4 baseBGColor = new System.Numerics.Vector4(0.352f, 0.352f, 0.352f, 1.0f);
         private System.Numerics.Vector4 seperatorColor = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
 
-        public ImGuiController(int width, int height, ref EditorProperties editorProperties) : base(width, height)
+        public ImGuiController(int width, int height, ref EditorData editorData) : base(width, height)
         {
-            this.editorProperties = editorProperties;
+            this.editorData = editorData;
 
             #region Input boxes
             _inputBuffers.Add("##name", new byte[100]);
@@ -292,12 +290,12 @@ namespace Engine3D
         {
             var io = ImGui.GetIO();
 
-            if (editorProperties.gameRunning == GameState.Running && !editorProperties.manualCursor)
+            if (editorData.gameRunning == GameState.Running && !editorData.manualCursor)
                 io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
             else
                 io.ConfigFlags &= ~ImGuiConfigFlags.NoMouse;
 
-            editorProperties.windowResized = false;
+            editorData.windowResized = false;
             bool[] mouseTypes = new bool[3];
 
             var style = ImGui.GetStyle();
@@ -336,7 +334,7 @@ namespace Engine3D
                             gameWindow.leftPanelPercent = 0.15f;
                             gameWindow.rightPanelPercent = 0.15f;
                             gameWindow.bottomPanelPercent = 0.15f;
-                            editorProperties.windowResized = true;
+                            editorData.windowResized = true;
                         }
                         ImGui.EndMenu();
                     }
@@ -347,43 +345,43 @@ namespace Engine3D
                 style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 
                 float totalWidth = 40;
-                if (editorProperties.gameRunning == GameState.Running)
+                if (editorData.gameRunning == GameState.Running)
                     totalWidth = 60;
 
                 float startX = (ImGui.GetWindowSize().X - totalWidth) * 0.5f;
                 float startY = (ImGui.GetWindowSize().Y - 10) * 0.5f;
                 ImGui.SetCursorPos(new System.Numerics.Vector2(startX, startY));
 
-                if (editorProperties.gameRunning == GameState.Stopped)
+                if (editorData.gameRunning == GameState.Stopped)
                 {
                     if (ImGui.ImageButton("play", (IntPtr)Engine.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
-                        editorProperties.gameRunning = GameState.Running;
-                        editorProperties.justSetGameState = true;
+                        editorData.gameRunning = GameState.Running;
+                        editorData.justSetGameState = true;
                     }
                 }
                 else
                 {
                     if (ImGui.ImageButton("stop", (IntPtr)Engine.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
-                        editorProperties.gameRunning = GameState.Stopped;
-                        editorProperties.justSetGameState = true;
+                        editorData.gameRunning = GameState.Stopped;
+                        editorData.justSetGameState = true;
                     }
                 }
 
                 ImGui.SameLine();
-                if (editorProperties.gameRunning == GameState.Running)
+                if (editorData.gameRunning == GameState.Running)
                 {
                     if (ImGui.ImageButton("pause", (IntPtr)Engine.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
-                        editorProperties.isPaused = !editorProperties.isPaused;
+                        editorData.isPaused = !editorData.isPaused;
                     }
                 }
 
                 ImGui.SameLine();
                 if (ImGui.ImageButton("screen", (IntPtr)Engine.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                 {
-                    editorProperties.isGameFullscreen = !editorProperties.isGameFullscreen;
+                    editorData.isGameFullscreen = !editorData.isGameFullscreen;
                 }
 
 
@@ -526,7 +524,7 @@ namespace Engine3D
                             gameWindow.leftPanelPercent = 0.75f;
                     }
 
-                    editorProperties.windowResized = true;
+                    editorData.windowResized = true;
 
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                     {
@@ -1185,7 +1183,7 @@ namespace Engine3D
                             gameWindow.rightPanelPercent = 0.75f;
                     }
 
-                    editorProperties.windowResized = true;
+                    editorData.windowResized = true;
 
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                     {
@@ -1231,7 +1229,7 @@ namespace Engine3D
                     if(gameWindow.bottomPanelPercent > 0.75f)
                         gameWindow.bottomPanelPercent = 0.75f;
 
-                    editorProperties.windowResized = true;
+                    editorData.windowResized = true;
 
                     if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                     {
@@ -1244,7 +1242,6 @@ namespace Engine3D
             style.WindowMinSize = new System.Numerics.Vector2(32, 32);
             style.Colors[(int)ImGuiCol.WindowBg] = baseBGColor;
             #endregion
-
 
             #region Bottom asset panel
             style.WindowRounding = 0f;
@@ -1411,11 +1408,11 @@ namespace Engine3D
 
             #region MouseType
             if (mouseTypes[0] || mouseTypes[1])
-                editorProperties.mouseType = MouseCursor.HResize;
+                editorData.mouseType = MouseCursor.HResize;
             else if (mouseTypes[2])
-                editorProperties.mouseType = MouseCursor.VResize;
+                editorData.mouseType = MouseCursor.VResize;
             else
-                editorProperties.mouseType = MouseCursor.Default;
+                editorData.mouseType = MouseCursor.Default;
             #endregion
         }
 
@@ -1467,13 +1464,13 @@ namespace Engine3D
         {
             var io = ImGui.GetIO();
 
-            if (editorProperties.gameRunning == GameState.Running && !editorProperties.manualCursor)
+            if (editorData.gameRunning == GameState.Running && !editorData.manualCursor)
                 io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
             else
                 io.ConfigFlags &= ~ImGuiConfigFlags.NoMouse;
 
             float totalWidth = 40;
-            if (editorProperties.gameRunning == GameState.Running)
+            if (editorData.gameRunning == GameState.Running)
                 totalWidth = 60;
 
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(totalWidth*2, 40));
@@ -1482,36 +1479,36 @@ namespace Engine3D
                                                   ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse ))
             {
 
-                if (editorProperties.gameRunning == GameState.Stopped)
+                if (editorData.gameRunning == GameState.Stopped)
                 {
                     if (ImGui.ImageButton("play", (IntPtr)Engine.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
-                        editorProperties.gameRunning = GameState.Running;
-                        editorProperties.justSetGameState = true;
+                        editorData.gameRunning = GameState.Running;
+                        editorData.justSetGameState = true;
                     }
                 }
                 else
                 {
                     if (ImGui.ImageButton("stop", (IntPtr)Engine.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
-                        editorProperties.gameRunning = GameState.Stopped;
-                        editorProperties.justSetGameState = true;
+                        editorData.gameRunning = GameState.Stopped;
+                        editorData.justSetGameState = true;
                     }
                 }
 
                 ImGui.SameLine();
-                if (editorProperties.gameRunning == GameState.Running)
+                if (editorData.gameRunning == GameState.Running)
                 {
                     if (ImGui.ImageButton("pause", (IntPtr)Engine.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
-                        editorProperties.isPaused = !editorProperties.isPaused;
+                        editorData.isPaused = !editorData.isPaused;
                     }
                 }
 
                 ImGui.SameLine();
                 if (ImGui.ImageButton("screen", (IntPtr)Engine.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                 {
-                    editorProperties.isGameFullscreen = !editorProperties.isGameFullscreen;
+                    editorData.isGameFullscreen = !editorData.isGameFullscreen;
                 }
             }
             ImGui.End();
