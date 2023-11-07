@@ -137,6 +137,17 @@ namespace Engine3D
             }
         }
 
+        public void Delete()
+        {
+            tris.Clear();
+            if(visibleTris != null)
+                visibleTris.Clear();
+            if (allVerts != null)
+                allVerts.Clear();
+            if (uniformLocations != null)
+                uniformLocations.Clear();
+        }
+
 
         public void AddTriangle(triangle tri)
         {
@@ -318,9 +329,10 @@ namespace Engine3D
             }
         }
 
-        public void ProcessObj(string filename)
+        public void ProcessObj(string filename, float cr=1, float cg=1, float cb=1, float ca=1)
         {
             tris = new List<triangle>();
+            Color4 color = new Color4(cr, cg, cb, ca);
 
             string result;
             int fPerCount = -1;
@@ -328,7 +340,7 @@ namespace Engine3D
             List<Vector3> normals = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
-            using (Stream stream = FileManager.GetFileStream(filename, FileType.Models))
+            using (Stream stream = FileManager.GetFileStream(filename, "Models"))
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (true)
@@ -403,6 +415,10 @@ namespace Engine3D
                                     tris.Last().pi[1] = v[1] - 1;
                                     tris.Last().pi[2] = v[2] - 1;
 
+                                    tris.Last().c[0] = color;
+                                    tris.Last().c[1] = color;
+                                    tris.Last().c[2] = color;
+
                                     tris.Last().visibile = true;
 
                                     Bounds.Enclose(tris.Last());
@@ -428,6 +444,10 @@ namespace Engine3D
                                     tris.Last().pi[1] = v[1] - 1;
                                     tris.Last().pi[2] = v[2] - 1;
 
+                                    tris.Last().c[0] = color;
+                                    tris.Last().c[1] = color;
+                                    tris.Last().c[2] = color;
+
                                     tris.Last().visibile = true;
 
                                     Bounds.Enclose(tris.Last());
@@ -446,6 +466,10 @@ namespace Engine3D
                                 tris.Last().pi[0] = f[0] - 1;
                                 tris.Last().pi[1] = f[1] - 1;
                                 tris.Last().pi[2] = f[2] - 1;
+
+                                tris.Last().c[0] = color;
+                                tris.Last().c[1] = color;
+                                tris.Last().c[2] = color;
 
                                 tris.Last().visibile = true;
 

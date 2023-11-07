@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
+using System.Runtime.CompilerServices;
 
 namespace Engine3D
 {
@@ -30,12 +31,20 @@ namespace Engine3D
         public int TextureId;
         public int TextureUnit;
 
+        public bool isBinded = false;
+
         public bool flipY;
 
-        public Texture(int unit, string textureName, bool flipY = true, string textureFilter = "linear")
+        public Texture(int unit, string textureName, bool flipY = true, string textureFilter = "linear", AssetTypeEditor type = AssetTypeEditor.UI)
         {
             TextureName = textureName;
-            TexturePath = FileManager.GetFilePath(textureName, FileType.Textures);
+            if(type == AssetTypeEditor.UI)
+                TexturePath = FileManager.GetFilePath(textureName, "Textures");
+            else if(type == AssetTypeEditor.Store)
+                TexturePath = FileManager.GetFilePath(textureName, "Temp");
+
+            if (TexturePath == "" || TexturePath == null)
+                throw new Exception("Texture not found!");
 
             int currentUnit = unit;
 
@@ -61,15 +70,19 @@ namespace Engine3D
             }
 
             Bind();
-            LoadTexture(TexturePath, flipY, tminf, tmagf);
+
+            if(type == AssetTypeEditor.Store)
+                LoadTexture(TexturePath, flipY, tminf, tmagf, "Temp");
+            else
+                LoadTexture(TexturePath, flipY, tminf, tmagf);
 
             Unbind();
         }
 
-        public static void LoadTexture(string fileName, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf)
+        public static void LoadTexture(string fileName, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf, string folder = "Textures")
         {
             // Load the image (using System.Drawing or another library)
-            Stream? stream_t = FileManager.GetFileStream(Path.GetFileName(fileName), FileType.Textures);
+            Stream? stream_t = FileManager.GetFileStream(Path.GetFileName(fileName), folder);
             if (stream_t != Stream.Null && stream_t != null)
             {
                 using (stream_t)
@@ -101,18 +114,24 @@ namespace Engine3D
         {
             GL.ActiveTexture(OpenTK.Graphics.OpenGL4.TextureUnit.Texture0 + TextureUnit);
             GL.BindTexture(TextureTarget.Texture2D, TextureId);
+            isBinded = true;
         }
-        public void Unbind() { GL.BindTexture(TextureTarget.Texture2D, 0); }
-
-        public void Delete()
+        public void Unbind()
         { 
             GL.BindTexture(TextureTarget.Texture2D, 0);
+            isBinded = false;
+        }
+
+        public void Delete()
+        {
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            isBinded = false;
             GL.DeleteTexture(TextureId);
         }
 
         ~Texture()
         {
-            Delete();
+            //Delete();
         }
 
     }

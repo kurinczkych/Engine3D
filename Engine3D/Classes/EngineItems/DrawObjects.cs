@@ -62,7 +62,7 @@ namespace Engine3D
                             //GL.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
 
                             // OUTLINING
-                            if (o.isSelected && o.isEnabled)
+                            if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
                             {
                                 GL.Enable(EnableCap.StencilTest);
                                 GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
@@ -77,7 +77,7 @@ namespace Engine3D
                             vertices.Clear();
 
                             // OUTLINING
-                            if (o.isSelected && o.isEnabled)
+                            if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
                             {
                                 GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
                                 GL.StencilMask(0x00);

@@ -105,7 +105,7 @@ namespace Engine3D
 
         private void LoadBufferWithSoundData(int buffer)
         {
-            var oggStream = FileManager.GetFileStream(audioFile, FileType.Audio);
+            var oggStream = FileManager.GetFileStream(audioFile, "Audio");
 
             using (var vorbis = new VorbisReader(oggStream, true))
             {

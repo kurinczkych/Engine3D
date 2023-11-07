@@ -115,6 +115,7 @@ namespace Engine3D
 
         public object? selectedItem;
 
+        public AssetStoreManager assetStoreManager;
         public List<Asset> assets = new List<Asset>();
 
         public int currentAssetTexture = 0;
@@ -157,6 +158,7 @@ namespace Engine3D
     {
         private EditorData editorData;
 
+        private string currentBottomPanelTab = "Project";
         private Dictionary<string, byte[]> _inputBuffers = new Dictionary<string, byte[]>();
 
         private bool isResizingLeft = false;
@@ -165,6 +167,8 @@ namespace Engine3D
         private float seperatorSize = 5;
         private System.Numerics.Vector4 baseBGColor = new System.Numerics.Vector4(0.352f, 0.352f, 0.352f, 1.0f);
         private System.Numerics.Vector4 seperatorColor = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
+        public bool shouldOpenTreeNodeMeshes = false;
+        private bool isObjectHovered = false;
 
         public ImGuiController(int width, int height, ref EditorData editorData) : base(width, height)
         {
@@ -189,6 +193,7 @@ namespace Engine3D
             _inputBuffers.Add("##textureRoughPath", new byte[100]);
             _inputBuffers.Add("##textureMetalPath", new byte[100]);
             _inputBuffers.Add("##meshPath", new byte[100]);
+            _inputBuffers.Add("##assetSearch", new byte[200]);
 
             #endregion
         }
@@ -286,9 +291,11 @@ namespace Engine3D
             //TODO pointlight and particle system selection
         }
 
-        public void EditorWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData, KeyboardState keyboardState, Engine engine)
+        public void EditorWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData, 
+                                 KeyboardState keyboardState, MouseState mouseState, Engine engine)
         {
             var io = ImGui.GetIO();
+            bool anyObjectHovered = false;
 
             if (editorData.gameRunning == GameState.Running && !editorData.manualCursor)
                 io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
@@ -419,22 +426,27 @@ namespace Engine3D
                                 if (ImGui.MenuItem("Cube"))
                                 {
                                     engine.AddObject(ObjectType.Cube);
+                                    shouldOpenTreeNodeMeshes = true;
                                 }
                                 if (ImGui.MenuItem("Sphere"))
                                 {
                                     engine.AddObject(ObjectType.Sphere);
+                                    shouldOpenTreeNodeMeshes = true;
                                 }
                                 if (ImGui.MenuItem("Capsule"))
                                 {
                                     engine.AddObject(ObjectType.Capsule);
+                                    shouldOpenTreeNodeMeshes = true;
                                 }
                                 if (ImGui.MenuItem("Plane"))
                                 {
                                     engine.AddObject(ObjectType.Plane);
+                                    shouldOpenTreeNodeMeshes = true;
                                 }
                                 if (ImGui.MenuItem("Mesh"))
                                 {
                                     engine.AddObject(ObjectType.TriangleMesh);
+                                    shouldOpenTreeNodeMeshes = true;
                                 }
 
                                 ImGui.EndMenu();
@@ -449,6 +461,12 @@ namespace Engine3D
 
                         if (meshes.Count > 0)
                         {
+
+                            if (shouldOpenTreeNodeMeshes)
+                            {
+                                ImGui.SetNextItemOpen(true, ImGuiCond.Once); // Open the tree node once.
+                                shouldOpenTreeNodeMeshes = false; // Reset the flag so it doesn't open again automatically.
+                            }
                             if (ImGui.TreeNode("Meshes"))
                             {
                                 for (int i = 0; i < meshes.Count; i++)
@@ -457,6 +475,26 @@ namespace Engine3D
                                     if (ImGui.Selectable(name))
                                     {
                                         SelectItem(meshes[i], editorData);
+                                    }
+                                    if (ImGui.IsItemHovered())
+                                        anyObjectHovered = true;
+
+                                    if (isObjectHovered)
+                                    {
+                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
+                                        style.PopupRounding = 2f;
+                                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
+                                        {
+                                            anyObjectHovered = true;
+                                            if (ImGui.MenuItem("Delete"))
+                                            {
+                                                engine.RemoveObject(meshes[i]);
+                                            }
+
+                                            ImGui.EndPopup();
+                                        }
+                                        style.WindowPadding = windowPadding;
+                                        style.PopupRounding = popupRounding;
                                     }
                                 }
 
@@ -943,7 +981,7 @@ namespace Engine3D
                                     ImGui.Text("Texture");
                                     Encoding.UTF8.GetBytes(o.textureName, 0, o.textureName.ToString().Length, _inputBuffers["##texturePath"], 0);
                                     ImGui.InputText("##texturePath", _inputBuffers["##texturePath"], (uint)_inputBuffers["##texturePath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                    if(ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    if(ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureName != "")
                                     {
                                         o.textureName = "";
                                         _inputBuffers["##texturePath"][0] = 0;
@@ -970,7 +1008,7 @@ namespace Engine3D
                                         ImGui.Text("Normal Texture");
                                         Encoding.UTF8.GetBytes(o.textureNormalName, 0, o.textureNormalName.ToString().Length, _inputBuffers["##textureNormalPath"], 0);
                                         ImGui.InputText("##textureNormalPath", _inputBuffers["##textureNormalPath"], (uint)_inputBuffers["##textureNormalPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureNormalName != "")
                                         {
                                             o.textureNormalName = "";
                                             _inputBuffers["##textureNormalPath"][0] = 0;
@@ -994,7 +1032,7 @@ namespace Engine3D
                                         ImGui.Text("Height Texture");
                                         Encoding.UTF8.GetBytes(o.textureHeightName, 0, o.textureHeightName.ToString().Length, _inputBuffers["##textureHeightPath"], 0);
                                         ImGui.InputText("##textureHeightPath", _inputBuffers["##textureHeightPath"], (uint)_inputBuffers["##textureHeightPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureHeightName != "")
                                         {
                                             o.textureHeightName = "";
                                             _inputBuffers["##textureHeightPath"][0] = 0;
@@ -1018,7 +1056,7 @@ namespace Engine3D
                                         ImGui.Text("AO Texture");
                                         Encoding.UTF8.GetBytes(o.textureAOName, 0, o.textureAOName.ToString().Length, _inputBuffers["##textureAOPath"], 0);
                                         ImGui.InputText("##textureAOPath", _inputBuffers["##textureAOPath"], (uint)_inputBuffers["##textureAOPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureAOName != "")
                                         {
                                             o.textureAOName = "";
                                             _inputBuffers["##textureAOPath"][0] = 0;
@@ -1042,7 +1080,7 @@ namespace Engine3D
                                         ImGui.Text("Rough Texture");
                                         Encoding.UTF8.GetBytes(o.textureRoughName, 0, o.textureRoughName.ToString().Length, _inputBuffers["##textureRoughPath"], 0);
                                         ImGui.InputText("##textureRoughPath", _inputBuffers["##textureRoughPath"], (uint)_inputBuffers["##textureRoughPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureName != "")
                                         {
                                             o.textureRoughName = "";
                                             _inputBuffers["##textureRoughPath"][0] = 0;
@@ -1066,7 +1104,7 @@ namespace Engine3D
                                         ImGui.Text("Metal Texture");
                                         Encoding.UTF8.GetBytes(o.textureMetalName, 0, o.textureMetalName.ToString().Length, _inputBuffers["##textureMetalPath"], 0);
                                         ImGui.InputText("##textureMetalPath", _inputBuffers["##textureMetalPath"], (uint)_inputBuffers["##textureMetalPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureMetalName != "")
                                         {
                                             o.textureMetalName = "";
                                             _inputBuffers["##textureMetalPath"][0] = 0;
@@ -1293,14 +1331,17 @@ namespace Engine3D
             {
                 if (ImGui.BeginTabBar("MyTabs"))
                 {
+                    float imageWidth = 100;
+                    float imageHeight = 100;
+                    System.Numerics.Vector2 imageSize = new System.Numerics.Vector2(imageWidth, imageHeight);
+
                     if (ImGui.BeginTabItem("Project"))
                     {
-                        if(ImGui.BeginTabBar("Assets"))
-                        {
-                            float imageWidth = 100;
-                            float imageHeight = 100;
-                            System.Numerics.Vector2 imageSize = new System.Numerics.Vector2(imageWidth, imageHeight);
+                        if (currentBottomPanelTab != "Project")
+                            currentBottomPanelTab = "Project";
 
+                        if (ImGui.BeginTabBar("Assets"))
+                        {
                             var groupedAssets = editorData.assets.GroupBy(asset => asset.Type).ToDictionary(group => group.Key, group => group.ToList());
                             if (ImGui.BeginTabItem("Textures"))
                             {
@@ -1326,7 +1367,7 @@ namespace Engine3D
                                             }
 
                                             ImGui.BeginGroup();
-                                            ImGui.PushID(textureAssets[i].Id);
+                                            ImGui.PushID(textureAssets[i].Path);
 
                                             System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
                                             ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + textureAssets[i].Name].TextureId, imageSize);
@@ -1419,7 +1460,112 @@ namespace Engine3D
                     }
                     if (ImGui.BeginTabItem("Console"))
                     {
+                        if (currentBottomPanelTab != "Console")
+                            currentBottomPanelTab = "Console";
+
                         ImGui.Text("Content for Tab 1");
+
+                        ImGui.EndTabItem();
+                    }
+                    if (ImGui.BeginTabItem("Asset store"))
+                    {
+                        Encoding.UTF8.GetBytes(editorData.assetStoreManager.currentKeyword, 0, editorData.assetStoreManager.currentKeyword.Length, _inputBuffers["##assetSearch"], 0);
+
+                        if (currentBottomPanelTab != "Asset store")
+                        {
+                            currentBottomPanelTab = "Asset store";
+                            ImGui.SetKeyboardFocusHere();
+                        }
+
+                        bool commit = false;
+                        if (ImGui.InputText("##assetSearch", _inputBuffers["##assetSearch"], (uint)_inputBuffers["##assetSearch"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                        {
+                            commit = true;
+                        }
+                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                            commit = true;
+
+                        if(commit)
+                        {
+                            editorData.assetStoreManager.currentKeyword = GetStringFromBuffer("##assetSearch");
+                            editorData.assetStoreManager.currentPageNumber = 0;
+                            editorData.assetStoreManager.GetOpenGameArtOrg();
+                        }
+
+                        ImGui.Separator();
+
+                        float padding = ImGui.GetStyle().WindowPadding.X;
+                        float spacing = ImGui.GetStyle().ItemSpacing.X;
+
+                        System.Numerics.Vector2 availableSpace = ImGui.GetContentRegionAvail();
+                        int columns = (int)((availableSpace.X + spacing) / (imageWidth + spacing));
+                        columns = Math.Max(1, columns);
+                        float itemWidth = availableSpace.X / columns - spacing;
+
+                        for (int i = 0; i < editorData.assetStoreManager.assets.Count; i++)
+                        {
+                            if (Engine.textureManager.textures.ContainsKey("ui_" + editorData.assetStoreManager.assets[i].Path))
+                            {
+                                if (i % columns != 0)
+                                {
+                                    ImGui.SameLine();
+                                }
+
+                                ImGui.BeginGroup();
+                                ImGui.PushID(editorData.assetStoreManager.assets[i].Path);
+
+                                ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + editorData.assetStoreManager.assets[i].Path].TextureId, imageSize);
+
+                                var cursorPos = ImGui.GetCursorPos();
+
+                                if(ImGui.IsItemHovered())
+                                {
+                                    // Get the current window's draw list
+                                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+
+                                    // Retrieve the bounding box of the last item (the image)
+                                    System.Numerics.Vector2 min = ImGui.GetItemRectMin();
+                                    System.Numerics.Vector2 max = ImGui.GetItemRectMax();
+
+                                    // Define the overlay color (gray transparent)
+                                    System.Numerics.Vector4 overlayColor = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 0.3f); // RGBA
+
+                                    // Draw the overlay
+                                    drawList.AddRectFilled(min, max, ImGui.ColorConvertFloat4ToU32(overlayColor));
+
+                                    // Define the button position and size
+                                    System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(100, 20);
+                                    System.Numerics.Vector2 buttonPos = new System.Numerics.Vector2(
+                                        (min.X + max.X) / 2 - buttonSize.X / 2,
+                                        (min.Y + max.Y) / 2 - buttonSize.Y / 2
+                                    );
+
+                                    // Draw the button
+                                    ImGui.SetCursorScreenPos(buttonPos);
+                                    if (ImGui.Button("Download", buttonSize))
+                                    {
+                                    }
+
+                                    if(ImGui.IsItemHovered() && mouseState.IsButtonReleased(MouseButton.Left))
+                                    {
+                                        editorData.assetStoreManager.DownloadAssetFull(editorData.assetStoreManager.assets[i]);
+                                    }
+                                }
+
+                                ImGui.SetCursorPos(cursorPos);
+                                ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
+                                ImGui.TextWrapped(editorData.assetStoreManager.assets[i].Name);
+                                ImGui.PopTextWrapPos();
+
+                                ImGui.PopID();
+
+                                ImGui.EndGroup();
+                            }
+                        }
+
+                        ImGui.Dummy(new System.Numerics.Vector2(0.0f, 10f));
+
+                        ImGui.PopStyleVar();
 
                         ImGui.EndTabItem();
                     }
@@ -1438,14 +1584,28 @@ namespace Engine3D
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(ImGui.GetStyle().WindowPadding.X, 0));
             if (ImGui.Begin("BottomPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar))
             {
+
                 string fpsStr = editorData.fps.GetFpsString();
                 System.Numerics.Vector2 bottomPanelSize = ImGui.GetContentRegionAvail();
                 System.Numerics.Vector2 textSize = ImGui.CalcTextSize(fpsStr);
-                ImGui.SetCursorPosX(bottomPanelSize.X - textSize.X);
+                if (editorData.assetStoreManager.IsZipDownloadInProgress)
+                {
+                    ImGui.SetCursorPosY((bottomPanelSize.Y - textSize.Y) * 0.5f);
+                    ImGui.Text(editorData.assetStoreManager.ZipDownloadProgress);
+                }
+                else if(editorData.assetStoreManager.tryingToDownload)
+                {
+                    ImGui.SetCursorPosY((bottomPanelSize.Y - textSize.Y) * 0.5f);
+                    ImGui.Text("Starting the download...");
+                }
                 ImGui.SetCursorPosY((bottomPanelSize.Y - textSize.Y) * 0.5f);
+                ImGui.SetCursorPosX(bottomPanelSize.X - textSize.X);
                 ImGui.Text(fpsStr);
             }
             #endregion
+
+            if (isObjectHovered != anyObjectHovered)
+                isObjectHovered = anyObjectHovered;
 
             #region MouseType
             if (mouseTypes[0] || mouseTypes[1])

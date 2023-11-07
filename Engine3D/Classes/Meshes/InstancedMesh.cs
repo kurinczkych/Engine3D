@@ -47,7 +47,9 @@ namespace Engine3D
         {
             this.parentObject = parentObject;
 
-            parentObject.texture = Engine.textureManager.AddTexture(textureName);
+            bool success = false;
+            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            // TODO: Console error texture not found!
 
             Vao = vao;
             Vbo = vbo;
@@ -69,7 +71,9 @@ namespace Engine3D
         {
             this.parentObject = parentObject;
 
-            parentObject.texture = Engine.textureManager.AddTexture(textureName);
+            bool success = false;
+            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            // TODO: Console error texture not found!
 
             Vao = vao;
             Vbo = vbo;

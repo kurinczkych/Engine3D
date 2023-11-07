@@ -146,7 +146,7 @@ namespace Engine3D
         private string GetFile(string fileName)
         {
             // Load the image (using System.Drawing or another library)
-            Stream? stream = FileManager.GetFileStream(fileName, FileType.Fonts);
+            Stream? stream = FileManager.GetFileStream(fileName, "Fonts");
             if (stream != null)
             {
                 using (stream)

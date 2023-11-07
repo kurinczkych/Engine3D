@@ -10,61 +10,70 @@ namespace Engine3D
     public class TextureManager
     {
         public Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
-        private int textureCount = 0;
+        public static int textureCount = 0;
 
         public TextureManager() { }
 
-        public Texture AddTexture(string name, bool flipY = true, string textureFilter = "linear")
+        public Texture? AddTexture(string name, out bool success, bool flipY = true, string textureFilter = "linear")
         {
             if (textures.ContainsKey(name))
+            {
+                success = true;
                 return textures[name];
+            }
 
-            Texture texture = new Texture(textureCount, name, flipY, textureFilter);
-            textures.Add(name, texture);
-            textureCount++;
+            try
+            {
+                Texture texture = new Texture(textureCount, name, flipY, textureFilter);
+                textures.Add(name, texture);
+                textureCount++;
+                success = true;
+                return texture;
+            }
+            catch
+            {
+                success = false;
+            }
 
-            return texture;
+            return null;
         }
 
-        private void AddUITexture(string name, bool flipY = true, string textureFilter = "linear")
+        public void AddUITexture(string name, out bool success, bool flipY = true, string textureFilter = "linear", AssetTypeEditor type = AssetTypeEditor.UI)
         {
             if (textures.ContainsKey("ui_" + name))
+            {
+                success = true;
                 return;
+            }
 
-            Texture texture = new Texture(textureCount, name, flipY, textureFilter);
-            textures.Add("ui_" + name, texture);
-            textureCount++;
-        }
-
-        public void GetAssetTextures(EditorData editorData)
-        {
-            editorData.AssetTextures = editorData.assets.Where(x => x.Type == AssetType.Texture).ToList();
-
-            string name = editorData.AssetTextures[editorData.currentAssetTexture].Name;
-            if (!textures.ContainsKey("ui_"+name))
-                AddUITexture(name, flipY: false);
-
-            editorData.currentAssetTexture++;
-            textureCount++;
-        }
-
-        public void GetAssetTextureIfNeeded(ref EditorData editorData)
-        {
-            if (editorData.currentAssetTexture >= editorData.AssetTextures.Count())
-                return;
-
-            string name = editorData.AssetTextures[editorData.currentAssetTexture].Name;
-            if (!textures.ContainsKey("ui_"+name))
-                AddUITexture(name, flipY: false);
-
-            editorData.currentAssetTexture++;
-            textureCount++;
+            try
+            {
+                Texture texture = new Texture(textureCount, name, flipY, textureFilter, type);
+                textures.Add("ui_" + name, texture);
+                textureCount++;
+                success = true;
+            }
+            catch
+            {
+                success = false;
+            }
         }
 
         public void DeleteTexture(Texture texture)
         {
-            texture.Delete();
+            try { texture.Delete(); }
+            catch { }
             textures.Remove(texture.TextureName);
+        }
+
+        public void DeleteTexture(string name)
+        {
+            if (textures.ContainsKey(name))
+            {
+                try { textures[name].Delete(); }
+                catch { }
+                textures.Remove(textures[name].TextureName);
+            }
         }
 
         public void DeleteTexture(Texture texture, BaseMesh mesh, string textureType)

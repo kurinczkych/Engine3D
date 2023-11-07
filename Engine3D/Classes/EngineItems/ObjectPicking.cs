@@ -112,6 +112,7 @@ namespace Engine3D
                             Object selectedObject = objects.Where(x => x.id == pixel.objectId).First();
 
                             imGuiController.SelectItem(selectedObject, editorData);
+                            imGuiController.shouldOpenTreeNodeMeshes = true;
                         }
                         else
                         {

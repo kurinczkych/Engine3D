@@ -57,14 +57,7 @@ namespace Engine3D
             Scale = Vector3.One;
 
             this.modelName = modelName;
-            ProcessObj(modelName, color);
-
-            foreach (triangle tri in tris)
-            {
-                tri.c[0] = color;
-                tri.c[1] = color;
-                tri.c[2] = color;
-            }
+            ProcessObj(modelName, color.R, color.G, color.B, color.A);
 
             GetUniformLocations();
             SendUniforms();
@@ -167,128 +160,6 @@ namespace Engine3D
                     new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f)  }),
                     new triangle(new Vector3[] { new Vector3(1.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(1.0f, 0.0f, 0.0f)  })
                 };
-        }
-
-        public void ProcessObj(string filename, Color4 color)
-        {
-            tris = new List<triangle>();
-
-            string result;
-            int fPerCount = -1;
-            List<Vector3> verts = new List<Vector3>();
-            List<Vector3> normals = new List<Vector3>();
-            List<Vec2d> uvs = new List<Vec2d>();
-
-            using (Stream stream = FileManager.GetFileStream(filename, FileType.Models))
-            using (StreamReader reader = new StreamReader(stream))
-            {
-                while (true)
-                {
-                    result = reader.ReadLine();
-                    if (result != null && result.Length > 0)
-                    {
-                        if (result[0] == 'v')
-                        {
-                            if (result[1] == 't')
-                            {
-                                string[] vStr = result.Substring(3).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                Vec2d v = new Vec2d(a, b);
-                                uvs.Add(v);
-                            }
-                            else if (result[1] == 'n')
-                            {
-                                string[] vStr = result.Substring(3).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                var c = float.Parse(vStr[2]);
-                                Vector3 v = new Vector3(a, b, c);
-                                normals.Add(v);
-                            }
-                            else
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                var c = float.Parse(vStr[2]);
-                                Vector3 v = new Vector3(a, b, c);
-                                verts.Add(v);
-                            }
-                        }
-                        else if (result[0] == 'f')
-                        {
-                            if (result.Contains("//"))
-                            {
-
-                            }
-                            else if (result.Contains("/"))
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                if (vStr.Length > 3)
-                                    throw new Exception();
-
-                                if (fPerCount == -1)
-                                    fPerCount = vStr[0].Count(x => x == '/');
-
-                                if (fPerCount == 2)
-                                {
-                                    // 1/1/1, 2/2/2, 3/3/3
-                                    int[] v = new int[3];
-                                    int[] n = new int[3];
-                                    int[] uv = new int[3];
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        string[] fStr = vStr[i].Split("/");
-                                        v[i] = int.Parse(fStr[0]);
-                                        uv[i] = int.Parse(fStr[1]);
-                                        n[i] = int.Parse(fStr[2]);
-                                    }
-
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vector3[] { normals[n[0] - 1], normals[n[1] - 1], normals[n[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
-                                    tris.Last().c[0] = color;
-                                    tris.Last().c[1] = color;
-                                    tris.Last().c[2] = color;
-                                }
-                                else if (fPerCount == 1)
-                                {
-                                    // 1/1, 2/2, 3/3
-                                    int[] v = new int[3];
-                                    int[] uv = new int[3];
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        string[] fStr = vStr[i].Split("/");
-                                        v[i] = int.Parse(fStr[0]);
-                                        uv[i] = int.Parse(fStr[1]);
-                                    }
-
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
-                                    tris.Last().c[0] = color;
-                                    tris.Last().c[1] = color;
-                                    tris.Last().c[2] = color;
-                                }
-
-                            }
-                            else
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                int[] f = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
-
-                                tris.Add(new triangle(new Vector3[] { verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] }));
-                                tris.Last().c[0] = color;
-                                tris.Last().c[1] = color;
-                                tris.Last().c[2] = color;
-                            }
-                        }
-                    }
-
-                    if (result == null)
-                        break;
-                }
-            }
         }
     }
 }

@@ -49,7 +49,9 @@ namespace Engine3D
             this.parentObject.name = modelName;
             this.shaderProgramId = shaderProgramId;
 
-            parentObject.texture = Engine.textureManager.AddTexture(textureName);
+            bool success = false;
+            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            // TODO: Console error texture not found!
 
             Vao = vao;
             Vbo = vbo;
@@ -95,7 +97,9 @@ namespace Engine3D
             this.parentObject.name = modelName;
             this.shaderProgramId = shaderProgramId;
 
-            parentObject.texture = Engine.textureManager.AddTexture(textureName);
+            bool success = false;
+            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            // TODO: Console error texture not found!
 
             Vao = vao;
             Vbo = vbo;
@@ -186,33 +190,33 @@ namespace Engine3D
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
             uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
+            uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
+            uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
+            uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
+            uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
+            uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
             if (parentObject.texture != null)
             {
                 uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
                 if (parentObject.textureNormal != null)
                 {
                     uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
-                    uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
                 }
                 if (parentObject.textureHeight != null)
                 {
                     uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
-                    uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
                 }
                 if (parentObject.textureAO != null)
                 {
                     uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
-                    uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
                 }
                 if (parentObject.textureRough != null)
                 {
                     uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
-                    uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
                 }
                 if (parentObject.textureMetal != null)
                 {
                     uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
-                    uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
                 }
             }
         }
@@ -229,36 +233,37 @@ namespace Engine3D
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["useBillboarding"], useBillboarding);
             GL.Uniform1(uniformLocations["useShading"], useShading ? 1 : 0);
-            GL.Uniform1(uniformLocations["useTexture"], parentObject.texture != null ? 1 : 0);
             if (parentObject.texture != null)
             {
                 GL.Uniform1(uniformLocations["textureSampler"], parentObject.texture.TextureUnit);
                 if (parentObject.textureNormal != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerNormal"], parentObject.textureNormal.TextureUnit);
-                    GL.Uniform1(uniformLocations["useNormal"], 1);
                 }
                 if (parentObject.textureHeight != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerHeight"], parentObject.textureHeight.TextureUnit);
-                    GL.Uniform1(uniformLocations["useHeight"], 1);
                 }
                 if (parentObject.textureAO != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerAO"], parentObject.textureAO.TextureUnit);
-                    GL.Uniform1(uniformLocations["useAO"], 1);
                 }
                 if (parentObject.textureRough != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerRough"], parentObject.textureRough.TextureUnit);
-                    GL.Uniform1(uniformLocations["useRough"], 1);
                 }
                 if (parentObject.textureMetal != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerMetal"], parentObject.textureMetal.TextureUnit);
-                    GL.Uniform1(uniformLocations["useMetal"], 1);
                 }
             }
+
+            GL.Uniform1(uniformLocations["useTexture"], parentObject.texture != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useNormal"], parentObject.textureNormal != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useHeight"], parentObject.textureHeight != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useAO"], parentObject.textureAO != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useRough"], parentObject.textureRough != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
         }
 
         public void SendUniformsOnlyPos(Shader shader)

@@ -52,7 +52,9 @@ namespace Engine3D
             Size = new Vector3(size.X, size.Y, 0);
             rotation = Vector3.Zero;
 
-            parentObject.texture = Engine.textureManager.AddTexture(textureName);
+            bool success = false;
+            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            // TODO: Console error texture not found!
 
             Vao = vao;
             Vbo = vbo;

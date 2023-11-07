@@ -45,7 +45,9 @@ namespace Engine3D
         {
             this.parentObject = parentObject;
 
-            parentObject.texture = Engine.textureManager.AddTexture(textureName, false, "nearest");
+            bool success = false;
+            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success, false, "nearest");
+            // TODO: Console error texture not found!
 
             Vao = vao;
             Vbo = vbo;

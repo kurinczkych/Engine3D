@@ -113,6 +113,9 @@ namespace Engine3D
 
         private SoundManager soundManager;
         public static TextureManager textureManager;
+        private AssetManager assetManager;
+        private FileTypeCount fileTypeCount = new FileTypeCount();
+        private Stopwatch fileDetectorStopWatch;
 
         private TextGenerator textGenerator;
         private Dictionary<string, TextMesh> texts;
@@ -169,6 +172,7 @@ namespace Engine3D
             particleSystems = new List<ParticleSystem>();
             texts = new Dictionary<string, TextMesh>();
             textureManager = new TextureManager();
+            fileDetectorStopWatch = new Stopwatch();
 
             objects = new List<Object>();
             queryPool = new QueryPool(1000);
@@ -208,6 +212,14 @@ namespace Engine3D
                 editorData.objects.Add(o);
             }
         }
+
+        public void RemoveObject(Object o)
+        {
+            textureManager.DeleteTexture(o.textureName);
+            o.Delete(ref textureManager);
+            objects.Remove(o);
+        }
+
 
         private void AddText(Object obj, string tag)
         {
@@ -262,7 +274,8 @@ namespace Engine3D
             }
             #endregion
 
-            textureManager.GetAssetTextureIfNeeded(ref editorData);
+            editorData.assetStoreManager.DownloadIfNeeded();
+            assetManager.UpdateIfNeeded();
 
             EditorManaging();
 
@@ -277,9 +290,14 @@ namespace Engine3D
 
             editorData.fps.Update((float)args.Time);
 
+            if (fileDetectorStopWatch.Elapsed.TotalSeconds > 5)
+            {
+                fileDetectorStopWatch.Restart();
+                FileManager.GetAllAssets(fileTypeCount, ref assetManager);
+            }
+
             CursorAndGameStateSetting();
 
-            float deltaX = 0, deltaY = 0;
             MouseMoving();
 
             if (editorData.gameRunning == GameState.Running)
@@ -317,20 +335,21 @@ namespace Engine3D
             CursorState = CursorState.Normal; 
 
             textGenerator = new TextGenerator();
+            assetManager = new AssetManager(ref textureManager, ref editorData);
 
             #region Editor data
             imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorData);
-            textureManager.AddTexture("ui_play.png", flipY:false);
-            textureManager.AddTexture("ui_play.png", flipY: false);
-            textureManager.AddTexture("ui_stop.png", flipY:false);
-            textureManager.AddTexture("ui_pause.png", flipY:false);
-            textureManager.AddTexture("ui_screen.png", flipY:false);
-            textureManager.AddTexture("ui_missing.png", flipY:false);
+            textureManager.AddTexture("ui_play.png", out bool successPlay, flipY: false);
+            textureManager.AddTexture("ui_stop.png", out bool successStop, flipY: false);
+            textureManager.AddTexture("ui_pause.png", out bool successPause, flipY: false);
+            textureManager.AddTexture("ui_screen.png", out bool successScreen, flipY: false);
+            textureManager.AddTexture("ui_missing.png", out bool successMissing, flipY: false);
             editorData.objects = objects;
             editorData.particleSystems = particleSystems;
             editorData.pointLights = pointLights;
-            editorData.assets = FileManager.GetAllAssets();
-            textureManager.GetAssetTextures(editorData);
+            FileManager.GetAllAssets(fileTypeCount, ref assetManager);
+            editorData.assetStoreManager = new AssetStoreManager(ref assetManager);
+            fileDetectorStopWatch.Start();
             #endregion
 
             GL.Enable(EnableCap.DepthTest);
@@ -604,6 +623,7 @@ namespace Engine3D
 
             FileManager.DisposeStreams();
             textureManager.DeleteTextures();
+            editorData.assetStoreManager.DeleteFolderContent("Temp");
         }
 
         private bool IsMouseInGameWindow(MouseState mouseState)

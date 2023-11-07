@@ -1,4 +1,6 @@
-﻿using System;
+﻿using OpenTK.Windowing.Common.Input;
+using OpenTK.Windowing.GraphicsLibraryFramework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +13,7 @@ namespace Engine3D
         private void EditorManaging()
         {
             if (!editorData.isGameFullscreen)
-                imGuiController.EditorWindow(gameWindowProperty, ref editorData, KeyboardState, this);
+                imGuiController.EditorWindow(gameWindowProperty, ref editorData, KeyboardState, MouseState, this);
             else
                 imGuiController.FullscreenWindow(gameWindowProperty, ref editorData);
 
