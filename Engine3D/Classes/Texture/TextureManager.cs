@@ -14,18 +14,26 @@ namespace Engine3D
 
         public TextureManager() { }
 
-        public Texture? AddTexture(string name, out bool success, bool flipY = true, string textureFilter = "linear")
+        public Texture? AddTexture(string path, out bool success, bool flipY = true, string textureFilter = "linear")
         {
-            if (textures.ContainsKey(name))
+            if (textures.ContainsKey(Path.GetFileName(path)))
             {
                 success = true;
-                return textures[name];
+                return textures[Path.GetFileName(path)];
             }
 
             try
             {
-                Texture texture = new Texture(textureCount, name, flipY, textureFilter);
-                textures.Add(name, texture);
+                Texture texture = new Texture(textureCount, path, out bool successTexture, flipY, textureFilter);
+                if(!successTexture)
+                {
+                    texture.Delete();
+                    success = false;
+                    // Console log: texture fail
+                    return null;
+                }
+
+                textures.Add(Path.GetFileName(path), texture);
                 textureCount++;
                 success = true;
                 return texture;
@@ -38,9 +46,9 @@ namespace Engine3D
             return null;
         }
 
-        public void AddUITexture(string name, out bool success, bool flipY = true, string textureFilter = "linear", AssetTypeEditor type = AssetTypeEditor.UI)
+        public void AddUITexture(string path, out bool success, bool flipY = true, string textureFilter = "linear", AssetTypeEditor type = AssetTypeEditor.UI)
         {
-            if (textures.ContainsKey("ui_" + name))
+            if (textures.ContainsKey("ui_" + Path.GetFileName(path)))
             {
                 success = true;
                 return;
@@ -48,8 +56,16 @@ namespace Engine3D
 
             try
             {
-                Texture texture = new Texture(textureCount, name, flipY, textureFilter, type);
-                textures.Add("ui_" + name, texture);
+                Texture texture = new Texture(textureCount, path, out bool successTexture, flipY, textureFilter, type);
+                if (!successTexture)
+                {
+                    texture.Delete();
+                    success = false;
+                    // Console log: texture fail
+                    return;
+                }
+
+                textures.Add("ui_" + Path.GetFileName(path), texture);
                 textureCount++;
                 success = true;
             }

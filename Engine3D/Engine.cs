@@ -114,7 +114,6 @@ namespace Engine3D
         private SoundManager soundManager;
         public static TextureManager textureManager;
         private AssetManager assetManager;
-        private FileTypeCount fileTypeCount = new FileTypeCount();
         private Stopwatch fileDetectorStopWatch;
 
         private TextGenerator textGenerator;
@@ -133,7 +132,7 @@ namespace Engine3D
         #endregion
 
         #region UI variables
-        private EditorData editorData = new EditorData();
+        private EditorData editorData;
         private ImGuiController imGuiController;
         #endregion
 
@@ -173,6 +172,10 @@ namespace Engine3D
             texts = new Dictionary<string, TextMesh>();
             textureManager = new TextureManager();
             fileDetectorStopWatch = new Stopwatch();
+
+            assetManager = new AssetManager(ref textureManager);
+            editorData = new EditorData();
+            editorData.assetManager = assetManager;
 
             objects = new List<Object>();
             queryPool = new QueryPool(1000);
@@ -293,7 +296,7 @@ namespace Engine3D
             if (fileDetectorStopWatch.Elapsed.TotalSeconds > 5)
             {
                 fileDetectorStopWatch.Restart();
-                FileManager.GetAllAssets(fileTypeCount, ref assetManager);
+                FileManager.GetAllAssets(ref assetManager);
             }
 
             CursorAndGameStateSetting();
@@ -335,19 +338,27 @@ namespace Engine3D
             CursorState = CursorState.Normal; 
 
             textGenerator = new TextGenerator();
-            assetManager = new AssetManager(ref textureManager, ref editorData);
 
             #region Editor data
             imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorData);
             textureManager.AddTexture("ui_play.png", out bool successPlay, flipY: false);
+            if (!successPlay) { throw new Exception("ui_play.png was not found in the embedded resources!"); }
             textureManager.AddTexture("ui_stop.png", out bool successStop, flipY: false);
+            if (!successStop) { throw new Exception("ui_stop.png was not found in the embedded resources!"); }
             textureManager.AddTexture("ui_pause.png", out bool successPause, flipY: false);
+            if (!successPause) { throw new Exception("ui_pause.png was not found in the embedded resources!"); }
             textureManager.AddTexture("ui_screen.png", out bool successScreen, flipY: false);
+            if (!successScreen) { throw new Exception("ui_screen.png was not found in the embedded resources!"); }
             textureManager.AddTexture("ui_missing.png", out bool successMissing, flipY: false);
+            if (!successMissing) { throw new Exception("ui_missing.png was not found in the embedded resources!"); }
+            textureManager.AddTexture("ui_folder.png", out bool successFolder, flipY: false);
+            if (!successFolder) { throw new Exception("ui_folder.png was not found in the embedded resources!"); }
+            textureManager.AddTexture("ui_back.png", out bool successBack, flipY: false);
+            if (!successBack) { throw new Exception("ui_back.png was not found in the embedded resources!"); }
             editorData.objects = objects;
             editorData.particleSystems = particleSystems;
             editorData.pointLights = pointLights;
-            FileManager.GetAllAssets(fileTypeCount, ref assetManager);
+            FileManager.GetAllAssets(ref assetManager);
             editorData.assetStoreManager = new AssetStoreManager(ref assetManager);
             fileDetectorStopWatch.Start();
             #endregion
@@ -624,6 +635,7 @@ namespace Engine3D
             FileManager.DisposeStreams();
             textureManager.DeleteTextures();
             editorData.assetStoreManager.DeleteFolderContent("Temp");
+            editorData.assetStoreManager.Delete();
         }
 
         private bool IsMouseInGameWindow(MouseState mouseState)

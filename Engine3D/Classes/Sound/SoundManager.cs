@@ -43,24 +43,36 @@ namespace Engine3D
             }
         }
 
-        public SoundEmitter CreateSoundEmitter(string filePath)
+        public SoundEmitter? CreateSoundEmitter(string filePath)
         {
             if (device == ALDevice.Null)
                 throw new Exception("There is no opened sound device!");
 
-            var emitter = new SoundEmitter(filePath);
-            soundEmitters.Add(emitter);
-            return emitter;
+            var emitter = new SoundEmitter(filePath, out bool success);
+
+            if (success)
+            {
+                soundEmitters.Add(emitter);
+                return emitter;
+            }
+            else
+                return null;
         }
 
         public SoundEmitter CreateSoundEmitter(string filePath, Vector3 position)
         {
             if (device == ALDevice.Null)
-                throw new Exception("There is no opened sound device!"); 
+                throw new Exception("There is no opened sound device!");
 
-            var emitter = new SoundEmitter(filePath, position);
-            soundEmitters.Add(emitter);
-            return emitter;
+            var emitter = new SoundEmitter(filePath, position, out bool success);
+
+            if (success)
+            {
+                soundEmitters.Add(emitter);
+                return emitter;
+            }
+            else
+                return null;
         }
 
         public void SetListener(Vector3 position)

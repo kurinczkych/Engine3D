@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
 using System.Runtime.CompilerServices;
+using System.IO;
 
 namespace Engine3D
 {
@@ -35,13 +36,19 @@ namespace Engine3D
 
         public bool flipY;
 
-        public Texture(int unit, string textureName, bool flipY = true, string textureFilter = "linear", AssetTypeEditor type = AssetTypeEditor.UI)
+        public Texture(int unit, string texturePath, out bool success, bool flipY = true, string textureFilter = "linear", AssetTypeEditor type = AssetTypeEditor.UI)
         {
-            TextureName = textureName;
-            if(type == AssetTypeEditor.UI)
-                TexturePath = FileManager.GetFilePath(textureName, "Textures");
-            else if(type == AssetTypeEditor.Store)
-                TexturePath = FileManager.GetFilePath(textureName, "Temp");
+            TextureName = Path.GetFileName(texturePath);
+
+            if (texturePath == TextureName)
+            {
+                if (type == AssetTypeEditor.UI)
+                    TexturePath = FileManager.GetFilePath(texturePath, "Textures");
+                else if (type == AssetTypeEditor.Store)
+                    TexturePath = FileManager.GetFilePath(texturePath, "Temp");
+            }
+            else
+                TexturePath = texturePath;
 
             if (TexturePath == "" || TexturePath == null)
                 throw new Exception("Texture not found!");
@@ -72,17 +79,16 @@ namespace Engine3D
             Bind();
 
             if(type == AssetTypeEditor.Store)
-                LoadTexture(TexturePath, flipY, tminf, tmagf, "Temp");
+                success = LoadTexture(TexturePath, flipY, tminf, tmagf, "Temp");
             else
-                LoadTexture(TexturePath, flipY, tminf, tmagf);
+                success = LoadTexture(TexturePath, flipY, tminf, tmagf);
 
             Unbind();
         }
 
-        public static void LoadTexture(string fileName, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf, string folder = "Textures")
+        public static bool LoadTexture(string filePath, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf, string folder = "Textures")
         {
-            // Load the image (using System.Drawing or another library)
-            Stream? stream_t = FileManager.GetFileStream(Path.GetFileName(fileName), folder);
+            Stream? stream_t = FileManager.GetFileStream(filePath);
             if (stream_t != Stream.Null && stream_t != null)
             {
                 using (stream_t)
@@ -103,10 +109,12 @@ namespace Engine3D
 
                     // Texture settings
                 }
+                return true;
             }
             else
             {
-                throw new Exception("No texture was found");
+                // TODO Console log ("File '" + fileName + "' not found!");
+                return false;
             }
         }
 

@@ -45,7 +45,7 @@ namespace Engine3D
         private VAO Vao;
         private VBO Vbo;
 
-        public UITextureMesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 position, Vector2 size, Vector2 windowSize) : base(vao.id, vbo.id, shaderProgramId)
+        public UITextureMesh(VAO vao, VBO vbo, int shaderProgramId, string texturePath, Vector2 position, Vector2 size, Vector2 windowSize) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.windowSize = windowSize;
             Position = new Vector2(position.X, position.Y);
@@ -53,7 +53,7 @@ namespace Engine3D
             rotation = Vector3.Zero;
 
             bool success = false;
-            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
             // TODO: Console error texture not found!
 
             Vao = vao;

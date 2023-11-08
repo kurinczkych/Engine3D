@@ -41,12 +41,12 @@ namespace Engine3D
 
         public string currentText = "";
 
-        public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string textureName, Vector2 windowSize, ref TextGenerator tg, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public TextMesh(VAO vao, VBO vbo, int shaderProgramId, string texturePath, Vector2 windowSize, ref TextGenerator tg, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
             bool success = false;
-            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success, false, "nearest");
+            parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success, false, "nearest");
             // TODO: Console error texture not found!
 
             Vao = vao;

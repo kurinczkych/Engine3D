@@ -43,12 +43,12 @@ namespace Engine3D
 
         public List<InstancedMeshData> instancedData = new List<InstancedMeshData>();
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
             bool success = false;
-            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
             // TODO: Console error texture not found!
 
             Vao = vao;
@@ -67,12 +67,12 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, string textureName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
             bool success = false;
-            parentObject.texture = Engine.textureManager.AddTexture(textureName, out success);
+            parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
             // TODO: Console error texture not found!
 
             Vao = vao;

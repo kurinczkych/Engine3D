@@ -52,9 +52,13 @@ namespace Engine3D
 
         public TextGenerator()
         {
-            font = JsonConvert.DeserializeObject<Root>(GetFile("font.json"));
+            string jsonFile = GetFile("font.json");
+            if(jsonFile == "")
+                throw new Exception("Can't find font.json!"); // TODO console log
+
+            font = JsonConvert.DeserializeObject<Root>(jsonFile);
             if (font == null)
-                throw new Exception("Can't find font.json!");
+                throw new Exception("Can't find font.json!");  // TODO console log
 
             symbols = new SortedDictionary<char, Symbol>();
             foreach (Symbol s in font.symbols)
@@ -145,8 +149,15 @@ namespace Engine3D
 
         private string GetFile(string fileName)
         {
-            // Load the image (using System.Drawing or another library)
-            Stream? stream = FileManager.GetFileStream(fileName, "Fonts");
+
+            string filepath = FileManager.GetFilePath(fileName, "Fonts");
+            if (filepath == "")
+            {
+                // TODO Console log ("File '" + fileName + "' not found!");
+                return "";
+            }
+
+            Stream? stream = FileManager.GetFileStream(filepath);
             if (stream != null)
             {
                 using (stream)

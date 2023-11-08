@@ -14,6 +14,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
 
 namespace Engine3D
@@ -116,7 +117,7 @@ namespace Engine3D
         public object? selectedItem;
 
         public AssetStoreManager assetStoreManager;
-        public List<Asset> assets = new List<Asset>();
+        public AssetManager assetManager;
 
         public int currentAssetTexture = 0;
         public List<Asset> AssetTextures;
@@ -170,9 +171,14 @@ namespace Engine3D
         public bool shouldOpenTreeNodeMeshes = false;
         private bool isObjectHovered = false;
 
+        private AssetFolder currentTextureAssetFolder;
+        private AssetFolder currentModelAssetFolder;
+
         public ImGuiController(int width, int height, ref EditorData editorData) : base(width, height)
         {
             this.editorData = editorData;
+            currentTextureAssetFolder = editorData.assetManager.assets.folders["Textures"];
+            currentModelAssetFolder = editorData.assetManager.assets.folders["Models"];
 
             #region Input boxes
             _inputBuffers.Add("##name", new byte[100]);
@@ -186,13 +192,13 @@ namespace Engine3D
             _inputBuffers.Add("##scaleX", new byte[100]);
             _inputBuffers.Add("##scaleY", new byte[100]);
             _inputBuffers.Add("##scaleZ", new byte[100]);
-            _inputBuffers.Add("##texturePath", new byte[100]);
-            _inputBuffers.Add("##textureNormalPath", new byte[100]);
-            _inputBuffers.Add("##textureHeightPath", new byte[100]);
-            _inputBuffers.Add("##textureAOPath", new byte[100]);
-            _inputBuffers.Add("##textureRoughPath", new byte[100]);
-            _inputBuffers.Add("##textureMetalPath", new byte[100]);
-            _inputBuffers.Add("##meshPath", new byte[100]);
+            _inputBuffers.Add("##texturePath", new byte[300]);
+            _inputBuffers.Add("##textureNormalPath", new byte[300]);
+            _inputBuffers.Add("##textureHeightPath", new byte[300]);
+            _inputBuffers.Add("##textureAOPath", new byte[300]);
+            _inputBuffers.Add("##textureRoughPath", new byte[300]);
+            _inputBuffers.Add("##textureMetalPath", new byte[300]);
+            _inputBuffers.Add("##meshPath", new byte[300]);
             _inputBuffers.Add("##assetSearch", new byte[200]);
 
             #endregion
@@ -222,6 +228,7 @@ namespace Engine3D
 
         private void CopyDataToBuffer(string buffer, byte[] data)
         {
+            ClearBuffer(buffer);
             for (int i = 0; i < _inputBuffers[buffer].Length; i++)
             {
                 if(i < data.Length)
@@ -248,13 +255,23 @@ namespace Engine3D
             foreach(var buffer in _inputBuffers)
             {
                 int i = 0;
-                while (buffer.Value[i] != '\0' && buffer.Value.Length != i)
+                while (buffer.Value.Length != i && buffer.Value[i] != '\0')
                 {
                     buffer.Value[i] = 0;
                     i++;
                 }
             }
             ;
+        }
+
+        public void ClearBuffer(string buffer)
+        {
+            int i = 0;
+            while (_inputBuffers[buffer][i] != '\0' && _inputBuffers[buffer].Length != i)
+            {
+                _inputBuffers[buffer][i] = 0;
+                i++;
+            }
         }
 
         public void SelectItem(object? selectedObject, EditorData editorData)
@@ -984,7 +1001,7 @@ namespace Engine3D
                                     if(ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureName != "")
                                     {
                                         o.textureName = "";
-                                        _inputBuffers["##texturePath"][0] = 0;
+                                        ClearBuffer("##texturePath");
                                     }
 
                                     if (ImGui.BeginDragDropTarget())
@@ -996,8 +1013,8 @@ namespace Engine3D
                                             {
                                                 byte[] pathBytes = new byte[payload.DataSize];
                                                 System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                CopyDataToBuffer("##texturePath", pathBytes);
                                                 o.textureName = GetStringFromByte(pathBytes);
+                                                CopyDataToBuffer("##texturePath", Encoding.UTF8.GetBytes(o.textureName));
                                             }
                                         }
                                         ImGui.EndDragDropTarget();
@@ -1011,7 +1028,7 @@ namespace Engine3D
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureNormalName != "")
                                         {
                                             o.textureNormalName = "";
-                                            _inputBuffers["##textureNormalPath"][0] = 0;
+                                            ClearBuffer("##textureNormalPath");
                                         }
 
                                         if (ImGui.BeginDragDropTarget())
@@ -1023,8 +1040,8 @@ namespace Engine3D
                                                 {
                                                     byte[] pathBytes = new byte[payload.DataSize];
                                                     System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                    CopyDataToBuffer("##textureNormalPath", pathBytes);
                                                     o.textureNormalName = GetStringFromByte(pathBytes);
+                                                    CopyDataToBuffer("##textureNormalPath", Encoding.UTF8.GetBytes(o.textureNormalName));
                                                 }
                                             }
                                             ImGui.EndDragDropTarget();
@@ -1035,7 +1052,7 @@ namespace Engine3D
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureHeightName != "")
                                         {
                                             o.textureHeightName = "";
-                                            _inputBuffers["##textureHeightPath"][0] = 0;
+                                            ClearBuffer("##textureHeightPath");
                                         }
 
                                         if (ImGui.BeginDragDropTarget())
@@ -1047,8 +1064,8 @@ namespace Engine3D
                                                 {
                                                     byte[] pathBytes = new byte[payload.DataSize];
                                                     System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                    CopyDataToBuffer("##textureHeightPath", pathBytes);
                                                     o.textureHeightName = GetStringFromByte(pathBytes);
+                                                    CopyDataToBuffer("##textureHeightPath", Encoding.UTF8.GetBytes(o.textureHeightName));
                                                 }
                                             }
                                             ImGui.EndDragDropTarget();
@@ -1059,7 +1076,7 @@ namespace Engine3D
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureAOName != "")
                                         {
                                             o.textureAOName = "";
-                                            _inputBuffers["##textureAOPath"][0] = 0;
+                                            ClearBuffer("##textureAOPath");
                                         }
 
                                         if (ImGui.BeginDragDropTarget())
@@ -1071,8 +1088,8 @@ namespace Engine3D
                                                 {
                                                     byte[] pathBytes = new byte[payload.DataSize];
                                                     System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                    CopyDataToBuffer("##textureAOPath", pathBytes);
                                                     o.textureAOName = GetStringFromByte(pathBytes);
+                                                    CopyDataToBuffer("##textureAOPath", Encoding.UTF8.GetBytes(o.textureAOName));
                                                 }
                                             }
                                             ImGui.EndDragDropTarget();
@@ -1083,7 +1100,7 @@ namespace Engine3D
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureName != "")
                                         {
                                             o.textureRoughName = "";
-                                            _inputBuffers["##textureRoughPath"][0] = 0;
+                                            ClearBuffer("##textureRoughPath");
                                         }
 
                                         if (ImGui.BeginDragDropTarget())
@@ -1095,8 +1112,8 @@ namespace Engine3D
                                                 {
                                                     byte[] pathBytes = new byte[payload.DataSize];
                                                     System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                    CopyDataToBuffer("##textureRoughPath", pathBytes);
                                                     o.textureRoughName = GetStringFromByte(pathBytes);
+                                                    CopyDataToBuffer("##textureRoughPath", Encoding.UTF8.GetBytes(o.textureRoughName));
                                                 }
                                             }
                                             ImGui.EndDragDropTarget();
@@ -1107,7 +1124,7 @@ namespace Engine3D
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && o.textureMetalName != "")
                                         {
                                             o.textureMetalName = "";
-                                            _inputBuffers["##textureMetalPath"][0] = 0;
+                                            ClearBuffer("##textureMetalPath");
                                         }
 
                                         if (ImGui.BeginDragDropTarget())
@@ -1119,8 +1136,8 @@ namespace Engine3D
                                                 {
                                                     byte[] pathBytes = new byte[payload.DataSize];
                                                     System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                    CopyDataToBuffer("##textureMetalPath", pathBytes);
                                                     o.textureMetalName = GetStringFromByte(pathBytes);
+                                                    CopyDataToBuffer("##textureMetalPath", Encoding.UTF8.GetBytes(o.textureMetalName));
                                                 }
                                             }
                                             ImGui.EndDragDropTarget();
@@ -1324,7 +1341,7 @@ namespace Engine3D
 
             #region Bottom asset panel
             style.WindowRounding = 0f;
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, _windowHeight * gameWindow.bottomPanelPercent - seperatorSize));
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, _windowHeight * gameWindow.bottomPanelPercent - seperatorSize - 1));
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, _windowHeight * (1 - gameWindow.bottomPanelPercent) + seperatorSize - gameWindow.bottomPanelSize), ImGuiCond.Always);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(ImGui.GetStyle().WindowPadding.X, 0));
             if (ImGui.Begin("BottomAssetPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar))
@@ -1342,117 +1359,235 @@ namespace Engine3D
 
                         if (ImGui.BeginTabBar("Assets"))
                         {
-                            var groupedAssets = editorData.assets.GroupBy(asset => asset.Type).ToDictionary(group => group.Key, group => group.ToList());
                             if (ImGui.BeginTabItem("Textures"))
                             {
+                                float padding = ImGui.GetStyle().WindowPadding.X;
+                                float spacing = ImGui.GetStyle().ItemSpacing.X;
 
-                                if (groupedAssets.TryGetValue(AssetType.Texture, out var textureAssets))
+                                System.Numerics.Vector2 availableSpace = ImGui.GetContentRegionAvail();
+                                int columns = (int)((availableSpace.X + spacing) / (imageWidth + spacing));
+                                columns = Math.Max(1, columns);
+
+                                float itemWidth = availableSpace.X / columns - spacing;
+
+                                List<Asset> toRemove = new List<Asset>();
+                                List<string> folderNames = currentTextureAssetFolder.folders.Keys.ToList();
+                                AssetFolder? changeToFolder = null;
+
+                                int columnI = 0;
+                                int i = 0;
+
+                                if(currentTextureAssetFolder.name != "Textures")
                                 {
-                                    float padding = ImGui.GetStyle().WindowPadding.X;
-                                    float spacing = ImGui.GetStyle().ItemSpacing.X;
+                                    ImGui.BeginGroup();
+                                    ImGui.PushID("back");
 
-                                    System.Numerics.Vector2 availableSpace = ImGui.GetContentRegionAvail();
-                                    int columns = (int)((availableSpace.X + spacing) / (imageWidth + spacing));
-                                    columns = Math.Max(1, columns);
+                                    System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
+                                    ImGui.Image((IntPtr)Engine.textureManager.textures["ui_back.png"].TextureId, imageSize);
 
-                                    float itemWidth = availableSpace.X / columns - spacing;
-
-                                    for (int i = 0; i < textureAssets.Count; i++)
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                                     {
-                                        if (Engine.textureManager.textures.ContainsKey("ui_" + textureAssets[i].Name))
-                                        {
-                                            if (i % columns != 0)
-                                            {
-                                                ImGui.SameLine();
-                                            }
-
-                                            ImGui.BeginGroup();
-                                            ImGui.PushID(textureAssets[i].Path);
-
-                                            System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                            ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + textureAssets[i].Name].TextureId, imageSize);
-                                            ImGui.SetCursorPos(cursorPos);
-
-                                            ImGui.InvisibleButton("##invisible", imageSize);
-
-                                            DragDropImageSourceUI(ref Engine.textureManager, "TEXTURE_NAME", textureAssets[i].Name, imageSize);
-
-                                            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
-                                            ImGui.TextWrapped(textureAssets[i].Name);
-                                            ImGui.PopTextWrapPos();
-
-                                            ImGui.PopID();
-
-                                            ImGui.EndGroup();
-                                        }
+                                        changeToFolder = currentTextureAssetFolder.parentFolder;
                                     }
 
-                                    ImGui.Dummy(new System.Numerics.Vector2(0.0f, 10f));
+                                    ImGui.SetCursorPos(cursorPos);
+
+                                    ImGui.InvisibleButton("##invisible", imageSize);
+
+                                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
+                                    ImGui.TextWrapped("Back");
+                                    ImGui.PopTextWrapPos();
+
+                                    ImGui.PopID();
+
+                                    ImGui.EndGroup();
+
+
+                                    columnI++;
                                 }
-                                ImGui.EndTabItem();
-                            }
-                            if(ImGui.BeginTabItem("Models"))
-                            {
-                                if (groupedAssets.TryGetValue(AssetType.Model, out var modelAssets))
+                                int folderCount = currentTextureAssetFolder.folders.Count;
+
+                                while (i < folderCount + currentTextureAssetFolder.assets.Count)
                                 {
-                                    float padding = ImGui.GetStyle().WindowPadding.X;
-                                    float spacing = ImGui.GetStyle().ItemSpacing.X;
-
-                                    System.Numerics.Vector2 availableSpace = ImGui.GetContentRegionAvail();
-                                    int columns = (int)((availableSpace.X + spacing) / (imageWidth + spacing));
-                                    columns = Math.Max(1, columns);
-
-                                    float itemWidth = availableSpace.X / columns - spacing;
-
-                                    for (int i = 0; i < modelAssets.Count; i++)
+                                    if (columnI % columns != 0)
                                     {
-                                        string modelName = "ui_missing.png";
-                                        if (Engine.textureManager.textures.ContainsKey(modelAssets[i].Name))
-                                        {
-                                            modelName = modelAssets[i].Name;
-                                        }
+                                        ImGui.SameLine();
+                                    }
 
-                                        if (i % columns != 0)
-                                        {
-                                            ImGui.SameLine();
-                                        }
-
+                                    if (i < currentTextureAssetFolder.folders.Count)
+                                    {
                                         ImGui.BeginGroup();
-                                        ImGui.PushID(modelAssets[i].Id);
+                                        ImGui.PushID(currentTextureAssetFolder.folders[folderNames[i]].name);
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                        ImGui.Image((IntPtr)Engine.textureManager.textures[modelName].TextureId, imageSize);
+                                        ImGui.Image((IntPtr)Engine.textureManager.textures["ui_folder.png"].TextureId, imageSize);
+
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                                        {
+                                            changeToFolder = currentTextureAssetFolder.folders[folderNames[i]];
+                                        }
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                        {
+                                            ImGui.OpenPopup("AssetFolderContextMenu");
+                                        }
+
+                                        var windowPadding = style.WindowPadding;
+                                        var popupRounding = style.PopupRounding;
+                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
+                                        style.PopupRounding = 2f;
+                                        if (ImGui.BeginPopup("AssetFolderContextMenu"))
+                                        {
+                                            if (ImGui.MenuItem("Delete folder"))
+                                            {
+                                                toRemove.AddRange(currentTextureAssetFolder.folders[folderNames[i]].assets);
+                                            }
+                                            ImGui.EndPopup();
+                                        }
+                                        style.WindowPadding = windowPadding;
+                                        style.PopupRounding = popupRounding;
+
                                         ImGui.SetCursorPos(cursorPos);
 
                                         ImGui.InvisibleButton("##invisible", imageSize);
 
-                                        DragDropImageSource(ref Engine.textureManager, "MESH_NAME", modelAssets[i].Name, modelName, imageSize);
-
                                         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
-                                        ImGui.TextWrapped(modelAssets[i].Name);
+                                        ImGui.TextWrapped(currentTextureAssetFolder.folders[folderNames[i]].name);
                                         ImGui.PopTextWrapPos();
 
                                         ImGui.PopID();
 
                                         ImGui.EndGroup();
+
+                                        columnI++;
                                     }
+                                    else if (Engine.textureManager.textures.ContainsKey("ui_" + currentTextureAssetFolder.assets[i-folderCount].Name))
+                                    {
+                                        if (columnI % columns != 0)
+                                        {
+                                            ImGui.SameLine();
+                                        }
+
+                                        ImGui.BeginGroup();
+                                        ImGui.PushID(currentTextureAssetFolder.assets[i - folderCount].Name);
+
+                                        System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
+                                        ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + currentTextureAssetFolder.assets[i - folderCount].Name].TextureId, imageSize);
+
+                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                        {
+                                            ImGui.OpenPopup("AssetContextMenu");
+                                        }
+
+                                        var windowPadding = style.WindowPadding;
+                                        var popupRounding = style.PopupRounding;
+                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
+                                        style.PopupRounding = 2f;
+                                        if (ImGui.BeginPopup("AssetContextMenu"))
+                                        {
+                                            if (ImGui.MenuItem("Delete"))
+                                            {
+                                                toRemove.Add(currentTextureAssetFolder.assets[i - folderCount]);
+                                            }
+                                            ImGui.EndPopup();
+                                        }
+                                        style.WindowPadding = windowPadding;
+                                        style.PopupRounding = popupRounding;
+
+                                        ImGui.SetCursorPos(cursorPos);
+
+                                        ImGui.InvisibleButton("##invisible", imageSize);
+
+                                        DragDropImageSourceUI(ref Engine.textureManager, "TEXTURE_NAME", currentTextureAssetFolder.assets[i - folderCount].Name,
+                                                              currentTextureAssetFolder.assets[i - folderCount].Path, imageSize);
+
+                                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
+                                        ImGui.TextWrapped(currentTextureAssetFolder.assets[i - folderCount].Name);
+                                        ImGui.PopTextWrapPos();
+
+                                        ImGui.PopID();
+
+                                        ImGui.EndGroup();
+
+                                        columnI++;
+                                    }
+                                    i++;
                                 }
+
+                                editorData.assetManager.Remove(toRemove);
+
+                                if(changeToFolder != null)
+                                    currentTextureAssetFolder = changeToFolder;
+
+                                ImGui.Dummy(new System.Numerics.Vector2(0.0f, 10f));
+
+                                ImGui.EndTabItem();
+                            }
+                            if (ImGui.BeginTabItem("Models"))
+                            {
+                                //if (groupedAssets.TryGetValue(AssetType.Model, out var modelAssets))
+                                //{
+                                //    float padding = ImGui.GetStyle().WindowPadding.X;
+                                //    float spacing = ImGui.GetStyle().ItemSpacing.X;
+
+                                //    System.Numerics.Vector2 availableSpace = ImGui.GetContentRegionAvail();
+                                //    int columns = (int)((availableSpace.X + spacing) / (imageWidth + spacing));
+                                //    columns = Math.Max(1, columns);
+
+                                //    float itemWidth = availableSpace.X / columns - spacing;
+
+                                //    int columnI = 0;
+                                //    int i = 0;
+                                //    while (i < modelAssets.Count)
+                                //    {
+                                //        string modelName = "ui_missing.png";
+                                //        if (Engine.textureManager.textures.ContainsKey(modelAssets[i].Name))
+                                //        {
+                                //            modelName = modelAssets[i].Name;
+                                //        }
+
+                                //        if (columnI % columns != 0)
+                                //        {
+                                //            ImGui.SameLine();
+                                //        }
+
+                                //        ImGui.BeginGroup();
+                                //        ImGui.PushID(modelAssets[i].Id);
+
+                                //        System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
+                                //        ImGui.Image((IntPtr)Engine.textureManager.textures[modelName].TextureId, imageSize);
+                                //        ImGui.SetCursorPos(cursorPos);
+
+                                //        ImGui.InvisibleButton("##invisible", imageSize);
+
+                                //        DragDropImageSource(ref Engine.textureManager, "MESH_NAME", modelAssets[i].Name, modelName, imageSize);
+
+                                //        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
+                                //        ImGui.TextWrapped(modelAssets[i].Name);
+                                //        ImGui.PopTextWrapPos();
+
+                                //        ImGui.PopID();
+
+                                //        ImGui.EndGroup();
+                                //        columnI++;
+                                //        i++;
+                                //    }
+                                //}
 
                                 ImGui.EndTabItem();
                             }
                             if(ImGui.BeginTabItem("Audio"))
                             {
-                                if (groupedAssets.TryGetValue(AssetType.Audio, out var audioAssets))
-                                {
-                                    foreach (var asset in audioAssets)
-                                    {
-                                        ImGui.Text(asset.Name);
-                                    }
-                                }
+                                //if (groupedAssets.TryGetValue(AssetType.Audio, out var audioAssets))
+                                //{
+                                //    foreach (var asset in audioAssets)
+                                //    {
+                                //        ImGui.Text(asset.Name);
+                                //    }
+                                //}
 
                                 ImGui.EndTabItem();
                             }
-
+                            
                             ImGui.EndTabBar();
                         }
 
@@ -1469,103 +1604,129 @@ namespace Engine3D
                     }
                     if (ImGui.BeginTabItem("Asset store"))
                     {
-                        Encoding.UTF8.GetBytes(editorData.assetStoreManager.currentKeyword, 0, editorData.assetStoreManager.currentKeyword.Length, _inputBuffers["##assetSearch"], 0);
-
-                        if (currentBottomPanelTab != "Asset store")
+                        if (editorData.assetStoreManager.IsThereInternetConnection)
                         {
-                            currentBottomPanelTab = "Asset store";
-                            ImGui.SetKeyboardFocusHere();
-                        }
+                            Encoding.UTF8.GetBytes(editorData.assetStoreManager.currentKeyword, 0, editorData.assetStoreManager.currentKeyword.Length, _inputBuffers["##assetSearch"], 0);
 
-                        bool commit = false;
-                        if (ImGui.InputText("##assetSearch", _inputBuffers["##assetSearch"], (uint)_inputBuffers["##assetSearch"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
-                        {
-                            commit = true;
-                        }
-                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                            commit = true;
-
-                        if(commit)
-                        {
-                            editorData.assetStoreManager.currentKeyword = GetStringFromBuffer("##assetSearch");
-                            editorData.assetStoreManager.currentPageNumber = 0;
-                            editorData.assetStoreManager.GetOpenGameArtOrg();
-                        }
-
-                        ImGui.Separator();
-
-                        float padding = ImGui.GetStyle().WindowPadding.X;
-                        float spacing = ImGui.GetStyle().ItemSpacing.X;
-
-                        System.Numerics.Vector2 availableSpace = ImGui.GetContentRegionAvail();
-                        int columns = (int)((availableSpace.X + spacing) / (imageWidth + spacing));
-                        columns = Math.Max(1, columns);
-                        float itemWidth = availableSpace.X / columns - spacing;
-
-                        for (int i = 0; i < editorData.assetStoreManager.assets.Count; i++)
-                        {
-                            if (Engine.textureManager.textures.ContainsKey("ui_" + editorData.assetStoreManager.assets[i].Path))
+                            if (currentBottomPanelTab != "Asset store")
                             {
-                                if (i % columns != 0)
-                                {
-                                    ImGui.SameLine();
-                                }
-
-                                ImGui.BeginGroup();
-                                ImGui.PushID(editorData.assetStoreManager.assets[i].Path);
-
-                                ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + editorData.assetStoreManager.assets[i].Path].TextureId, imageSize);
-
-                                var cursorPos = ImGui.GetCursorPos();
-
-                                if(ImGui.IsItemHovered())
-                                {
-                                    // Get the current window's draw list
-                                    ImDrawListPtr drawList = ImGui.GetWindowDrawList();
-
-                                    // Retrieve the bounding box of the last item (the image)
-                                    System.Numerics.Vector2 min = ImGui.GetItemRectMin();
-                                    System.Numerics.Vector2 max = ImGui.GetItemRectMax();
-
-                                    // Define the overlay color (gray transparent)
-                                    System.Numerics.Vector4 overlayColor = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 0.3f); // RGBA
-
-                                    // Draw the overlay
-                                    drawList.AddRectFilled(min, max, ImGui.ColorConvertFloat4ToU32(overlayColor));
-
-                                    // Define the button position and size
-                                    System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(100, 20);
-                                    System.Numerics.Vector2 buttonPos = new System.Numerics.Vector2(
-                                        (min.X + max.X) / 2 - buttonSize.X / 2,
-                                        (min.Y + max.Y) / 2 - buttonSize.Y / 2
-                                    );
-
-                                    // Draw the button
-                                    ImGui.SetCursorScreenPos(buttonPos);
-                                    if (ImGui.Button("Download", buttonSize))
-                                    {
-                                    }
-
-                                    if(ImGui.IsItemHovered() && mouseState.IsButtonReleased(MouseButton.Left))
-                                    {
-                                        editorData.assetStoreManager.DownloadAssetFull(editorData.assetStoreManager.assets[i]);
-                                    }
-                                }
-
-                                ImGui.SetCursorPos(cursorPos);
-                                ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
-                                ImGui.TextWrapped(editorData.assetStoreManager.assets[i].Name);
-                                ImGui.PopTextWrapPos();
-
-                                ImGui.PopID();
-
-                                ImGui.EndGroup();
+                                currentBottomPanelTab = "Asset store";
+                                ImGui.SetKeyboardFocusHere();
                             }
+
+                            bool commit = false;
+                            if (ImGui.InputText("##assetSearch", _inputBuffers["##assetSearch"], (uint)_inputBuffers["##assetSearch"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                            {
+                                commit = true;
+                            }
+                            if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                commit = true;
+                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                            {
+                                ImGui.SetNextWindowFocus();
+                                editorData.assetStoreManager.currentKeyword = "";
+                                _inputBuffers["##assetSearch"][0] = 0;
+                            }
+
+                            if (commit)
+                            {
+                                editorData.assetStoreManager.currentKeyword = GetStringFromBuffer("##assetSearch");
+                                editorData.assetStoreManager.currentPageNumber = 0;
+                                editorData.assetStoreManager.GetOpenGameArtOrg();
+                            }
+
+                            ImGui.Separator();
+
+                            float padding = ImGui.GetStyle().WindowPadding.X;
+                            float spacing = ImGui.GetStyle().ItemSpacing.X;
+
+                            System.Numerics.Vector2 availableSpace = ImGui.GetContentRegionAvail();
+                            int columns = (int)((availableSpace.X + spacing) / (imageWidth + spacing));
+                            columns = Math.Max(1, columns);
+                            float itemWidth = availableSpace.X / columns - spacing;
+
+                            for (int i = 0; i < editorData.assetStoreManager.assets.Count; i++)
+                            {
+                                if (Engine.textureManager.textures.ContainsKey("ui_" + editorData.assetStoreManager.assets[i].Path))
+                                {
+                                    if (i % columns != 0)
+                                    {
+                                        ImGui.SameLine();
+                                    }
+
+                                    ImGui.BeginGroup();
+                                    ImGui.PushID(editorData.assetStoreManager.assets[i].Path);
+
+                                    ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + editorData.assetStoreManager.assets[i].Path].TextureId, imageSize);
+
+                                    var cursorPos = ImGui.GetCursorPos();
+
+                                    if (ImGui.IsItemHovered())
+                                    {
+                                        // Get the current window's draw list
+                                        ImDrawListPtr drawList = ImGui.GetWindowDrawList();
+
+                                        // Retrieve the bounding box of the last item (the image)
+                                        System.Numerics.Vector2 min = ImGui.GetItemRectMin();
+                                        System.Numerics.Vector2 max = ImGui.GetItemRectMax();
+
+                                        // Define the overlay color (gray transparent)
+                                        System.Numerics.Vector4 overlayColor = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 0.3f); // RGBA
+
+                                        // Draw the overlay
+                                        drawList.AddRectFilled(min, max, ImGui.ColorConvertFloat4ToU32(overlayColor));
+
+                                        // Define the button position and size
+                                        System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(100, 20);
+                                        System.Numerics.Vector2 buttonPos = new System.Numerics.Vector2(
+                                            (min.X + max.X) / 2 - buttonSize.X / 2,
+                                            (min.Y + max.Y) / 2 - buttonSize.Y / 2
+                                        );
+
+                                        // Draw the button
+                                        ImGui.SetCursorScreenPos(buttonPos);
+                                        if (ImGui.Button("Download", buttonSize))
+                                        {
+                                        }
+
+                                        if (ImGui.IsItemHovered() && mouseState.IsButtonReleased(MouseButton.Left))
+                                        {
+                                            editorData.assetStoreManager.DownloadAssetFull(editorData.assetStoreManager.assets[i]);
+                                        }
+                                    }
+
+                                    ImGui.SetCursorPos(cursorPos);
+                                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
+                                    ImGui.TextWrapped(editorData.assetStoreManager.assets[i].Name);
+                                    ImGui.PopTextWrapPos();
+
+                                    ImGui.PopID();
+
+                                    ImGui.EndGroup();
+                                }
+                            }
+
+                            ImGui.Dummy(new System.Numerics.Vector2(0.0f, 10f));
+
+                            ImGui.PopStyleVar();
                         }
+                        else
+                        {
+                            string noInternet = "There is no internet connection.";
 
-                        ImGui.Dummy(new System.Numerics.Vector2(0.0f, 10f));
+                            System.Numerics.Vector2 textSize = ImGui.CalcTextSize(noInternet);
 
-                        ImGui.PopStyleVar();
+                            System.Numerics.Vector2 windowSize = ImGui.GetWindowSize();
+
+                            System.Numerics.Vector2 textPos = new System.Numerics.Vector2(
+                                (windowSize.X - textSize.X) * 0.5f, // X centered
+                                (windowSize.Y - textSize.Y) * 0.5f  // Y centered (if you want it exactly in the middle)
+                            );
+
+                            ImGui.SetCursorPos(textPos);
+
+                            ImGui.Text(noInternet);
+                        }
 
                         ImGui.EndTabItem();
                     }
@@ -1617,13 +1778,18 @@ namespace Engine3D
             #endregion
         }
 
-        private void DragDropImageSourceUI(ref TextureManager textureManager, string payloadName, string assetName, System.Numerics.Vector2 size)
+        private void RecursiveTextureAssets()
+        {
+
+        }
+
+        private void DragDropImageSourceUI(ref TextureManager textureManager, string payloadName, string assetName, string payload, System.Numerics.Vector2 size)
         {
             if (ImGui.IsItemActive())
             {
                 if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
                 {
-                    byte[] pathBytes = Encoding.UTF8.GetBytes(assetName);
+                    byte[] pathBytes = Encoding.UTF8.GetBytes(payload);
                     unsafe
                     {
                         fixed (byte* pPath = pathBytes)

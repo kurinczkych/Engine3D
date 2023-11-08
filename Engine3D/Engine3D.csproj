@@ -52,6 +52,8 @@
     <None Remove="Textures\High_test.png" />
     <None Remove="Textures\red.png" />
     <None Remove="Textures\rred.png" />
+    <None Remove="Textures\ui_back.png" />
+    <None Remove="Textures\ui_folder.png" />
     <None Remove="Textures\ui_missing.png" />
     <None Remove="Textures\ui_pause.png" />
     <None Remove="Textures\ui_screen.png" />
@@ -134,6 +136,8 @@
     <EmbeddedResource Include="Textures\font2.PNG">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Textures\ui_back.png" />
+    <EmbeddedResource Include="Textures\ui_folder.png" />
     <EmbeddedResource Include="Textures\ui_missing.png" />
     <EmbeddedResource Include="Textures\ui_pause.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

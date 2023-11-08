@@ -21,7 +21,7 @@ namespace Engine3D
         public Vector3 Position;
         private float soundDistance = 20f;
 
-        public SoundEmitter(string audioFile)
+        public SoundEmitter(string audioFile, out bool success)
         {
             _buffer = AL.GenBuffer();
             _source = AL.GenSource();
@@ -29,13 +29,21 @@ namespace Engine3D
             Position = Vector3.Zero;
             this.audioFile = audioFile;
 
-            LoadBufferWithSoundData(_buffer);
-            AL.Source(_source, ALSourcei.Buffer, _buffer);
+            if (!LoadBufferWithSoundData(_buffer))
+            {
+                success = false;
+            }
+            else
+            {
+                AL.Source(_source, ALSourcei.Buffer, _buffer);
 
-            AL.Source(_source, ALSourceb.SourceRelative, true);
+                AL.Source(_source, ALSourceb.SourceRelative, true);
+
+                success = true;
+            }
         }
 
-        public SoundEmitter(string audioFile, Vector3 position)
+        public SoundEmitter(string audioFile, Vector3 position, out bool success)
         {
             _buffer = AL.GenBuffer();
             _source = AL.GenSource();
@@ -43,17 +51,23 @@ namespace Engine3D
             Position = position;
             this.audioFile = audioFile;
 
-            LoadBufferWithSoundData(_buffer);
-            AL.Source(_source, ALSourcei.Buffer, _buffer);
+            if (!LoadBufferWithSoundData(_buffer))
+            {
+                success = false;
+            }
+            else
+            {
+                AL.Source(_source, ALSourcei.Buffer, _buffer);
 
-            AL.Source(_source, ALSourceb.SourceRelative, false);
-            AL.Source(_source, ALSource3f.Position, Position.X, Position.Y, Position.Z);
-            AL.Source(_source, ALSource3f.Velocity, 0, 0, 0);
+                AL.Source(_source, ALSourceb.SourceRelative, false);
+                AL.Source(_source, ALSource3f.Position, Position.X, Position.Y, Position.Z);
+                AL.Source(_source, ALSource3f.Velocity, 0, 0, 0);
 
-            AL.Source(_source, ALSourcef.RolloffFactor, 1.0f);  // Try increasing this if needed
-            AL.Source(_source, ALSourcef.ReferenceDistance, 1.0f);  // Base distance for attenuation
-            AL.Source(_source, ALSourcef.Gain, 0f);  // Source gain
-
+                AL.Source(_source, ALSourcef.RolloffFactor, 1.0f);  // Try increasing this if needed
+                AL.Source(_source, ALSourcef.ReferenceDistance, 1.0f);  // Base distance for attenuation
+                AL.Source(_source, ALSourcef.Gain, 0f);  // Source gain
+                success = true;
+            }
         }
 
         public void UpdatePosition(Vector3 newPosition)
@@ -103,9 +117,16 @@ namespace Engine3D
             AL.SourceStop(_source);
         }
 
-        private void LoadBufferWithSoundData(int buffer)
+        private bool LoadBufferWithSoundData(int buffer)
         {
-            var oggStream = FileManager.GetFileStream(audioFile, "Audio");
+            string filepath = FileManager.GetFilePath(audioFile, "Audio");
+            if (filepath == "")
+            {
+                // TODO Console log ("File '" + fileName + "' not found!");
+                return false;
+            }
+
+            var oggStream = FileManager.GetFileStream(filepath);
 
             using (var vorbis = new VorbisReader(oggStream, true))
             {
@@ -141,6 +162,8 @@ namespace Engine3D
                     handle.Free();  // Always free the handle
                 }
             }
+
+            return true;
         }
 
         ~SoundEmitter()

@@ -15,39 +15,33 @@ namespace Engine3D
         Models
     }
 
-    public class FileTypeCount
-    {
-        public bool First = true;
-        public int Textures = 0;
-        public int Fonts = 0;
-        public int Audio = 0;
-        public int Models = 0;
-    }
-
     public static class FileManager
     {
         private static List<Stream> openedStreams = new List<Stream>();
+        private static Dictionary<string, int> fileFolderCount = new Dictionary<string, int>();
+        private static bool first = true;
 
-        public static Stream? GetFileStream(string file, string folder)
+        public static Stream? GetFileStream(string fullpath)
         {
             Stream? s = Stream.Null;
 
-            string fileLocation = Environment.CurrentDirectory + "\\" + folder;
+            string folderName = Path.GetDirectoryName(fullpath);
+            string fileName = Path.GetFileName(fullpath);
 
-            if (!Directory.Exists(fileLocation))
+            if (!Directory.Exists(folderName))
             {
-                s = GetFileStreamFromResource(file);
+                s = GetFileStreamFromResource(fileName);
             }
             else
             {
-                string[] files = Directory.GetFiles(fileLocation);
-                if (!files.Any(x => Path.GetFileName(x) == file))
+                string[] files = Directory.GetFiles(folderName);
+                if (!files.Any(x => Path.GetFileName(x) == fileName))
                 {
-                    s = GetFileStreamFromResource(file);
+                    s = GetFileStreamFromResource(fileName);
                 }
                 else
                 {
-                    string foundFile = Directory.GetFiles(fileLocation).Where(x => Path.GetFileName(x) == file).First();
+                    string foundFile = Directory.GetFiles(folderName).Where(x => Path.GetFileName(x) == fileName).First();
                     s = File.OpenRead(foundFile);
                 }
             }
@@ -55,29 +49,17 @@ namespace Engine3D
             return s;
         }
 
-        public static string GetFilePath(string file, string folder)
+        public static string GetFilePath(string fileName, string folder)
         {
-            string path = "";
+            string filePath = Environment.CurrentDirectory + "\\Assets\\" + folder + "\\" + fileName;
+            if (File.Exists(filePath))
+                return filePath;
 
-            string fileLocation = Environment.CurrentDirectory + "\\" + folder;
+            string resourceName = GetResourceNameByNameEnd(fileName);
+            if (resourceName != null && resourceName != "")
+                return resourceName;
 
-            if (!Directory.Exists(fileLocation))
-            {
-                path = GetResourceNameByNameEnd(file);
-            }
-            else
-            {
-                if (!Directory.GetFiles(fileLocation).Any(x => Path.GetFileName(x) == file))
-                {
-                    path = GetResourceNameByNameEnd(file);
-                }
-                else
-                {
-                    path = Directory.GetFiles(fileLocation).Where(x => Path.GetFileName(x) == file).First();
-                }
-            }
-
-            return path;
+            return "";
         }
 
         private static string GetResourceNameByNameEnd(string nameEnd)
@@ -105,75 +87,92 @@ namespace Engine3D
             return s;
         }
 
-        public static void GetAllAssets(FileTypeCount fileTypeCount, ref AssetManager assetManager)
+        public static void GetAllAssets(ref AssetManager assetManager)
         {
-            if (fileTypeCount.First)
+            if (first)
             {
                 foreach (var type in Enum.GetValues(typeof(FileType)))
                 {
-                    string fileLocation = Environment.CurrentDirectory + "\\" + type.ToString();
-                    if (Directory.Exists(fileLocation))
-                    {
-                        var files = Directory.GetFiles(fileLocation);
-                        foreach (var file in files)
-                        {
-                            IncreaseFileTypeCount(ref fileTypeCount, (FileType)type);
-                            Asset asset = new Asset(Asset.CurrentId + 1, Path.GetFileName(file), file, GetAssetType((FileType)type), GetAssetTypeEditor((FileType)type));
-                            assetManager.Add(asset);
-                        }
-                    }
+                    string fileLocation = Environment.CurrentDirectory + "\\Assets\\" + type.ToString();
+
+                    RecursiveAllAssets(fileLocation, (FileType)type, ref assetManager, true);
                 }
-                fileTypeCount.First = false;
+                first = false;
             }
             else
             {
                 foreach (var type in Enum.GetValues(typeof(FileType)))
                 {
-                    string fileLocation = Environment.CurrentDirectory + "\\" + type.ToString();
-                    if (Directory.Exists(fileLocation))
+                    string fileLocation = Environment.CurrentDirectory + "\\Assets\\" + type.ToString();
+
+                    RecursiveAllAssets(fileLocation, (FileType)type, ref assetManager, false);
+                }
+            }
+        }
+
+        private static void RecursiveAllAssets(string fileLocation, FileType type, ref AssetManager assetManager, bool first)
+        {
+            if (first)
+            {
+                if (Directory.Exists(fileLocation))
+                {
+                    var files = Directory.GetFiles(fileLocation);
+                    foreach (var file in files)
                     {
-                        var files = Directory.GetFiles(fileLocation);
+                        IncreaseFileTypeCount(fileLocation);
+                        Asset asset = new Asset(Asset.CurrentId + 1, Path.GetFileName(file), file, GetAssetType((FileType)type), GetAssetTypeEditor((FileType)type), type);
+                        assetManager.Add(asset);
+                    }
 
-                        if (AreFilesTheSameCount(ref fileTypeCount, (FileType)type, files.Count()))
-                            continue;
+                    var dirs = Directory.GetDirectories(fileLocation);
+                    foreach (var dir in dirs)
+                    {
+                        RecursiveAllAssets(dir, type, ref assetManager, first);
+                    }
+                }
+            }
+            else
+            {
+                if (Directory.Exists(fileLocation))
+                {
+                    var files = Directory.GetFiles(fileLocation);
 
+                    if (!AreFilesTheSameCount(fileLocation, files.Count()))
+                    {
                         foreach (var file in files)
                         {
-                            if (assetManager.loaded.Contains(file))
+                            if (assetManager.loaded.Contains(file) || assetManager.toLoadString.Contains(file))
                                 continue;
 
-                            Asset asset = new Asset(Asset.CurrentId + 1, Path.GetFileName(file), file, GetAssetType((FileType)type), GetAssetTypeEditor((FileType)type));
+                            IncreaseFileTypeCount(fileLocation);
+                            Asset asset = new Asset(Asset.CurrentId + 1, Path.GetFileName(file), file, GetAssetType((FileType)type), GetAssetTypeEditor((FileType)type), type);
                             assetManager.Add(asset);
                         }
+                    }
+
+                    var dirs = Directory.GetDirectories(fileLocation);
+                    foreach (var dir in dirs)
+                    {
+                        RecursiveAllAssets(dir, type, ref assetManager, first);
                     }
                 }
             }
         }
 
-        private static void IncreaseFileTypeCount(ref FileTypeCount fileTypeCount, FileType fileType)
+        private static void IncreaseFileTypeCount(string fileLocation)
         {
-            if (fileType == FileType.Models)
-                fileTypeCount.Models++;
-            else if (fileType == FileType.Audio)
-                fileTypeCount.Audio++;
-            else if (fileType == FileType.Textures)
-                fileTypeCount.Textures++;
-            else if (fileType == FileType.Fonts)
-                fileTypeCount.Fonts++;
+            if (fileFolderCount.ContainsKey(fileLocation))
+                fileFolderCount[fileLocation]++;
+            else
+                fileFolderCount.Add(fileLocation, 1);
         }
 
-        private static bool AreFilesTheSameCount(ref FileTypeCount fileTypeCount, FileType fileType, int count)
+        private static bool AreFilesTheSameCount(string folder, int count)
         {
-            if (fileType == FileType.Models)
-                return fileTypeCount.Models == count;
-            else if (fileType == FileType.Audio)
-                return fileTypeCount.Audio == count;
-            else if (fileType == FileType.Textures)
-                return fileTypeCount.Textures == count;
-            else if (fileType == FileType.Fonts)
-                return fileTypeCount.Fonts == count;
-            else
-                return true;
+            if(fileFolderCount.ContainsKey(folder))
+                return fileFolderCount[folder] == count;
+
+            return false;
         }
 
         private static AssetType GetAssetType(FileType fileType)
@@ -198,6 +197,37 @@ namespace Engine3D
                 return AssetTypeEditor.UI;
             else
                 return AssetTypeEditor.Unknown;
+        }
+
+        public static void DeleteAsset(string assetPath)
+        {
+            if (assetPath == null || assetPath == "")
+                return;
+
+            if(File.Exists(assetPath))
+            {
+                try
+                {
+                    File.Delete(assetPath);
+
+                    string dir = Path.GetDirectoryName(assetPath);
+                    if (dir != null && dir != "")
+                        fileFolderCount[dir]--;
+                }
+                catch { }
+            }
+        }
+
+        public static void DeleteFolder(string folderPath)
+        {
+            if (folderPath == null || folderPath == "")
+                return;
+
+            string folderFullPath = Environment.CurrentDirectory + "\\Assets\\" + folderPath;
+            if (Directory.Exists(folderFullPath))
+            {
+                Directory.Delete(folderFullPath, true);
+            }
         }
 
         public static void DisposeStreams()

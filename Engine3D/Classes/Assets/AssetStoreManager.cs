@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.IO.Compression;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 
 namespace Engine3D
 {
@@ -78,6 +79,10 @@ namespace Engine3D
 
         public bool tryingToDownload = false;
 
+        public bool IsThereInternetConnection = false;
+        private Timer isThereInternetChecker;
+        private const int checkingInterval = 10000;
+
         public AssetStoreManager(ref AssetManager assetManager)
         {
             assets = new List<Asset>();
@@ -85,27 +90,48 @@ namespace Engine3D
             assetToDownloadsFull = new List<AssetToDownload>();
             assetZipToDownload = new List<AssetToDownload>(); 
             this.assetManager = assetManager;
+            isThereInternetChecker = new Timer(InternetCheckerCallback, null, 0, checkingInterval);
+        }
+
+        public void Delete()
+        {
+            isThereInternetChecker.Dispose();
+        }
+
+        private void InternetCheckerCallback(object? state)
+        {
+            IsThereInternetConnection = IsInternetAvailable();
         }
 
         public async void GetOpenGameArtOrg()
         {
             if (currentKeyword == "")
-                return;
-
-            var url = "https://opengameart.org/art-search-advanced?keys=" + currentKeyword + "&title=&field_art_tags_tid_op=or&field_art_tags_tid=&name=&field_art_type_tid%5B0%5D=14&sort_by=count&sort_order=DESC&items_per_page=24&Collection=";
-            if (currentPageNumber != 0)
-                url += "&page=" + currentPageNumber.ToString();
-
-            using (var httpClient = new HttpClient())
             {
-                using (var request = new HttpRequestMessage(new HttpMethod("GET"), url))
-                {
-                    var response = await httpClient.SendAsync(request);
-                    var content = await response.Content.ReadAsStringAsync();
-                    ParseOpenGameArt(content);
-                }
+                assetManager.Remove(assets);
+                assets.Clear();
+
+                DeleteFolderContent("Temp");
+                return;
             }
 
+            IsThereInternetConnection = IsInternetAvailable();
+
+            if (IsThereInternetConnection)
+            {
+                var url = "https://opengameart.org/art-search-advanced?keys=" + currentKeyword + "&title=&field_art_tags_tid_op=or&field_art_tags_tid=&name=&field_art_type_tid%5B0%5D=14&sort_by=count&sort_order=DESC&items_per_page=24&Collection=";
+                if (currentPageNumber != 0)
+                    url += "&page=" + currentPageNumber.ToString();
+
+                using (var httpClient = new HttpClient())
+                {
+                    using (var request = new HttpRequestMessage(new HttpMethod("GET"), url))
+                    {
+                        var response = await httpClient.SendAsync(request);
+                        var content = await response.Content.ReadAsStringAsync();
+                        ParseOpenGameArt(content);
+                    }
+                }
+            }
         }
 
         private void ParseOpenGameArt(string content)
@@ -123,7 +149,7 @@ namespace Engine3D
 
                     DeleteFolderContent("Temp");
                 }
-                else if(Directory.Exists(Environment.CurrentDirectory + "\\Temp") && new DirectoryInfo(Environment.CurrentDirectory + "\\Temp").GetFiles().Count() > 0)
+                else if(Directory.Exists(Environment.CurrentDirectory + "\\Assets\\Temp") && new DirectoryInfo(Environment.CurrentDirectory + "\\Assets\\Temp").GetFiles().Count() > 0)
                 {
                     DeleteFolderContent("Temp");
                 }
@@ -145,7 +171,7 @@ namespace Engine3D
                     if (contentPath == "")
                         continue;
 
-                    Asset asset = new Asset(Asset.CurrentId + 1, name, "", AssetType.Texture, AssetTypeEditor.Store);
+                    Asset asset = new Asset(Asset.CurrentId + 1, name, "", AssetType.Texture, AssetTypeEditor.Store, FileType.Textures);
                     asset.WebPathFull = contentPath;
                     assetToDownloadsPreview.Add(new AssetToDownload(asset, imgSrc));
                 }
@@ -155,43 +181,48 @@ namespace Engine3D
 
         public async void DownloadAssetFull(Asset asset)
         {
-            tryingToDownload = true;
-            using (var httpClient = new HttpClient())
+            IsThereInternetConnection = IsInternetAvailable();
+
+            if (IsThereInternetConnection)
             {
-                using (var request = new HttpRequestMessage(new HttpMethod("GET"), asset.WebPathFull))
+                tryingToDownload = true;
+                using (var httpClient = new HttpClient())
                 {
-                    var response = await httpClient.SendAsync(request);
-                    var content = await response.Content.ReadAsStringAsync();
-
-                    var htmlDoc = new HtmlDocument();
-                    htmlDoc.LoadHtml(content);
-
-                    var node = htmlDoc.DocumentNode.SelectSingleNode("//span[@class='file']");
-                    if(node == null)
+                    using (var request = new HttpRequestMessage(new HttpMethod("GET"), asset.WebPathFull))
                     {
-                        // TODO: Console log error
-                        return;
-                    }
+                        var response = await httpClient.SendAsync(request);
+                        var content = await response.Content.ReadAsStringAsync();
 
-                    string fileWebPath = node.Descendants("a").First().GetAttributeValue("href", string.Empty);
+                        var htmlDoc = new HtmlDocument();
+                        htmlDoc.LoadHtml(content);
 
-                    var regex = new Regex(@"\s*(?<filename>.+?)\s+(?<size>\d+(\.\d+)?\s+[KMG]?b)\s+\[(?<downloads>\d+)\s+download\(s\)\]", RegexOptions.IgnoreCase);
-                    var match = regex.Match(node.InnerText);
+                        var node = htmlDoc.DocumentNode.SelectSingleNode("//span[@class='file']");
+                        if (node == null)
+                        {
+                            // TODO: Console log error
+                            return;
+                        }
 
-                    string filename = "";
-                    int size = 0;
-                    string downloads = "";
-                    if (match.Success)
-                    {
-                        filename = match.Groups["filename"].Value;
-                        size = (int)(float.Parse(match.Groups["size"].Value.Split(' ')[0])*1000);
-                        downloads = match.Groups["downloads"].Value;
-                    }
+                        string fileWebPath = node.Descendants("a").First().GetAttributeValue("href", string.Empty);
 
-                    if (!File.Exists(Environment.CurrentDirectory + "\\Temp\\" + filename))
-                    {
-                        AssetToDownload assetToDownload = new AssetToDownload(fileWebPath, Environment.CurrentDirectory + "\\Temp", filename, size);
-                        assetZipToDownload.Add(assetToDownload);
+                        var regex = new Regex(@"\s*(?<filename>.+?)\s+(?<size>\d+(\.\d+)?\s+[KMG]?b)\s+\[(?<downloads>\d+)\s+download\(s\)\]", RegexOptions.IgnoreCase);
+                        var match = regex.Match(node.InnerText);
+
+                        string filename = "";
+                        int size = 0;
+                        string downloads = "";
+                        if (match.Success)
+                        {
+                            filename = match.Groups["filename"].Value;
+                            size = (int)(float.Parse(match.Groups["size"].Value.Split(' ')[0]) * 1000);
+                            downloads = match.Groups["downloads"].Value;
+                        }
+
+                        if (!File.Exists(Environment.CurrentDirectory + "\\Assets\\Temp\\" + filename))
+                        {
+                            AssetToDownload assetToDownload = new AssetToDownload(fileWebPath, Environment.CurrentDirectory + "\\Assets\\Temp", filename, size);
+                            assetZipToDownload.Add(assetToDownload);
+                        }
                     }
                 }
             }
@@ -238,104 +269,110 @@ namespace Engine3D
 
         public async void DownloadIfNeeded()
         {
-            if(assetToDownloadsPreview.Count > 0)
+            if (IsThereInternetConnection)
             {
-                if (!Directory.Exists(Environment.CurrentDirectory + "\\Temp"))
-                    Directory.CreateDirectory(Environment.CurrentDirectory + "\\Temp");
-
-                try
+                if (assetToDownloadsPreview.Count > 0)
                 {
-                    AssetToDownload assetToDownload = assetToDownloadsPreview[0];
-
-                    if (!IsDownloadInProgress)
-                    {
-                        string fileName = Path.GetFileName(new Uri(assetToDownload.webPath).LocalPath);
-                        await DownloadImageAsync(assetToDownload.webPath, Environment.CurrentDirectory + "\\Temp\\" + fileName);
-                        if (File.Exists(Environment.CurrentDirectory + "\\Temp\\" + fileName))
-                        {
-                            IsDownloadInProgress = false;
-                            Asset a = assetToDownload.asset;
-                            a.Path = fileName;
-                            assets.Add(a);
-                            assetManager.Add(a);
-                            assetToDownloadsPreview.Remove(assetToDownload);
-                        }
-                    }
-                }
-                catch { }
-            }
-
-            if(assetToDownloadsFull.Count > 0)
-            {
-                if (!Directory.Exists(Environment.CurrentDirectory + "\\Temp"))
-                    Directory.CreateDirectory(Environment.CurrentDirectory + "\\Temp");
-            }
-
-            if(assetZipToDownload.Count > 0 && !IsZipDownloadInProgress)
-            {
-                if (!Directory.Exists(Environment.CurrentDirectory + "\\Temp"))
-                    Directory.CreateDirectory(Environment.CurrentDirectory + "\\Temp");
-
-                AssetToDownload assetToDownload = assetZipToDownload[0];
-                IsZipDownloadInProgress = true;
-                tryingToDownload = false;
-
-                await DownloadFileAsync(assetToDownload.fullWebPath, assetToDownload.outputDirectory+"\\"+assetToDownload.fileName, p =>
-                {
-                    // This action runs on the background thread and simply updates the progress
-                    zipProgress = p;
-                }).ContinueWith(t =>
-                {
-                    // Handle any exceptions
-                    if (t.Exception != null)
-                        throw new Exception("Error?");
-                });
-
-                if(File.Exists(assetToDownload.outputDirectory+"\\"+ assetToDownload.fileName))
-                {
-                    var dirName = assetToDownload.outputDirectory + "\\" + Path.GetFileNameWithoutExtension(assetToDownload.fileName);
-                    Directory.CreateDirectory(dirName);
-                    ZipFile.ExtractToDirectory(assetToDownload.outputDirectory + "\\" + assetToDownload.fileName,
-                                               dirName);
-
-                    File.Delete(assetToDownload.outputDirectory + "\\" + assetToDownload.fileName);
-
-                    List<string> imagePaths = ExtractImagePaths(dirName);
-                    foreach (string imagePath in imagePaths)
-                    {
-                        try
-                        {
-                            File.Copy(imagePath, Environment.CurrentDirectory + "\\Textures\\" + Path.GetFileName(imagePath));
-                        }
-                        catch { }
-                    }
+                    if (!Directory.Exists(Environment.CurrentDirectory + "\\Assets\\Temp"))
+                        Directory.CreateDirectory(Environment.CurrentDirectory + "\\Assets\\Temp");
 
                     try
                     {
-                        // Deleting temp folder content
-                        DirectoryInfo di = new DirectoryInfo(dirName);
-                        foreach (FileInfo file in di.GetFiles())
-                        {
-                            file.Delete();
-                        }
-                        foreach (DirectoryInfo subDirectory in di.GetDirectories())
-                        {
-                            subDirectory.Delete(true); // true => delete recursively
-                        }
+                        AssetToDownload assetToDownload = assetToDownloadsPreview[0];
 
-                        Directory.Delete(dirName);
+                        if (!IsDownloadInProgress)
+                        {
+                            string fileName = Path.GetFileName(new Uri(assetToDownload.webPath).LocalPath);
+                            await DownloadImageAsync(assetToDownload.webPath, Environment.CurrentDirectory + "\\Assets\\Temp\\" + fileName);
+                            if (File.Exists(Environment.CurrentDirectory + "\\Assets\\Temp\\" + fileName))
+                            {
+                                IsDownloadInProgress = false;
+                                Asset a = assetToDownload.asset;
+                                a.Path = fileName;
+                                assets.Add(a);
+                                assetManager.Add(a);
+                                assetToDownloadsPreview.Remove(assetToDownload);
+                            }
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        throw new Exception(e.Message);
-                        // TODO: console logging
-                    }
-
-                    assetZipToDownload.Remove(assetToDownload);
+                    catch { }
                 }
 
-                IsZipDownloadInProgress = false;
-                zipProgress = 0.0f;
+                if (assetToDownloadsFull.Count > 0)
+                {
+                    if (!Directory.Exists(Environment.CurrentDirectory + "\\Assets\\Temp"))
+                        Directory.CreateDirectory(Environment.CurrentDirectory + "\\Assets\\Temp");
+                }
+
+                if (assetZipToDownload.Count > 0 && !IsZipDownloadInProgress)
+                {
+                    if (!Directory.Exists(Environment.CurrentDirectory + "\\Assets\\Temp"))
+                        Directory.CreateDirectory(Environment.CurrentDirectory + "\\Assets\\Temp");
+
+                    AssetToDownload assetToDownload = assetZipToDownload[0];
+                    IsZipDownloadInProgress = true;
+                    tryingToDownload = false;
+
+                    await DownloadFileAsync(assetToDownload.fullWebPath, assetToDownload.outputDirectory + "\\" + assetToDownload.fileName, p =>
+                    {
+                        // This action runs on the background thread and simply updates the progress
+                        zipProgress = p;
+                    }).ContinueWith(t =>
+                    {
+                        // Handle any exceptions
+                        if (t.Exception != null)
+                            throw new Exception("Error?");
+                    });
+
+                    if (File.Exists(assetToDownload.outputDirectory + "\\" + assetToDownload.fileName))
+                    {
+                        var dirName = assetToDownload.outputDirectory + "\\" + Path.GetFileNameWithoutExtension(assetToDownload.fileName);
+                        Directory.CreateDirectory(dirName);
+                        ZipFile.ExtractToDirectory(assetToDownload.outputDirectory + "\\" + assetToDownload.fileName,
+                                                   dirName);
+
+                        //File.Delete(assetToDownload.outputDirectory + "\\" + assetToDownload.fileName);
+
+                        List<string> imagePaths = ExtractImagePaths(dirName);
+                        string assetFolder = Environment.CurrentDirectory + "\\Assets\\Textures\\" + Path.GetFileNameWithoutExtension(assetToDownload.fileName);
+                        if (!Directory.Exists(assetFolder))
+                            Directory.CreateDirectory(assetFolder);
+                        foreach (string imagePath in imagePaths)
+                        {
+                            try
+                            {
+                                File.Copy(imagePath, assetFolder + "\\" + Path.GetFileName(imagePath));
+                            }
+                            catch { }
+                        }
+
+                        try
+                        {
+                            // Deleting temp folder content
+                            DirectoryInfo di = new DirectoryInfo(dirName);
+                            foreach (FileInfo file in di.GetFiles())
+                            {
+                                file.Delete();
+                            }
+                            foreach (DirectoryInfo subDirectory in di.GetDirectories())
+                            {
+                                subDirectory.Delete(true); // true => delete recursively
+                            }
+
+                            Directory.Delete(dirName);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception(e.Message);
+                            // TODO: console logging
+                        }
+
+                        assetZipToDownload.Remove(assetToDownload);
+                    }
+
+                    IsZipDownloadInProgress = false;
+                    zipProgress = 0.0f;
+                }
             }
         }
 
@@ -368,7 +405,7 @@ namespace Engine3D
             }
         }
 
-        public async Task DownloadImageAsync(string imageUrl, string localFilePath)
+        private async Task DownloadImageAsync(string imageUrl, string localFilePath)
         {
             IsDownloadInProgress = true;
 
@@ -395,7 +432,7 @@ namespace Engine3D
             try
             {
                 // Deleting temp folder content
-                DirectoryInfo di = new DirectoryInfo(Environment.CurrentDirectory + "\\" + folder);
+                DirectoryInfo di = new DirectoryInfo(Environment.CurrentDirectory + "\\Assets\\" + folder);
                 foreach (FileInfo file in di.GetFiles())
                 {
                     file.Delete();
@@ -409,6 +446,23 @@ namespace Engine3D
             {
                 throw new Exception(e.Message);
                 // TODO: console logging
+            }
+        }
+
+        private bool IsInternetAvailable()
+        {
+            try
+            {
+                using (var ping = new Ping())
+                {
+                    var reply = ping.Send("8.8.8.8", 1000); // Timeout set to 1000ms
+                    return reply.Status == IPStatus.Success;
+                }
+            }
+            catch
+            {
+                // Handle any exceptions (e.g., no network adapters, firewalls blocking the ping, etc.)
+                return false;
             }
         }
     }

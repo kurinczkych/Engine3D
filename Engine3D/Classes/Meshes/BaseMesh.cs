@@ -340,7 +340,14 @@ namespace Engine3D
             List<Vector3> normals = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
-            using (Stream stream = FileManager.GetFileStream(filename, "Models"))
+            string filepath = FileManager.GetFilePath(filename, "Models");
+            if(filepath == "")
+            {
+                // TODO Console log ("File '" + fileName + "' not found!");
+                return;
+            }
+
+            using (Stream stream = FileManager.GetFileStream(filepath))
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (true)

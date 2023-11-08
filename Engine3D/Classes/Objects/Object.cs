@@ -80,17 +80,20 @@ namespace Engine3D
                 {
                     Engine.textureManager.DeleteTexture(texture, mesh, "");
                     texture = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    // TODO: Console error texture not found!
-                    if (success && texture != null)
+                    if (!success || texture == null)
                     {
-                        texture.Bind();
-                        Texture.LoadTexture(texturePath, texture.flipY, texture.tminf, texture.tmagf);
+                        // TODO: Console error texture not found!
                     }
                 }
                 else
                 {
                     texture = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    mesh.AddUniformLocation("textureSampler");
+                    if (!success || texture == null)
+                    {
+                        // TODO: Console error texture not found!
+                    }
+                    else
+                        mesh.AddUniformLocation("textureSampler");
                 }
             }
         }
@@ -116,17 +119,20 @@ namespace Engine3D
                 {
                     Engine.textureManager.DeleteTexture(textureNormal, mesh, "Normal");
                     textureNormal = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    // TODO: Console error texture not found!
-                    if (success && textureNormal != null)
+                    if (!success || textureNormal == null)
                     {
-                        textureNormal.Bind();
-                        Texture.LoadTexture(texturePath, textureNormal.flipY, textureNormal.tminf, textureNormal.tmagf);
+                        // TODO: Console error texture not found!
                     }
                 }
                 else
                 {
                     textureNormal = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    mesh.AddUniformLocation("textureSamplerNormal");
+                    if (!success || textureNormal == null)
+                    {
+                        // TODO: Console error texture not found!
+                    }
+                    else
+                        mesh.AddUniformLocation("textureSamplerNormal");
                 }
             }
         }
@@ -152,17 +158,20 @@ namespace Engine3D
                 {
                     Engine.textureManager.DeleteTexture(textureHeight, mesh, "Height");
                     textureHeight = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    // TODO: Console error texture not found!
-                    if (success && textureHeight != null)
+                    if (!success || textureHeight == null)
                     {
-                        textureHeight.Bind();
-                        Texture.LoadTexture(texturePath, textureHeight.flipY, textureHeight.tminf, textureHeight.tmagf);
+                        // TODO: Console error texture not found!
                     }
                 }
                 else
                 {
                     textureHeight = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    mesh.AddUniformLocation("textureSamplerHeight");
+                    if (!success || textureHeight == null)
+                    {
+                        // TODO: Console error texture not found!
+                    }
+                    else
+                        mesh.AddUniformLocation("textureSamplerHeight");
                 }
             }
         }
@@ -188,17 +197,20 @@ namespace Engine3D
                 {
                     Engine.textureManager.DeleteTexture(textureAO, mesh, "AO");
                     textureAO = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    // TODO: Console error texture not found!
-                    if (success && textureAO != null)
+                    if (!success || textureAO == null)
                     {
-                        textureAO.Bind();
-                        Texture.LoadTexture(texturePath, textureAO.flipY, textureAO.tminf, textureAO.tmagf);
+                        // TODO: Console error texture not found!
                     }
                 }
                 else
                 {
                     textureAO = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    mesh.AddUniformLocation("textureSamplerAO");
+                    if (!success || textureAO == null)
+                    {
+                        // TODO: Console error texture not found!
+                    }
+                    else
+                        mesh.AddUniformLocation("textureSamplerAO");
                 }
             }
         }
@@ -225,16 +237,20 @@ namespace Engine3D
                     Engine.textureManager.DeleteTexture(textureRough, mesh, "Rough");
                     textureRough = Engine.textureManager.AddTexture(texturePath, out bool success);
                     // TODO: Console error texture not found!
-                    if (success && textureRough != null)
+                    if (!success || textureRough == null)
                     {
-                        textureRough.Bind();
-                        Texture.LoadTexture(texturePath, textureRough.flipY, textureRough.tminf, textureRough.tmagf);
+                        // TODO: Console error texture not found!
                     }
                 }
                 else
                 {
                     textureRough = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    mesh.AddUniformLocation("textureSamplerRough");
+                    if (!success || textureRough == null)
+                    {
+                        // TODO: Console error texture not found!
+                    }
+                    else
+                        mesh.AddUniformLocation("textureSamplerRough");
                 }
             }
         }
@@ -259,14 +275,21 @@ namespace Engine3D
                 else if (textureMetal != null)
                 {
                     Engine.textureManager.DeleteTexture(textureMetal, mesh, "Metal");
-                    textureMetal.TexturePath = texturePath;
-                    textureMetal.Bind();
-                    Texture.LoadTexture(texturePath, textureMetal.flipY, textureMetal.tminf, textureMetal.tmagf);
+                    textureMetal = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureMetal == null)
+                    {
+                        // TODO: Console error texture not found!
+                    }
                 }
                 else
                 {
                     textureMetal = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    mesh.AddUniformLocation("textureSamplerMetal");
+                    if (!success || textureMetal == null)
+                    {
+                        // TODO: Console error texture not found!
+                    }
+                    else
+                        mesh.AddUniformLocation("textureSamplerMetal");
                 }
             }
         }

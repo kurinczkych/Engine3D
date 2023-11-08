@@ -32,8 +32,9 @@ namespace Engine3D
         public string WebPathFull;
         public AssetType Type;
         public AssetTypeEditor EditorType;
+        public FileType fileType;
 
-        public Asset(int id, string name, string path, AssetType assetType, AssetTypeEditor editorType)
+        public Asset(int id, string name, string path, AssetType assetType, AssetTypeEditor editorType, FileType fileType)
         {
             Id = id;
             if (Id > CurrentId)
@@ -43,6 +44,7 @@ namespace Engine3D
             Path = path;
             Type = assetType;
             EditorType = editorType;
+            this.fileType = fileType;
         }
     }
 }
