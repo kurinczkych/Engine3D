@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
 using Cyotek.Drawing.BitmapFont;
 using System.Runtime.CompilerServices;
+using static OpenTK.Graphics.OpenGL.GL;
 
 #pragma warning disable CS8600
 #pragma warning disable CS8604
@@ -34,19 +35,20 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
         public List<float> verticesOnlyPos = new List<float>();
-        public List<float> verticesOnlyPosAndNormal = new List<float>();
+        private List<float> verticesOnlyPosAndNormal = new List<float>();
 
         private Vector2 windowSize;
 
-        Matrix4 viewMatrix, projectionMatrix;
+        private Matrix4 viewMatrix, projectionMatrix;
+        private Vector3 cameraPos;
 
         private VAO Vao;
         private VBO Vbo;
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string relativeModelPath, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
-            this.parentObject.name = modelName;
+            this.parentObject.name = Path.GetFileName(relativeModelPath);
             this.shaderProgramId = shaderProgramId;
 
             bool success = false;
@@ -59,20 +61,28 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            this.modelName = modelName;
-            ProcessObj(modelName);
+            modelPath = relativeModelPath;
+            modelName = Path.GetFileName(relativeModelPath);
+            ProcessObj(relativeModelPath);
 
-            ComputeVertexNormals();
+            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            {
+                ComputeVertexNormalsSpherical();
+            }
+            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+                ComputeVertexNormals();
+
+
             ComputeTangents();
 
             GetUniformLocations();
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string relativeModelPath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
-            this.parentObject.name = modelName;
+            this.parentObject.name = Path.GetFileName(relativeModelPath);
             this.shaderProgramId = shaderProgramId;
 
             Vao = vao;
@@ -81,10 +91,15 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            this.modelName = modelName;
-            ProcessObj(modelName);
+            modelPath = relativeModelPath;
+            modelName = Path.GetFileName(relativeModelPath);
+            ProcessObj(relativeModelPath);
 
-            ComputeVertexNormals();
+            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            {
+                ComputeVertexNormalsSpherical();
+            }
+
             ComputeTangents();
 
             GetUniformLocations();
@@ -110,7 +125,13 @@ namespace Engine3D
             this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals();
+            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            {
+                ComputeVertexNormalsSpherical();
+            }
+
+            ;
+
             ComputeTangents();
 
             GetUniformLocations();
@@ -132,7 +153,11 @@ namespace Engine3D
             this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals();
+            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            {
+                ComputeVertexNormalsSpherical();
+            }
+
             ComputeTangents();
 
             GetUniformLocations();
@@ -268,16 +293,17 @@ namespace Engine3D
 
         public void SendUniformsOnlyPos(Shader shader)
         {
-            int modelLoc = GL.GetUniformLocation(shader.id, "modelMatrix");
-            int viewLoc = GL.GetUniformLocation(shader.id, "viewMatrix");
-            int projLoc = GL.GetUniformLocation(shader.id, "projectionMatrix");
-
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
+            cameraPos = camera.GetPosition();
 
-            GL.UniformMatrix4(modelLoc, true, ref modelMatrix);
-            GL.UniformMatrix4(viewLoc, true, ref viewMatrix);
-            GL.UniformMatrix4(projLoc, true, ref projectionMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "viewMatrix"), true, ref viewMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "projectionMatrix"), true, ref projectionMatrix);
+            GL.Uniform3(GL.GetUniformLocation(shader.id, "cameraPos"), cameraPos);
+
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_scaleMatrix"), true, ref scaleMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
         private void AddVertices(List<float> vertices, triangle tri)
@@ -314,8 +340,6 @@ namespace Engine3D
         {
             if (!parentObject.isEnabled)
                 return new List<float>();
-
-            var a = parentObject.name;
 
             Vao.Bind();
 

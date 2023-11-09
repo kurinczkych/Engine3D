@@ -429,6 +429,9 @@ namespace Engine3D
 
         public void DeleteFolderContent(string folder)
         {
+            if (!Directory.Exists(Environment.CurrentDirectory + "\\Assets\\" + folder))
+                return;
+
             try
             {
                 // Deleting temp folder content

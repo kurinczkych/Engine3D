@@ -61,41 +61,45 @@ namespace Engine3D
 
                             //GL.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
 
-                            // OUTLINING
-                            if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
+                            if (o.isEnabled)
                             {
-                                GL.Enable(EnableCap.StencilTest);
-                                GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
-                                GL.StencilFunc(StencilFunction.Always, 1, 0xFF);
-                                GL.StencilMask(0xFF);
-                            }
+                                // OUTLINING
+                                if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
+                                {
+                                    GL.Enable(EnableCap.StencilTest);
+                                    GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
+                                    GL.StencilFunc(StencilFunction.Always, 1, 0xFF);
+                                    GL.StencilMask(0xFF);
+                                }
 
-                            vertices.AddRange(mesh.Draw(editorData.gameRunning));
-                            meshVao.Bind();
-                            meshVbo.Buffer(vertices);
-                            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                            vertices.Clear();
 
-                            // OUTLINING
-                            if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
-                            {
-                                GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
-                                GL.StencilMask(0x00);
-                                GL.Disable(EnableCap.DepthTest);
-
-                                outlineShader.Use();
-
-                                vertices = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
-                                onlyPosAndNormalVbo.Buffer(vertices);
+                                vertices.AddRange(mesh.Draw(editorData.gameRunning));
+                                meshVao.Bind();
+                                meshVbo.Buffer(vertices);
                                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-
-                                GL.StencilMask(0xFF);
-                                GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
-                                GL.Disable(EnableCap.StencilTest);
-                                GL.Enable(EnableCap.DepthTest);
-
-                                shaderProgram.Use();
                                 vertices.Clear();
+
+                                // OUTLINING
+                                if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
+                                {
+                                    GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
+                                    GL.StencilMask(0x00);
+                                    GL.Disable(EnableCap.DepthTest);
+
+                                    outlineShader.Use();
+
+                                    vertices = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
+                                    onlyPosAndNormalVbo.Buffer(vertices);
+                                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+
+                                    GL.StencilMask(0xFF);
+                                    GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
+                                    GL.Disable(EnableCap.StencilTest);
+                                    GL.Enable(EnableCap.DepthTest);
+
+                                    shaderProgram.Use();
+                                    vertices.Clear();
+                                }
                             }
                         }
                     }
@@ -107,14 +111,51 @@ namespace Engine3D
                             instancedShaderProgram.Use();
                         }
 
-                        List<float> instancedVertices = new List<float>();
-                        (vertices, instancedVertices) = mesh.Draw(editorData.gameRunning);
-                        currentMeshType = typeof(InstancedMesh);
+                        // OUTLINING
+                        if (o.isEnabled)
+                        {
+                            if (o.isSelected && editorData.gameRunning == GameState.Stopped)
+                            {
+                                GL.Enable(EnableCap.StencilTest);
+                                GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
+                                GL.StencilFunc(StencilFunction.Always, 1, 0xFF);
+                                GL.StencilMask(0xFF);
+                            }
 
-                        meshVbo.Buffer(vertices);
-                        instancedMeshVbo.Buffer(instancedVertices);
-                        GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
-                        vertices.Clear();
+
+                            List<float> instancedVertices = new List<float>();
+                            (vertices, instancedVertices) = mesh.Draw(editorData.gameRunning);
+                            currentMeshType = typeof(InstancedMesh);
+
+                            meshVbo.Buffer(vertices);
+                            instancedMeshVbo.Buffer(instancedVertices);
+                            GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
+                            vertices.Clear();
+
+
+                            // OUTLINING
+                            if (o.isSelected && editorData.gameRunning == GameState.Stopped)
+                            {
+                                GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
+                                GL.StencilMask(0x00);
+                                GL.Disable(EnableCap.DepthTest);
+
+                                outlineInstancedShader.Use();
+
+                                (vertices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao);
+                                instancedOnlyPosAndNormalVbo.Buffer(instancedVertices);
+                                onlyPosAndNormalVbo.Buffer(vertices);
+                                GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
+
+                                GL.StencilMask(0xFF);
+                                GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
+                                GL.Disable(EnableCap.StencilTest);
+                                GL.Enable(EnableCap.DepthTest);
+
+                                instancedShaderProgram.Use();
+                                vertices.Clear();
+                            }
+                        }
                     }
                 }
                 else if (objectType == ObjectType.NoTexture)

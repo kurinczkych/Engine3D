@@ -26,6 +26,7 @@ namespace Engine3D
         public int shaderProgramId;
 
         public string modelName;
+        public string modelPath;
 
         private bool _recalculate = false;
         public bool recalculate
@@ -193,11 +194,12 @@ namespace Engine3D
             }
         }
 
-        protected static Vector3 ComputeFaceNormal(triangle triangle)
+        protected static Vector3 ComputeFaceNormal(triangle tri)
         {
-            var edge1 = triangle.p[1] - triangle.p[0];
-            var edge2 = triangle.p[2] - triangle.p[0];
-            return Vector3.Cross(edge1, edge2).Normalized();
+            Vector3 edge1 = tri.p[1] - tri.p[0];
+            Vector3 edge2 = tri.p[2] - tri.p[0];
+            Vector3 normal = Vector3.Cross(edge1, edge2);
+            return normal;
         }
 
         protected static Vector3 Average(List<Vector3> vectors)
@@ -224,39 +226,87 @@ namespace Engine3D
             }
         }
 
+        public void ComputeVertexNormalsSpherical()
+        {
+            for (int i = 0; i < tris.Count(); i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    tris[i].n[j] = tris[i].p[j].Normalized();
+                }
+            }
+        }
+
         public void ComputeVertexNormals()
         {
-            Dictionary<Vector3, List<Vector3>> vertexToNormals = new Dictionary<Vector3, List<Vector3>>(new Vector3Comparer());
+            Dictionary<Vector3, Vector3> vertexNormals = new Dictionary<Vector3, Vector3>();
+            Dictionary<Vector3, int> vertexNormalsCounts = new Dictionary<Vector3, int>();
 
-            // Initialize mapping
-            foreach (var triangle in tris)
+
+            foreach (var tri in tris)
             {
+                Vector3 faceNormal = ComputeFaceNormal(tri);
                 for (int i = 0; i < 3; i++)
                 {
-                    if (!vertexToNormals.ContainsKey(triangle.p[i]))
-                        vertexToNormals[triangle.p[i]] = new List<Vector3>();
+                    if (!vertexNormals.ContainsKey(tri.p[i]))
+                    {
+                        vertexNormals[tri.p[i]] = faceNormal;
+                        vertexNormalsCounts[tri.p[i]] = 1;
+                    }
+                    else
+                    {
+                        vertexNormals[tri.p[i]] += faceNormal;
+                        vertexNormalsCounts[tri.p[i]]++;
+                    }
                 }
             }
 
-            // Accumulate face normals to the vertices
-            foreach (var triangle in tris)
+            //{(0.57735026, 0.57735026, -0.57735026)}
+            //{(0.40824828, 0.40824828, -0.81649655)}
+            foreach (var tri in tris)
             {
-                var faceNormal = ComputeFaceNormal(triangle);
                 for (int i = 0; i < 3; i++)
                 {
-                    vertexToNormals[triangle.p[i]].Add(faceNormal);
+                    tri.n[i] = (vertexNormals[tri.p[i]] / vertexNormalsCounts[tri.p[i]]).Normalized();
                 }
             }
+            ;
+            //// Temporary dictionary to store the accumulated normals for each vertex
+            //// Dictionary to count how many triangles share this vertex
+            //Dictionary<Vector3, int> sharedVertices = new Dictionary<Vector3, int>();
 
-            // Compute the average normal for each vertex
-            foreach (var triangle in tris)
-            {
-                triangle.gotPointNormals = true;
-                for (int i = 0; i < 3; i++)
-                {
-                    triangle.n[i] = Average(vertexToNormals[triangle.p[i]]).Normalized();
-                }
-            }
+            //// Initialize the dictionary with each vertex set to zero
+            //foreach (var tri in tris)
+            //{
+            //    foreach (var vertex in tri.p)
+            //    {
+            //        if (!vertexNormals.ContainsKey(vertex))
+            //        {
+            //            vertexNormals[vertex] = Vector3.Zero;
+            //            sharedVertices[vertex] = 0;
+            //        }
+            //    }
+            //}
+
+            //// Calculate normals for each triangle and accumulate them for each vertex
+            //foreach (var tri in tris)
+            //{
+            //    Vector3 faceNormal = ComputeFaceNormal(tri);
+            //    for (int i = 0; i < tri.p.Length; i++)
+            //    {
+            //        vertexNormals[tri.p[i]] += faceNormal;
+            //        sharedVertices[tri.p[i]]++;
+            //    }
+            //}
+
+            //// Normalize the normals and assign them to the triangles
+            //foreach (var tri in tris)
+            //{
+            //    for (int i = 0; i < tri.p.Length; i++)
+            //    {
+            //        tri.n[i] = Vector3.Normalize(vertexNormals[tri.p[i]] / sharedVertices[tri.p[i]]);
+            //    }
+            //}
         }
 
         public void ComputeTangents()
@@ -329,7 +379,7 @@ namespace Engine3D
             }
         }
 
-        public void ProcessObj(string filename, float cr=1, float cg=1, float cb=1, float ca=1)
+        public void ProcessObj(string relativeModelPath, float cr=1, float cg=1, float cb=1, float ca=1)
         {
             tris = new List<triangle>();
             Color4 color = new Color4(cr, cg, cb, ca);
@@ -340,14 +390,14 @@ namespace Engine3D
             List<Vector3> normals = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
-            string filepath = FileManager.GetFilePath(filename, "Models");
-            if(filepath == "")
+            string filePath = Environment.CurrentDirectory + "\\Assets\\Models\\" + relativeModelPath;
+            if(!File.Exists(filePath))
             {
                 // TODO Console log ("File '" + fileName + "' not found!");
                 return;
             }
 
-            using (Stream stream = FileManager.GetFileStream(filepath))
+            using (Stream stream = FileManager.GetFileStream(filePath))
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (true)

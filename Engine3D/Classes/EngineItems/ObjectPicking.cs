@@ -28,7 +28,7 @@ namespace Engine3D
                     }
                     else if (objectMovingAxis == Vector3.UnitZ)
                     {
-                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(0, 0, deltaX / 10);
+                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position + new Vector3(0, 0, deltaX / 10);
                     }
 
                     if (editorData.selectedItem is Object o)

@@ -208,5 +208,27 @@ namespace Engine3D
                     FileManager.DeleteFolder(assetFolderToDelete);
             }
         }
+
+        public static string GetRelativeModelsFolder(string fullpath)
+        {
+            List<string> dirs = new List<string>();
+            var split = fullpath.Split('\\');
+
+            bool add = false;
+            for (int i = 0; i < split.Length; i++)
+            {
+                if (add)
+                {
+                    dirs.Add(split[i]);
+                }
+                else if (split[i] == "Models")
+                {
+                    add = true;
+                    continue;
+                }
+            }
+
+            return string.Join('\\', dirs);
+        }
     }
 }

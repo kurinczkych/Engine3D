@@ -6,29 +6,38 @@ layout (location = 1) in vec3 inNormal;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform vec3 cameraPos;
+
+uniform mat4 _scaleMatrix;
+uniform mat4 _rotMatrix;
+
+mat4 GetTranslationMatrix(mat4 mMatrix)
+{
+    vec3 translation = vec3(mMatrix[0][3], mMatrix[1][3], mMatrix[2][3]);
+
+    // Construct a translation-only matrix
+    mat4 translationMatrix = mat4(
+        vec4(1.0, 0.0, 0.0, translation.x),
+        vec4(0.0, 1.0, 0.0, translation.y),
+        vec4(0.0, 0.0, 1.0, translation.z),
+        vec4(0.0, 0.0, 0.0, 1.0) // Set the translation component
+    );
+
+    return translationMatrix;
+}
 
 void main()
 {
-    float outlineWidth = 100; // This is a relative value, not pixels.
+	mat4 transMatrix = GetTranslationMatrix(modelMatrix);
 
-    // Calculate world position of the vertex
-    vec4 worldPosition = modelMatrix * vec4(inPosition, 1.0);
+    vec4 positionedVertex = vec4(inPosition, 1.0) * _scaleMatrix * _rotMatrix * transMatrix;
 
-    // Calculate view space position of the vertex for the outline
-    vec4 viewPosition = viewMatrix * worldPosition;
+//    float distance = length(abs(positionedVertex.xyz-cameraPos));
+//    float outlineWidth = (9.0/580.0) * distance + (10.0/29.0);
+    float outlineWidth = 1;
 
-    // Calculate the distance from the camera
-    float distance = length(viewPosition.xyz);
+    vec4 rotatedNormal = vec4(inNormal * outlineWidth, 1.0) * _rotMatrix;
+    vec4 final = positionedVertex + rotatedNormal;
 
-    // Adjust outline width based on the distance
-    // The outlineWidth is divided by distance to convert a world space width to a clip space width.
-    float scaledOutlineWidth = outlineWidth / distance;
-//
-//    // Enlarge the vertex position along the normal by the scaled outline width
-//    vec3 enlargedPosition = inPosition + (inNormal * scaledOutlineWidth);
-//
-//    // Calculate the final transformed vertex position
-//    gl_Position = vec4(enlargedPosition, 1.0) * modelMatrix * viewMatrix * projectionMatrix;
-
-	gl_Position = vec4(inPosition + inNormal * 2, 1.0) * modelMatrix * viewMatrix * projectionMatrix;
+    gl_Position = vec4(final.xyz,1.0) * viewMatrix * projectionMatrix;
 }

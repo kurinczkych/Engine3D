@@ -48,9 +48,15 @@ void main()
 		fragPos4 = position * billboardMat * modelMatrix;
 	}
 
+	mat3 rotationScaleMatrix = mat3(modelMatrix);
+	vec3 col1 = normalize(rotationScaleMatrix[0]);
+	vec3 col2 = normalize(rotationScaleMatrix[1]);
+	vec3 col3 = normalize(rotationScaleMatrix[2]);
+	mat3 rotationMatrix = mat3(col1, col2, col3);
+
 	gsFragPos = vec3(fragPos4.x,fragPos4.y, fragPos4.z);
 	gsFragTexCoord = inUV;
-	gsFragNormal = inNormal;
+	gsFragNormal = inNormal * rotationMatrix;
 	gsFragColor = inColor;
 
 	//normal

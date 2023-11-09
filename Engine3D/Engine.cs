@@ -70,6 +70,9 @@ namespace Engine3D
         private VAO onlyPosAndNormalVao;
         private VBO onlyPosAndNormalVbo;
 
+        private InstancedVAO instancedOnlyPosAndNormalVao;
+        private VBO instancedOnlyPosAndNormalVbo;
+
         private VAO meshVao;
         private VBO meshVbo;
 
@@ -93,6 +96,7 @@ namespace Engine3D
 
         private Shader cullingProgram;
         private Shader outlineShader;
+        private Shader outlineInstancedShader;
         private Shader pickingShader;
         private Shader shaderProgram;
         private Shader instancedShaderProgram;
@@ -219,6 +223,7 @@ namespace Engine3D
         public void RemoveObject(Object o)
         {
             textureManager.DeleteTexture(o.textureName);
+            imGuiController.SelectItem(null, editorData);
             o.Delete(ref textureManager);
             objects.Remove(o);
         }
@@ -396,15 +401,24 @@ namespace Engine3D
 
             instancedMeshVbo = new VBO();
             instancedMeshVao = new InstancedVAO(InstancedMesh.floatCount, InstancedMesh.instancedFloatCount);
-            instancedMeshVao.LinkToVAO(0, 4, meshVbo);
+            instancedMeshVao.LinkToVAO(0, 3, meshVbo);
             instancedMeshVao.LinkToVAO(1, 3, meshVbo);
             instancedMeshVao.LinkToVAO(2, 2, meshVbo);
             instancedMeshVao.LinkToVAO(3, 4, meshVbo);
             instancedMeshVao.LinkToVAO(4, 3, meshVbo);
-            instancedMeshVao.LinkToVAOInstanceData(5, 4, 1, instancedMeshVbo);
+            instancedMeshVao.LinkToVAOInstanceData(5, 3, 1, instancedMeshVbo);
             instancedMeshVao.LinkToVAOInstanceData(6, 4, 1, instancedMeshVbo);
             instancedMeshVao.LinkToVAOInstanceData(7, 3, 1, instancedMeshVbo);
             instancedMeshVao.LinkToVAOInstanceData(8, 4, 1, instancedMeshVbo);
+
+            instancedOnlyPosAndNormalVbo = new VBO();
+            instancedOnlyPosAndNormalVao = new InstancedVAO(6, InstancedMesh.instancedFloatCount);
+            instancedOnlyPosAndNormalVao.LinkToVAO(0, 3, onlyPosAndNormalVbo);
+            instancedOnlyPosAndNormalVao.LinkToVAO(1, 3, onlyPosAndNormalVbo);
+            instancedOnlyPosAndNormalVao.LinkToVAOInstanceData(2, 3, 1, instancedOnlyPosAndNormalVbo);
+            instancedOnlyPosAndNormalVao.LinkToVAOInstanceData(3, 4, 1, instancedOnlyPosAndNormalVbo);
+            instancedOnlyPosAndNormalVao.LinkToVAOInstanceData(4, 3, 1, instancedOnlyPosAndNormalVbo);
+            instancedOnlyPosAndNormalVao.LinkToVAOInstanceData(5, 4, 1, instancedOnlyPosAndNormalVbo);
 
             textVbo = new VBO();
             textVao = new VAO(TextMesh.floatCount);
@@ -439,9 +453,10 @@ namespace Engine3D
             // Create the shader program
             cullingProgram = new Shader(new List<string>() { "cullingshader.comp" });
             outlineShader = new Shader(new List<string>() { "outline.vert", "outline.frag" });
+            outlineInstancedShader = new Shader(new List<string>() { "outlineInstanced.vert", "outlineInstanced.frag" });
             pickingShader = new Shader(new List<string>() { "picking.vert", "picking.frag" });
             shaderProgram = new Shader(new List<string>() { "Default.vert", "Default.frag" });
-            instancedShaderProgram = new Shader(new List<string>() { "Instanced.vert", "Default.frag" });
+            instancedShaderProgram = new Shader(new List<string>() { "Instanced.vert", "Instanced.frag" });
             posTexShader = new Shader(new List<string>() { "postex.vert", "postex.frag" });
             onlyPosShaderProgram = new Shader(new List<string>() { "onlyPos.vert", "onlyPos.frag" });
             aabbShaderProgram = new Shader(new List<string>() { "aabb.vert", "aabb.frag" });
@@ -464,7 +479,7 @@ namespace Engine3D
             camera.UpdateVectors();
 
             onlyPosShaderProgram.Use();
-            Vector3 characterPos = new Vector3(0, 0, -10);
+            Vector3 characterPos = new Vector3(0, 0, -5);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
             character.camera.SetYaw(90f);
             character.camera.SetPitch(0f);
@@ -482,13 +497,20 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
-            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
-            objects.Add(o);
+            //Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
+            //o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
+            //objects.Add(o);
 
-            //Object o2 = new Object(ObjectType.Cube, ref physx);
-            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
-            //objects.Add(o2);
+            Object o2 = new Object(ObjectType.Cube, ref physx);
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            objects.Add(o2);
+
+            Object o4 = new Object(ObjectType.Cube, ref physx);
+            o4.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube2", Object.GetUnitCube(), "", windowSize, ref camera, ref o4));
+            o4.Position = new Vector3(3, 0, 0);
+            o4.GetMesh().recalculate = true;
+            o4.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
+            objects.Add(o4);
 
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
@@ -509,19 +531,35 @@ namespace Engine3D
             //objects.Last().SetSize(2);
             //objects.Last().AddSphereCollider(false);
 
-            //objects.Add(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitCube(), windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
+            //Object o3 = new Object(ObjectType.TriangleMesh, ref physx);
+            //o3.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", Object.GetUnitCube(), windowSize, ref camera, ref o3));
 
-            //for (int i = 0; i < 10000; i++)
+            //for (int i = 0; i < 3; i++)
             //{
             //    InstancedMeshData instData = new InstancedMeshData();
-            //    instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-100, -100, -100), new Vector3(100, 100, 100)));
+            //    instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
             //    instData.Rotation = Helper.GetRandomQuaternion();
             //    //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
-            //    instData.Scale = new Vector3(3, 3, 3);
-            //    instData.Color = Helper.GetRandomColor();
+            //    //instData.Scale = new Vector3(3, 3, 3);
+            //    instData.Scale = new Vector3(1, 1, 1);
+            //    //instData.Color = Helper.GetRandomColor();
+            //    instData.Color = Color4.Blue;
 
-            //    ((InstancedMesh)objects.Last().GetMesh()).instancedData.Add(instData);
+            //    ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
             //}
+            //for (int i = 0; i < 1; i++)
+            //{
+            //    InstancedMeshData instData = new InstancedMeshData();
+            //    instData.Position = new Vector3(0, 0, 0);
+            //    instData.Rotation = Quaternion.Identity;
+            //    //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
+            //    instData.Scale = new Vector3(1, 1, 1);
+            //    //instData.Color = Helper.GetRandomColor();
+            //    instData.Color = Color4.Blue;
+
+            //    ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
+            //}
+            //objects.Add(o3);
 
             //ParticleSystem ps = new ParticleSystem(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitFace(), "smoke.png", windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //ps.GetObject().SetBillboarding(true);

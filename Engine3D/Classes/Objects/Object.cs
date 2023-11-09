@@ -295,6 +295,7 @@ namespace Engine3D
         }
         #endregion
 
+
         public string meshName
         {
             get
@@ -306,9 +307,18 @@ namespace Engine3D
             }
             set
             {
-                mesh.modelName = value;
-                mesh.ProcessObj(mesh.modelName);
-                mesh.ComputeVertexNormals();
+                string relativePath = AssetManager.GetRelativeModelsFolder(value);
+                mesh.modelPath = relativePath;
+                mesh.modelName = Path.GetFileName(mesh.modelPath);
+                mesh.ProcessObj(mesh.modelPath);
+
+                if (mesh.tris.Count() > 0 && !mesh.tris[0].gotPointNormals)
+                {
+                    mesh.ComputeVertexNormalsSpherical();
+                }
+                else if (mesh.tris.Count() > 0 && mesh.tris[0].gotPointNormals)
+                    mesh.ComputeVertexNormals();
+
                 mesh.ComputeTangents();
                 mesh.recalculate = true;
             }

@@ -28,11 +28,12 @@ namespace Engine3D
 
     public class InstancedMesh : BaseMesh
     {
-        public static int floatCount = 16;
-        public static int instancedFloatCount = 15;
+        public static int floatCount = 15;
+        public static int instancedFloatCount = 14;
 
         private List<float> vertices = new List<float>();
         private List<float> instancedVertices = new List<float>();
+        private List<float> verticesOnlyPosAndNormal = new List<float>();
 
         private Vector2 windowSize;
 
@@ -43,9 +44,10 @@ namespace Engine3D
 
         public List<InstancedMeshData> instancedData = new List<InstancedMeshData>();
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string relativeModelPath, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
+            this.parentObject.name = Path.GetFileName(relativeModelPath);
 
             bool success = false;
             parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
@@ -57,10 +59,15 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            this.modelName = modelName;
-            ProcessObj(modelName);
+            modelPath = relativeModelPath;
+            modelName = Path.GetFileName(relativeModelPath);
+            ProcessObj(relativeModelPath);
 
-            ComputeVertexNormals();
+            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            {
+                ComputeVertexNormalsSpherical();
+            }
+
             ComputeTangents();
 
             GetUniformLocations();
@@ -84,7 +91,11 @@ namespace Engine3D
             this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals();
+            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            {
+                ComputeVertexNormalsSpherical();
+            }
+
             ComputeTangents();
 
             GetUniformLocations();
@@ -104,7 +115,11 @@ namespace Engine3D
             this.modelName = modelName;
             this.tris = new List<triangle>(tris);
 
-            ComputeVertexNormals();
+            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            {
+                ComputeVertexNormalsSpherical();
+            }
+
             ComputeTangents();
 
             GetUniformLocations();
@@ -119,34 +134,35 @@ namespace Engine3D
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
+            uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
+            uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
+            uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
+            uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
+            uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
+            uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
             if (parentObject.texture != null)
             {
                 uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
                 if (parentObject.textureNormal != null)
                 {
                     uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
-                    uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
                 }
                 if (parentObject.textureHeight != null)
                 {
                     uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
-                    uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
                 }
                 if (parentObject.textureAO != null)
                 {
                     uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
-                    uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
                 }
                 if (parentObject.textureRough != null)
                 {
                     uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
-                    uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
                 }
                 if (parentObject.textureMetal != null)
                 {
                     uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
-                    uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
                 }
             }
         }
@@ -162,48 +178,58 @@ namespace Engine3D
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["useBillboarding"], useBillboarding);
-            GL.Uniform1(uniformLocations["useTexture"], parentObject.texture != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useShading"], useShading ? 1 : 0);
             if (parentObject.texture != null)
             {
                 GL.Uniform1(uniformLocations["textureSampler"], parentObject.texture.TextureUnit);
                 if (parentObject.textureNormal != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerNormal"], parentObject.textureNormal.TextureUnit);
-                    GL.Uniform1(uniformLocations["useNormal"], 1);
                 }
                 if (parentObject.textureHeight != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerHeight"], parentObject.textureHeight.TextureUnit);
-                    GL.Uniform1(uniformLocations["useHeight"], 1);
                 }
                 if (parentObject.textureAO != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerAO"], parentObject.textureAO.TextureUnit);
-                    GL.Uniform1(uniformLocations["useAO"], 1);
                 }
                 if (parentObject.textureRough != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerRough"], parentObject.textureRough.TextureUnit);
-                    GL.Uniform1(uniformLocations["useRough"], 1);
                 }
                 if (parentObject.textureMetal != null)
                 {
                     GL.Uniform1(uniformLocations["textureSamplerMetal"], parentObject.textureMetal.TextureUnit);
-                    GL.Uniform1(uniformLocations["useMetal"], 1);
                 }
             }
+
+            GL.Uniform1(uniformLocations["useTexture"], parentObject.texture != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useNormal"], parentObject.textureNormal != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useHeight"], parentObject.textureHeight != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useAO"], parentObject.textureAO != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useRough"], parentObject.textureRough != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
         }
 
-        public void UpdateFrustumAndCamera(ref Camera camera)
+        public void SendUniformsOnlyPos(Shader shader)
         {
-            this.camera = camera;
+            projectionMatrix = camera.projectionMatrix;
+            viewMatrix = camera.viewMatrix;
+
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "viewMatrix"), true, ref viewMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "projectionMatrix"), true, ref projectionMatrix);
+
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_scaleMatrix"), true, ref scaleMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
         private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
         {
             vertices.AddRange(new float[]
                 {
-                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z, 1.0f,
+                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
                     tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
                     tri.t[index].u, tri.t[index].v,
                     tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
@@ -211,11 +237,20 @@ namespace Engine3D
                 });
         }
 
+        private void ConvertToNDCOnlyPosAndNormal(ref List<float> vertices, triangle tri, int index)
+        {
+            vertices.AddRange(new float[]
+            {
+                tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+                tri.n[index].X, tri.n[index].Y, tri.n[index].Z
+            });
+        }
+
         private void ConvertToNDCInstance(ref List<float> vertices, InstancedMeshData data)
         {
             vertices.AddRange(new float[]
             {
-                data.Position.X, data.Position.Y, data.Position.Z, 1.0f,
+                data.Position.X, data.Position.Y, data.Position.Z,
                 data.Rotation.X, data.Rotation.Y, data.Rotation.Z, data.Rotation.W,
                 data.Scale.X, data.Scale.Y, data.Scale.Z,
                 data.Color.R, data.Color.G, data.Color.B, data.Color.A
@@ -229,6 +264,16 @@ namespace Engine3D
                 ConvertToNDC(ref vertices, tri, 0);
                 ConvertToNDC(ref vertices, tri, 1);
                 ConvertToNDC(ref vertices, tri, 2);
+            }
+        }
+
+        private void AddVerticesOnlyPosAndNormal(List<float> vertices, triangle tri)
+        {
+            lock (vertices) // Lock to ensure thread-safety when modifying the list
+            {
+                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 0);
+                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 1);
+                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 2);
             }
         }
 
@@ -319,13 +364,88 @@ namespace Engine3D
                     parentObject.textureMetal.Bind();
             }
 
-            foreach (InstancedMeshData meshData in instancedData)
-            {
-                ConvertToNDCInstance(ref instancedVertices, meshData);
-            }
+            Parallel.ForEach(instancedData, parallelOptions,
+                 () => new List<float>(),
+                 (instancedData, loopState, localVertices) =>
+                 {
+                     ConvertToNDCInstance(ref localVertices, instancedData);
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (instancedVertices)
+                     {
+                         instancedVertices.AddRange(localVertices);
+                     }
+                 });
 
             return (vertices, instancedVertices);
         }
 
+        public (List<float>, List<float>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao)
+        {
+            if (!parentObject.isEnabled)
+                return (new List<float>(), new List<float>());
+
+            _vao.Bind();
+
+            if (!recalculateOnlyPosAndNormal)
+            {
+                if (gameRunning == GameState.Stopped && verticesOnlyPosAndNormal.Count > 0 && instancedVertices.Count > 0)
+                {
+                    SendUniformsOnlyPos(shader);
+
+                    return (verticesOnlyPosAndNormal, instancedVertices);
+                }
+            }
+            else
+            {
+                recalculateOnlyPosAndNormal = false;
+                CalculateFrustumVisibility();
+            }
+
+            verticesOnlyPosAndNormal = new List<float>();
+            instancedVertices = new List<float>();
+
+            ObjectType type = parentObject.GetObjectType();
+
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(tris, parallelOptions,
+                 () => new List<float>(),
+                 (tri, loopState, localVertices) =>
+                 {
+                     if (tri.visibile)
+                     {
+                         AddVerticesOnlyPosAndNormal(localVertices, tri);
+                     }
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (verticesOnlyPosAndNormal)
+                     {
+                         verticesOnlyPosAndNormal.AddRange(localVertices);
+                     }
+                 });
+
+            SendUniformsOnlyPos(shader);
+
+            Parallel.ForEach(instancedData, parallelOptions,
+                 () => new List<float>(),
+                 (instancedData, loopState, localVertices) =>
+                 {
+                     ConvertToNDCInstance(ref localVertices, instancedData);
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (instancedVertices)
+                     {
+                         instancedVertices.AddRange(localVertices);
+                     }
+                 });
+
+            return (verticesOnlyPosAndNormal, instancedVertices);
+        }
     }
 }
