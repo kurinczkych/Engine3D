@@ -14,13 +14,13 @@ namespace Engine3D
     {
         public int objectId;
         public int drawId;
-        public int triId;
+        public int instId;
 
         public PixelInfo()
         {
             objectId = 0;
             drawId = 0;
-            triId = 0;
+            instId = 0;
         }
     }
 

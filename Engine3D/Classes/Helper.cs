@@ -146,44 +146,31 @@ namespace Engine3D
 
         public static Vector3 EulerFromQuaternion(Quaternion quat)
         {
-            Vector3 rot = quat.ToEulerAngles();
+            Vector3 eulerAnglesRadians = quat.ToEulerAngles();
+            Vector3 eulerAnglesDegrees = new Vector3(
+                MathHelper.RadiansToDegrees(eulerAnglesRadians.X),
+                MathHelper.RadiansToDegrees(eulerAnglesRadians.Y),
+                MathHelper.RadiansToDegrees(eulerAnglesRadians.Z)
+            );
 
-            rot.X = MathHelper.RadiansToDegrees(rot.X);
-            if (Math.Abs(Math.Round(rot.X) - rot.X) < 0.001f)
-                rot.X = (int)Math.Round(rot.X);
+            Vector3 normalizedEulerAngles = new Vector3(
+                (float)Math.Round((eulerAnglesDegrees.X + 360) % 360,2),
+                (float)Math.Round((eulerAnglesDegrees.Y + 360) % 360,2),
+                (float)Math.Round((eulerAnglesDegrees.Z + 360) % 360,2)
+            );
 
-            rot.Y = MathHelper.RadiansToDegrees(rot.Y);
-            if (Math.Abs(Math.Round(rot.Y) - rot.Y) < 0.001f)
-                rot.Y = (int)Math.Round(rot.Y);
-
-            rot.Z = MathHelper.RadiansToDegrees(rot.Z);
-            if (Math.Abs(Math.Round(rot.Z) - rot.Z) < 0.001f)
-                rot.Z = (int)Math.Round(rot.Z);
-
-            return rot;
+            return normalizedEulerAngles;
         }
 
         public static Quaternion QuaternionFromEuler(Vector3 rot)
         {
-            Vector3 rotR = new Vector3(rot);
+            Quaternion rotation = Quaternion.FromEulerAngles(
+                MathHelper.DegreesToRadians(rot.X),
+                MathHelper.DegreesToRadians(rot.Y),
+                MathHelper.DegreesToRadians(rot.Z)
+            );
 
-            rotR.X = MathHelper.DegreesToRadians(rotR.X);
-            rotR.Y = MathHelper.DegreesToRadians(rotR.Y);
-            rotR.Z = MathHelper.DegreesToRadians(rotR.Z);
-
-            //if (Math.Abs(Math.Round(rotR.X) - rotR.X) < 0.001f)
-            //    rotR.X = (int)Math.Round(rotR.X);
-            //rotR.X = MathHelper.DegreesToRadians(rotR.X);
-
-            //if (Math.Abs(Math.Round(rotR.Y) - rotR.Y) < 0.001f)
-            //    rotR.Y = (int)Math.Round(rotR.Y);
-            //rotR.Y = MathHelper.DegreesToRadians(rotR.Y);
-
-            //if (Math.Abs(Math.Round(rotR.Z) - rotR.Z) < 0.001f)
-            //    rotR.Z = (int)Math.Round(rotR.Z);
-            //rotR.Z = MathHelper.DegreesToRadians(rotR.Z);
-
-            return Quaternion.FromEulerAngles(rotR);
+            return rotation;
         }
     }
 }

@@ -13,7 +13,6 @@ namespace Engine3D
         public int id;
 
         private List<int> shaderIds = new List<int>();
-
         public List<string> shaderNames = new List<string>();
 
         public Shader() { }
@@ -35,17 +34,23 @@ namespace Engine3D
                 GL.AttachShader(id, shaderIds[i]);
 
             GL.LinkProgram(id);
-            GL.UseProgram(id);
+            Use();
         }
 
         public void Use()
         {
-            GL.UseProgram(id); // bind vao
+            if (Engine.GLState.currentShaderId != id)
+            {
+                GL.UseProgram(id);
+                Engine.GLState.currentShaderId = id;
+            }
         }
 
         public void Unload()
         {
-            for(int i = 0;i < shaderIds.Count();i++)
+            Engine.GLState.currentShaderId = -1;
+
+            for (int i = 0;i < shaderIds.Count();i++)
                 GL.DeleteProgram(shaderIds[i]);
             GL.DeleteProgram(id);
         }

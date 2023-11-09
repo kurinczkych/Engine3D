@@ -9,6 +9,13 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
+    public enum GizmoType
+    {
+        Move,
+        Rotate,
+        Scale
+    }
+
     public class GizmoManager
     {
         public List<Object> moverGizmos = new List<Object>();
@@ -19,6 +26,10 @@ namespace Engine3D
         private Camera camera;
 
         private float gizmoScale = 10;
+
+        public GizmoType gizmoType = GizmoType.Move;
+        public GizmoType lastGizmoType = GizmoType.Move;
+        public bool PerInstanceMove = false;
 
         public GizmoManager(VAO vao, VBO vbo, Shader shader, ref Camera camera)
         {
@@ -34,15 +45,27 @@ namespace Engine3D
 
         public void UpdateMoverGizmo(Vector3 position)
         {
+            if(lastGizmoType != gizmoType)
+            {
+                if(gizmoType == GizmoType.Move)
+                {
+                    moverGizmos.Clear();
+                    CreateMoverGizmos();
+                }
+                else if(gizmoType == GizmoType.Rotate)
+                {
+                    moverGizmos.Clear();
+                    CreateMoverGizmos();
+                }
+                else if(gizmoType == GizmoType.Scale)
+                {
+                    moverGizmos.Clear();
+                    CreateMoverGizmos();
+                }
+            }
+
             bool[] toUpdate = new bool[3] { false, false, false };
             Vector3 cameraPos = camera.GetPosition();
-            ////float distance = (cameraPos - position).Length;
-            ////float desiredScreenSize = 50;
-
-            ////float frustumHeightAtDistance = 2.0f * distance * MathF.Tan(camera.fov / 2.0f);
-            ////float gizmoScreenFraction = desiredScreenSize / camera.screenSize.Y;
-            ////float gizmoWorldHeight = frustumHeightAtDistance * gizmoScreenFraction;
-            ////float scaleFactor = gizmoWorldHeight;
 
             float scaleFactor = (cameraPos - position).Length / gizmoScale;
 
@@ -79,6 +102,7 @@ namespace Engine3D
 
                 moverGizmo.GetMesh().RecalculateModelMatrix(toUpdate);
             }
+            lastGizmoType = gizmoType;
         }
 
         private void CreateMoverGizmos()

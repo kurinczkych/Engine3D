@@ -295,7 +295,6 @@ namespace Engine3D
         }
         #endregion
 
-
         public string meshName
         {
             get
@@ -341,6 +340,11 @@ namespace Engine3D
         private BaseMesh mesh;
         private ObjectType type;
         private Physx physx;
+
+        public bool hasMesh
+        {
+            get { return mesh != null; }
+        }
 
         private IntPtr dynamicColliderPtr;
         private IntPtr staticColliderPtr;

@@ -36,16 +36,27 @@ namespace Engine3D
 
         public void Bind()
         {
-            GL.BindBuffer(BufferTarget.DrawIndirectBuffer, id);
+            if (Engine.GLState.vboBound != id)
+            {
+                GL.BindBuffer(BufferTarget.DrawIndirectBuffer, id);
+                Engine.GLState.vboBound = id;
+                Engine.GLState.vboTarget = BufferTarget.DrawIndirectBuffer;
+            }
         }
 
         public void Unbind()
         {
+            Engine.GLState.vboBound = -1;
+            Engine.GLState.vboTarget = null;
+
             GL.BindBuffer(BufferTarget.DrawIndirectBuffer, 0);
         }
 
         public void Delete()
         {
+            Engine.GLState.vboBound = -1;
+            Engine.GLState.vboTarget = null;
+
             GL.DeleteBuffer(id);
         }
     }

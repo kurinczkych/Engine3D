@@ -35,6 +35,9 @@
     <None Remove="Textures\rred.png" />
     <None Remove="Textures\ui_back.png" />
     <None Remove="Textures\ui_folder.png" />
+    <None Remove="Textures\ui_gizmo_move.png" />
+    <None Remove="Textures\ui_gizmo_rotate.png" />
+    <None Remove="Textures\ui_gizmo_scale.png" />
     <None Remove="Textures\ui_missing.png" />
     <None Remove="Textures\ui_pause.png" />
     <None Remove="Textures\ui_screen.png" />
@@ -71,6 +74,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Textures\ui_back.png" />
     <EmbeddedResource Include="Textures\ui_folder.png" />
+    <EmbeddedResource Include="Textures\ui_gizmo_move.png" />
+    <EmbeddedResource Include="Textures\ui_gizmo_rotate.png" />
+    <EmbeddedResource Include="Textures\ui_gizmo_scale.png" />
     <EmbeddedResource Include="Textures\ui_missing.png" />
     <EmbeddedResource Include="Textures\ui_pause.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

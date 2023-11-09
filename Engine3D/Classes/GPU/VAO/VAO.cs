@@ -8,19 +8,15 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
-    public class InstancedVAO
+    public class VAO
     {
         public int id;
         private int vertexSize;
-        private int instanceSize;
+        private int currentOffset = 0;
 
-        private int currentOffset;
-        private int currentInstanceOffset;
-
-        public InstancedVAO(int floatCount, int instancedFloatCount)
+        public VAO(int floatCount)
         {
-            vertexSize = sizeof(float) * floatCount;
-            instanceSize = sizeof(float) * instancedFloatCount;
+            vertexSize = sizeof(float)*floatCount;
             id = GL.GenVertexArray();
             Bind();
         } 
@@ -37,31 +33,26 @@ namespace Engine3D
             Unbind();
         }
 
-        public void LinkToVAOInstanceData(int location, int size, int divisor, VBO vbo)
-        {
-            Bind();
-            vbo.Bind();
-
-            GL.EnableVertexArrayAttrib(id, location);
-            GL.VertexAttribPointer(location, size, VertexAttribPointerType.Float, false, instanceSize, currentInstanceOffset * sizeof(float));
-            GL.VertexAttribDivisor(location, divisor);
-            currentInstanceOffset += size;
-
-            Unbind();
-        }
-
         public void Bind()
         {
-            GL.BindVertexArray(id);
+            if (Engine.GLState.vaoBound != id)
+            {
+                GL.BindVertexArray(id);
+                Engine.GLState.vaoBound = id;
+            }
         }
 
         public void Unbind()
         {
+            Engine.GLState.vaoBound = -1;
+
             GL.BindVertexArray(0);
         }
 
         public void Delete()
         {
+            Engine.GLState.vaoBound = -1;
+
             GL.DeleteVertexArray(id);
         }
     }

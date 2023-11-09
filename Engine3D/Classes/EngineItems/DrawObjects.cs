@@ -74,7 +74,6 @@ namespace Engine3D
 
 
                                 vertices.AddRange(mesh.Draw(editorData.gameRunning));
-                                meshVao.Bind();
                                 meshVbo.Buffer(vertices);
                                 GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                                 vertices.Clear();

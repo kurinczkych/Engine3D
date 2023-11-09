@@ -115,6 +115,7 @@ namespace Engine3D
         public FPS fps = new FPS();
 
         public object? selectedItem;
+        public int instIndex = -1;
 
         public AssetStoreManager assetStoreManager;
         public AssetManager assetManager;
@@ -123,6 +124,11 @@ namespace Engine3D
         public List<Asset> AssetTextures;
 
         public GizmoManager gizmoManager;
+
+        public GameWindowProperty gameWindow;
+
+        public Vector2 gizmoWindowPos = Vector2.Zero;
+        public Vector2 gizmoWindowSize = Vector2.Zero; 
         #endregion
 
         #region Properties 
@@ -277,7 +283,7 @@ namespace Engine3D
             }
         }
 
-        public void SelectItem(object? selectedObject, EditorData editorData)
+        public void SelectItem(object? selectedObject, EditorData editorData, int instIndex = -1)
         {
             if (editorData.selectedItem != null)
             {
@@ -296,11 +302,15 @@ namespace Engine3D
             if (selectedObject == null)
             {
                 editorData.selectedItem = null;
+                editorData.instIndex = -1;
                 return;
             }
 
             justSelectedItem = true;
             editorData.selectedItem = selectedObject;
+            if (instIndex != -1)
+                editorData.instIndex = instIndex;
+
             ((ISelectable)selectedObject).isSelected = true;
 
             if (selectedObject is Object castedO)
@@ -312,9 +322,11 @@ namespace Engine3D
             //TODO pointlight and particle system selection
         }
 
-        public void EditorWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData, 
+        public void EditorWindow(ref EditorData editorData, 
                                  KeyboardState keyboardState, MouseState mouseState, Engine engine)
         {
+            GameWindowProperty gameWindow = editorData.gameWindow;
+
             var io = ImGui.GetIO();
             int anyObjectHovered = -1;
 
@@ -418,6 +430,143 @@ namespace Engine3D
                 style.Colors[(int)ImGuiCol.Button] = button;
             }
             ImGui.End();
+            #endregion
+
+            #region Manipulation gizmos menu
+            if (editorData.selectedItem != null)
+            {
+                bool isInst = false;
+                float yHeight = 140 - 34.5f;
+                if (editorData.selectedItem is Object o && o.meshType == typeof(InstancedMesh))
+                {
+                    isInst = true;
+                    yHeight = 140;
+                }
+
+                var button = style.Colors[(int)ImGuiCol.Button];
+                style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 0.6f);
+                style.WindowRounding = 0;
+                var frameBorderSize = style.FrameBorderSize;
+                var framePadding = style.FramePadding;
+                style.FrameBorderSize = 0;
+                style.FramePadding = new System.Numerics.Vector2(2.5f,2.5f);
+
+                editorData.gizmoWindowSize = new Vector2(22.5f, yHeight);
+                editorData.gizmoWindowPos = new Vector2(gameWindow.gameWindowPos.X + seperatorSize, gameWindow.topPanelSize);
+
+                ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gizmoWindowSize.X, editorData.gizmoWindowSize.Y));
+                ImGui.SetNextWindowPos(new System.Numerics.Vector2(editorData.gizmoWindowPos.X, editorData.gizmoWindowPos.Y), ImGuiCond.Always);
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(0, 0));
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
+
+                var origButton = style.Colors[(int)ImGuiCol.Button];
+                var a = style.WindowPadding;
+                if (ImGui.Begin("GizmosMenu", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar))
+                {
+                    var availableWidth = ImGui.GetContentRegionAvail().X;
+                    System.Numerics.Vector2 imageSize = new System.Numerics.Vector2(32-5, 32-5);
+                    var startXPos = (availableWidth - imageSize.X) * 0.5f;
+
+                    ImGui.SetCursorPosX(0);
+                    if (editorData.gizmoManager.gizmoType == GizmoType.Move)
+                    {
+                        style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
+                    }
+                    if (ImGui.ImageButton("##gizmo1", (IntPtr)Engine.textureManager.textures["ui_gizmo_move.png"].TextureId, imageSize))
+                    {
+                        if(editorData.gizmoManager.gizmoType != GizmoType.Move)
+                            editorData.gizmoManager.gizmoType = GizmoType.Move;
+                    }
+                    if (editorData.gizmoManager.gizmoType == GizmoType.Move)
+                    {
+                        style.Colors[(int)ImGuiCol.Button] = origButton;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(5, 5));
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 5);
+                        ImGui.BeginTooltip();
+                        ImGui.Text("Move tool");
+                        ImGui.EndTooltip();
+                        ImGui.PopStyleVar(2);
+                    }
+                    ImGui.SetCursorPosX(0);
+                    if (editorData.gizmoManager.gizmoType == GizmoType.Rotate)
+                    {
+                        style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
+                    }
+                    if (ImGui.ImageButton("##gizmo2", (IntPtr)Engine.textureManager.textures["ui_gizmo_rotate.png"].TextureId, imageSize))
+                    {
+                        if (editorData.gizmoManager.gizmoType != GizmoType.Rotate)
+                            editorData.gizmoManager.gizmoType = GizmoType.Rotate;
+                    }
+                    if (editorData.gizmoManager.gizmoType == GizmoType.Rotate)
+                    {
+                        style.Colors[(int)ImGuiCol.Button] = origButton;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(5, 5));
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 5);
+                        ImGui.BeginTooltip();
+                        ImGui.Text("Rotate tool");
+                        ImGui.EndTooltip();
+                        ImGui.PopStyleVar(2);
+                    }
+                    ImGui.SetCursorPosX(0);
+                    if (editorData.gizmoManager.gizmoType == GizmoType.Scale)
+                    {
+                        style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
+                    }
+                    if (ImGui.ImageButton("##gizmo3", (IntPtr)Engine.textureManager.textures["ui_gizmo_scale.png"].TextureId, imageSize))
+                    {
+                        if (editorData.gizmoManager.gizmoType != GizmoType.Scale)
+                            editorData.gizmoManager.gizmoType = GizmoType.Scale;
+                    }
+                    if (editorData.gizmoManager.gizmoType == GizmoType.Scale)
+                    {
+                        style.Colors[(int)ImGuiCol.Button] = origButton;
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(5, 5));
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 5);
+                        ImGui.BeginTooltip();
+                        ImGui.Text("Scale tool");
+                        ImGui.EndTooltip();
+                        ImGui.PopStyleVar(2);
+                    }
+                    if (isInst)
+                    {
+                        var button2 = style.Colors[(int)ImGuiCol.Button];
+                        if (editorData.gizmoManager.PerInstanceMove)
+                            style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
+
+                        ImGui.SetCursorPosX(0);
+                        if (ImGui.ImageButton("##gizmo4", (IntPtr)Engine.textureManager.textures["ui_missing.png"].TextureId, imageSize))
+                        {
+                            editorData.gizmoManager.PerInstanceMove = !editorData.gizmoManager.PerInstanceMove;
+                        }
+                        if (editorData.gizmoManager.PerInstanceMove)
+                            style.Colors[(int)ImGuiCol.Button] = button2;
+
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(5, 5));
+                            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 5);
+                            ImGui.BeginTooltip();
+                            ImGui.Text("Per instance manipulate");
+                            ImGui.EndTooltip();
+                            ImGui.PopStyleVar(2);
+                        }
+                    }
+                }
+                ImGui.PopStyleVar(2);
+                style.WindowRounding = 5f;
+                style.Colors[(int)ImGuiCol.Button] = button;
+                style.FrameBorderSize = frameBorderSize;
+                style.FramePadding = framePadding;
+            }
             #endregion
 
             #region Left panel
@@ -792,7 +941,7 @@ namespace Engine3D
 
                                     if (commit)
                                     {
-                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationY"]).TrimEnd('\0');
+                                        string valueStr = GetStringFromBuffer("##rotationY");
                                         float value = rotation.Y;
                                         if (float.TryParse(valueStr, out value))
                                         {
@@ -818,7 +967,7 @@ namespace Engine3D
 
                                     if (commit)
                                     {
-                                        string valueStr = Encoding.UTF8.GetString(_inputBuffers["##rotationZ"]).TrimEnd('\0');
+                                        string valueStr = GetStringFromBuffer("##rotationZ");
                                         float value = rotation.Z;
                                         if (float.TryParse(valueStr, out value))
                                         {
@@ -1304,8 +1453,8 @@ namespace Engine3D
                     gameWindow.bottomPanelPercent = 1 - mouseY / (_windowHeight - gameWindow.bottomPanelSize-5);
                     if (gameWindow.bottomPanelPercent < 0.05f)
                         gameWindow.bottomPanelPercent = 0.05f;
-                    if(gameWindow.bottomPanelPercent > 0.75f)
-                        gameWindow.bottomPanelPercent = 0.75f;
+                    if(gameWindow.bottomPanelPercent > 0.70f)
+                        gameWindow.bottomPanelPercent = 0.70f;
 
                     editorData.windowResized = true;
 
@@ -2086,7 +2235,7 @@ namespace Engine3D
             }
         }
 
-        public void FullscreenWindow(Engine.GameWindowProperty gameWindow, ref EditorData editorData)
+        public void FullscreenWindow(ref EditorData editorData)
         {
             var io = ImGui.GetIO();
 

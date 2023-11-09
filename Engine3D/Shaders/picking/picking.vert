@@ -6,7 +6,10 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
+flat out uint instIndex;
+
 void main()
 {
+	instIndex = uint(0);
 	gl_Position = vec4(inPosition,1.0) * modelMatrix * viewMatrix * projectionMatrix;
 }

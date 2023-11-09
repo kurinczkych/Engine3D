@@ -15,112 +15,126 @@ namespace Engine3D
         {
             if (editorData.gameRunning == GameState.Stopped)
             {
-                if (objectMovingAxis != null && MouseState.IsButtonDown(MouseButton.Left) && editorData.selectedItem != null)
+                if(!IsMouseInsideGizmoWindow() || editorData.gizmoWindowPos == Vector2.Zero)
                 {
-                    // Moving
-                    if (objectMovingAxis == Vector3.UnitX)
+                    if (objectMovingAxis != null && MouseState.IsButtonDown(MouseButton.Left) && editorData.selectedItem != null)
                     {
-                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(deltaX / 10, 0, 0);
+                        GizmoObjectManipulating();
                     }
-                    else if (objectMovingAxis == Vector3.UnitY)
+                    else if (objectMovingAxis != null && MouseState.IsButtonReleased(MouseButton.Left))
                     {
-                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(0, deltaY / 10, 0);
+                        objectMovingAxis = null;
                     }
-                    else if (objectMovingAxis == Vector3.UnitZ)
+                    else if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
                     {
-                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position + new Vector3(0, 0, deltaX / 10);
-                    }
-
-                    if (editorData.selectedItem is Object o)
-                    {
-                        o.GetMesh().recalculate = true;
-                        o.GetMesh().RecalculateModelMatrix(new bool[] { true, false, false });
-                        o.UpdatePhysxPositionAndRotation();
-                    }
-                }
-                else if(objectMovingAxis != null && MouseState.IsButtonReleased(MouseButton.Left))
-                {
-                    objectMovingAxis = null;
-                }
-                else if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
-                {
-                    #region Object Selection
-                    pickingTexture.EnableWriting(); 
-                    GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-                    pickingShader.Use();
-
-                    foreach (Object o in objects.Where(x => x.meshType == typeof(Mesh)))
-                    {
-                        Mesh mesh = (Mesh)o.GetMesh();
-
-                        int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
-                        int drawIdLoc = GL.GetUniformLocation(pickingShader.id, "drawIndex");
-                        GL.Uniform1(objectIdLoc, (uint)o.id);
-                        GL.Uniform1(drawIdLoc, (uint)0);
-
-                        vertices.Clear();
-                        vertices = mesh.DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
-                        onlyPosVbo.Buffer(vertices);
-                        GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    }
-
-                    pickingTexture.DisableWriting();
-
-                    PixelInfo pixel = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
-                    #endregion
-
-                    #region Object moving
-                    bool axisClicked = false;
-                    if (editorData.selectedItem != null && editorData.selectedItem is Object selectedO)
-                    {
+                        #region Object selection Drawing
                         pickingTexture.EnableWriting();
                         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-                        //pickingShader.Use();
 
-                        foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
+                        pickingShader.Use();
+                        foreach (Object o in _meshObjects)
                         {
-                            int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
-                            int drawIdLoc = GL.GetUniformLocation(pickingShader.id, "drawIndex");
-                            GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
-                            GL.Uniform1(drawIdLoc, (uint)0);
+                            Mesh mesh = (Mesh)o.GetMesh();
 
-                            vertices = ((Mesh)moverGizmo.GetMesh()).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
+                            int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
+                            GL.Uniform1(objectIdLoc, (uint)o.id);
+
+                            vertices.Clear();
+                            vertices = mesh.DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
                             onlyPosVbo.Buffer(vertices);
                             GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                         }
 
+                        pickingInstancedShader.Use();
+                        foreach (Object o in _instObjects)
+                        {
+                            InstancedMesh mesh = (InstancedMesh)o.GetMesh();
+
+                            int objectIdLoc = GL.GetUniformLocation(pickingInstancedShader.id, "objectIndex");
+                            GL.Uniform1(objectIdLoc, (uint)o.id);
+
+                            List<float> instancedVertices = new List<float>();
+                            (vertices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, pickingInstancedShader, instancedOnlyPosAndNormalVao);
+                            instancedOnlyPosAndNormalVbo.Buffer(instancedVertices);
+                            onlyPosAndNormalVbo.Buffer(vertices);
+                            GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
+                        }
+
+
                         pickingTexture.DisableWriting();
 
-                        PixelInfo pixel2 = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
-                        if (pixel2.objectId != 0)
-                        {
-                            if (pixel2.objectId == 1)
-                                objectMovingAxis = Vector3.UnitX;
-                            else if (pixel2.objectId == 2)
-                                objectMovingAxis = Vector3.UnitY;
-                            else if (pixel2.objectId == 3)
-                                objectMovingAxis = Vector3.UnitZ;
-                        }
-                    }
+                        PixelInfo pixel = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
+                        #endregion
 
-                    #endregion
-                    if (!axisClicked && objectMovingAxis == null)
-                    {
-                        if (pixel.objectId != 0)
+                        #region Object moving
+                        bool axisClicked = false;
+                        if (editorData.selectedItem != null && editorData.selectedItem is Object selectedO)
                         {
-                            Object selectedObject = objects.Where(x => x.id == pixel.objectId).First();
+                            pickingTexture.EnableWriting();
+                            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-                            imGuiController.SelectItem(selectedObject, editorData);
-                            imGuiController.shouldOpenTreeNodeMeshes = true;
+                            pickingShader.Use();
+                            foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
+                            {
+                                int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
+                                int drawIdLoc = GL.GetUniformLocation(pickingShader.id, "drawIndex");
+                                GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
+                                GL.Uniform1(drawIdLoc, (uint)0);
+
+                                vertices = ((Mesh)moverGizmo.GetMesh()).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
+                                onlyPosVbo.Buffer(vertices);
+                                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                            }
+
+                            pickingTexture.DisableWriting();
+
+                            PixelInfo pixel2 = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
+                            if (pixel2.objectId != 0)
+                            {
+                                if (pixel2.objectId == 1)
+                                    objectMovingAxis = Vector3.UnitX;
+                                else if (pixel2.objectId == 2)
+                                    objectMovingAxis = Vector3.UnitY;
+                                else if (pixel2.objectId == 3)
+                                    objectMovingAxis = Vector3.UnitZ;
+                            }
                         }
-                        else
+
+                        #endregion
+
+                        #region Object selection
+                        if (!axisClicked && objectMovingAxis == null)
                         {
-                            imGuiController.SelectItem(null, editorData);
+                            if (pixel.objectId != 0)
+                            {
+                                Object selectedObject = objects.Where(x => x.id == pixel.objectId).First();
+                                int instIndex = editorData.gizmoManager.PerInstanceMove && selectedObject.meshType == typeof(InstancedMesh) ? pixel.instId : -1;
+
+                                imGuiController.SelectItem(selectedObject, editorData, instIndex);
+                                imGuiController.shouldOpenTreeNodeMeshes = true;
+                            }
+                            else
+                            {
+                                imGuiController.SelectItem(null, editorData);
+                            }
                         }
+                        #endregion
                     }
                 }
             }
+        }
+
+        private bool IsMouseInsideGizmoWindow()
+        {
+            Vector2 mousePosition = new Vector2(MouseState.X, MouseState.Y);
+            float border = 10;
+
+            bool isInside = (mousePosition.X >= (editorData.gizmoWindowPos.X - border)) &&
+                            (mousePosition.Y >= (editorData.gizmoWindowPos.Y - border)) &&
+                            (mousePosition.X <= (editorData.gizmoWindowPos.X + editorData.gizmoWindowSize.X + border)) &&
+                            (mousePosition.Y <= (editorData.gizmoWindowPos.Y + editorData.gizmoWindowSize.Y + border));
+
+            return isInside;
         }
     }
 }
