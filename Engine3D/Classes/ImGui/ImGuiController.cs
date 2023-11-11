@@ -4,6 +4,7 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -213,6 +214,7 @@ namespace Engine3D
             #endregion
         }
 
+        #region Buffer Methods
         private string GetStringFromBuffer(string bufferName)
         {
             string s = Encoding.UTF8.GetString(_inputBuffers[bufferName]).TrimEnd('\0');
@@ -282,6 +284,7 @@ namespace Engine3D
                 i++;
             }
         }
+        #endregion
 
         public void SelectItem(object? selectedObject, EditorData editorData, int instIndex = -1)
         {
@@ -373,9 +376,9 @@ namespace Engine3D
                     {
                         if(ImGui.MenuItem("Reset panels"))
                         {
-                            gameWindow.leftPanelPercent = 0.15f;
-                            gameWindow.rightPanelPercent = 0.15f;
-                            gameWindow.bottomPanelPercent = 0.15f;
+                            gameWindow.leftPanelPercent = gameWindow.origLeftPanelPercent;
+                            gameWindow.rightPanelPercent = gameWindow.origRightPanelPercent;
+                            gameWindow.bottomPanelPercent = gameWindow.origBottomPanelPercent;
                             editorData.windowResized = true;
                         }
                         ImGui.EndMenu();
@@ -424,6 +427,7 @@ namespace Engine3D
                 if (ImGui.ImageButton("screen", (IntPtr)Engine.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                 {
                     editorData.isGameFullscreen = !editorData.isGameFullscreen;
+                    editorData.windowResized = true;
                 }
 
 
@@ -432,15 +436,50 @@ namespace Engine3D
             ImGui.End();
             #endregion
 
+            #region Game window frame
+            float gwBorder = 5;
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gameWindow.gameWindowSize.X, editorData.gameWindow.gameWindowSize.Y / 2));
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(gameWindow.gameWindowPos.X + seperatorSize, gameWindow.topPanelSize + editorData.gameWindow.gameWindowSize.Y / 2), ImGuiCond.Always);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(0, 0));
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
+
+            if (ImGui.Begin("GameWindowFrame", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar |
+                                               ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoBackground/* | ImGuiWindowFlags.NoInputs*/))
+            {
+                ImGui.SetCursorPos(new System.Numerics.Vector2(gwBorder, gwBorder));
+                ImGui.InvisibleButton("##invGameWindowFrame", ImGui.GetContentRegionAvail() - new System.Numerics.Vector2(gwBorder*2, gwBorder));
+                if (ImGui.BeginDragDropTarget())
+                {
+                    ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("MESH_NAME");
+                    unsafe
+                    {
+                        if (payload.NativePtr != null)
+                        {
+                            byte[] pathBytes = new byte[payload.DataSize];
+                            System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+
+                            engine.AddMeshObject(GetStringFromByte(pathBytes));
+                            shouldOpenTreeNodeMeshes = true;
+                        }
+                    }
+                    ImGui.EndDragDropTarget();
+                }
+
+                ImGui.End();
+            }
+
+            ImGui.PopStyleVar(2);
+            #endregion
+
             #region Manipulation gizmos menu
-            if (editorData.selectedItem != null)
+            if (editorData.selectedItem != null && editorData.gameRunning == GameState.Stopped)
             {
                 bool isInst = false;
-                float yHeight = 140 - 34.5f;
+                float yHeight = 174.5f - 34.5f;
                 if (editorData.selectedItem is Object o && o.meshType == typeof(InstancedMesh))
                 {
                     isInst = true;
-                    yHeight = 140;
+                    yHeight = 174.5f;
                 }
 
                 var button = style.Colors[(int)ImGuiCol.Button];
@@ -467,6 +506,7 @@ namespace Engine3D
                     System.Numerics.Vector2 imageSize = new System.Numerics.Vector2(32-5, 32-5);
                     var startXPos = (availableWidth - imageSize.X) * 0.5f;
 
+                    #region Move gizmo button
                     ImGui.SetCursorPosX(0);
                     if (editorData.gizmoManager.gizmoType == GizmoType.Move)
                     {
@@ -490,6 +530,39 @@ namespace Engine3D
                         ImGui.EndTooltip();
                         ImGui.PopStyleVar(2);
                     }
+                    #endregion
+
+                    #region Local/global move button
+                    ImGui.SetCursorPosX(0);
+                    if (editorData.gizmoManager.AbsoluteMoving)
+                    {
+                        if (ImGui.ImageButton("##gizmoRelativeMove", (IntPtr)Engine.textureManager.textures["ui_absolute.png"].TextureId, imageSize))
+                        {
+                            editorData.gizmoManager.AbsoluteMoving = false;
+                        }
+                    }
+                    else
+                    {
+                        if (ImGui.ImageButton("##gizmoAbsoluteMove", (IntPtr)Engine.textureManager.textures["ui_relative.png"].TextureId, imageSize))
+                        {
+                            editorData.gizmoManager.AbsoluteMoving = true;
+                        }
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(5, 5));
+                        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 5);
+                        ImGui.BeginTooltip();
+                        if(editorData.gizmoManager.AbsoluteMoving)
+                            ImGui.Text("Set to relative moving");
+                        else
+                            ImGui.Text("Set to absolute moving");
+                        ImGui.EndTooltip();
+                        ImGui.PopStyleVar(2);
+                    }
+                    #endregion
+
+                    #region Rotate gizmo button
                     ImGui.SetCursorPosX(0);
                     if (editorData.gizmoManager.gizmoType == GizmoType.Rotate)
                     {
@@ -513,6 +586,9 @@ namespace Engine3D
                         ImGui.EndTooltip();
                         ImGui.PopStyleVar(2);
                     }
+                    #endregion
+
+                    #region Scale gizmo button
                     ImGui.SetCursorPosX(0);
                     if (editorData.gizmoManager.gizmoType == GizmoType.Scale)
                     {
@@ -536,6 +612,9 @@ namespace Engine3D
                         ImGui.EndTooltip();
                         ImGui.PopStyleVar(2);
                     }
+                    #endregion
+
+                    #region Per instance button
                     if (isInst)
                     {
                         var button2 = style.Colors[(int)ImGuiCol.Button];
@@ -560,6 +639,7 @@ namespace Engine3D
                             ImGui.PopStyleVar(2);
                         }
                     }
+                    #endregion
                 }
                 ImGui.PopStyleVar(2);
                 style.WindowRounding = 5f;
@@ -2000,7 +2080,17 @@ namespace Engine3D
                         if (currentBottomPanelTab != "Console")
                             currentBottomPanelTab = "Console";
 
-                        ImGui.Text("Content for Tab 1");
+                        ImGui.PushFont(default18);
+                        foreach(Log log in Engine.consoleManager.Logs)
+                        {
+                            ImGui.PushStyleColor(ImGuiCol.Text, Engine.consoleManager.LogColors[log.logType]);
+                            ImGui.TextWrapped(log.message);
+                            ImGui.PopStyleColor();
+                        }
+                        ImGui.PopFont();
+                        ImGui.SetScrollHereY(1.0f);
+
+                        ImGui.Dummy(new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 20));
 
                         ImGui.EndTabItem();
                     }
@@ -2167,13 +2257,13 @@ namespace Engine3D
             }
             #endregion
 
+            #region Evere frame variable updates
             if (isObjectHovered != anyObjectHovered)
                 isObjectHovered = anyObjectHovered;
 
             if (justSelectedItem)
                 justSelectedItem = false;
 
-            #region MouseType
             if (mouseTypes[0] || mouseTypes[1])
                 editorData.mouseType = MouseCursor.HResize;
             else if (mouseTypes[2])

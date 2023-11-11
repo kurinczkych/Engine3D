@@ -53,12 +53,18 @@ namespace Engine3D
         public TextGenerator()
         {
             string jsonFile = GetFile("font.json");
-            if(jsonFile == "")
-                throw new Exception("Can't find font.json!"); // TODO console log
+            if (jsonFile == "")
+            {
+                Engine.consoleManager.AddLog("Can't find font.json!", LogType.Warning);
+                return;
+            }
 
             font = JsonConvert.DeserializeObject<Root>(jsonFile);
             if (font == null)
-                throw new Exception("Can't find font.json!");  // TODO console log
+            {
+                Engine.consoleManager.AddLog("Can't deserialize font.json!", LogType.Warning);
+                return;
+            }
 
             symbols = new SortedDictionary<char, Symbol>();
             foreach (Symbol s in font.symbols)
@@ -153,7 +159,7 @@ namespace Engine3D
             string filepath = FileManager.GetFilePath(fileName, "Fonts");
             if (filepath == "")
             {
-                // TODO Console log ("File '" + fileName + "' not found!");
+                Engine.consoleManager.AddLog("File '" + fileName + "' was not found!", LogType.Warning);
                 return "";
             }
 

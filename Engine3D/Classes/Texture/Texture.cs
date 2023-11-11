@@ -113,7 +113,7 @@ namespace Engine3D
             }
             else
             {
-                // TODO Console log ("File '" + fileName + "' not found!");
+                Engine.consoleManager.AddLog("Texture: " + filePath + "was not found!", LogType.Warning);
                 return false;
             }
         }

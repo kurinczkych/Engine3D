@@ -15,6 +15,8 @@ namespace Engine3D
         public static WireframeMesh GetSelectedAxis(List<Object> gizmos, MouseState mouseState, ref Camera camera,
                                                     VAO vao, VBO vbo, Shader shader)
         {
+            throw new NotImplementedException();
+
             // Array to store which gizmos are selected
             bool[] selectedGizmos = new bool[gizmos.Count];
 
@@ -38,14 +40,14 @@ namespace Engine3D
             //Vector3 rayOrigin = new Vector3(nearWorld.X, nearWorld.Y, nearWorld.Z);
             //Vector3 rayDirection = new Vector3(farWorld.X - nearWorld.X, farWorld.Y - nearWorld.Y, farWorld.Z - nearWorld.Z).Normalized();
 
-            Vector3 mousePos = new Vector3(mouseState.Position.X, mouseState.Position.Y, 1.0f);
-            Vector3 rayDir = camera.ScreenToWorldPoint(mousePos);
+            //Vector3 mousePos = new Vector3(mouseState.Position.X, mouseState.Position.Y, 1.0f);
+            //Vector3 rayDir = camera.ScreenToWorldPoint(mousePos);
             ;
 
-            WireframeMesh mesh = new WireframeMesh(vao, vbo, shader.id, ref camera);
-            mesh.lines.Add(new Line(camera.GetPosition() + (camera.front), rayDir * 10, Color4.White, Color4.Red));
+            //WireframeMesh mesh = new WireframeMesh(vao, vbo, shader.id, ref camera);
+            //mesh.lines.Add(new Line(camera.GetPosition() + (camera.front), rayDir * 10, Color4.White, Color4.Red));
 
-            return mesh;
+            //return mesh;
 
             // Step 3: Check for intersections with gizmo AABBs
             //for (int i = 0; i < gizmos.Count; i++)

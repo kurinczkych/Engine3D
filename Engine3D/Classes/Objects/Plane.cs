@@ -15,6 +15,13 @@ namespace Engine3D
         OnPlane
     }
 
+    public enum Axis
+    {
+        X,
+        Y,
+        Z
+    }
+
     public class Plane
     {
         // unit vector
@@ -37,6 +44,18 @@ namespace Engine3D
             distance = -Vector3.Dot(normal, tri.p[0]);
         }
 
+        public Plane(Vector3 normal, Vector3 position)
+        {
+            this.normal = normal.Normalized();
+            distance = Vector3.Dot(this.normal, position);
+        }
+
+        public Plane(Vector3 normal, float distance)
+        {
+            this.normal = normal.Normalized();
+            this.distance = distance;
+        }
+
         public float Distance(Vector3 point)
         {
             return Vector3.Dot(normal, point) + distance;
@@ -50,6 +69,45 @@ namespace Engine3D
             if (result < -0.00001f)
                 return TrianglePosition.Behind;
             return TrianglePosition.OnPlane;
+        }
+
+        public Vector3? RayPlaneIntersection(Vector3 origin, Vector3 dir)
+        {
+            float denominator = Vector3.Dot(normal, dir);
+            if (Math.Abs(denominator) < 0.0001f) // Adjust this threshold as needed
+            {
+                return null;
+            }
+
+            float t = (distance - Vector3.Dot(normal, origin)) / denominator;
+            if (t < 0)
+            {
+                return null;
+            }
+
+            Vector3 intersectionPoint = origin + t * dir;
+            return intersectionPoint;
+        }
+
+        public bool IsPointOnPlane(Vector3 point)
+        {
+            // Normalize the normal vector to ensure the equation works correctly
+            Vector3 normalizedNormal = Vector3.Normalize(normal);
+
+            // Calculate the dot product of the point and the plane's normal vector
+            float dot = Vector3.Dot(normalizedNormal, point);
+
+            // Check if the point satisfies the plane equation
+            return Math.Abs(dot + distance) < 1e-6; // Allowing for a small margin of error
+        }
+
+        public bool IsDirectionOnPlane(Vector3 dir)
+        {
+            // Calculate the dot product of the ray's direction and the plane's normal
+            float dotProduct = Vector3.Dot(dir, normal);
+
+            // Check if the dot product is close to zero
+            return Math.Abs(dotProduct) < 1e-6; // Allowing for a small margin of error
         }
     };
 }

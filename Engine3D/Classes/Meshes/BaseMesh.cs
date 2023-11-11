@@ -393,7 +393,7 @@ namespace Engine3D
             string filePath = Environment.CurrentDirectory + "\\Assets\\Models\\" + relativeModelPath;
             if(!File.Exists(filePath))
             {
-                // TODO Console log ("File '" + fileName + "' not found!");
+                Engine.consoleManager.AddLog("File '" + filePath + "' not found!", LogType.Warning);
                 return;
             }
 

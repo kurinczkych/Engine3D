@@ -87,6 +87,27 @@ namespace Engine3D
             return s;
         }
 
+        public static Dictionary<string,Stream> GetFontStreams()
+        {
+            Dictionary<string, Stream> fontDict = new Dictionary<string, Stream>();
+
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            foreach (string resourceName in assembly.GetManifestResourceNames().Where(x => x.EndsWith(".ttf")))
+            {
+                var split = resourceName.Split('.');
+                string name = split[split.Length - 2] + ".ttf";
+
+                Stream? s = assembly.GetManifestResourceStream(resourceName);
+
+                if (s == null)
+                    Engine.consoleManager.AddLog("Font: " + name + " failed to load!", LogType.Warning);
+                else
+                    fontDict.Add(name, s);
+            }
+
+            return fontDict;
+        }
+
         public static void GetAllAssets(ref AssetManager assetManager)
         {
             if (first)

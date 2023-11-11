@@ -1,7 +1,9 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,15 +12,20 @@ namespace Engine3D
     
     public class Shader
     {
+        private bool shadersLoaded = false;
+        private Dictionary<string, string> shaderPaths = new Dictionary<string, string>(); 
+
         public int id;
 
         private List<int> shaderIds = new List<int>();
         public List<string> shaderNames = new List<string>();
 
-        public Shader() { }
+        public Shader() { LoadShaderPaths(); }
 
         public Shader(List<string> shaders)
         {
+            LoadShaderPaths();
+
             id = GL.CreateProgram();
             shaderNames = new List<string>(shaders);
 
@@ -73,28 +80,44 @@ namespace Engine3D
             }
         }
 
-        public string LoadShaderSource(string filePath)
+        private void LoadShaderPaths()
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            var list = assembly.GetManifestResourceNames().Where(x => x.StartsWith("Engine3D.Shaders"));
+            foreach (string resourceName in list)
+            {
+                var parts = resourceName.Split('.');
+                string name = parts[parts.Length-2] + "." + parts[parts.Length-1];
+                shaderPaths.Add(name, resourceName);
+            }
+
+            shadersLoaded = true;
+        }
+
+        private string LoadShaderSource(string shaderName)
         {
             string shaderSource = "";
-            string folderName = Path.GetFileNameWithoutExtension(filePath);
-            if (Path.GetExtension(filePath) == ".comp")
-                folderName = "ComputeShaders";
-
-            string path = "../../../Shaders/" + folderName + "/" + filePath;
-
-            try
+            if (shadersLoaded && shaderPaths.ContainsKey(shaderName))
             {
-                using (StreamReader reader = new StreamReader(path))
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                using (var stream = assembly.GetManifestResourceStream(shaderPaths[shaderName]))
                 {
-                    shaderSource = reader.ReadToEnd();
+                    if(stream != null)
+                    {
+                        using (var reader = new StreamReader(stream))
+                        {
+                            shaderSource = reader.ReadToEnd();
+                            return shaderSource;
+                        }
+                    }
+                    else
+                       throw new Exception("Shader not found!");
                 }
             }
-            catch (Exception e)
+            else
             {
-                throw new Exception("Can't find shader at '" + filePath + "'!");
+                throw new Exception("Shader not found!");
             }
-
-            return shaderSource;
         }
     }
 }

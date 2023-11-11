@@ -11,8 +11,10 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
 
 namespace Engine3D
@@ -45,8 +47,18 @@ namespace Engine3D
         protected int GLVersion;
         protected bool CompatibilityProfile;
 
-        protected ImFontPtr font;
-        protected ImFontPtr boldFont;
+        protected Dictionary<string, Stream> fontStreamDict;
+        private Dictionary<string, (byte[] Data, GCHandle Handle)> fontDataDict = new Dictionary<string, (byte[] Data, GCHandle Handle)>();
+
+        protected ImFontPtr default13;
+        protected ImFontPtr default18;
+        protected ImFontPtr default20;
+
+        protected ImFontPtr times13;
+        protected ImFontPtr times18;
+
+        protected ImFontPtr timesbd13;
+        protected ImFontPtr timesbd18;
 
         public unsafe BaseImGuiController(int width, int height)
         {
@@ -66,21 +78,27 @@ namespace Engine3D
             ImGui.SetCurrentContext(context);
             var io = ImGui.GetIO();
             io.Fonts.AddFontDefault();
-            // Font init
-            //string fontPath = Environment.CurrentDirectory + "\\Fonts\\times.ttf";
-            //float fontSize = 16.0f;
-            //font = io.Fonts.AddFontFromFileTTF(fontPath, fontSize);
-            //if (font.NativePtr == null)
-            //{
-            //    throw new InvalidOperationException("Failed to load the font file.");
-            //}
-            //string boldFontPath = Environment.CurrentDirectory + "\\Fonts\\timesbd.ttf";
-            //boldFont = io.Fonts.AddFontFromFileTTF(boldFontPath, fontSize);
-            //if (boldFont.NativePtr == null)
-            //{
-            //    throw new InvalidOperationException("Failed to load the font file.");
-            //}
-            //io.Fonts.Build();
+
+            #region Fonts
+            fontStreamDict = FileManager.GetFontStreams();
+            bool buildFonts = false;
+
+            default13 = AddFont("default.ttf", 13, ref buildFonts, ref io);
+            default18 = AddFont("default.ttf", 18, ref buildFonts, ref io);
+            default20 = AddFont("default.ttf", 20, ref buildFonts, ref io);
+
+            times13 = AddFont("times.ttf", 13, ref buildFonts, ref io);
+            times18 = AddFont("times.ttf", 18, ref buildFonts, ref io);
+
+            timesbd13 = AddFont("timesbd.ttf", 13, ref buildFonts, ref io);
+            timesbd18 = AddFont("timesbd.ttf", 18, ref buildFonts, ref io);
+
+            if (buildFonts)
+                io.Fonts.Build();
+
+            if (fontStreamDict.Count > 0)
+                ReleaseAllFontStreams();
+            #endregion
 
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
 
@@ -98,6 +116,57 @@ namespace Engine3D
         {
             _windowWidth = width;
             _windowHeight = height;
+        }
+
+        protected ImFontPtr AddFont(string name, float fontSize, ref bool buildFonts, ref ImGuiIOPtr io)
+        {
+            buildFonts = false;
+            if (fontStreamDict.ContainsKey(name))
+            {
+                byte[] fontData;
+                var stream = fontStreamDict[name];
+
+                fontData = new byte[stream.Length];
+                stream.Read(fontData, 0, (int)stream.Length);
+                stream.Position = 0;
+
+                var handle = GCHandle.Alloc(fontData, GCHandleType.Pinned);
+
+                if(!fontDataDict.ContainsKey(name))
+                    fontDataDict.Add(name, (fontData, handle));
+                else
+                    fontDataDict[name] = (fontData, handle);
+
+                var (fontData_, _) = fontDataDict[name];
+                ImFontPtr fontPtr;
+
+                unsafe
+                {
+                    fixed (byte* pFontData = fontData_)
+                    {
+                        fontPtr = io.Fonts.AddFontFromMemoryTTF((IntPtr)pFontData, fontData_.Length, fontSize);
+                        if (fontPtr.NativePtr == null)
+                        {
+                            Engine.consoleManager.AddLog("Font: " + name + " in size " + fontSize.ToString() + " failed to build!", LogType.Warning);
+                        }
+                        else
+                            buildFonts = true;
+                    }
+                }
+
+                return fontPtr;
+            }
+            else 
+                return null;
+        }
+
+        protected void ReleaseAllFontStreams()
+        {
+            foreach (var fontStream in fontStreamDict.Values)
+            {
+                fontStream.Dispose();
+            }
+            fontStreamDict.Clear();
         }
 
         public void DestroyDeviceObjects()

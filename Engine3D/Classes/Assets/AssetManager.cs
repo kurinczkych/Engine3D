@@ -47,11 +47,15 @@ namespace Engine3D
         public string Remove(Asset asset)
         {
             List<string> dirs = GetDirectories(asset);
+            
+            RemoveRec(dirs, asset);
 
-            return RemoveRec(dirs, asset);
+            string removeFolder = FindEmptyFolderRec(dirs);
+
+            return removeFolder;
         }
 
-        private string RemoveRec(List<string> dirs, Asset asset)
+        private void RemoveRec(List<string> dirs, Asset asset)
         {
             if (dirs.Count == 1)
             {
@@ -59,22 +63,38 @@ namespace Engine3D
 
                 a.assets.Remove(asset);
 
+                return;
+            }
+
+            AssetFolder assetFolder = GetAssetFolder(dirs[0]);
+            assetFolder.RemoveRec(dirs.GetRange(1, dirs.Count() - 1), asset);
+        }
+
+        private string FindEmptyFolderRec(List<string> dirs)
+        {
+            if(dirs.Count == 1)
+            {
+                AssetFolder a = GetAssetFolder(dirs[0]);
                 if (a.assets.Count == 0)
                 {
-                    folders.Remove(dirs[0]);
                     return a.path;
                 }
+
                 return "";
             }
 
             AssetFolder assetFolder = GetAssetFolder(dirs[0]);
-            string removeFolder = assetFolder.RemoveRec(dirs.GetRange(1, dirs.Count() - 1), asset);
-            if (removeFolder != "")
+            string removeFolderPath = assetFolder.FindEmptyFolderRec(dirs.GetRange(1, dirs.Count() - 1));
+            if(removeFolderPath != "")
             {
-                folders.Remove(dirs[0]);
-            }
+                string removeFolderName = removeFolderPath.Split('\\').Last();
 
-            return removeFolder;
+                if (assetFolder.folders.ContainsKey(removeFolderName))
+                {
+                    assetFolder.folders.Remove(removeFolderName);
+                }
+            }
+            return removeFolderPath;
         }
 
         private List<string> GetDirectories(Asset asset)

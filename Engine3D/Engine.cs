@@ -40,13 +40,24 @@ namespace Engine3D
     {
         public float topPanelSize = 50;
         public float bottomPanelSize = 25;
+
         public float bottomPanelPercent = 0.25f;
         public float leftPanelPercent = 0.15f;
         public float rightPanelPercent = 0.20f;
+
+        public float origBottomPanelPercent;
+        public float origLeftPanelPercent;
+        public float origRightPanelPercent;
+
         public Vector2 gameWindowPos;
         public Vector2 gameWindowSize;
 
-        public GameWindowProperty() { }
+        public GameWindowProperty()
+        {
+            origBottomPanelPercent = bottomPanelPercent;
+            origLeftPanelPercent = leftPanelPercent;
+            origRightPanelPercent = rightPanelPercent;
+        }
     }
 
     public partial class Engine : GameWindow
@@ -118,9 +129,10 @@ namespace Engine3D
         private Vector2 gameWindowMousePos;
 
         private SoundManager soundManager;
-        public static TextureManager textureManager;
         private AssetManager assetManager;
         private Stopwatch fileDetectorStopWatch;
+        public static TextureManager textureManager;
+        public static ConsoleManager consoleManager = new ConsoleManager();
 
         private TextGenerator textGenerator;
         private Dictionary<string, TextMesh> texts;
@@ -134,7 +146,11 @@ namespace Engine3D
         private Vector2 lastPos;
         private bool firstMove = true;
         private float sensitivity = 130;
-        private Vector3? objectMovingAxis;
+
+        private Axis? objectMovingAxis;
+        private Plane? objectMovingPlane;
+        private Vector3 objectMovingOrig;
+
         #endregion
 
         #region UI variables
@@ -231,6 +247,14 @@ namespace Engine3D
             }
         }
 
+        public void AddMeshObject(string meshName)
+        {
+            Object o = new Object(ObjectType.TriangleMesh, ref physx);
+            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref character.camera, ref o));
+            editorData.objects.Add(o);
+            _meshObjects.Add(o);
+        }
+
         public void RemoveObject(Object o)
         {
             if (o.hasMesh)
@@ -280,7 +304,7 @@ namespace Engine3D
 
             OcclusionCuller();
 
-            ObjectPicking();
+            ObjectAndAxisPicking();
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
@@ -290,6 +314,8 @@ namespace Engine3D
             DrawParticleSystems();
 
             DrawMoverGizmo();
+
+            //DrawCameraRay();
 
             TextUpdating();
 
@@ -385,6 +411,10 @@ namespace Engine3D
             if (!successRotate) { throw new Exception("ui_back.png was not found in the embedded resources!"); }
             textureManager.AddTexture("ui_gizmo_scale.png", out bool successScale, flipY: false);
             if (!successScale) { throw new Exception("ui_back.png was not found in the embedded resources!"); }
+            textureManager.AddTexture("ui_relative.png", out bool successRelative, flipY: false);
+            if (!successRelative) { throw new Exception("ui_relative.png was not found in the embedded resources!"); }
+            textureManager.AddTexture("ui_absolute.png", out bool successAbsolute, flipY: false);
+            if (!successAbsolute) { throw new Exception("ui_absolute.png was not found in the embedded resources!"); }
             editorData.objects = objects;
             editorData.particleSystems = particleSystems;
             editorData.pointLights = pointLights;
@@ -505,7 +535,7 @@ namespace Engine3D
             camera.UpdateVectors();
 
             onlyPosShaderProgram.Use();
-            Vector3 characterPos = new Vector3(0, 0, 5);
+            Vector3 characterPos = new Vector3(0, 0, -5);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
             character.camera.SetYaw(90f);
             character.camera.SetPitch(0f);
@@ -527,10 +557,10 @@ namespace Engine3D
             //o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             //objects.Add(o);
 
-            //Object o2 = new Object(ObjectType.Cube, ref physx);
-            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
-            //objects.Add(o2);
-            //_meshObjects.Add(o2);
+            Object o2 = new Object(ObjectType.Cube, ref physx);
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            objects.Add(o2);
+            _meshObjects.Add(o2);
 
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();
@@ -551,25 +581,26 @@ namespace Engine3D
             //objects.Last().SetSize(2);
             //objects.Last().AddSphereCollider(false);
 
-            Object o3 = new Object(ObjectType.TriangleMesh, ref physx);
-            o3.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", Object.GetUnitCube(), windowSize, ref camera, ref o3));
+            //Object o3 = new Object(ObjectType.TriangleMesh, ref physx);
+            //o3.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", Object.GetUnitCube(), windowSize, ref camera, ref o3));
 
-            for (int i = 0; i < 1; i++)
-            {
-                InstancedMeshData instData = new InstancedMeshData();
-                //instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
-                instData.Position = new Vector3(0,0,10);
-                //instData.Rotation = Helper.GetRandomQuaternion();
-                instData.Rotation = Quaternion.Identity;
-                //instData.Rotation = Helper.QuaternionFromEuler(new Vector3(45, 0, 0));
-                //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
-                //instData.Scale = new Vector3(3, 3, 3);
-                instData.Scale = new Vector3(1, 1, 1);
-                //instData.Color = Helper.GetRandomColor();
-                instData.Color = Color4.Blue;
+            //for (int i = 0; i < 1; i++)
+            //{
+            //    InstancedMeshData instData = new InstancedMeshData();
+            //    //instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
+            //    instData.Position = new Vector3(0,0,10);
+            //    //instData.Rotation = Helper.GetRandomQuaternion();
+            //    instData.Rotation = Quaternion.Identity;
+            //    //instData.Rotation = Helper.QuaternionFromEuler(new Vector3(45, 0, 0));
+            //    //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
+            //    //instData.Scale = new Vector3(3, 3, 3);
+            //    instData.Scale = new Vector3(1, 1, 1);
+            //    //instData.Color = Helper.GetRandomColor();
+            //    instData.Color = Color4.Blue;
 
-                ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
-            }
+            //    ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
+            //}
+
             //for (int i = 0; i < 1; i++)
             //{
             //    InstancedMeshData instData = new InstancedMeshData();
@@ -582,8 +613,8 @@ namespace Engine3D
 
             //    ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
             //}
-            objects.Add(o3);
-            _instObjects.Add(o3);
+            //objects.Add(o3);
+            //_instObjects.Add(o3);
 
             //ParticleSystem ps = new ParticleSystem(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitFace(), "smoke.png", windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //ps.GetObject().SetBillboarding(true);
@@ -735,9 +766,18 @@ namespace Engine3D
 
         private void ResizedEditorWindow()
         {
-            editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X * (1.0f - (editorData.gameWindow.leftPanelPercent + editorData.gameWindow.rightPanelPercent)),
-                                                            windowSize.Y * (1 - editorData.gameWindow.bottomPanelPercent) - editorData.gameWindow.topPanelSize - editorData.gameWindow.bottomPanelSize);
-            editorData.gameWindow.gameWindowPos = new Vector2(windowSize.X * editorData.gameWindow.leftPanelPercent, windowSize.Y * editorData.gameWindow.bottomPanelPercent + editorData.gameWindow.bottomPanelSize);
+            if (editorData.isGameFullscreen)
+            {
+                editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X, windowSize.Y);
+                editorData.gameWindow.gameWindowPos = new Vector2(0, 0);
+            }
+            else
+            {
+                editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X * (1.0f - (editorData.gameWindow.leftPanelPercent + editorData.gameWindow.rightPanelPercent)),
+                                                                windowSize.Y * (1 - editorData.gameWindow.bottomPanelPercent) - editorData.gameWindow.topPanelSize - editorData.gameWindow.bottomPanelSize);
+                editorData.gameWindow.gameWindowPos = new Vector2(windowSize.X * editorData.gameWindow.leftPanelPercent, windowSize.Y * editorData.gameWindow.bottomPanelPercent + editorData.gameWindow.bottomPanelSize);
+            }
+
             character.camera.SetScreenSize(windowSize, editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
         }
     }

@@ -199,7 +199,7 @@ namespace Engine3D
                         var node = htmlDoc.DocumentNode.SelectSingleNode("//span[@class='file']");
                         if (node == null)
                         {
-                            // TODO: Console log error
+                            Engine.consoleManager.AddLog("Error while parsing download file!", LogType.Warning);
                             return;
                         }
 
@@ -363,8 +363,7 @@ namespace Engine3D
                         }
                         catch (Exception e)
                         {
-                            throw new Exception(e.Message);
-                            // TODO: console logging
+                            Engine.consoleManager.AddLog(e.Message, LogType.Warning);
                         }
 
                         assetZipToDownload.Remove(assetToDownload);
@@ -447,8 +446,7 @@ namespace Engine3D
             }
             catch(Exception e)
             {
-                throw new Exception(e.Message);
-                // TODO: console logging
+                Engine.consoleManager.AddLog(e.Message, LogType.Warning);
             }
         }
 

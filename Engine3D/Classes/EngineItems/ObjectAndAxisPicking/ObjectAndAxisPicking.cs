@@ -11,7 +11,7 @@ namespace Engine3D
 {
     public partial class Engine
     {
-        private void ObjectPicking()
+        private void ObjectAndAxisPicking()
         {
             if (editorData.gameRunning == GameState.Stopped)
             {
@@ -24,6 +24,7 @@ namespace Engine3D
                     else if (objectMovingAxis != null && MouseState.IsButtonReleased(MouseButton.Left))
                     {
                         objectMovingAxis = null;
+                        objectMovingPlane = null;
                     }
                     else if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
                     {
@@ -66,7 +67,7 @@ namespace Engine3D
                         PixelInfo pixel = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
                         #endregion
 
-                        #region Object moving
+                        #region Axis picking
                         bool axisClicked = false;
                         if (editorData.selectedItem != null && editorData.selectedItem is Object selectedO)
                         {
@@ -89,15 +90,7 @@ namespace Engine3D
                             pickingTexture.DisableWriting();
 
                             PixelInfo pixel2 = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
-                            if (pixel2.objectId != 0)
-                            {
-                                if (pixel2.objectId == 1)
-                                    objectMovingAxis = Vector3.UnitX;
-                                else if (pixel2.objectId == 2)
-                                    objectMovingAxis = Vector3.UnitY;
-                                else if (pixel2.objectId == 3)
-                                    objectMovingAxis = Vector3.UnitZ;
-                            }
+                            CreateAxisPlane(pixel2, selectedO);
                         }
 
                         #endregion

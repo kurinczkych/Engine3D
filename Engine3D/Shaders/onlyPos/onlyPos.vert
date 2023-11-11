@@ -12,5 +12,6 @@ uniform mat4 projectionMatrix;
 void main()
 {
 	gl_Position = vec4(inPosition,1.0) * modelMatrix * viewMatrix * projectionMatrix;
+
 	fragColor = inColor;
 }

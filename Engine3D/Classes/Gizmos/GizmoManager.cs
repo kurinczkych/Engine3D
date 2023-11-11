@@ -30,6 +30,7 @@ namespace Engine3D
         public GizmoType gizmoType = GizmoType.Move;
         public GizmoType lastGizmoType = GizmoType.Move;
         public bool PerInstanceMove = false;
+        public bool AbsoluteMoving = true;
 
         public GizmoManager(VAO vao, VBO vbo, Shader shader, ref Camera camera)
         {
@@ -43,7 +44,7 @@ namespace Engine3D
             CreateMoverGizmos();
         }
 
-        public void UpdateMoverGizmo(Vector3 position)
+        public void UpdateMoverGizmo(Vector3 position, Quaternion rotation)
         {
             if(lastGizmoType != gizmoType)
             {
@@ -98,6 +99,17 @@ namespace Engine3D
                 {
                     moverGizmo.Scale = new Vector3(scaleFactor);
                     toUpdate[2] = true;
+                }
+
+                if(AbsoluteMoving && moverGizmo.Rotation != Quaternion.Identity)
+                {
+                    moverGizmo.Rotation = Quaternion.Identity;
+                    toUpdate[1] = true;
+                }
+                else if(!AbsoluteMoving && moverGizmo.Rotation != rotation)
+                {
+                    moverGizmo.Rotation = rotation;
+                    toUpdate[1] = true;
                 }
 
                 moverGizmo.GetMesh().RecalculateModelMatrix(toUpdate);

@@ -82,7 +82,7 @@ namespace Engine3D
                     texture = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || texture == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                 }
                 else
@@ -90,7 +90,7 @@ namespace Engine3D
                     texture = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || texture == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                     else
                         mesh.AddUniformLocation("textureSampler");
@@ -121,7 +121,7 @@ namespace Engine3D
                     textureNormal = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureNormal == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                 }
                 else
@@ -129,7 +129,7 @@ namespace Engine3D
                     textureNormal = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureNormal == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                     else
                         mesh.AddUniformLocation("textureSamplerNormal");
@@ -160,7 +160,7 @@ namespace Engine3D
                     textureHeight = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureHeight == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                 }
                 else
@@ -168,7 +168,7 @@ namespace Engine3D
                     textureHeight = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureHeight == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                     else
                         mesh.AddUniformLocation("textureSamplerHeight");
@@ -199,7 +199,7 @@ namespace Engine3D
                     textureAO = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureAO == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                 }
                 else
@@ -207,7 +207,7 @@ namespace Engine3D
                     textureAO = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureAO == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                     else
                         mesh.AddUniformLocation("textureSamplerAO");
@@ -236,10 +236,9 @@ namespace Engine3D
                 {
                     Engine.textureManager.DeleteTexture(textureRough, mesh, "Rough");
                     textureRough = Engine.textureManager.AddTexture(texturePath, out bool success);
-                    // TODO: Console error texture not found!
                     if (!success || textureRough == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                 }
                 else
@@ -247,7 +246,7 @@ namespace Engine3D
                     textureRough = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureRough == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                     else
                         mesh.AddUniformLocation("textureSamplerRough");
@@ -278,7 +277,7 @@ namespace Engine3D
                     textureMetal = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureMetal == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                 }
                 else
@@ -286,7 +285,7 @@ namespace Engine3D
                     textureMetal = Engine.textureManager.AddTexture(texturePath, out bool success);
                     if (!success || textureMetal == null)
                     {
-                        // TODO: Console error texture not found!
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
                     }
                     else
                         mesh.AddUniformLocation("textureSamplerMetal");
@@ -1184,7 +1183,7 @@ namespace Engine3D
             return tris;
         }
 
-        public static List<triangle> GetUnitCapsule(float radius = 5, float halfHeight = 10, int resolution = 10)
+        public static List<triangle> GetUnitCapsule(float radius = 0.5f, float halfHeight = 0.5f, int resolution = 10)
         {
             List<triangle>  tris = new List<triangle>();
 

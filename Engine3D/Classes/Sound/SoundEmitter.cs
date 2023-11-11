@@ -122,7 +122,7 @@ namespace Engine3D
             string filepath = FileManager.GetFilePath(audioFile, "Audio");
             if (filepath == "")
             {
-                // TODO Console log ("File '" + fileName + "' not found!");
+                Engine.consoleManager.AddLog("File '" + audioFile + "' was not found!", LogType.Warning);
                 return false;
             }
 

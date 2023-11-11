@@ -25,12 +25,14 @@ namespace Engine3D
                 context = ALC.CreateContext(device, new int[0]);  // null means default attributes
                 if (context == ALContext.Null)
                 {
-                    throw new Exception("Failed to create context");
+                    Engine.consoleManager.AddLog("Failed to create sound manager context!", LogType.Warning);
+                    return;
                 }
 
                 if (!ALC.MakeContextCurrent(context))
                 {
-                    throw new Exception("Failed to make context current");
+                    Engine.consoleManager.AddLog("Failed to make sound manager context!", LogType.Warning);
+                    return;
                 }
 
                 AL.DistanceModel(ALDistanceModel.LinearDistance);
@@ -39,14 +41,17 @@ namespace Engine3D
             }
             else
             {
-                // Error handling
+                Engine.consoleManager.AddLog("Failed to open sound device!", LogType.Warning);
             }
         }
 
         public SoundEmitter? CreateSoundEmitter(string filePath)
         {
             if (device == ALDevice.Null)
-                throw new Exception("There is no opened sound device!");
+            {
+                Engine.consoleManager.AddLog("There is no opened sound device!", LogType.Error);
+                return null;
+            }
 
             var emitter = new SoundEmitter(filePath, out bool success);
 
@@ -59,10 +64,13 @@ namespace Engine3D
                 return null;
         }
 
-        public SoundEmitter CreateSoundEmitter(string filePath, Vector3 position)
+        public SoundEmitter? CreateSoundEmitter(string filePath, Vector3 position)
         {
             if (device == ALDevice.Null)
-                throw new Exception("There is no opened sound device!");
+            {
+                Engine.consoleManager.AddLog("There is no opened sound device!", LogType.Error);
+                return null;
+            }
 
             var emitter = new SoundEmitter(filePath, position, out bool success);
 
@@ -79,8 +87,8 @@ namespace Engine3D
         {
             if (device == ALDevice.Null)
             {
-                // Error handling
-
+                Engine.consoleManager.AddLog("There is no opened sound device!", LogType.Error);
+                
                 return;
             }
 
@@ -95,7 +103,7 @@ namespace Engine3D
         {
             if (device == ALDevice.Null)
             {
-                // Error handling
+                Engine.consoleManager.AddLog("There is no opened sound device!", LogType.Error);
 
                 return;
             }
@@ -110,7 +118,7 @@ namespace Engine3D
         {
             if (device == ALDevice.Null)
             {
-                // Error handling
+                Engine.consoleManager.AddLog("There is no opened sound device!", LogType.Error);
 
                 return;
             }

@@ -134,24 +134,32 @@ namespace Engine3D
             return Matrix4.CreateOrthographic(screenSize.X, screenSize.Y, near, far);
         }
 
-        public Vector3 ScreenToWorldPoint(Vector3 screenPoint)
+        public Vector3 GetCameraRay(Vector2 screenPoint)
         {
-            float nscX = screenPoint.X - gameScreenPos.X;
-            float nscY = Helper.InterpolateComponent(screenPoint.Y, screenSize.Y - gameScreenSize.Y - gameScreenPos.Y, screenSize.Y - gameScreenSize.Y - gameScreenPos.Y + gameScreenSize.Y, 0, gameScreenSize.Y);
+            Vector2 relativeScreenPoint = new Vector2(
+                screenPoint.X - gameScreenPos.X,
+                screenPoint.Y - (screenSize.Y - gameScreenPos.Y - gameScreenSize.Y)
+            );
 
-            float x = (2.0f * nscX) / gameScreenSize.X - 1.0f;
-            float y = 1.0f - (2.0f * nscY) / gameScreenSize.Y;
-            float z = 1.0f;
+            Vector2 ndc = new Vector2(
+                (2.0f * relativeScreenPoint.X) / gameScreenSize.X - 1.0f,
+                1.0f - (2.0f * relativeScreenPoint.Y) / gameScreenSize.Y
+            );
 
-            Vector4 ray_clip = new Vector4(x, y, -1.0f, 1.0f);
-            Vector4 ray_eye = Matrix4.Invert(projectionMatrix) * ray_clip;
+            // Convert to clip space coordinates
+            Vector4 clipCoords = new Vector4(ndc.X, ndc.Y, -1f, 1f);
 
-            ray_eye = new Vector4(ray_eye.X, ray_eye.Y, -1.0f, 0.0f);
-             
-            Vector3 ray_wor = new Vector3(Matrix4.Invert(viewMatrix) * ray_eye);
-            ray_wor = ray_wor.Normalized();
+            // Convert to eye space
+            Vector4 eyeCoords = Vector4.TransformRow(clipCoords, Matrix4.Invert(projectionMatrix));
+            eyeCoords = new Vector4(eyeCoords.X, eyeCoords.Y, -1f, 0f);
 
-            return ray_wor;
+            // Convert to world space
+            Vector3 worldRay = Vector4.TransformRow(eyeCoords, Matrix4.Invert(viewMatrix)).Xyz;
+
+            // Normalize the ray direction
+            worldRay.Normalize();
+
+            return worldRay;
         }
 
         public bool IsTriangleClose(triangle tri)

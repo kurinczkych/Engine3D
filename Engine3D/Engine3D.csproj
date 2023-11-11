@@ -23,8 +23,32 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Fonts\default.ttf" />
     <None Remove="Fonts\times.ttf" />
     <None Remove="Fonts\timesbd.ttf" />
+    <None Remove="Shaders\aabb\aabb.frag" />
+    <None Remove="Shaders\aabb\aabb.vert" />
+    <None Remove="Shaders\ComputeShaders\cullingshader.comp" />
+    <None Remove="Shaders\Default\Default.frag" />
+    <None Remove="Shaders\Default\Default.geom" />
+    <None Remove="Shaders\Default\Default.vert" />
+    <None Remove="Shaders\Default\DefaultForGeom.vert" />
+    <None Remove="Shaders\Instanced\Instanced.frag" />
+    <None Remove="Shaders\Instanced\Instanced.vert" />
+    <None Remove="Shaders\onlyPos\onlyPos.frag" />
+    <None Remove="Shaders\onlyPos\onlyPos.geom" />
+    <None Remove="Shaders\onlyPos\onlyPos.vert" />
+    <None Remove="Shaders\onlyPos\onlyPosForGeom.vert" />
+    <None Remove="Shaders\outlineInstanced\outlineInstanced.frag" />
+    <None Remove="Shaders\outlineInstanced\outlineInstanced.vert" />
+    <None Remove="Shaders\outline\outline.frag" />
+    <None Remove="Shaders\outline\outline.vert" />
+    <None Remove="Shaders\pickingInstanced\pickingInstanced.frag" />
+    <None Remove="Shaders\pickingInstanced\pickingInstanced.vert" />
+    <None Remove="Shaders\picking\picking.frag" />
+    <None Remove="Shaders\picking\picking.vert" />
+    <None Remove="Shaders\postex\postex.frag" />
+    <None Remove="Shaders\postex\postex.vert" />
     <None Remove="Textures\bmp_24.bmp" />
     <None Remove="Textures\font.json" />
     <None Remove="Textures\font2.PNG" />
@@ -33,6 +57,7 @@
     <None Remove="Textures\High_test.png" />
     <None Remove="Textures\red.png" />
     <None Remove="Textures\rred.png" />
+    <None Remove="Textures\ui_absolute.png" />
     <None Remove="Textures\ui_back.png" />
     <None Remove="Textures\ui_folder.png" />
     <None Remove="Textures\ui_gizmo_move.png" />
@@ -40,6 +65,7 @@
     <None Remove="Textures\ui_gizmo_scale.png" />
     <None Remove="Textures\ui_missing.png" />
     <None Remove="Textures\ui_pause.png" />
+    <None Remove="Textures\ui_relative.png" />
     <None Remove="Textures\ui_screen.png" />
     <None Remove="Textures\ui_stop.png" />
   </ItemGroup>
@@ -57,6 +83,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Fonts\default.ttf" />
     <EmbeddedResource Include="Fonts\times.ttf">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
@@ -66,12 +93,36 @@
     <EmbeddedResource Include="Fonts\font.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Shaders\aabb\aabb.frag" />
+    <EmbeddedResource Include="Shaders\aabb\aabb.vert" />
+    <EmbeddedResource Include="Shaders\ComputeShaders\cullingshader.comp" />
+    <EmbeddedResource Include="Shaders\Default\Default.frag" />
+    <EmbeddedResource Include="Shaders\Default\Default.geom" />
+    <EmbeddedResource Include="Shaders\Default\Default.vert" />
+    <EmbeddedResource Include="Shaders\Default\DefaultForGeom.vert" />
+    <EmbeddedResource Include="Shaders\Instanced\Instanced.frag" />
+    <EmbeddedResource Include="Shaders\Instanced\Instanced.vert" />
+    <EmbeddedResource Include="Shaders\onlyPos\onlyPos.frag" />
+    <EmbeddedResource Include="Shaders\onlyPos\onlyPos.geom" />
+    <EmbeddedResource Include="Shaders\onlyPos\onlyPos.vert" />
+    <EmbeddedResource Include="Shaders\onlyPos\onlyPosForGeom.vert" />
+    <EmbeddedResource Include="Shaders\outlineInstanced\outlineInstanced.frag" />
+    <EmbeddedResource Include="Shaders\outlineInstanced\outlineInstanced.vert" />
+    <EmbeddedResource Include="Shaders\outline\outline.frag" />
+    <EmbeddedResource Include="Shaders\outline\outline.vert" />
+    <EmbeddedResource Include="Shaders\pickingInstanced\pickingInstanced.frag" />
+    <EmbeddedResource Include="Shaders\pickingInstanced\pickingInstanced.vert" />
+    <EmbeddedResource Include="Shaders\picking\picking.frag" />
+    <EmbeddedResource Include="Shaders\picking\picking.vert" />
+    <EmbeddedResource Include="Shaders\postex\postex.frag" />
+    <EmbeddedResource Include="Shaders\postex\postex.vert" />
     <EmbeddedResource Include="Textures\font.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="Textures\font2.PNG">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Textures\ui_absolute.png" />
     <EmbeddedResource Include="Textures\ui_back.png" />
     <EmbeddedResource Include="Textures\ui_folder.png" />
     <EmbeddedResource Include="Textures\ui_gizmo_move.png" />
@@ -84,6 +135,7 @@
     <EmbeddedResource Include="Textures\ui_play.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Textures\ui_relative.png" />
     <EmbeddedResource Include="Textures\ui_screen.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>

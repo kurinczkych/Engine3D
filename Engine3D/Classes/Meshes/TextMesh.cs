@@ -47,7 +47,8 @@ namespace Engine3D
 
             bool success = false;
             parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success, false, "nearest");
-            // TODO: Console error texture not found!
+            if(!success)
+                Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
 
             Vao = vao;
             Vbo = vbo;

@@ -53,7 +53,8 @@ namespace Engine3D
 
             bool success = false;
             parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
-            // TODO: Console error texture not found!
+            if(!success)
+                Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
 
             Vao = vao;
             Vbo = vbo;
@@ -99,6 +100,8 @@ namespace Engine3D
             {
                 ComputeVertexNormalsSpherical();
             }
+            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+                ComputeVertexNormals();
 
             ComputeTangents();
 
@@ -114,7 +117,8 @@ namespace Engine3D
 
             bool success = false;
             parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
-            // TODO: Console error texture not found!
+            if(!success)
+                Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
 
             Vao = vao;
             Vbo = vbo;
@@ -129,8 +133,8 @@ namespace Engine3D
             {
                 ComputeVertexNormalsSpherical();
             }
-
-            ;
+            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+                ComputeVertexNormals();
 
             ComputeTangents();
 
@@ -157,6 +161,8 @@ namespace Engine3D
             {
                 ComputeVertexNormalsSpherical();
             }
+            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+                ComputeVertexNormals();
 
             ComputeTangents();
 

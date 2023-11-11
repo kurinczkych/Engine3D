@@ -21,10 +21,12 @@ namespace Engine3D
 
                     if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.meshType == typeof(InstancedMesh))
                     {
-                        editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position);
+                        editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
+                                                                 o.Rotation);
+                        // TODO
                     }
                     else
-                        editorData.gizmoManager.UpdateMoverGizmo(o.Position);
+                        editorData.gizmoManager.UpdateMoverGizmo(o.Position, o.Rotation);
                     vertices.Clear();
                     foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
                     {
