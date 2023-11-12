@@ -47,7 +47,7 @@ namespace Engine3D
                 if (tri == splitter)
                     continue;
 
-                Vector3 center = tri.GetMiddle();
+                Vector3 center = tri.GetCenter();
                 switch (splitterPlane.ClassifyPoint(center))
                 {
                     case TrianglePosition.InFront:
@@ -88,7 +88,7 @@ namespace Engine3D
         //    for (int i = 1; i < triangles.Count; i++)
         //    {
         //        triangle tri = triangles[i];
-        //        Vector3 center = tri.GetMiddle();
+        //        Vector3 center = tri.GetCenter();
 
         //        switch (splitterPlane.ClassifyPoint(center))
         //        {

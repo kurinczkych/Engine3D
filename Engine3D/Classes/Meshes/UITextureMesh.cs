@@ -78,22 +78,22 @@ namespace Engine3D
             GL.Uniform1(uniformLocations["textureSampler"], parentObject.texture.TextureUnit);
         }
 
-        private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
-        {
-            Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
+        //private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
+        //{
+        //    Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
 
-            float x = (2.0f * v.X / windowSize.X) - 1.0f;
-            float y = (2.0f * v.Y / windowSize.Y) - 1.0f;
+        //    float x = (2.0f * v.X / windowSize.X) - 1.0f;
+        //    float y = (2.0f * v.Y / windowSize.Y) - 1.0f;
 
-            List<float> result = new List<float>()
-            {
-                x, y, -1.0f, 1.0f,
-                tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-                tri.t[index].u, tri.t[index].v
-            };
+        //    List<float> result = new List<float>()
+        //    {
+        //        x, y, -1.0f, 1.0f,
+        //        tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
+        //        tri.t[index].u, tri.t[index].v
+        //    };
 
-            return result;
-        }
+        //    return result;
+        //}
 
         public List<float> Draw(GameState gameRunning)
         {
@@ -125,12 +125,12 @@ namespace Engine3D
                 transformMatrix = s * toOrigin * rZ * fromOrigin * t;
             }
 
-            foreach (triangle tri in tris)
-            {
-                vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
-                vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
-                vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
-            }
+            //foreach (triangle tri in tris)
+            //{
+            //    vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+            //    vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+            //    vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
+            //}
 
             SendUniforms();
             parentObject.texture.Bind();

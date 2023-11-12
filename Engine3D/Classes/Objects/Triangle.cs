@@ -14,13 +14,8 @@ namespace Engine3D
 {
     public class triangle
     {
-        public Vector3[] p;
-        public Vector3[] n;
-        public Color4[] c;
-        public Vec2d[] t;
-        public int[] pi;
-        public Vector3[] tan;
-        public Vector3[] bitan;
+        public Vertex[] v;
+        public uint[] vi;
         public bool gotPointNormals;
 
         public bool visibile = false;
@@ -28,197 +23,126 @@ namespace Engine3D
         public triangle()
         {
             gotPointNormals = false;
-            p = new Vector3[3];
-            n = new Vector3[3];
-            c = new Color4[3];
-            t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
-            tan = new Vector3[3];
-            bitan = new Vector3[3];
-            pi = new int[3];
+            v = new Vertex[3] { new Vertex(), new Vertex(), new Vertex() };
+            vi = new uint[3];
         }
 
         public triangle(triangle tri)
         {
             gotPointNormals = tri.gotPointNormals;
-            p = new Vector3[tri.p.Length];
-            for (int p_ = 0; p_ < tri.p.Length; p_++)
-            {
-                p[p_] = tri.p[p_];
-            }
-            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
-            for (int p_ = 0; p_ < tri.p.Length; p_++)
-            {
-                n[p_] = tri.n[p_];
-            }
-            c = new Color4[tri.p.Length];
-            for (int c_ = 0; c_ < tri.p.Length; c_++)
-            {
-                c[c_] = tri.c[c_];
-            }
-            t = new Vec2d[tri.t.Length];
-            for (int t_ = 0; t_ < tri.t.Length; t_++)
-            {
-                t[t_] = tri.t[t_].GetCopy();
-            }
-            tan = new Vector3[3];
-            for (int tan_ = 0; tan_ < tri.tan.Length; tan_++)
-            {
-                tan[tan_] = tri.tan[tan_];
-            }
-            bitan = new Vector3[3];
-            for (int bitan_ = 0; bitan_ < tri.bitan.Length; bitan_++)
-            {
-                bitan[bitan_] = tri.bitan[bitan_];
-            }
-            pi = new int[3];
-            for (int pi_ = 0; pi_ < tri.pi.Length; pi_++)
-            {
-                pi[pi_] = tri.pi[pi_];
-            }
+
+            v = new Vertex[3] { tri.v[0], tri.v[1], tri.v[2] };
+            vi = new uint[3] { tri.vi[0], tri.vi[1], tri.vi[2] };
         }
 
         public triangle(Vector3[] p)
         {
             gotPointNormals = false;
-            this.p = new Vector3[p.Length];
-            for (int p_ = 0; p_ < p.Length; p_++)
-            {
-                this.p[p_] = p[p_];
-            }
-            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
-            c = new Color4[p.Length];
-            for (int c_ = 0; c_ < p.Length; c_++)
-            {
-                c[c_] = Color4.White;
-            }
 
-            t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
-            tan = new Vector3[3];
-            bitan = new Vector3[3];
-            pi = new int[3];
+            v = new Vertex[] { new Vertex(), new Vertex(), new Vertex() };
+            v[0].p = p[0];
+            v[1].p = p[1];
+            v[2].p = p[2];
+
+            vi = new uint[3];
         }
 
         public triangle(Vector3 p1, Vector3 p2, Vector3 p3)
         {
             gotPointNormals = false;
-            p = new Vector3[] { p1, p2, p3 };
-            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
-            c = new Color4[p.Length];
-            for (int c_ = 0; c_ < p.Length; c_++)
-            {
-                c[c_] = Color4.White;
-            }
 
-            t = new Vec2d[3] { new Vec2d(), new Vec2d(), new Vec2d() };
-            tan = new Vector3[3];
-            bitan = new Vector3[3];
-            pi = new int[3];
+            v = new Vertex[] { new Vertex(), new Vertex(), new Vertex() };
+            v[0].p = p1;
+            v[1].p = p2;
+            v[2].p = p3;
+
+            vi = new uint[3];
         }
 
         public triangle(Vector3[] p, Vec2d[] t)
         {
             gotPointNormals = false;
-            this.p = new Vector3[p.Length];
-            for (int p_ = 0; p_ < p.Length; p_++)
-            {
-                this.p[p_] = p[p_];
-            }
-            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
-            c = new Color4[p.Length];
-            for (int c_ = 0; c_ < p.Length; c_++)
-            {
-                c[c_] = Color4.White;
-            }
-            this.t = new Vec2d[t.Length];
-            for (int t_ = 0; t_ < t.Length; t_++)
-            {
-                this.t[t_] = t[t_].GetCopy();
-            }
-            tan = new Vector3[3];
-            bitan = new Vector3[3];
-            pi = new int[3];
+
+            v = new Vertex[] { new Vertex(), new Vertex(), new Vertex() };
+            v[0].p = p[0];
+            v[1].p = p[1];
+            v[2].p = p[2];
+
+            v[0].t = t[0];
+            v[1].t = t[1];
+            v[2].t = t[2];
+
+            vi = new uint[3];
         }
 
         public triangle(Vector3[] p, Vec2d[] t, Color4[] color)
         {
             gotPointNormals = false;
-            this.p = new Vector3[p.Length];
-            for (int p_ = 0; p_ < p.Length; p_++)
-            {
-                this.p[p_] = p[p_];
-            }
-            n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
-            c = new Color4[p.Length];
-            for (int c_ = 0; c_ < p.Length; c_++)
-            {
-                c[c_] = color[c_];
-            }
-            this.t = new Vec2d[t.Length];
-            for (int t_ = 0; t_ < t.Length; t_++)
-            {
-                this.t[t_] = t[t_].GetCopy();
-            }
-            tan = new Vector3[3];
-            bitan = new Vector3[3];
-            pi = new int[3];
+
+            v = new Vertex[] { new Vertex(), new Vertex(), new Vertex() };
+            v[0].p = p[0];
+            v[1].p = p[1];
+            v[2].p = p[2];
+
+            v[0].t = t[0];
+            v[1].t = t[1];
+            v[2].t = t[2];
+
+            v[0].c = color[0];
+            v[1].c = color[1];
+            v[2].c = color[2];
+
+            vi = new uint[3];
         }
 
         public triangle(Vector3[] p, Vector3[] n, Vec2d[] t)
         {
             gotPointNormals = true;
-            this.p = new Vector3[p.Length];
-            for (int p_ = 0; p_ < p.Length; p_++)
-            {
-                this.p[p_] = p[p_];
-            }
-            this.n = new Vector3[] { new Vector3(), new Vector3(), new Vector3() };
-            for (int p_ = 0; p_ < p.Length; p_++)
-            {
-                this.n[p_] = n[p_];
-            }
-            c = new Color4[p.Length];
-            for (int c_ = 0; c_ < p.Length; c_++)
-            {
-                c[c_] = Color4.White;
-            }
-            this.t = new Vec2d[t.Length];
-            for (int t_ = 0; t_ < t.Length; t_++)
-            {
-                this.t[t_] = t[t_].GetCopy();
-            }
-            tan = new Vector3[3];
-            bitan = new Vector3[3];
-            pi = new int[3];
+
+            v = new Vertex[] { new Vertex(), new Vertex(), new Vertex() };
+            v[0].p = p[0];
+            v[1].p = p[1];
+            v[2].p = p[2];
+
+            v[0].n = n[0];
+            v[1].n = n[1];
+            v[2].n = n[2];
+
+            v[0].t = t[0];
+            v[1].t = t[1];
+            v[2].t = t[2];
+
+            vi = new uint[3];
         }
 
-        public Vector3 GetMiddle()
+        public Vector3 GetCenter()
         {
-            return (p[0] + p[1] + p[2]) / 3;
+            return (v[0].p + v[1].p + v[2].p) / 3;
         }
 
         public void TransformPosition(Vector3 transform)
         {
-            p[0] += transform;
-            p[1] += transform;
-            p[2] += transform;
+            v[0].p += transform;
+            v[1].p += transform;
+            v[2].p += transform;
         }
 
         public float DistanceToCamera(Vector3 cameraPosition)
         {
-            return (GetMiddle() - cameraPosition).Length;
+            return (GetCenter() - cameraPosition).Length;
         }
 
         public Plane GetPlane()
         {
-            return new Plane(p[0], p[1], p[2]);
+            return new Plane(v[0].p, v[1].p, v[2].p);
         }
 
         public bool RayIntersects(Vector3 rayOrigin, Vector3 rayDir, out Vector3 intersection)
         {
             intersection = new Vector3();
 
-            Vector3 e1 = p[1] - p[0];
-            Vector3 e2 = p[2] - p[0];
+            Vector3 e1 = v[1].p - v[0].p;
+            Vector3 e2 = v[2].p - v[0].p;
             Vector3 h = Vector3.Cross(rayDir, e2);
             float a = Vector3.Dot(e1, h);
 
@@ -226,16 +150,16 @@ namespace Engine3D
                 return false;
 
             float f = 1.0f / a;
-            Vector3 s = rayOrigin - p[0];
+            Vector3 s = rayOrigin - v[0].p;
             float u = f * Vector3.Dot(s, h);
 
             if (u < 0.0f || u > 1.0f)
                 return false;
 
             Vector3 q = Vector3.Cross(s, e1);
-            float v = f * Vector3.Dot(rayDir, q);
+            float vdot = f * Vector3.Dot(rayDir, q);
 
-            if (v < 0.0f || u + v > 1.0f)
+            if (vdot < 0.0f || u + vdot > 1.0f)
                 return false;
 
             float t = f * Vector3.Dot(e2, q);
@@ -262,30 +186,30 @@ namespace Engine3D
 
         public void SetColor(Color4 c)
         {
-            for (int i = 0; i < this.c.Length; i++)
+            for (int i = 0; i < v.Length; i++)
             {
-                this.c[i] = c;
+                v[i].c = c;
             }
         }
 
         public void SetColor(triangle t)
         {
-            for (int i = 0; i < this.c.Length; i++)
+            for (int i = 0; i < v.Length; i++)
             {
-                this.c[i] = t.c[i];
+                v[i].c = t.v[i].c;
             }
         }
 
         public string GetPointsStr()
         {
-            return p[0].ToString() + p[1].ToString() + p[2].ToString();
+            return v[0].p.ToString() + v[1].p.ToString() + v[2].p.ToString();
         }
 
         public Vector3 ComputeTriangleNormal()
         {
             Vector3 normal, line1, line2;
-            line1 = p[1] - p[0];
-            line2 = p[2] - p[0];
+            line1 = v[1].p - v[0].p;
+            line2 = v[2].p - v[0].p;
 
             normal = Vector3.Cross(line1, line2);
             normal.Normalize();
@@ -294,9 +218,9 @@ namespace Engine3D
 
         public void ComputeTriangleNormal(ref Matrix4 transformMatrix)
         {
-            Vector3 p0 = Vector3.TransformPosition(p[0], transformMatrix);
-            Vector3 p1 = Vector3.TransformPosition(p[1], transformMatrix);
-            Vector3 p2 = Vector3.TransformPosition(p[2], transformMatrix);
+            Vector3 p0 = Vector3.TransformPosition(v[0].p, transformMatrix);
+            Vector3 p1 = Vector3.TransformPosition(v[1].p, transformMatrix);
+            Vector3 p2 = Vector3.TransformPosition(v[2].p, transformMatrix);
 
             Vector3 normal, line1, line2;
             line1 = p1 - p0;
@@ -304,9 +228,9 @@ namespace Engine3D
 
             normal = Vector3.Cross(line1, line2);
             normal.Normalize();
-            n[0] = normal;
-            n[1] = normal;
-            n[2] = normal;
+            v[0].n = normal;
+            v[1].n = normal;
+            v[2].n = normal;
         }
 
         public float GetAngleToNormal(Vector3 dir)
@@ -331,36 +255,17 @@ namespace Engine3D
         public triangle GetCopy()
         {
             triangle tri = new triangle();
-            tri.p[0] = p[0];
-            tri.p[1] = p[1];
-            tri.p[2] = p[2];
-            tri.n[0] = n[0];
-            tri.n[1] = n[1];
-            tri.n[2] = n[2];
-            tri.t[0] = t[0].GetCopy();
-            tri.t[1] = t[1].GetCopy();
-            tri.t[2] = t[2].GetCopy();
-            tri.c[0] = c[0];
-            tri.c[1] = c[1];
-            tri.c[2] = c[2];
-            tri.pi[0] = pi[0];
-            tri.pi[1] = pi[1];
-            tri.pi[2] = pi[2];
-            tri.tan[0] = tan[0];
-            tri.tan[1] = tan[1];
-            tri.tan[2] = tan[2];
-            tri.bitan[0] = bitan[0];
-            tri.bitan[1] = bitan[1];
-            tri.bitan[2] = bitan[2];
-            tri.gotPointNormals = gotPointNormals;
+            tri.v[0] = v[0];
+            tri.v[1] = v[1];
+            tri.v[2] = v[2];
 
             return tri;
         }
 
         public int CompareTo(triangle tri)
         {
-            double z1 = (p[0].Z + p[1].Z + p[2].Z) / 3.0f;
-            double z2 = (tri.p[0].Z + tri.p[1].Z + tri.p[2].Z) / 3.0f;
+            double z1 = (v[0].p.Z + v[1].p.Z + v[2].p.Z) / 3.0f;
+            double z2 = (tri.v[0].p.Z + tri.v[1].p.Z + tri.v[2].p.Z) / 3.0f;
 
             if (z1 < z2)
                 return 1;
@@ -372,9 +277,9 @@ namespace Engine3D
 
         public bool IsPointInTriangle(Vector3 p, out float distance)
         {
-            Vector3 a = this.p[0];
-            Vector3 b = this.p[1];
-            Vector3 c = this.p[2];
+            Vector3 a = this.v[0].p;
+            Vector3 b = this.v[1].p;
+            Vector3 c = this.v[2].p;
 
             Vector3 normal = Vector3.Cross(b - a, c - a).Normalized();
             distance = Vector3.Dot(normal, p - a);
@@ -398,10 +303,10 @@ namespace Engine3D
 
         public bool IsLineInTriangle(Line line)
         {
-            Vector3 normal = Vector3.Cross(p[1] - p[0], p[2] - p[0]);
+            Vector3 normal = Vector3.Cross(v[1].p - v[0].p, v[2].p - v[0].p);
 
             // Find intersection of line and triangle's plane
-            float dotNumerator = Vector3.Dot(p[0] - line.Start, normal);
+            float dotNumerator = Vector3.Dot(v[0].p - line.Start, normal);
             float dotDenominator = Vector3.Dot(line.End - line.Start, normal);
 
             // Check if line and plane are parallel
@@ -414,7 +319,7 @@ namespace Engine3D
             Vector3 intersectionPoint = line.Start + t * (line.End - line.Start);
 
             // Check if the intersection point lies within the triangle
-            return PointInTriangle(intersectionPoint, p[0], p[1], p[2]);
+            return PointInTriangle(intersectionPoint, v[0].p, v[1].p, v[2].p);
         }
 
         private bool PointInTriangle(Vector3 pt, Vector3 v1, Vector3 v2, Vector3 v3)
@@ -435,7 +340,8 @@ namespace Engine3D
 
             foreach (Vector3 axis in potentialSeparatingAxes)
             {
-                if (!IsOverlapping(Projection(rectangleVertices, axis), Projection(p.ToList(), axis)))
+                List<Vector3> vertices = v.Select(x => x.p).ToList();
+                if (!IsOverlapping(Projection(rectangleVertices, axis), Projection(vertices, axis)))
                     return false; // Separating axis found
             }
 
@@ -447,7 +353,7 @@ namespace Engine3D
             List<Vector3> axes = new List<Vector3>();
 
             // Triangle normal
-            Vector3 triangleNormal = Vector3.Cross(p[1] - p[0], p[2] - p[0]);
+            Vector3 triangleNormal = Vector3.Cross(v[1].p - v[0].p, v[2].p - v[0].p);
             axes.Add(triangleNormal.Normalized());
 
             // Rectangle normals (parallelogram)
@@ -456,9 +362,9 @@ namespace Engine3D
             axes.Add(Vector3.Cross(edge1, edge2).Normalized());
 
             // Cross products of edges
-            Vector3 triangleEdge1 = p[1] - p[0];
-            Vector3 triangleEdge2 = p[2] - p[1];
-            Vector3 triangleEdge3 = p[0] - p[2];
+            Vector3 triangleEdge1 = v[1].p - v[0].p;
+            Vector3 triangleEdge2 = v[2].p - v[1].p;
+            Vector3 triangleEdge3 = v[0].p - v[2].p;
             Vector3[] triangleEdges = { triangleEdge1, triangleEdge2, triangleEdge3 };
 
             for (int i = 0; i < triangleEdges.Length; i++)
@@ -502,7 +408,7 @@ namespace Engine3D
             penetration_depth = 0.0f;
 
             Vector3 normal = ComputeTriangleNormal();
-            float d = Vector3.Dot(normal, p[0]);
+            float d = Vector3.Dot(normal, v[0].p);
 
             // Project point onto triangle plane
             float t = (Vector3.Dot(normal, sphere.Position) - d) / Vector3.Dot(normal, normal);
@@ -533,8 +439,8 @@ namespace Engine3D
 
             for (int i = 0; i < 3; i++)
             {
-                Vector3 segmentStart = p[i];
-                Vector3 segmentEnd = p[(i + 1) % 3];
+                Vector3 segmentStart = v[i].p;
+                Vector3 segmentEnd = v[(i + 1) % 3].p;
                 Vector3 closestOnSegment = ClosestPointOnSegment(segmentStart, segmentEnd, sphere.Position);
                 float distance = (closestOnSegment - sphere.Position).LengthSquared;
 
@@ -581,19 +487,19 @@ namespace Engine3D
             Vector3 A = aBase + LineEndOffset;
             Vector3 B = aTip - LineEndOffset;
 
-            Vector3 N = Vector3.Normalize(Vector3.Cross(p[1] - p[0], p[2] - p[0])); // plane normal
+            Vector3 N = Vector3.Normalize(Vector3.Cross(v[1].p - v[0].p, v[2].p - v[0].p)); // plane normal
 
             // Then for each triangle, ray-plane intersection:
             //  N is the triangle plane normal (it was computed in sphere – triangle intersection case)
-            float t = Vector3.Dot(N, (p[0] - aBase) / Math.Abs(Vector3.Dot(N, CapsuleNormal)));
+            float t = Vector3.Dot(N, (v[0].p - aBase) / Math.Abs(Vector3.Dot(N, CapsuleNormal)));
             Vector3 line_plane_intersection = aBase + CapsuleNormal * t;
 
             Vector3 reference_point = new Vector3();
 
             // Determine whether line_plane_intersection is inside all triangle edges: 
-            Vector3 c0 = Vector3.Cross(line_plane_intersection - p[0], p[1] - p[0]);
-            Vector3 c1 = Vector3.Cross(line_plane_intersection - p[1], p[2] - p[1]);
-            Vector3 c2 = Vector3.Cross(line_plane_intersection - p[2], p[0] - p[2]);
+            Vector3 c0 = Vector3.Cross(line_plane_intersection - v[0].p, v[1].p - v[0].p);
+            Vector3 c1 = Vector3.Cross(line_plane_intersection - v[1].p, v[2].p - v[1].p);
+            Vector3 c2 = Vector3.Cross(line_plane_intersection - v[2].p, v[0].p - v[2].p);
             bool inside = Vector3.Dot(c0, N) <= 0 && Vector3.Dot(c1, N) <= 0 && Vector3.Dot(c2, N) <= 0;
 
             if (inside)
@@ -603,14 +509,14 @@ namespace Engine3D
             else
             {
                 // Edge 1:
-                Vector3 point1 = Line.ClosestPointOnLineSegment(p[0], p[1], line_plane_intersection);
+                Vector3 point1 = Line.ClosestPointOnLineSegment(v[0].p, v[1].p, line_plane_intersection);
                 Vector3 v1 = line_plane_intersection - point1;
                 float distsq = Vector3.Dot(v1, v1);
                 float best_dist = distsq;
                 reference_point = point1;
 
                 // Edge 2:
-                Vector3 point2 = Line.ClosestPointOnLineSegment(p[1], p[2], line_plane_intersection);
+                Vector3 point2 = Line.ClosestPointOnLineSegment(v[1].p, v[2].p, line_plane_intersection);
                 Vector3 v2 = line_plane_intersection - point2;
                 distsq = Vector3.Dot(v2, v2);
                 if (distsq < best_dist)
@@ -620,7 +526,7 @@ namespace Engine3D
                 }
 
                 // Edge 3:
-                Vector3 point3 = Line.ClosestPointOnLineSegment(p[2], p[0], line_plane_intersection);
+                Vector3 point3 = Line.ClosestPointOnLineSegment(v[2].p, v[0].p, line_plane_intersection);
                 Vector3 v3 = line_plane_intersection - point3;
                 distsq = Vector3.Dot(v3, v3);
                 if (distsq < best_dist)
@@ -644,13 +550,13 @@ namespace Engine3D
                 return false;
 
             triangle other = (triangle)obj;
-            return p[0] == other.p[0] && p[1] == other.p[1] && p[2] == other.p[2];
+            return v[0].p == other.v[0].p && v[1].p == other.v[1].p && v[2].p == other.v[2].p;
         }
 
         public override int GetHashCode()
         {
             // Here's a simple way to get a hash code, but you might want to refine this for better distribution.
-            return p[0].GetHashCode() ^ p[1].GetHashCode() ^ p[2].GetHashCode();
+            return v[0].p.GetHashCode() ^ v[1].p.GetHashCode() ^ v[2].p.GetHashCode();
         }
 
         public static bool operator ==(triangle t1, triangle t2)

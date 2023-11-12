@@ -24,7 +24,6 @@ namespace Engine3D
         TriangleMesh,
         TriangleMeshWithCollider,
         TestMesh,
-        NoTexture,
         Wireframe,
         TextMesh,
         UIMesh,
@@ -493,8 +492,7 @@ namespace Engine3D
         {
             //Calculating bounding volume hiearchy
             if (meshType == typeof(Mesh) ||
-                meshType == typeof(InstancedMesh) ||
-                meshType == typeof(NoTextureMesh))
+                meshType == typeof(InstancedMesh))
             {
                 mesh.BVHStruct = new BVH(mesh.tris);
             }
@@ -608,7 +606,6 @@ namespace Engine3D
                 ObjectType.Capsule,
                 ObjectType.TriangleMesh,
                 ObjectType.TestMesh,
-                ObjectType.NoTexture,
                 ObjectType.Wireframe,
                 ObjectType.TextMesh,
                 ObjectType.UIMesh

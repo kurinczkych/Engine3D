@@ -19,22 +19,22 @@ namespace Engine3D
                     GL.Clear(ClearBufferMask.DepthBufferBit);
                     shaderProgram.Use();
 
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.meshType == typeof(InstancedMesh))
-                    {
-                        editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
-                                                                 o.Rotation);
-                        // TODO
-                    }
-                    else
-                        editorData.gizmoManager.UpdateMoverGizmo(o.Position, o.Rotation);
-                    vertices.Clear();
-                    foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
-                    {
-                        vertices.AddRange(((Mesh)moverGizmo.GetMesh()).Draw(editorData.gameRunning));
-                    }
-                    meshVbo.Buffer(vertices);
-                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                    vertices.Clear();
+                    //if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.meshType == typeof(InstancedMesh))
+                    //{
+                    //    editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
+                    //                                             o.Rotation);
+                    //    // TODO
+                    //}
+                    //else
+                    //    editorData.gizmoManager.UpdateMoverGizmo(o.Position, o.Rotation);
+                    //vertices.Clear();
+                    //foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
+                    //{
+                    //    vertices.AddRange(((Mesh)moverGizmo.GetMesh()).Draw(editorData.gameRunning));
+                    //}
+                    //meshVbo.Buffer(vertices);
+                    //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                    //vertices.Clear();
                 }
             }
         }

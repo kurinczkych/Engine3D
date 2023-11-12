@@ -7,10 +7,8 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
-    public class Vec2d
+    public struct Vec2d
     {
-        public Vec2d() { }
-
         public Vec2d(float u, float v)
         {
             this.u = u;
@@ -28,6 +26,11 @@ namespace Engine3D
             Vec2d v2 = new Vec2d(u, v);
             v2.w = w;
             return v2;
+        }
+
+        public static Vec2d Zero
+        {
+            get { return new Vec2d(0.0f, 0.0f); }
         }
     }
 }

@@ -113,7 +113,7 @@ namespace Engine3D
                 // 1. Compute bin boundaries
                 foreach (var tri in triangles)
                 {
-                    float centroidPos = (tri.p[0][axis] + tri.p[1][axis] + tri.p[2][axis]) / 3.0f;
+                    float centroidPos = (tri.v[0].p[axis] + tri.v[1].p[axis] + tri.v[2].p[axis]) / 3.0f;
                     minCentroid = Math.Min(minCentroid, centroidPos);
                     maxCentroid = Math.Max(maxCentroid, centroidPos);
                 }
@@ -130,7 +130,7 @@ namespace Engine3D
                 // 2. Map triangle centroids to bins
                 foreach (var tri in triangles)
                 {
-                    float centroidPos = (tri.p[0][axis] + tri.p[1][axis] + tri.p[2][axis]) / 3.0f;
+                    float centroidPos = (tri.v[0].p[axis] + tri.v[1].p[axis] + tri.v[2].p[axis]) / 3.0f;
                     int binIndex = (int)((centroidPos - minCentroid) / binSize);
                     binIndex = Math.Max(binIndex, 0);  // Ensure it's not negative
                     binIndex = Math.Min(binIndex, NUM_BINS - 1);  // Clamp to the max index
@@ -183,7 +183,7 @@ namespace Engine3D
 
             foreach (var tri in triangles)
             {
-                float centroidPos = (tri.p[0][splitAxis] + tri.p[1][splitAxis] + tri.p[2][splitAxis]) / 3.0f;
+                float centroidPos = (tri.v[0].p[splitAxis] + tri.v[1].p[splitAxis] + tri.v[2].p[splitAxis]) / 3.0f;
                 if (centroidPos <= splitPosition)
                     leftTriangles.Add(tri);
                 else

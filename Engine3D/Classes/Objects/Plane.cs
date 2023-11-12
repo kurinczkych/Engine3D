@@ -40,8 +40,8 @@ namespace Engine3D
 
         public Plane(triangle tri)
         {
-            normal = Vector3.Cross(tri.p[1] - tri.p[0], tri.p[2] - tri.p[0]).Normalized();
-            distance = -Vector3.Dot(normal, tri.p[0]);
+            normal = Vector3.Cross(tri.v[1].p - tri.v[0].p, tri.v[2].p - tri.v[0].p).Normalized();
+            distance = -Vector3.Dot(normal, tri.v[0].p);
         }
 
         public Plane(Vector3 normal, Vector3 position)

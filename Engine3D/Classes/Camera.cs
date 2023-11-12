@@ -165,9 +165,9 @@ namespace Engine3D
         public bool IsTriangleClose(triangle tri)
         {
             float dist = float.PositiveInfinity;
-            foreach (var point in tri.p)
+            foreach (var vertex in tri.v)
             {
-                float ddist = (position - point).Length;
+                float ddist = (position - vertex.p).Length;
                 if (ddist < dist)
                     dist = ddist;
             }
@@ -189,9 +189,9 @@ namespace Engine3D
             float dist = float.PositiveInfinity;
             foreach(triangle triangle in tris)
             {
-                foreach (var point in triangle.p)
+                foreach (var vertex in triangle.v)
                 {
-                    float ddist = (position - point).Length;
+                    float ddist = (position - vertex.p).Length;
                     if (ddist < dist)
                         dist = ddist;
                 }
@@ -290,7 +290,7 @@ namespace Engine3D
                 if (triangle.IsPointInTriangle(position, out float distanceToTriangle))
                 {
                     // Compute the triangle's normal.
-                    Vector3 normal = Vector3.Cross(triangle.p[1] - triangle.p[0], triangle.p[2] - triangle.p[0]).Normalized();
+                    Vector3 normal = Vector3.Cross(triangle.v[1].p - triangle.v[0].p, triangle.v[2].p - triangle.v[0].p).Normalized();
 
                     // Adjust the character's position based on the triangle's normal and the computed distance.
                     position -= normal * (distanceToTriangle - offsetHeight);

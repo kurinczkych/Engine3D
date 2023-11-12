@@ -227,26 +227,26 @@ namespace Engine3D
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
-        private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
-        {
-            vertices.AddRange(new float[]
-                {
-                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v,
-                    tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-                    tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
-                });
-        }
+        //private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
+        //{
+        //    vertices.AddRange(new float[]
+        //        {
+        //            tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+        //            tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
+        //            tri.t[index].u, tri.t[index].v,
+        //            tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
+        //            tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
+        //        });
+        //}
 
-        private void ConvertToNDCOnlyPosAndNormal(ref List<float> vertices, triangle tri, int index)
-        {
-            vertices.AddRange(new float[]
-            {
-                tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-                tri.n[index].X, tri.n[index].Y, tri.n[index].Z
-            });
-        }
+        //private void ConvertToNDCOnlyPosAndNormal(ref List<float> vertices, triangle tri, int index)
+        //{
+        //    vertices.AddRange(new float[]
+        //    {
+        //        tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+        //        tri.n[index].X, tri.n[index].Y, tri.n[index].Z
+        //    });
+        //}
 
         private void ConvertToNDCInstance(ref List<float> vertices, InstancedMeshData data)
         {
@@ -259,25 +259,25 @@ namespace Engine3D
             });
         }
 
-        private void AddVertices(List<float> vertices, triangle tri)
-        {
-            lock (vertices) // Lock to ensure thread-safety when modifying the list
-            {
-                ConvertToNDC(ref vertices, tri, 0);
-                ConvertToNDC(ref vertices, tri, 1);
-                ConvertToNDC(ref vertices, tri, 2);
-            }
-        }
+        //private void AddVertices(List<float> vertices, triangle tri)
+        //{
+        //    lock (vertices) // Lock to ensure thread-safety when modifying the list
+        //    {
+        //        ConvertToNDC(ref vertices, tri, 0);
+        //        ConvertToNDC(ref vertices, tri, 1);
+        //        ConvertToNDC(ref vertices, tri, 2);
+        //    }
+        //}
 
-        private void AddVerticesOnlyPosAndNormal(List<float> vertices, triangle tri)
-        {
-            lock (vertices) // Lock to ensure thread-safety when modifying the list
-            {
-                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 0);
-                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 1);
-                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 2);
-            }
-        }
+        //private void AddVerticesOnlyPosAndNormal(List<float> vertices, triangle tri)
+        //{
+        //    lock (vertices) // Lock to ensure thread-safety when modifying the list
+        //    {
+        //        ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 0);
+        //        ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 1);
+        //        ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 2);
+        //    }
+        //}
 
         public (List<float>, List<float>) Draw(GameState gameRunning)
         {
@@ -330,24 +330,24 @@ namespace Engine3D
                 tris = parentObject.GridStructure.GetTriangles(camera);
             }
 
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(tris, parallelOptions,
-                 () => new List<float>(),
-                 (tri, loopState, localVertices) =>
-                 {
-                     if (tri.visibile)
-                     {
-                         AddVertices(localVertices, tri);
-                     }
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (vertices)
-                     {
-                         vertices.AddRange(localVertices);
-                     }
-                 });
+            //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            //Parallel.ForEach(tris, parallelOptions,
+            //     () => new List<float>(),
+            //     (tri, loopState, localVertices) =>
+            //     {
+            //         if (tri.visibile)
+            //         {
+            //             AddVertices(localVertices, tri);
+            //         }
+            //         return localVertices;
+            //     },
+            //     localVertices =>
+            //     {
+            //         lock (vertices)
+            //         {
+            //             vertices.AddRange(localVertices);
+            //         }
+            //     });
 
             SendUniforms();
 
@@ -366,20 +366,20 @@ namespace Engine3D
                     parentObject.textureMetal.Bind();
             }
 
-            Parallel.ForEach(instancedData, parallelOptions,
-                 () => new List<float>(),
-                 (instancedData, loopState, localVertices) =>
-                 {
-                     ConvertToNDCInstance(ref localVertices, instancedData);
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (instancedVertices)
-                     {
-                         instancedVertices.AddRange(localVertices);
-                     }
-                 });
+            //Parallel.ForEach(instancedData, parallelOptions,
+            //     () => new List<float>(),
+            //     (instancedData, loopState, localVertices) =>
+            //     {
+            //         ConvertToNDCInstance(ref localVertices, instancedData);
+            //         return localVertices;
+            //     },
+            //     localVertices =>
+            //     {
+            //         lock (instancedVertices)
+            //         {
+            //             instancedVertices.AddRange(localVertices);
+            //         }
+            //     });
 
             return (vertices, instancedVertices);
         }
@@ -411,41 +411,41 @@ namespace Engine3D
 
             ObjectType type = parentObject.GetObjectType();
 
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(tris, parallelOptions,
-                 () => new List<float>(),
-                 (tri, loopState, localVertices) =>
-                 {
-                     if (tri.visibile)
-                     {
-                         AddVerticesOnlyPosAndNormal(localVertices, tri);
-                     }
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (verticesOnlyPosAndNormal)
-                     {
-                         verticesOnlyPosAndNormal.AddRange(localVertices);
-                     }
-                 });
+            //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            //Parallel.ForEach(tris, parallelOptions,
+            //     () => new List<float>(),
+            //     (tri, loopState, localVertices) =>
+            //     {
+            //         if (tri.visibile)
+            //         {
+            //             AddVerticesOnlyPosAndNormal(localVertices, tri);
+            //         }
+            //         return localVertices;
+            //     },
+            //     localVertices =>
+            //     {
+            //         lock (verticesOnlyPosAndNormal)
+            //         {
+            //             verticesOnlyPosAndNormal.AddRange(localVertices);
+            //         }
+            //     });
 
             SendUniformsOnlyPos(shader);
 
-            Parallel.ForEach(instancedData, parallelOptions,
-                 () => new List<float>(),
-                 (instancedData, loopState, localVertices) =>
-                 {
-                     ConvertToNDCInstance(ref localVertices, instancedData);
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (instancedVertices)
-                     {
-                         instancedVertices.AddRange(localVertices);
-                     }
-                 });
+            //Parallel.ForEach(instancedData, parallelOptions,
+            //     () => new List<float>(),
+            //     (instancedData, loopState, localVertices) =>
+            //     {
+            //         ConvertToNDCInstance(ref localVertices, instancedData);
+            //         return localVertices;
+            //     },
+            //     localVertices =>
+            //     {
+            //         lock (instancedVertices)
+            //         {
+            //             instancedVertices.AddRange(localVertices);
+            //         }
+            //     });
 
             return (verticesOnlyPosAndNormal, instancedVertices);
         }

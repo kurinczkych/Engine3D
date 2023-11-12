@@ -115,7 +115,7 @@ namespace Engine3D
 
             foreach (triangle triangle in tris)
             {
-                Vector3 center = triangle.GetMiddle();
+                Vector3 center = triangle.GetCenter();
                 Vector3i index = GetIndex(center);
                 Grid[index.X, index.Y, index.Z].Add(triangle);
             }

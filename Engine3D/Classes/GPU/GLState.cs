@@ -17,7 +17,10 @@ namespace Engine3D
 
         // VBO
         public BufferTarget? vboTarget;
-        public int vboBound;
+        public int vboBound = -1;
+
+        // IBO
+        public int iboBound = -1;
 
         //Texture
         public int currentTextureUnit = -1;

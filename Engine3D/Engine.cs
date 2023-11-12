@@ -66,15 +66,13 @@ namespace Engine3D
 
         private VAO meshVao;
         private VBO meshVbo;
+        private IBO meshIbo;
 
         private InstancedVAO instancedMeshVao;
         private VBO instancedMeshVbo;
 
         private VAO textVao;
         private VBO textVbo;
-
-        private VAO noTexVao;
-        private VBO noTexVbo;
 
         private VAO uiTexVao;
         private VBO uiTexVbo;
@@ -419,6 +417,7 @@ namespace Engine3D
             onlyPosAndNormalVao.LinkToVAO(0, 3, onlyPosAndNormalVbo);
             onlyPosAndNormalVao.LinkToVAO(1, 3, onlyPosAndNormalVbo);
 
+            meshIbo = new IBO();
             meshVbo = new VBO();
             meshVao = new VAO(Mesh.floatCount);
             meshVao.LinkToVAO(0, 3, meshVbo);
@@ -458,11 +457,6 @@ namespace Engine3D
             textVao.LinkToVAO(0, 4, textVbo);
             textVao.LinkToVAO(1, 4, textVbo);
             textVao.LinkToVAO(2, 2, textVbo);
-
-            noTexVbo = new VBO();
-            noTexVao = new VAO(NoTextureMesh.floatCount);
-            noTexVao.LinkToVAO(0, 4, noTexVbo);
-            noTexVao.LinkToVAO(1, 4, noTexVbo);
 
             uiTexVbo = new VBO();
             uiTexVao = new VAO(UITextureMesh.floatCount);
@@ -684,7 +678,6 @@ namespace Engine3D
 
             GL.DeleteVertexArray(meshVao.id);
             GL.DeleteVertexArray(textVao.id);
-            GL.DeleteVertexArray(noTexVao.id);
             GL.DeleteVertexArray(uiTexVao.id);
             GL.DeleteVertexArray(wireVao.id);
 

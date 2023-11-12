@@ -72,7 +72,7 @@ namespace Engine3D
 
         private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
         {
-            Vector3 v = Vector3.TransformPosition(tri.p[index], transformMatrix);
+            Vector3 v = Vector3.TransformPosition(tri.v[index].p, transformMatrix);
 
             float x = (2.0f * v.X / windowSize.X) - 1.0f;
             float y = (2.0f * v.Y / windowSize.Y) - 1.0f;
@@ -80,8 +80,8 @@ namespace Engine3D
             List<float> result = new List<float>()
             {
                 x, y, -1.0f, 1.0f,
-                tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-                tri.t[index].u, tri.t[index].v
+                tri.v[index].c.R, tri.v[index].c.G, tri.v[index].c.B, tri.v[index].c.A,
+                tri.v[index].t.u, tri.v[index].t.v
             };
 
             return result;

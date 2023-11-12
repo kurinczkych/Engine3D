@@ -67,7 +67,7 @@ namespace Engine3D
         {
             for (int i = 0; i < 3; i++)
             {
-                if (IsInside(tri.p[i]))
+                if (IsInside(tri.v[i].p))
                     return true;
             }
             return false;

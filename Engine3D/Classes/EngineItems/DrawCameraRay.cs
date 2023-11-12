@@ -33,18 +33,18 @@ namespace Engine3D
 
             if (pos_ != null)
             {
-                Vector3 pos = (Vector3)pos_;
-                pos.Y = 0;
+                //Vector3 pos = (Vector3)pos_;
+                //pos.Y = 0;
 
-                shaderProgram.Use();
-                Object o = new Object(ObjectType.Sphere);
-                Mesh mesh = new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", Object.GetUnitSphere(), "red_t.png", windowSize, ref character.camera, ref o);
-                o.Position = pos;
-                mesh.RecalculateModelMatrix(new bool[3] { true, false, false });
+                //shaderProgram.Use();
+                //Object o = new Object(ObjectType.Sphere);
+                //Mesh mesh = new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", Object.GetUnitSphere(), "red_t.png", windowSize, ref character.camera, ref o);
+                //o.Position = pos;
+                //mesh.RecalculateModelMatrix(new bool[3] { true, false, false });
 
-                vertices = mesh.Draw(editorData.gameRunning);
-                meshVbo.Buffer(vertices);
-                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                //vertices = mesh.Draw(editorData.gameRunning);
+                //meshVbo.Buffer(vertices);
+                //GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
             }
 
         }

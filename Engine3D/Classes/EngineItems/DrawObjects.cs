@@ -72,10 +72,13 @@ namespace Engine3D
                                     GL.StencilMask(0xFF);
                                 }
 
-
-                                vertices.AddRange(mesh.Draw(editorData.gameRunning));
-                                meshVbo.Buffer(vertices);
-                                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                                List<uint> indices = new List<uint>();
+                                List<float> asd = new List<float>();
+                                (asd, indices) = mesh.Draw(editorData.gameRunning);
+                                meshVbo.Buffer(asd);
+                                meshIbo.Buffer(indices);
+                                GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
+                                //GL.DrawArrays(PrimitiveType.Triangles, 0, asd.Count);
                                 vertices.Clear();
 
                                 // OUTLINING
@@ -157,21 +160,6 @@ namespace Engine3D
                         }
                     }
                 }
-                else if (objectType == ObjectType.NoTexture)
-                {
-                    NoTextureMesh mesh = (NoTextureMesh)o.GetMesh();
-
-                    if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(NoTextureMesh) : currentMeshType, typeof(NoTextureMesh), null))
-                        vertices = new List<float>();
-
-                    if (currentMeshType == null || currentMeshType != mesh.GetType())
-                    {
-                        onlyPosShaderProgram.Use();
-                    }
-
-                    vertices.AddRange(mesh.Draw(editorData.gameRunning));
-                    currentMeshType = typeof(NoTextureMesh);
-                }
                 else if (objectType == ObjectType.Wireframe)
                 {
                     WireframeMesh mesh = (WireframeMesh)o.GetMesh();
@@ -241,10 +229,6 @@ namespace Engine3D
             if (prevMeshType == typeof(InstancedMesh) && prevMeshType != currentMeshType)
             {
                 instancedMeshVbo.Buffer(vertices);
-            }
-            else if (prevMeshType == typeof(NoTextureMesh) && prevMeshType != currentMeshType)
-            {
-                noTexVbo.Buffer(vertices);
             }
             else if (prevMeshType == typeof(WireframeMesh) && prevMeshType != currentMeshType)
             {

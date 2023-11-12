@@ -22,9 +22,9 @@ namespace Engine3D
         {
             set
             {
-                _position = value;
-                if(mesh != null)
-                    mesh.Position = value;
+                //_position = value;
+                //if(mesh != null)
+                //    mesh.Position = value;
             }
             get
             {
@@ -56,7 +56,7 @@ namespace Engine3D
         public int specularLoc;
         public Vector3 specular;
 
-        public NoTextureMesh mesh;
+        public Mesh mesh;
 
         public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Camera camera, VAO meshVao, VBO meshVbo, int meshShaderProgramId, int i, ref Object parentObject)
         {
@@ -98,13 +98,13 @@ namespace Engine3D
             return pl;
         }
 
-        public static NoTextureMesh GetMesh(PointLight pointLight, VAO vao, VBO vbo, int shaderProgramId, ref Camera camera, ref Object parentObject)
+        public static Mesh GetMesh(PointLight pointLight, VAO vao, VBO vbo, int shaderProgramId, ref Camera camera, ref Object parentObject)
         {
-            NoTextureMesh mesh = new NoTextureMesh(vao, vbo, shaderProgramId, "sphereSmall.obj", ref camera, pointLight.color, ref parentObject);
-            mesh.Position = pointLight.Position;
-            mesh.Scale = new Vector3(0.5f,0.5f,0.5f);
+            //Mesh mesh = new Mesh(vao, vbo, shaderProgramId, "sphereSmall.obj", ref camera, pointLight.color, ref parentObject);
+            //mesh.Position = pointLight.Position;
+            //mesh.Scale = new Vector3(0.5f, 0.5f, 0.5f);
 
-            return mesh;
+            return null;
         }
 
         public static void SendToGPU(ref List<PointLight> pointLights, int shaderProgramId, GameState gameRunning)

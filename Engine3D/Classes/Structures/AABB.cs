@@ -44,23 +44,23 @@ namespace Engine3D
         public int ContainPoints(triangle triangle)
         {
             int count = 0;
-            if (IsPointInsideAABB(triangle.p[0])) count++;
-            if (IsPointInsideAABB(triangle.p[1])) count++;
-            if (IsPointInsideAABB(triangle.p[2])) count++;
+            if (IsPointInsideAABB(triangle.v[0].p)) count++;
+            if (IsPointInsideAABB(triangle.v[1].p)) count++;
+            if (IsPointInsideAABB(triangle.v[2].p)) count++;
             return count;
         }
 
         public bool Contains(triangle triangle)
         {
-            return IsPointInsideAABB(triangle.p[0]) && IsPointInsideAABB(triangle.p[1]) && IsPointInsideAABB(triangle.p[2]);
+            return IsPointInsideAABB(triangle.v[0].p) && IsPointInsideAABB(triangle.v[1].p) && IsPointInsideAABB(triangle.v[2].p);
         }
 
         public void Enclose(triangle tri)
         {
             for (int i = 0; i < 3; i++)
             {
-                Min = Helper.Vector3Min(Min, tri.p[i]);
-                Max = Helper.Vector3Max(Max, tri.p[i]);
+                Min = Helper.Vector3Min(Min, tri.v[i].p);
+                Max = Helper.Vector3Max(Max, tri.v[i].p);
             }
         }
 

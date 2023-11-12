@@ -170,23 +170,23 @@ namespace Engine3D
             SendUniforms();
         }
 
-        private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
-        {
-            vertices.AddRange(new float[]
-                {
-                    tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-                    tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-                    tri.t[index].u, tri.t[index].v,
-                    tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-                    tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
-                });
-        }
+        //private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
+        //{
+        //    vertices.AddRange(new float[]
+        //        {
+        //            tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+        //            tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
+        //            tri.t[index].u, tri.t[index].v,
+        //            tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
+        //            tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
+        //        });
+        //}
 
         private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index)
         {
             vertices.AddRange(new float[]
             {
-                tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
+                tri.v[index].p.X, tri.v[index].p.Y, tri.v[index].p.Z,
             });
         }
 
@@ -194,8 +194,8 @@ namespace Engine3D
         {
             vertices.AddRange(new float[]
             {
-                tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-                tri.n[index].X, tri.n[index].Y, tri.n[index].Z
+                tri.v[index].p.X, tri.v[index].p.Y, tri.v[index].p.Z,
+                tri.v[index].n.X, tri.v[index].n.Y, tri.v[index].n.Z
             });
         }
 
@@ -312,15 +312,15 @@ namespace Engine3D
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
-        private void AddVertices(List<float> vertices, triangle tri)
-        {
-            lock (vertices) // Lock to ensure thread-safety when modifying the list
-            {
-                ConvertToNDC(ref vertices, tri, 0);
-                ConvertToNDC(ref vertices, tri, 1);
-                ConvertToNDC(ref vertices, tri, 2);
-            }
-        }
+        //private void AddVertices(List<float> vertices, triangle tri)
+        //{
+        //    lock (vertices) // Lock to ensure thread-safety when modifying the list
+        //    {
+        //        ConvertToNDC(ref vertices, tri, 0);
+        //        ConvertToNDC(ref vertices, tri, 1);
+        //        ConvertToNDC(ref vertices, tri, 2);
+        //    }
+        //}
 
         private void AddVerticesOnlyPos(List<float> vertices, triangle tri)
         {
@@ -342,85 +342,81 @@ namespace Engine3D
             }
         }
 
-        public List<float> Draw(GameState gameRunning)
+        public (List<float>, List<uint>) Draw(GameState gameRunning)
         {
             if (!parentObject.isEnabled)
-                return new List<float>();
+                return (new List<float>(), new List<uint>());
 
             Vao.Bind();
 
-            if (!recalculate)
-            {
-                if (gameRunning == GameState.Stopped && vertices.Count > 0)
-                {
-                    SendUniforms();
+            //if (!recalculate)
+            //{
+            //    if (gameRunning == GameState.Stopped && visibleIndices.Count > 0)
+            //    {
+            //        SendUniforms();
 
-                    if (parentObject.texture != null)
-                    {
-                        parentObject.texture.Bind();
-                        if (parentObject.textureNormal != null)
-                            parentObject.textureNormal.Bind();
-                        if (parentObject.textureHeight != null)
-                            parentObject.textureHeight.Bind();
-                        if (parentObject.textureAO != null)
-                            parentObject.textureAO.Bind();
-                        if (parentObject.textureRough != null)
-                            parentObject.textureRough.Bind();
-                        if (parentObject.textureMetal != null)
-                            parentObject.textureMetal.Bind();
-                    }
+            //        if (parentObject.texture != null)
+            //        {
+            //            parentObject.texture.Bind();
+            //            if (parentObject.textureNormal != null)
+            //                parentObject.textureNormal.Bind();
+            //            if (parentObject.textureHeight != null)
+            //                parentObject.textureHeight.Bind();
+            //            if (parentObject.textureAO != null)
+            //                parentObject.textureAO.Bind();
+            //            if (parentObject.textureRough != null)
+            //                parentObject.textureRough.Bind();
+            //            if (parentObject.textureMetal != null)
+            //                parentObject.textureMetal.Bind();
+            //        }
 
-                    return vertices;
-                }
-            }
-            else
-            {
-                recalculate = false;
-                CalculateFrustumVisibility();
-            }
+            //        return (flattenedVertices, visibleIndices);
+            //    }
+            //}
+            //else
+            //{
+            //    recalculate = false;
+            //    CalculateFrustumVisibility();
+            //}
 
-            vertices = new List<float>();
             if (parentObject.isSelected)
                 verticesOnlyPos.Clear();
 
-            if (parentObject.BSPStruct != null)
+            List<float> vertices = new List<float>();
+            for (int i = 0; i < indices.Count; i++)
             {
-                tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera);
-            }
-            else if (parentObject.GridStructure != null)
-            {
-                tris = parentObject.GridStructure.GetTriangles(camera);
+                vertices.AddRange(uniqueVertices[(int)indices[i]].GetData());
             }
 
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(tris, parallelOptions,
-                () => new LocalVertexCollections(),
-                 (tri, loopState, localVertices) =>
-                 {
-                     if (tri.visibile)
-                     {
-                         AddVertices(localVertices.LocalVertices1, tri);
-                         if(parentObject.isSelected)
-                         {
-                             AddVerticesOnlyPos(localVertices.LocalVertices2, tri);
-                         }
-                     }  
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (vertices)
-                     {
-                         vertices.AddRange(localVertices.LocalVertices1);
-                     }
-                     if (parentObject.isSelected)
-                     {
-                         lock (verticesOnlyPos)
-                         {
-                             verticesOnlyPos.AddRange(localVertices.LocalVertices2);
-                         }
-                     }
-                 });
+            //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            //Parallel.ForEach(tris, parallelOptions,
+            //    () => new LocalVertexCollections(),
+            //     (tri, loopState, localVertices) =>
+            //     {
+            //         if (tri.visibile)
+            //         {
+            //             AddVertices(localVertices.LocalVertices1, tri);
+            //             if(parentObject.isSelected)
+            //             {
+            //                 AddVerticesOnlyPos(localVertices.LocalVertices2, tri);
+            //             }
+            //         }  
+            //         return localVertices;
+            //     },
+            //     localVertices =>
+            //     {
+            //         lock (vertices)
+            //         {
+            //             vertices.AddRange(localVertices.LocalVertices1);
+            //         }
+            //         if (parentObject.isSelected)
+            //         {
+            //             lock (verticesOnlyPos)
+            //             {
+            //                 verticesOnlyPos.AddRange(localVertices.LocalVertices2);
+            //             }
+            //         }
+            //     });
 
             SendUniforms();
 
@@ -439,7 +435,7 @@ namespace Engine3D
                     parentObject.textureMetal.Bind();
             }
 
-            return vertices;
+            return (vertices, indices);
         }
 
         public List<float> DrawOnlyPos(GameState gameRunning, Shader shader, VAO _vao)
@@ -538,52 +534,52 @@ namespace Engine3D
             return verticesOnlyPosAndNormal;
         }
 
-        public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
-        {
-            Vao.Bind();
+        //public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
+        //{
+        //    Vao.Bind();
 
-            vertices = new List<float>();
+        //    vertices = new List<float>();
 
-            ObjectType type = parentObject.GetObjectType();
+        //    ObjectType type = parentObject.GetObjectType();
 
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(notOccludedTris, parallelOptions,
-                 () => new List<float>(),
-                 (tri, loopState, localVertices) =>
-                 {
-                     if (tri.visibile)
-                     {
-                         AddVertices(localVertices, tri);
-                     }
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (vertices)
-                     {
-                         vertices.AddRange(localVertices);
-                     }
-                 });
+        //    ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+        //    Parallel.ForEach(notOccludedTris, parallelOptions,
+        //         () => new List<float>(),
+        //         (tri, loopState, localVertices) =>
+        //         {
+        //             if (tri.visibile)
+        //             {
+        //                 AddVertices(localVertices, tri);
+        //             }
+        //             return localVertices;
+        //         },
+        //         localVertices =>
+        //         {
+        //             lock (vertices)
+        //             {
+        //                 vertices.AddRange(localVertices);
+        //             }
+        //         });
 
-            SendUniforms();
+        //    SendUniforms();
 
-            if (parentObject.texture != null)
-            {
-                parentObject.texture.Bind();
-                if (parentObject.textureNormal != null)
-                    parentObject.textureNormal.Bind();
-                if (parentObject.textureHeight != null)
-                    parentObject.textureHeight.Bind();
-                if (parentObject.textureAO != null)
-                    parentObject.textureAO.Bind();
-                if (parentObject.textureRough != null)
-                    parentObject.textureRough.Bind();
-                if (parentObject.textureMetal != null)
-                    parentObject.textureMetal.Bind();
-            }
+        //    if (parentObject.texture != null)
+        //    {
+        //        parentObject.texture.Bind();
+        //        if (parentObject.textureNormal != null)
+        //            parentObject.textureNormal.Bind();
+        //        if (parentObject.textureHeight != null)
+        //            parentObject.textureHeight.Bind();
+        //        if (parentObject.textureAO != null)
+        //            parentObject.textureAO.Bind();
+        //        if (parentObject.textureRough != null)
+        //            parentObject.textureRough.Bind();
+        //        if (parentObject.textureMetal != null)
+        //            parentObject.textureMetal.Bind();
+        //    }
 
-            return vertices;
-        }
+        //    return vertices;
+        //}
 
         
         //public List<float> DrawOnlyPos(VAO aabbVao, Shader shader)
@@ -639,11 +635,11 @@ namespace Engine3D
 
             foreach (triangle tri in tris)
             {
-                indices[index] = tri.pi[0];
+                indices[index] = tri.v[0].pi;
                 index++;
-                indices[index] = tri.pi[1];
+                indices[index] = tri.v[1].pi;
                 index++;
-                indices[index] = tri.pi[2];
+                indices[index] = tri.v[2].pi;
                 index++;
             }
         }
