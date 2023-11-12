@@ -334,7 +334,8 @@ namespace Engine3D
                         //File.Delete(assetToDownload.outputDirectory + "\\" + assetToDownload.fileName);
 
                         List<string> imagePaths = ExtractImagePaths(dirName);
-                        string assetFolder = Environment.CurrentDirectory + "\\Assets\\Textures\\" + Path.GetFileNameWithoutExtension(assetToDownload.fileName);
+                        string assetFolder = Environment.CurrentDirectory + "\\Assets\\" + FileType.Textures.ToString() + "\\" + 
+                                             Path.GetFileNameWithoutExtension(assetToDownload.fileName);
                         if (!Directory.Exists(assetFolder))
                             Directory.CreateDirectory(assetFolder);
                         foreach (string imagePath in imagePaths)

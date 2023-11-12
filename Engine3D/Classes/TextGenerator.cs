@@ -156,7 +156,7 @@ namespace Engine3D
         private string GetFile(string fileName)
         {
 
-            string filepath = FileManager.GetFilePath(fileName, "Fonts");
+            string filepath = FileManager.GetFilePath(fileName, FileType.Fonts.ToString());
             if (filepath == "")
             {
                 Engine.consoleManager.AddLog("File '" + fileName + "' was not found!", LogType.Warning);

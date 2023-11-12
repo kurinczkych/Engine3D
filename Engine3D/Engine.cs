@@ -2,34 +2,12 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Globalization;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.VisualBasic;
-using OpenTK.Compute.OpenCL;
-using OpenTK.Graphics.GL;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System.ComponentModel.Design;
-using static System.Net.WebRequestMethods;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using Microsoft.VisualBasic.FileIO;
 using System.Diagnostics;
-using System.Xml.Schema;
-using OpenTK.Audio.OpenAL;
-using System.Drawing;
-using System.Linq.Expressions;
-using MagicPhysX;
-using ImGuiNET;
-using OpenTK.Windowing.Common.Input;
-using System.ComponentModel.DataAnnotations;
-using System.Threading;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -553,14 +531,14 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            //Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
-            //o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
-            //objects.Add(o);
+            Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
+            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
+            objects.Add(o);
 
-            Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
-            objects.Add(o2);
-            _meshObjects.Add(o2);
+            //Object o2 = new Object(ObjectType.Cube, ref physx);
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
+            //objects.Add(o2);
+            //_meshObjects.Add(o2);
 
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
             //objects.Last().BuildBSP();

@@ -186,9 +186,9 @@ namespace Engine3D
         public ImGuiController(int width, int height, ref EditorData editorData) : base(width, height)
         {
             this.editorData = editorData;
-            currentTextureAssetFolder = editorData.assetManager.assets.folders["Textures"];
-            currentModelAssetFolder = editorData.assetManager.assets.folders["Models"];
-            currentAudioAssetFolder = editorData.assetManager.assets.folders["Audio"];
+            currentTextureAssetFolder = editorData.assetManager.assets.folders[FileType.Textures.ToString()];
+            currentModelAssetFolder = editorData.assetManager.assets.folders[FileType.Models.ToString()];
+            currentAudioAssetFolder = editorData.assetManager.assets.folders[FileType.Audio.ToString()];
 
             #region Input boxes
             _inputBuffers.Add("##name", new byte[100]);

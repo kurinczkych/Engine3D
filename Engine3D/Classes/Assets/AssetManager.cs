@@ -241,7 +241,7 @@ namespace Engine3D
                 {
                     dirs.Add(split[i]);
                 }
-                else if (split[i] == "Models")
+                else if (split[i] == FileType.Models.ToString())
                 {
                     add = true;
                     continue;

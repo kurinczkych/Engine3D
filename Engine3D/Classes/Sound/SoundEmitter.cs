@@ -119,7 +119,7 @@ namespace Engine3D
 
         private bool LoadBufferWithSoundData(int buffer)
         {
-            string filepath = FileManager.GetFilePath(audioFile, "Audio");
+            string filepath = FileManager.GetFilePath(audioFile, FileType.Audio.ToString());
             if (filepath == "")
             {
                 Engine.consoleManager.AddLog("File '" + audioFile + "' was not found!", LogType.Warning);

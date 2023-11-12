@@ -390,7 +390,7 @@ namespace Engine3D
             List<Vector3> normals = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
-            string filePath = Environment.CurrentDirectory + "\\Assets\\Models\\" + relativeModelPath;
+            string filePath = Environment.CurrentDirectory + "\\Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath;
             if(!File.Exists(filePath))
             {
                 Engine.consoleManager.AddLog("File '" + filePath + "' not found!", LogType.Warning);
