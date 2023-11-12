@@ -588,41 +588,44 @@ namespace Engine3D
                                     Vertex v1 = new Vertex(verts[v[0] - 1], uvs[uv[0] - 1]) { pi = v[0] - 1, c = color };
                                     Vertex v2 = new Vertex(verts[v[1] - 1], uvs[uv[1] - 1]) { pi = v[1] - 1, c = color };
                                     Vertex v3 = new Vertex(verts[v[2] - 1], uvs[uv[2] - 1]) { pi = v[2] - 1, c = color };
-                                    if (!vertexHash.ContainsKey(v1.GetHashCode()))
+                                    int v1h = v1.GetHashCode();
+                                    if (!vertexHash.ContainsKey(v1h))
                                     {
                                         uniqueVertices.Add(v1);
                                         indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v1.GetHashCode(), (uint)uniqueVertices.Count - 1);
+                                        vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
                                     }
                                     else
                                     {
-                                        indices.Add(vertexHash[v1.GetHashCode()]);
-                                        tris.Last().vi[0] = vertexHash[v1.GetHashCode()];
+                                        indices.Add(vertexHash[v1h]);
+                                        tris.Last().vi[0] = vertexHash[v1h];
                                     }
-                                    if (!vertexHash.ContainsKey(v2.GetHashCode()))
+                                    int v2h = v2.GetHashCode();
+                                    if (!vertexHash.ContainsKey(v2h))
                                     {
                                         uniqueVertices.Add(v2);
                                         indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v2.GetHashCode(), (uint)uniqueVertices.Count - 1);
+                                        vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
                                     }
                                     else
                                     {
-                                        indices.Add(vertexHash[v2.GetHashCode()]);
-                                        tris.Last().vi[1] = vertexHash[v2.GetHashCode()];
+                                        indices.Add(vertexHash[v2h]);
+                                        tris.Last().vi[1] = vertexHash[v2h];
                                     }
-                                    if (!vertexHash.ContainsKey(v3.GetHashCode()))
+                                    int v3h = v3.GetHashCode();
+                                    if (!vertexHash.ContainsKey(v3h))
                                     {
                                         uniqueVertices.Add(v3);
                                         indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v3.GetHashCode(), (uint)uniqueVertices.Count - 1);
+                                        vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
                                     }
                                     else
                                     {
-                                        indices.Add(vertexHash[v3.GetHashCode()]);
-                                        tris.Last().vi[2] = vertexHash[v3.GetHashCode()];
+                                        indices.Add(vertexHash[v3h]);
+                                        tris.Last().vi[2] = vertexHash[v3h];
                                     }
 
                                     Bounds.Enclose(tris.Last());
@@ -651,41 +654,44 @@ namespace Engine3D
                                 Vertex v1 = new Vertex(verts[v[0] - 1]) { pi = v[0] - 1, c = color };
                                 Vertex v2 = new Vertex(verts[v[1] - 1]) { pi = v[1] - 1, c = color };
                                 Vertex v3 = new Vertex(verts[v[2] - 1]) { pi = v[2] - 1, c = color };
-                                if (!vertexHash.ContainsKey(v1.GetHashCode()))
+                                int v1h = v1.GetHashCode();
+                                if (!vertexHash.ContainsKey(v1h))
                                 {
                                     uniqueVertices.Add(v1);
                                     indices.Add((uint)uniqueVertices.Count - 1);
-                                    vertexHash.Add(v1.GetHashCode(), (uint)uniqueVertices.Count - 1);
+                                    vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
                                     tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
                                 }
                                 else
                                 {
-                                    indices.Add(vertexHash[v1.GetHashCode()]);
-                                    tris.Last().vi[0] = vertexHash[v1.GetHashCode()];
+                                    indices.Add(vertexHash[v1h]);
+                                    tris.Last().vi[0] = vertexHash[v1h];
                                 }
-                                if (!vertexHash.ContainsKey(v2.GetHashCode()))
+                                int v2h = v2.GetHashCode();
+                                if (!vertexHash.ContainsKey(v2h))
                                 {
                                     uniqueVertices.Add(v2);
                                     indices.Add((uint)uniqueVertices.Count - 1);
-                                    vertexHash.Add(v2.GetHashCode(), (uint)uniqueVertices.Count - 1);
+                                    vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
                                     tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
                                 }
                                 else
                                 {
-                                    indices.Add(vertexHash[v2.GetHashCode()]);
-                                    tris.Last().vi[1] = vertexHash[v2.GetHashCode()];
+                                    indices.Add(vertexHash[v2h]);
+                                    tris.Last().vi[1] = vertexHash[v2h];
                                 }
-                                if (!vertexHash.ContainsKey(v3.GetHashCode()))
+                                int v3h = v3.GetHashCode();
+                                if (!vertexHash.ContainsKey(v3h))
                                 {
                                     uniqueVertices.Add(v3);
                                     indices.Add((uint)uniqueVertices.Count - 1);
-                                    vertexHash.Add(v3.GetHashCode(), (uint)uniqueVertices.Count - 1);
+                                    vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
                                     tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
                                 }
                                 else
                                 {
-                                    indices.Add(vertexHash[v3.GetHashCode()]);
-                                    tris.Last().vi[2] = vertexHash[v3.GetHashCode()];
+                                    indices.Add(vertexHash[v3h]);
+                                    tris.Last().vi[2] = vertexHash[v3h];
                                 }
 
                                 Bounds.Enclose(tris.Last());
@@ -701,6 +707,12 @@ namespace Engine3D
             }
 
             visibleIndices = new List<uint>(indices);
+            string ab = "";
+            foreach(var b in uniqueVertices)
+            {
+                ab += b.p.ToString() + "\n"; 
+            }
+            ;
         }
 
     }

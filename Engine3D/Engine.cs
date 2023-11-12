@@ -525,9 +525,13 @@ namespace Engine3D
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
             //objects.Last().BuildBVH(shaderProgram, noTextureShaderProgram);
 
-            Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
-            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
-            objects.Add(o);
+            //Object o = new Object(ObjectType.TriangleMeshWithCollider, ref physx);
+            //o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
+            //objects.Add(o);
+
+            Object o2 = new Object(ObjectType.Cube, ref physx);
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube.obj", "red_t.png", windowSize, ref camera, ref o2));
+            objects.Add(o2);
 
             //Object o2 = new Object(ObjectType.Cube, ref physx);
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
