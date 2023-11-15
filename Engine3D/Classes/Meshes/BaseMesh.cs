@@ -423,13 +423,17 @@ namespace Engine3D
             List<Vector3> normals = new List<Vector3>();
             List<Vec2d> uvs = new List<Vec2d>();
 
+            Dictionary<int, int> vertsHash = new Dictionary<int, int>();
+            Dictionary<int, int> normalsHash = new Dictionary<int, int>();
+            Dictionary<int, int> uvsHash = new Dictionary<int, int>();
+
             Dictionary<int, uint> vertexHash = new Dictionary<int, uint>();
 
             string filePath = Environment.CurrentDirectory + "\\Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath;
             if(!File.Exists(filePath))
             {
                 Engine.consoleManager.AddLog("File '" + filePath + "' not found!", LogType.Warning);
-                return;
+                return;  
             }
 
             using (Stream stream = FileManager.GetFileStream(filePath))
@@ -448,7 +452,9 @@ namespace Engine3D
                                 var a = float.Parse(vStr[0]);
                                 var b = float.Parse(vStr[1]);
                                 Vec2d v = new Vec2d(a, b);
+
                                 uvs.Add(v);
+                                uvsHash.Add(v.GetHashCode(), uvs.Count() - 1);
                             }
                             else if (result[1] == 'n')
                             {
@@ -457,7 +463,9 @@ namespace Engine3D
                                 var b = float.Parse(vStr[1]);
                                 var c = float.Parse(vStr[2]);
                                 Vector3 v = new Vector3(a, b, c);
+
                                 normals.Add(v);
+                                normalsHash.Add(v.GetHashCode(), normals.Count() - 1);
                             }
                             else
                             {
@@ -466,7 +474,9 @@ namespace Engine3D
                                 var b = float.Parse(vStr[1]);
                                 var c = float.Parse(vStr[2]);
                                 Vector3 v = new Vector3(a, b, c);
+
                                 verts.Add(v);
+                                vertsHash.Add(v.GetHashCode(), verts.Count() - 1);
                                 allVerts.Add(v);
                             }
                         }
@@ -654,6 +664,17 @@ namespace Engine3D
                                 Vertex v1 = new Vertex(verts[v[0] - 1]) { pi = v[0] - 1, c = color };
                                 Vertex v2 = new Vertex(verts[v[1] - 1]) { pi = v[1] - 1, c = color };
                                 Vertex v3 = new Vertex(verts[v[2] - 1]) { pi = v[2] - 1, c = color };
+                                var a = v1.GetHashCode();
+
+                                foreach(int b in verts.Keys)
+                                {
+                                    if (a == b)
+                                        ;
+                                }
+                                ;
+
+
+
                                 int v1h = v1.GetHashCode();
                                 if (!vertexHash.ContainsKey(v1h))
                                 {

@@ -20,12 +20,13 @@ namespace Engine3D
         public float v = 0.0f;
         public float w;
 
-
-        public Vec2d GetCopy()
+        public override int GetHashCode()
         {
-            Vec2d v2 = new Vec2d(u, v);
-            v2.w = w;
-            return v2;
+            var hashCode = new HashCode();
+            hashCode.Add(u);
+            hashCode.Add(v);
+            hashCode.Add(w);
+            return hashCode.ToHashCode();
         }
 
         public static Vec2d Zero
