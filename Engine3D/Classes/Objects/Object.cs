@@ -486,6 +486,7 @@ namespace Engine3D
             Restitution = 0.1f;
 
             mesh.CalculateFrustumVisibility();
+            mesh.ComputeTangents();
         }
 
         public void BuildBVH()

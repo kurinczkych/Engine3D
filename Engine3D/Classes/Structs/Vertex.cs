@@ -73,28 +73,21 @@ namespace Engine3D
             };
         }
 
+        public float[] GetDataOnlyPos()
+        {
+            return new float[]
+            {
+                p.X, p.Y, p.Z
+            };
+        }
+
         public override int GetHashCode()
         {
             var hashCode = new HashCode();
             hashCode.Add(p);
             hashCode.Add(n);
-            //hashCode.Add(c);
             hashCode.Add(t);
-            //hashCode.Add(pi);
-            //hashCode.Add(tan);
-            //hashCode.Add(bitan);
             return hashCode.ToHashCode();
-
-            //int hash = 17;
-            //// Suitable prime numbers
-            //hash = hash * 23 + p.GetHashCode();
-            //hash = hash * 23 + n.GetHashCode();
-            ////hash = hash * 23 + c.GetHashCode();
-            //hash = hash * 23 + t.GetHashCode();
-            ////hash = hash * 23 + pi.GetHashCode();
-            ////hash = hash * 23 + tan.GetHashCode();
-            ////hash = hash * 23 + bitan.GetHashCode();
-            //return hash;
         }
     }
 }

@@ -28,6 +28,15 @@ namespace Engine3D
             return v2;
         }
 
+        public override int GetHashCode()
+        {
+            var hashCode = new HashCode();
+            hashCode.Add(u);
+            hashCode.Add(v);
+            hashCode.Add(w);
+            return hashCode.ToHashCode();
+        }
+
         public static Vec2d Zero
         {
             get { return new Vec2d(0.0f, 0.0f); }

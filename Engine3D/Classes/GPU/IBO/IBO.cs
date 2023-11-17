@@ -22,7 +22,8 @@ namespace Engine3D
         public virtual void Buffer(List<uint> data)
         {
             Bind();
-            GL.BufferData(BufferTarget.ElementArrayBuffer, data.Count * sizeof(uint), data.ToArray(), BufferUsageHint.DynamicDraw);
+            var a = data.ToArray();
+            GL.BufferData(BufferTarget.ElementArrayBuffer, data.Count * sizeof(uint), a, BufferUsageHint.DynamicDraw);
         }
 
         public void Bind()

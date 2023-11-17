@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static OpenTK.Graphics.OpenGL.GL;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Engine3D
@@ -42,7 +41,10 @@ namespace Engine3D
         protected List<Vertex> uniqueVertices = new List<Vertex>();
         protected List<uint> indices = new List<uint>();
 
+        protected List<Vertex> visibleVertices = new List<Vertex>();
+        protected List<float> visibleVerticesData = new List<float>();
         protected List<uint> visibleIndices = new List<uint>();
+        protected uint maxVisibleIndex = 0;
 
         public List<triangle> tris = new List<triangle>();
         public List<Vector3> allVerts;
@@ -164,50 +166,11 @@ namespace Engine3D
                 {
                     visibleIndices.Clear();
 
-                    foreach(triangle tri in tris)
-                    {
-                        visibleIndices.Add(tri.vi[0]);
-                        visibleIndices.Add(tri.vi[1]);
-                        visibleIndices.Add(tri.vi[2]);
-                        //if (modelMatrix != Matrix4.Identity)
-                        //{
-                        //    bool visible = false;
-                        //    for (int i = 0; i < 3; i++)
-                        //    {
-                        //        Vector3 p = Vector3.TransformPosition(tri.v[i].p, modelMatrix);
-                        //        if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
-                        //        {
-                        //            visible = true;
-                        //            break;
-                        //        }
-                        //    }
-                        //    tri.visibile = visible;
-
-                        //    if (tri.visibile)
-                        //    {
-                        //        visibleIndices.Add(tri.vi[0]);
-                        //        visibleIndices.Add(tri.vi[1]);
-                        //        visibleIndices.Add(tri.vi[2]);
-                        //    }
-                        //}
-                        //else
-                        //{
-                        //    tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
-
-                        //    if (tri.visibile)
-                        //    {
-                        //        visibleIndices.Add(tri.vi[0]);
-                        //        visibleIndices.Add(tri.vi[1]);
-                        //        visibleIndices.Add(tri.vi[2]);
-                        //    }
-                        //}
-                    }
-
-                    //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-                    //Parallel.ForEach(tris, parallelOptions,
-                    //() => new List<uint>(),
-                    //(tri, loopState, localVertices) =>
+                    //foreach (triangle tri in tris)
                     //{
+                    //    //visibleIndices.Add(tri.vi[0]);
+                    //    //visibleIndices.Add(tri.vi[1]);
+                    //    //visibleIndices.Add(tri.vi[2]);
                     //    if (modelMatrix != Matrix4.Identity)
                     //    {
                     //        bool visible = false;
@@ -224,9 +187,9 @@ namespace Engine3D
 
                     //        if (tri.visibile)
                     //        {
-                    //            localVertices.Add(tri.vi[0]);
-                    //            localVertices.Add(tri.vi[1]);
-                    //            localVertices.Add(tri.vi[2]);
+                    //            visibleIndices.Add(tri.vi[0]);
+                    //            visibleIndices.Add(tri.vi[1]);
+                    //            visibleIndices.Add(tri.vi[2]);
                     //        }
                     //    }
                     //    else
@@ -235,20 +198,71 @@ namespace Engine3D
 
                     //        if (tri.visibile)
                     //        {
-                    //            localVertices.Add(tri.vi[0]);
-                    //            localVertices.Add(tri.vi[1]);
-                    //            localVertices.Add(tri.vi[2]);
+                    //            visibleIndices.Add(tri.vi[0]);
+                    //            visibleIndices.Add(tri.vi[1]);
+                    //            visibleIndices.Add(tri.vi[2]);
                     //        }
                     //    }
-                    //    return localVertices;
-                    //},
-                    //localVertices =>
-                    //{
-                    //    lock (visibleIndices)
-                    //    {
-                    //        visibleIndices.AddRange(localVertices);
-                    //    }
-                    //});
+                    //}
+
+                    ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+                    Parallel.ForEach(tris, parallelOptions,
+                    () => new List<uint>(),
+                    (tri, loopState, localIndices) =>
+                    {
+                        if (modelMatrix != Matrix4.Identity)
+                        {
+                            bool visible = false;
+                            for (int i = 0; i < 3; i++)
+                            {
+                                Vector3 p = Vector3.TransformPosition(tri.v[i].p, modelMatrix);
+                                if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
+                                {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                            tri.visibile = visible;
+
+                            if (tri.visibile)
+                            {
+                                localIndices.Add(tri.vi[0]);
+                                localIndices.Add(tri.vi[1]);
+                                localIndices.Add(tri.vi[2]);
+                                if (tri.vi[0] > maxVisibleIndex)
+                                    maxVisibleIndex = tri.vi[0];
+                                if (tri.vi[1] > maxVisibleIndex)
+                                    maxVisibleIndex = tri.vi[1];
+                                if (tri.vi[2] > maxVisibleIndex)
+                                    maxVisibleIndex = tri.vi[2];
+                            }
+                        }
+                        else
+                        {
+                            tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
+
+                            if (tri.visibile)
+                            {
+                                localIndices.Add(tri.vi[0]);
+                                localIndices.Add(tri.vi[1]);
+                                localIndices.Add(tri.vi[2]);
+                                if (tri.vi[0] > maxVisibleIndex)
+                                    maxVisibleIndex = tri.vi[0];
+                                if (tri.vi[1] > maxVisibleIndex)
+                                    maxVisibleIndex = tri.vi[1];
+                                if (tri.vi[2] > maxVisibleIndex)
+                                    maxVisibleIndex = tri.vi[2];
+                            }
+                        }
+                        return localIndices;
+                    },
+                    localIndices =>
+                    {
+                        lock (visibleIndices)
+                        {
+                            visibleIndices.AddRange(localIndices);
+                        }
+                    });
                 }
             }
         }
@@ -287,6 +301,8 @@ namespace Engine3D
 
         public void ComputeVertexNormalsSpherical()
         {
+            visibleVerticesData.Clear();
+
             for (int i = 0; i < tris.Count(); i++)
             {
                 for (int j = 0; j < 3; j++)
@@ -297,10 +313,17 @@ namespace Engine3D
                     uniqueVertices[(int)tris[i].vi[j]] = v;
                 }
             }
+
+            foreach (Vertex v in uniqueVertices)
+            {
+                visibleVerticesData.AddRange(v.GetData());
+            }
         }
 
         public void ComputeVertexNormals()
         {
+            visibleVerticesData.Clear();
+
             Dictionary<Vector3, Vector3> vertexNormals = new Dictionary<Vector3, Vector3>();
             Dictionary<Vector3, int> vertexNormalsCounts = new Dictionary<Vector3, int>();
 
@@ -335,10 +358,17 @@ namespace Engine3D
                     uniqueVertices[(int)tri.vi[i]] = v;
                 }
             }
+
+            foreach (Vertex v in uniqueVertices)
+            {
+                visibleVerticesData.AddRange(v.GetData());
+            }
         }
 
         public void ComputeTangents()
         {
+            visibleVerticesData.Clear();
+
             // Initialize tangent and bitangent lists with zeros
             Dictionary<Vector3, List<Vector3>> tangentSums = new Dictionary<Vector3, List<Vector3>>();
             Dictionary<Vector3, List<Vector3>> bitangentSums = new Dictionary<Vector3, List<Vector3>>();
@@ -362,7 +392,12 @@ namespace Engine3D
                 Vector2 deltaUV1 = uv1 - uv0;
                 Vector2 deltaUV2 = uv2 - uv0;
 
-                float f = 1.0f / (deltaUV1.X * deltaUV2.Y - deltaUV2.X * deltaUV1.Y);
+                float d = deltaUV1.X * deltaUV2.Y - deltaUV2.X * deltaUV1.Y;
+                float f = 1.0f;
+                if (d != 0)
+                    f /= d;
+                else
+                    f = 0;
 
                 // Calculate tangent and bitangent
                 Vector3 tangent = new Vector3(
@@ -399,7 +434,11 @@ namespace Engine3D
                     Vector3 vertex = tri.v[i].p;
 
                     Vector3 avgTangent = Average(tangentSums[vertex]).Normalized();
+                    if (float.IsNaN(avgTangent.X))
+                        avgTangent = Vector3.Zero;
                     Vector3 avgBitangent = Average(bitangentSums[vertex]).Normalized();
+                    if (float.IsNaN(avgBitangent.X))
+                        avgBitangent = Vector3.Zero;
 
                     tri.v[i].tan = avgTangent;
                     tri.v[i].bitan = avgBitangent;
@@ -409,6 +448,11 @@ namespace Engine3D
                     v.bitan = avgBitangent;
                     uniqueVertices[(int)tri.vi[i]] = v;
                 }
+            }
+
+            foreach(Vertex v in uniqueVertices)
+            {
+                visibleVerticesData.AddRange(v.GetData());
             }
         }
 
@@ -520,6 +564,7 @@ namespace Engine3D
                                     if (!vertexHash.ContainsKey(v1h))
                                     {
                                         uniqueVertices.Add(v1);
+                                        visibleVerticesData.AddRange(v1.GetData());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
@@ -533,6 +578,7 @@ namespace Engine3D
                                     if (!vertexHash.ContainsKey(v2h))
                                     {
                                         uniqueVertices.Add(v2);
+                                        visibleVerticesData.AddRange(v2.GetData());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
@@ -546,6 +592,7 @@ namespace Engine3D
                                     if (!vertexHash.ContainsKey(v3h))
                                     {
                                         uniqueVertices.Add(v3);
+                                        visibleVerticesData.AddRange(v3.GetData());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
@@ -592,6 +639,7 @@ namespace Engine3D
                                     if (!vertexHash.ContainsKey(v1h))
                                     {
                                         uniqueVertices.Add(v1);
+                                        visibleVerticesData.AddRange(v1.GetData());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
@@ -605,6 +653,7 @@ namespace Engine3D
                                     if (!vertexHash.ContainsKey(v2h))
                                     {
                                         uniqueVertices.Add(v2);
+                                        visibleVerticesData.AddRange(v2.GetData());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
@@ -618,6 +667,7 @@ namespace Engine3D
                                     if (!vertexHash.ContainsKey(v3h))
                                     {
                                         uniqueVertices.Add(v3);
+                                        visibleVerticesData.AddRange(v3.GetData());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
                                         tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
@@ -658,6 +708,7 @@ namespace Engine3D
                                 if (!vertexHash.ContainsKey(v1h))
                                 {
                                     uniqueVertices.Add(v1);
+                                    visibleVerticesData.AddRange(v1.GetData());
                                     indices.Add((uint)uniqueVertices.Count - 1);
                                     vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
                                     tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
@@ -671,6 +722,7 @@ namespace Engine3D
                                 if (!vertexHash.ContainsKey(v2h))
                                 {
                                     uniqueVertices.Add(v2);
+                                    visibleVerticesData.AddRange(v2.GetData());
                                     indices.Add((uint)uniqueVertices.Count - 1);
                                     vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
                                     tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
@@ -684,6 +736,7 @@ namespace Engine3D
                                 if (!vertexHash.ContainsKey(v3h))
                                 {
                                     uniqueVertices.Add(v3);
+                                    visibleVerticesData.AddRange(v3.GetData());
                                     indices.Add((uint)uniqueVertices.Count - 1);
                                     vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
                                     tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
@@ -707,12 +760,6 @@ namespace Engine3D
             }
 
             visibleIndices = new List<uint>(indices);
-            string ab = "";
-            foreach(var b in uniqueVertices)
-            {
-                ab += b.p.ToString() + "\n"; 
-            }
-            ;
         }
 
     }

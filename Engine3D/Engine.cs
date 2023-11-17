@@ -426,6 +426,9 @@ namespace Engine3D
             meshVao.LinkToVAO(3, 4, meshVbo);
             meshVao.LinkToVAO(4, 3, meshVbo);
 
+            //meshVao = new VAO(3);
+            //meshVao.LinkToVAO(0, 3, meshVbo);
+
             //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, drawCommandsVbo.id);
             //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, visibilityVbo.id);
             //GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, meshVbo.id);
@@ -530,7 +533,7 @@ namespace Engine3D
             //objects.Add(o);
 
             Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube.obj", "red_t.png", windowSize, ref camera, ref o2));
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o2));
             objects.Add(o2);
 
             //Object o2 = new Object(ObjectType.Cube, ref physx);

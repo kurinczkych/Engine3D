@@ -73,12 +73,11 @@ namespace Engine3D
                                 }
 
                                 List<uint> indices = new List<uint>();
-                                List<float> asd = new List<float>();
-                                (asd, indices) = mesh.Draw(editorData.gameRunning);
-                                meshVbo.Buffer(asd);
+                                List<float> verticesUnique = new List<float>();
+                                (verticesUnique, indices) = mesh.Draw(editorData.gameRunning);
                                 meshIbo.Buffer(indices);
+                                meshVbo.Buffer(verticesUnique);
                                 GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
-                                //GL.DrawArrays(PrimitiveType.Triangles, 0, asd.Count);
                                 vertices.Clear();
 
                                 // OUTLINING
