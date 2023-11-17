@@ -57,9 +57,11 @@ namespace Engine3D
 
         private VAO onlyPosVao;
         private VBO onlyPosVbo;
+        private IBO onlyPosIbo;
 
         private VAO onlyPosAndNormalVao;
         private VBO onlyPosAndNormalVbo;
+        private IBO onlyPosAndNormalIbo;
 
         private InstancedVAO instancedOnlyPosAndNormalVao;
         private VBO instancedOnlyPosAndNormalVbo;
@@ -217,7 +219,7 @@ namespace Engine3D
             else if (type == ObjectType.TriangleMesh)
             {
                 Object o = new Object(type, ref physx);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new List<triangle>(), windowSize, ref character.camera, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new MeshData(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
                 _meshObjects.Add(o);
             }
@@ -408,10 +410,12 @@ namespace Engine3D
             frustumVbo = new VBO(DynamicCopy: true);
             //drawCommandsVbo = new DrawCommandVBO(DynamicCopy: true);
 
+            onlyPosIbo = new IBO();
             onlyPosVbo = new VBO();
             onlyPosVao = new VAO(3);
             onlyPosVao.LinkToVAO(0, 3, onlyPosVbo);
 
+            onlyPosAndNormalIbo = new IBO();
             onlyPosAndNormalVbo = new VBO();
             onlyPosAndNormalVao = new VAO(6);
             onlyPosAndNormalVao.LinkToVAO(0, 3, onlyPosAndNormalVbo);

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static OpenTK.Graphics.OpenGL.GL;
 
 namespace Engine3D
 {
@@ -40,10 +41,14 @@ namespace Engine3D
                             int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
+                            List<uint> indices = new List<uint>();
+                            List<float> verticesUnique = new List<float>();
+                            (verticesUnique, indices) = mesh.DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
+                            onlyPosIbo.Buffer(indices);
+                            onlyPosVbo.Buffer(verticesUnique);
+
+                            GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
                             vertices.Clear();
-                            vertices = mesh.DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
-                            onlyPosVbo.Buffer(vertices);
-                            GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                         }
 
                         pickingInstancedShader.Use();
@@ -82,9 +87,14 @@ namespace Engine3D
                                 GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
                                 GL.Uniform1(drawIdLoc, (uint)0);
 
-                                vertices = ((Mesh)moverGizmo.GetMesh()).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
-                                onlyPosVbo.Buffer(vertices);
-                                GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                                List<uint> indices = new List<uint>();
+                                List<float> verticesUnique = new List<float>();
+                                (verticesUnique, indices) = ((Mesh)moverGizmo.GetMesh()).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
+                                onlyPosIbo.Buffer(indices);
+                                onlyPosVbo.Buffer(verticesUnique);
+
+                                GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
+                                vertices.Clear();
                             }
 
                             pickingTexture.DisableWriting();

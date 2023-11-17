@@ -89,9 +89,12 @@ namespace Engine3D
 
                                     outlineShader.Use();
 
-                                    vertices = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
-                                    onlyPosAndNormalVbo.Buffer(vertices);
-                                    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
+                                    indices.Clear();
+                                    verticesUnique.Clear();
+                                    (verticesUnique, indices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
+                                    onlyPosAndNormalIbo.Buffer(indices);
+                                    onlyPosAndNormalVbo.Buffer(verticesUnique);
+                                    GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
 
                                     GL.StencilMask(0xFF);
                                     GL.StencilFunc(StencilFunction.Always, 0, 0xFF);

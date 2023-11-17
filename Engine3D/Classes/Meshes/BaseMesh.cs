@@ -11,10 +11,22 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace Engine3D
 {
-    public class LocalVertexCollections
+    public class MeshData
     {
-        public List<float> LocalVertices1 { get; set; } = new List<float>();
-        public List<float> LocalVertices2 { get; set; } = new List<float>();
+        public List<Vertex> vertices = new List<Vertex>();
+        public List<uint> indices = new List<uint>();
+        public List<float> visibleVerticesData = new List<float>();
+        public AABB bounds = new AABB();
+
+        public MeshData() { }
+
+        public MeshData(List<Vertex> vertices, List<uint> indices, List<float> visibleVerticesData, AABB bounds)
+        {
+            this.vertices = vertices ?? new List<Vertex>();
+            this.indices = indices ?? new List<uint>();
+            this.visibleVerticesData = visibleVerticesData ?? new List<float>();
+            this.bounds = bounds ?? new AABB();
+        }
     }
 
     public abstract class BaseMesh
@@ -38,15 +50,18 @@ namespace Engine3D
 
         public int useBillboarding = 0;
 
-        protected List<Vertex> uniqueVertices = new List<Vertex>();
-        protected List<uint> indices = new List<uint>();
+        public List<Vertex> uniqueVertices = new List<Vertex>();
+        public List<uint> indices = new List<uint>();
+        protected List<List<uint>> groupedIndices = new List<List<uint>>();
 
         protected List<Vertex> visibleVertices = new List<Vertex>();
         protected List<float> visibleVerticesData = new List<float>();
         protected List<uint> visibleIndices = new List<uint>();
         protected uint maxVisibleIndex = 0;
 
-        public List<triangle> tris = new List<triangle>();
+        protected List<float> visibleVerticesDataOnlyPos = new List<float>();
+        protected List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
+
         public List<Vector3> allVerts;
         public bool hasIndices = false;
         public Object parentObject;
@@ -71,7 +86,6 @@ namespace Engine3D
 
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {
-            tris = new List<triangle>();
             allVerts = new List<Vector3>();
 
             this.vaoId = vaoId;
@@ -144,7 +158,6 @@ namespace Engine3D
 
         public void Delete()
         {
-            tris.Clear();
             if (allVerts != null)
                 allVerts.Clear();
             if (uniformLocations != null)
@@ -166,6 +179,7 @@ namespace Engine3D
                 {
                     visibleIndices.Clear();
 
+                    #region not used foreach frustum calc
                     //foreach (triangle tri in tris)
                     //{
                     //    //visibleIndices.Add(tri.vi[0]);
@@ -204,54 +218,62 @@ namespace Engine3D
                     //        }
                     //    }
                     //}
+                    #endregion
 
                     ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-                    Parallel.ForEach(tris, parallelOptions,
+                    Parallel.ForEach(groupedIndices, parallelOptions,
                     () => new List<uint>(),
-                    (tri, loopState, localIndices) =>
+                    (indices, loopState, localIndices) =>
                     {
                         if (modelMatrix != Matrix4.Identity)
                         {
                             bool visible = false;
                             for (int i = 0; i < 3; i++)
                             {
-                                Vector3 p = Vector3.TransformPosition(tri.v[i].p, modelMatrix);
+                                Vector3 p = Vector3.TransformPosition(uniqueVertices[(int)indices[i]].p, modelMatrix);
                                 if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
                                 {
                                     visible = true;
                                     break;
                                 }
                             }
-                            tri.visibile = visible;
 
-                            if (tri.visibile)
+                            if (visible)
                             {
-                                localIndices.Add(tri.vi[0]);
-                                localIndices.Add(tri.vi[1]);
-                                localIndices.Add(tri.vi[2]);
-                                if (tri.vi[0] > maxVisibleIndex)
-                                    maxVisibleIndex = tri.vi[0];
-                                if (tri.vi[1] > maxVisibleIndex)
-                                    maxVisibleIndex = tri.vi[1];
-                                if (tri.vi[2] > maxVisibleIndex)
-                                    maxVisibleIndex = tri.vi[2];
+                                localIndices.Add(indices[0]);
+                                localIndices.Add(indices[1]);
+                                localIndices.Add(indices[2]);
+                                if (indices[0] > maxVisibleIndex)
+                                    maxVisibleIndex = indices[0];
+                                if (indices[1] > maxVisibleIndex)
+                                    maxVisibleIndex = indices[1];
+                                if (indices[2] > maxVisibleIndex)
+                                    maxVisibleIndex = indices[2];
                             }
                         }
                         else
                         {
-                            tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
-
-                            if (tri.visibile)
+                            bool visible = false;
+                            for (int i = 0; i < 3; i++)
                             {
-                                localIndices.Add(tri.vi[0]);
-                                localIndices.Add(tri.vi[1]);
-                                localIndices.Add(tri.vi[2]);
-                                if (tri.vi[0] > maxVisibleIndex)
-                                    maxVisibleIndex = tri.vi[0];
-                                if (tri.vi[1] > maxVisibleIndex)
-                                    maxVisibleIndex = tri.vi[1];
-                                if (tri.vi[2] > maxVisibleIndex)
-                                    maxVisibleIndex = tri.vi[2];
+                                if (camera.frustum.IsInside(uniqueVertices[(int)indices[i]].p) || camera.IsPointClose(uniqueVertices[(int)indices[i]].p))
+                                {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+
+                            if (visible)
+                            {
+                                localIndices.Add(indices[0]);
+                                localIndices.Add(indices[1]);
+                                localIndices.Add(indices[2]);
+                                if (indices[0] > maxVisibleIndex)
+                                    maxVisibleIndex = indices[0];
+                                if (indices[1] > maxVisibleIndex)
+                                    maxVisibleIndex = indices[1];
+                                if (indices[2] > maxVisibleIndex)
+                                    maxVisibleIndex = indices[2];
                             }
                         }
                         return localIndices;
@@ -271,6 +293,14 @@ namespace Engine3D
         {
             Vector3 edge1 = tri.v[1].p - tri.v[0].p;
             Vector3 edge2 = tri.v[2].p - tri.v[0].p;
+            Vector3 normal = Vector3.Cross(edge1, edge2);
+            return normal;
+        }
+
+        protected static Vector3 ComputeFaceNormal(Vector3 p1, Vector3 p2, Vector3 p3)
+        {
+            Vector3 edge1 = p2 - p1;
+            Vector3 edge2 = p3 - p1;
             Vector3 normal = Vector3.Cross(edge1, edge2);
             return normal;
         }
@@ -302,66 +332,58 @@ namespace Engine3D
         public void ComputeVertexNormalsSpherical()
         {
             visibleVerticesData.Clear();
+            visibleVerticesDataOnlyPos.Clear();
+            visibleVerticesDataOnlyPosAndNormal.Clear();
 
-            for (int i = 0; i < tris.Count(); i++)
+            for (int i = 0; i < indices.Count; i++)
             {
-                for (int j = 0; j < 3; j++)
-                {
-                    tris[i].v[j].n = tris[i].v[j].p.Normalized();
-                    var v = uniqueVertices[(int)tris[i].vi[j]];
-                    v.n = tris[i].v[j].n;
-                    uniqueVertices[(int)tris[i].vi[j]] = v;
-                }
-            }
+                var v = uniqueVertices[(int)indices[i]];
+                v.n = uniqueVertices[(int)indices[i]].p.Normalized();
+                uniqueVertices[(int)indices[i]] = v;
 
-            foreach (Vertex v in uniqueVertices)
-            {
                 visibleVerticesData.AddRange(v.GetData());
+                visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
+                visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
             }
         }
 
         public void ComputeVertexNormals()
         {
             visibleVerticesData.Clear();
+            visibleVerticesDataOnlyPos.Clear();
+            visibleVerticesDataOnlyPosAndNormal.Clear();
 
             Dictionary<Vector3, Vector3> vertexNormals = new Dictionary<Vector3, Vector3>();
             Dictionary<Vector3, int> vertexNormalsCounts = new Dictionary<Vector3, int>();
 
-
-            foreach (var tri in tris)
+            for (int i = 0; i < indices.Count; i+=3)
             {
-                Vector3 faceNormal = ComputeFaceNormal(tri);
-                for (int i = 0; i < 3; i++)
+                var v = uniqueVertices[(int)indices[i]];
+                Vector3 faceNormal = ComputeFaceNormal(uniqueVertices[(int)indices[i]].p, uniqueVertices[(int)indices[i+1]].p, uniqueVertices[(int)indices[i+2]].p);
+                for (int j = 0; j < 3; j++)
                 {
-                    if (!vertexNormals.ContainsKey(tri.v[i].p))
+                    if (!vertexNormals.ContainsKey(uniqueVertices[(int)indices[i + j]].p))
                     {
-                        vertexNormals[tri.v[i].p] = faceNormal;
-                        vertexNormalsCounts[tri.v[i].p] = 1;
+                        vertexNormals[uniqueVertices[(int)indices[i + j]].p] = faceNormal;
+                        vertexNormalsCounts[uniqueVertices[(int)indices[i + j]].p] = 1;
                     }
                     else
                     {
-                        vertexNormals[tri.v[i].p] += faceNormal;
-                        vertexNormalsCounts[tri.v[i].p]++;
+                        vertexNormals[uniqueVertices[(int)indices[i + j]].p] += faceNormal;
+                        vertexNormalsCounts[uniqueVertices[(int)indices[i + j]].p]++;
                     }
                 }
             }
 
-            //{(0.57735026, 0.57735026, -0.57735026)}
-            //{(0.40824828, 0.40824828, -0.81649655)}
-            foreach (var tri in tris)
+            for (int i = 0; i < indices.Count; i++)
             {
-                for (int i = 0; i < 3; i++)
-                {
-                    tri.v[i].n = (vertexNormals[tri.v[i].p] / vertexNormalsCounts[tri.v[i].p]).Normalized();
-                    var v = uniqueVertices[(int)tri.vi[i]];
-                    v.n = tri.v[i].n;
-                    uniqueVertices[(int)tri.vi[i]] = v;
-                }
-            }
+                var v = uniqueVertices[(int)indices[i]];
+                v.n = (vertexNormals[uniqueVertices[(int)indices[i]].p] / vertexNormalsCounts[uniqueVertices[(int)indices[i]].p]).Normalized();
+                uniqueVertices[(int)indices[i]] = v;
 
-            foreach (Vertex v in uniqueVertices)
-            {
                 visibleVerticesData.AddRange(v.GetData());
+                visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
+                visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
             }
         }
 
@@ -373,17 +395,17 @@ namespace Engine3D
             Dictionary<Vector3, List<Vector3>> tangentSums = new Dictionary<Vector3, List<Vector3>>();
             Dictionary<Vector3, List<Vector3>> bitangentSums = new Dictionary<Vector3, List<Vector3>>();
 
-            foreach (var tri in tris)
+            for (int i = 0; i < indices.Count; i += 3)
             {
                 // Get the vertices of the triangle
-                Vector3 p0 = tri.v[0].p;
-                Vector3 p1 = tri.v[1].p;
-                Vector3 p2 = tri.v[2].p;
+                Vector3 p0 = uniqueVertices[(int)indices[i]].p;
+                Vector3 p1 = uniqueVertices[(int)indices[i+1]].p;
+                Vector3 p2 = uniqueVertices[(int)indices[i+2]].p;
 
                 // Get UVs of the triangle
-                Vector2 uv0 = new Vector2(tri.v[0].t.u, tri.v[0].t.v);
-                Vector2 uv1 = new Vector2(tri.v[1].t.u, tri.v[1].t.v);
-                Vector2 uv2 = new Vector2(tri.v[2].t.u, tri.v[2].t.v);
+                Vector2 uv0 = new Vector2(uniqueVertices[(int)indices[i]].t.u, uniqueVertices[(int)indices[i]].t.v);
+                Vector2 uv1 = new Vector2(uniqueVertices[(int)indices[i+1]].t.u, uniqueVertices[(int)indices[i+1]].t.v);
+                Vector2 uv2 = new Vector2(uniqueVertices[(int)indices[i+2]].t.u, uniqueVertices[(int)indices[i+2]].t.v);
 
                 // Compute the edges of the triangle in both object space and texture space
                 Vector3 edge1 = p1 - p0;
@@ -412,53 +434,42 @@ namespace Engine3D
                     f * (-deltaUV2.X * edge1.Z + deltaUV1.X * edge2.Z)
                 );
 
-                // Accumulate the tangents and bitangents
-                foreach (var vertex in tri.v)
+                for (int j = 0; j < 3; j++)
                 {
-                    if (!tangentSums.ContainsKey(vertex.p))
+                    if (!tangentSums.ContainsKey(uniqueVertices[(int)indices[i + j]].p))
                     {
-                        tangentSums[vertex.p] = new List<Vector3>();
-                        bitangentSums[vertex.p] = new List<Vector3>();
+                        tangentSums[uniqueVertices[(int)indices[i + j]].p] = new List<Vector3>();
+                        bitangentSums[uniqueVertices[(int)indices[i + j]].p] = new List<Vector3>();
                     }
 
-                    tangentSums[vertex.p].Add(tangent);
-                    bitangentSums[vertex.p].Add(bitangent);
+                    tangentSums[uniqueVertices[(int)indices[i + j]].p].Add(tangent);
+                    bitangentSums[uniqueVertices[(int)indices[i + j]].p].Add(bitangent);
                 }
             }
 
             // Average and normalize tangents and bitangents
-            foreach (var tri in tris)
+            for (int i = 0; i < indices.Count; i++)
             {
-                for (int i = 0; i < 3; i++)
-                {
-                    Vector3 vertex = tri.v[i].p;
+                Vector3 vertex = uniqueVertices[(int)indices[i]].p;
 
-                    Vector3 avgTangent = Average(tangentSums[vertex]).Normalized();
-                    if (float.IsNaN(avgTangent.X))
-                        avgTangent = Vector3.Zero;
-                    Vector3 avgBitangent = Average(bitangentSums[vertex]).Normalized();
-                    if (float.IsNaN(avgBitangent.X))
-                        avgBitangent = Vector3.Zero;
+                Vector3 avgTangent = Average(tangentSums[vertex]).Normalized();
+                if (float.IsNaN(avgTangent.X))
+                    avgTangent = Vector3.Zero;
+                Vector3 avgBitangent = Average(bitangentSums[vertex]).Normalized();
+                if (float.IsNaN(avgBitangent.X))
+                    avgBitangent = Vector3.Zero;
 
-                    tri.v[i].tan = avgTangent;
-                    tri.v[i].bitan = avgBitangent;
+                var v = uniqueVertices[(int)indices[i]];
+                v.tan = avgTangent;
+                v.bitan = avgBitangent;
+                uniqueVertices[(int)indices[i]] = v;
 
-                    var v = uniqueVertices[(int)tri.vi[i]];
-                    v.tan = avgTangent;
-                    v.bitan = avgBitangent;
-                    uniqueVertices[(int)tri.vi[i]] = v;
-                }
-            }
-
-            foreach(Vertex v in uniqueVertices)
-            {
                 visibleVerticesData.AddRange(v.GetData());
             }
         }
 
         public void ProcessObj(string relativeModelPath, float cr=1, float cg=1, float cb=1, float ca=1)
         {
-            tris = new List<triangle>();
             Color4 color = new Color4(cr, cg, cb, ca);
 
             string result;
@@ -543,20 +554,6 @@ namespace Engine3D
                                         n[i] = int.Parse(fStr[2]);
                                     }
 
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vector3[] { normals[n[0] - 1], normals[n[1] - 1], normals[n[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
-
-                                    tris.Last().v[0].pi = v[0] - 1;
-                                    tris.Last().v[1].pi = v[1] - 1;
-                                    tris.Last().v[2].pi = v[2] - 1;
-
-                                    tris.Last().v[0].c = color;
-                                    tris.Last().v[1].c = color;
-                                    tris.Last().v[2].c = color;
-
-                                    tris.Last().visibile = true;
-
                                     Vertex v1 = new Vertex(verts[v[0] - 1], normals[n[0] - 1], uvs[uv[0] - 1]) { pi = v[0] - 1, c = color };
                                     Vertex v2 = new Vertex(verts[v[1] - 1], normals[n[1] - 1], uvs[uv[1] - 1]) { pi = v[1] - 1, c = color };
                                     Vertex v3 = new Vertex(verts[v[2] - 1], normals[n[2] - 1], uvs[uv[2] - 1]) { pi = v[2] - 1, c = color };
@@ -565,45 +562,46 @@ namespace Engine3D
                                     {
                                         uniqueVertices.Add(v1);
                                         visibleVerticesData.AddRange(v1.GetData());
+                                        visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
+                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
-                                        tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
+                                        Bounds.Enclose(v1);
                                     }
                                     else
                                     {
                                         indices.Add(vertexHash[v1h]);
-                                        tris.Last().vi[0] = vertexHash[v1h];
                                     }
                                     int v2h = v2.GetHashCode();
                                     if (!vertexHash.ContainsKey(v2h))
                                     {
                                         uniqueVertices.Add(v2);
                                         visibleVerticesData.AddRange(v2.GetData());
+                                        visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
+                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
-                                        tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
+                                        Bounds.Enclose(v2);
                                     }
                                     else
                                     {
                                         indices.Add(vertexHash[v2h]);
-                                        tris.Last().vi[1] = vertexHash[v2h];
                                     }
                                     int v3h = v3.GetHashCode();
                                     if (!vertexHash.ContainsKey(v3h))
                                     {
                                         uniqueVertices.Add(v3);
                                         visibleVerticesData.AddRange(v3.GetData());
+                                        visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
+                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
-                                        tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
+                                        Bounds.Enclose(v3);
                                     }
                                     else
                                     {
                                         indices.Add(vertexHash[v3h]);
-                                        tris.Last().vi[2] = vertexHash[v3h];
                                     }
-
-                                    Bounds.Enclose(tris.Last());
 
                                     hasIndices = true;
                                 }
@@ -619,19 +617,6 @@ namespace Engine3D
                                         uv[i] = int.Parse(fStr[1]);
                                     }
 
-                                    tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] },
-                                                          new Vec2d[] { uvs[uv[0] - 1], uvs[uv[1] - 1], uvs[uv[2] - 1] }));
-
-                                    tris.Last().v[0].pi = v[0] - 1;
-                                    tris.Last().v[1].pi = v[1] - 1;
-                                    tris.Last().v[2].pi = v[2] - 1;
-
-                                    tris.Last().v[0].c = color;
-                                    tris.Last().v[1].c = color;
-                                    tris.Last().v[2].c = color;
-
-                                    tris.Last().visibile = true;
-
                                     Vertex v1 = new Vertex(verts[v[0] - 1], uvs[uv[0] - 1]) { pi = v[0] - 1, c = color };
                                     Vertex v2 = new Vertex(verts[v[1] - 1], uvs[uv[1] - 1]) { pi = v[1] - 1, c = color };
                                     Vertex v3 = new Vertex(verts[v[2] - 1], uvs[uv[2] - 1]) { pi = v[2] - 1, c = color };
@@ -640,45 +625,46 @@ namespace Engine3D
                                     {
                                         uniqueVertices.Add(v1);
                                         visibleVerticesData.AddRange(v1.GetData());
+                                        visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
+                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
-                                        tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
+                                        Bounds.Enclose(v1);
                                     }
                                     else
                                     {
                                         indices.Add(vertexHash[v1h]);
-                                        tris.Last().vi[0] = vertexHash[v1h];
                                     }
                                     int v2h = v2.GetHashCode();
                                     if (!vertexHash.ContainsKey(v2h))
                                     {
                                         uniqueVertices.Add(v2);
                                         visibleVerticesData.AddRange(v2.GetData());
+                                        visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
+                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
-                                        tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
+                                        Bounds.Enclose(v2);
                                     }
                                     else
                                     {
                                         indices.Add(vertexHash[v2h]);
-                                        tris.Last().vi[1] = vertexHash[v2h];
                                     }
                                     int v3h = v3.GetHashCode();
                                     if (!vertexHash.ContainsKey(v3h))
                                     {
                                         uniqueVertices.Add(v3);
                                         visibleVerticesData.AddRange(v3.GetData());
+                                        visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
+                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
                                         indices.Add((uint)uniqueVertices.Count - 1);
                                         vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
-                                        tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
+                                        Bounds.Enclose(v3);
                                     }
                                     else
                                     {
                                         indices.Add(vertexHash[v3h]);
-                                        tris.Last().vi[2] = vertexHash[v3h];
                                     }
-
-                                    Bounds.Enclose(tris.Last());
 
                                     hasIndices = true;
                                 }
@@ -689,18 +675,6 @@ namespace Engine3D
                                 string[] vStr = result.Substring(2).Split(" ");
                                 int[] v = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
 
-                                tris.Add(new triangle(new Vector3[] { verts[v[0] - 1], verts[v[1] - 1], verts[v[2] - 1] }));
-
-                                tris.Last().v[0].pi = v[0] - 1;
-                                tris.Last().v[1].pi = v[1] - 1;
-                                tris.Last().v[2].pi = v[2] - 1;
-
-                                tris.Last().v[0].c = color;
-                                tris.Last().v[1].c = color;
-                                tris.Last().v[2].c = color;
-
-                                tris.Last().visibile = true;
-
                                 Vertex v1 = new Vertex(verts[v[0] - 1]) { pi = v[0] - 1, c = color };
                                 Vertex v2 = new Vertex(verts[v[1] - 1]) { pi = v[1] - 1, c = color };
                                 Vertex v3 = new Vertex(verts[v[2] - 1]) { pi = v[2] - 1, c = color };
@@ -709,45 +683,46 @@ namespace Engine3D
                                 {
                                     uniqueVertices.Add(v1);
                                     visibleVerticesData.AddRange(v1.GetData());
+                                    visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
+                                    visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
                                     indices.Add((uint)uniqueVertices.Count - 1);
                                     vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
-                                    tris.Last().vi[0] = (uint)uniqueVertices.Count - 1;
+                                    Bounds.Enclose(v1);
                                 }
                                 else
                                 {
                                     indices.Add(vertexHash[v1h]);
-                                    tris.Last().vi[0] = vertexHash[v1h];
                                 }
                                 int v2h = v2.GetHashCode();
                                 if (!vertexHash.ContainsKey(v2h))
                                 {
                                     uniqueVertices.Add(v2);
                                     visibleVerticesData.AddRange(v2.GetData());
+                                    visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
+                                    visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
                                     indices.Add((uint)uniqueVertices.Count - 1);
                                     vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
-                                    tris.Last().vi[1] = (uint)uniqueVertices.Count - 1;
+                                    Bounds.Enclose(v2);
                                 }
                                 else
                                 {
                                     indices.Add(vertexHash[v2h]);
-                                    tris.Last().vi[1] = vertexHash[v2h];
                                 }
                                 int v3h = v3.GetHashCode();
                                 if (!vertexHash.ContainsKey(v3h))
                                 {
                                     uniqueVertices.Add(v3);
                                     visibleVerticesData.AddRange(v3.GetData());
+                                    visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
+                                    visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
                                     indices.Add((uint)uniqueVertices.Count - 1);
                                     vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
-                                    tris.Last().vi[2] = (uint)uniqueVertices.Count - 1;
+                                    Bounds.Enclose(v3);
                                 }
                                 else
                                 {
                                     indices.Add(vertexHash[v3h]);
-                                    tris.Last().vi[2] = vertexHash[v3h];
                                 }
-
-                                Bounds.Enclose(tris.Last());
 
                                 hasIndices = true;
                             }
@@ -760,6 +735,11 @@ namespace Engine3D
             }
 
             visibleIndices = new List<uint>(indices);
+            groupedIndices = indices
+               .Select((x, i) => new { Index = i, Value = x })
+               .GroupBy(x => x.Index / 3)
+               .Select(x => x.Select(v => v.Value).ToList())
+               .ToList();
         }
 
     }

@@ -33,10 +33,6 @@ namespace Engine3D
         public bool drawNormals = false;
         public WireframeMesh normalMesh;
 
-        private List<float> vertices = new List<float>();
-        public List<float> verticesOnlyPos = new List<float>();
-        private List<float> verticesOnlyPosAndNormal = new List<float>();
-
         private Vector2 windowSize;
 
         private Matrix4 viewMatrix, projectionMatrix;
@@ -66,11 +62,11 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
 
@@ -96,11 +92,11 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -109,7 +105,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
             this.parentObject.name = modelName;
@@ -127,13 +123,17 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
-            this.tris = new List<triangle>(tris);
 
-            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            uniqueVertices = meshData.vertices;
+            visibleVerticesData = meshData.visibleVerticesData;
+            indices = meshData.indices;
+            Bounds = meshData.bounds;
+
+            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -142,7 +142,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
             this.parentObject.name = modelName;
@@ -155,13 +155,17 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
-            this.tris = new List<triangle>(tris);
 
-            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            uniqueVertices = meshData.vertices;
+            visibleVerticesData = meshData.visibleVerticesData;
+            indices = meshData.indices;
+            Bounds = meshData.bounds;
+
+            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (tris.Count() > 0 && tris[0].gotPointNormals)
+            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -377,9 +381,6 @@ namespace Engine3D
                 CalculateFrustumVisibility();
             }
 
-            if (parentObject.isSelected)
-                verticesOnlyPos.Clear();
-
             #region not working parallelization
             //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             //Parallel.ForEach(uniqueVertices, parallelOptions,
@@ -433,20 +434,20 @@ namespace Engine3D
             return (visibleVerticesData, visibleIndices);
         }
 
-        public List<float> DrawOnlyPos(GameState gameRunning, Shader shader, VAO _vao)
+        public (List<float>, List<uint>) DrawOnlyPos(GameState gameRunning, Shader shader, VAO _vao)
         {
             if (!parentObject.isEnabled)
-                return new List<float>();
+                return (new List<float>(), new List<uint>());
 
             _vao.Bind();
 
             if (!recalculateOnlyPos)
             {
-                if (gameRunning == GameState.Stopped && verticesOnlyPos.Count > 0)
+                if (gameRunning == GameState.Stopped && visibleVerticesDataOnlyPos.Count > 0)
                 {
                     SendUniformsOnlyPos(shader);
 
-                    return verticesOnlyPos;
+                    return (visibleVerticesDataOnlyPos, visibleIndices);
                 }
             }
             else
@@ -455,46 +456,25 @@ namespace Engine3D
                 CalculateFrustumVisibility();
             }
 
-            verticesOnlyPos = new List<float>();
-
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(tris, parallelOptions,
-                () => new List<float>(),
-                 (tri, loopState, localVertices) =>
-                 {
-                     if (tri.visibile)
-                     {
-                         AddVerticesOnlyPos(localVertices, tri);
-                     }
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (verticesOnlyPos)
-                     {
-                         verticesOnlyPos.AddRange(localVertices);
-                     }
-                 });
-
             SendUniformsOnlyPos(shader);
 
-            return verticesOnlyPos;
+            return (visibleVerticesDataOnlyPos, visibleIndices);
         }
         
-        public List<float> DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO _vao)
+        public (List<float>, List<uint>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO _vao)
         {
             if (!parentObject.isEnabled)
-                return new List<float>();
+                return (new List<float>(), new List<uint>());
 
             _vao.Bind();
 
             if (!recalculateOnlyPosAndNormal)
             {
-                if (gameRunning == GameState.Stopped && verticesOnlyPosAndNormal.Count > 0)
+                if (gameRunning == GameState.Stopped && visibleVerticesDataOnlyPosAndNormal.Count > 0)
                 {
                     SendUniformsOnlyPos(shader);
 
-                    return verticesOnlyPosAndNormal;
+                    return (visibleVerticesDataOnlyPosAndNormal, visibleIndices);
                 }
             }
             else
@@ -503,30 +483,9 @@ namespace Engine3D
                 CalculateFrustumVisibility();
             }
 
-            verticesOnlyPosAndNormal = new List<float>();
-
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(tris, parallelOptions,
-                () => new List<float>(),
-                 (tri, loopState, localVertices) =>
-                 {
-                     if (tri.visibile)
-                     {
-                         AddVerticesOnlyPosAndNormal(localVertices, tri);
-                     }
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (verticesOnlyPosAndNormal)
-                     {
-                         verticesOnlyPosAndNormal.AddRange(localVertices);
-                     }
-                 });
-
             SendUniformsOnlyPos(shader);
 
-            return verticesOnlyPosAndNormal;
+            return (visibleVerticesDataOnlyPos, visibleIndices);
         }
 
         //public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
@@ -616,35 +575,27 @@ namespace Engine3D
         //    return vertices;
         //}
 
-        public void GetCookedData(out PxVec3[] verts, out int[] indices)
+        public void GetCookedData(out PxVec3[] verts, out int[] indicesOut)
         {
-            int vertCount = tris.Count() * 3;
+            int vertCount = indices.Count;
             int index = 0;
             verts = new PxVec3[allVerts.Count()];
-            indices = new int[vertCount];
+            indicesOut = new int[vertCount];
 
             for (int i = 0; i < allVerts.Count(); i++)
             {
                 verts[i] = ConvertToNDCPxVec3(i);
             }
 
-            foreach (triangle tri in tris)
+            for (int i = 0; i < indices.Count; i+=3)
             {
-                indices[index] = tri.v[0].pi;
+                indicesOut[index] = uniqueVertices[(int)indices[i]].pi;
                 index++;
-                indices[index] = tri.v[1].pi;
+                indicesOut[index] = uniqueVertices[(int)indices[i]+1].pi;
                 index++;
-                indices[index] = tri.v[2].pi;
+                indicesOut[index] = uniqueVertices[(int)indices[i]+2].pi;
                 index++;
             }
-        }
-
-        public void OnlyTriangle()
-        {
-            tris = new List<triangle>
-                {
-                    new triangle(new Vector3[] { new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f), new Vector3(1.0f, 1.0f, 0.0f) }, new Vec2d[] { new Vec2d(0.0f, 1.0f), new Vec2d(0.0f, 0.0f), new Vec2d(1.0f, 0.0f) })
-                };
         }
     }
 }

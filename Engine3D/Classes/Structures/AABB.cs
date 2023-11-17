@@ -64,6 +64,12 @@ namespace Engine3D
             }
         }
 
+        public void Enclose(Vertex v)
+        {
+            Min = Helper.Vector3Min(Min, v.p);
+            Max = Helper.Vector3Max(Max, v.p);
+        }
+
         public void Enclose(Vector3 point)
         {
             Min = Vector3.ComponentMin(Min, point);

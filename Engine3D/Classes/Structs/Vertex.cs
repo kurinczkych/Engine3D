@@ -17,6 +17,8 @@ namespace Engine3D
         public Vector3 tan;
         public Vector3 bitan;
 
+        public bool gotNormal;
+
         public Vertex()
         {
             p = Vector3.Zero;
@@ -26,6 +28,7 @@ namespace Engine3D
             tan = Vector3.Zero;
             bitan = Vector3.Zero;
             pi = 0;
+            gotNormal = false;
         }
 
         public Vertex(Vector3 pos)
@@ -37,6 +40,7 @@ namespace Engine3D
             tan = Vector3.Zero;
             bitan = Vector3.Zero;
             pi = 0;
+            gotNormal = false;
         }
 
         public Vertex(Vector3 pos, Vec2d tex)
@@ -48,6 +52,7 @@ namespace Engine3D
             tan = Vector3.Zero;
             bitan = Vector3.Zero;
             pi = 0;
+            gotNormal = false;
         }
 
         public Vertex(Vector3 pos, Vector3 normal, Vec2d tex)
@@ -59,6 +64,7 @@ namespace Engine3D
             tan = Vector3.Zero;
             bitan = Vector3.Zero;
             pi = 0;
+            gotNormal = true;
         }
 
         public float[] GetData()
@@ -78,6 +84,15 @@ namespace Engine3D
             return new float[]
             {
                 p.X, p.Y, p.Z
+            };
+        }
+
+        public float[] GetDataOnlyPosAndNormal()
+        {
+            return new float[]
+            {
+                p.X, p.Y, p.Z,
+                n.X, n.Y, n.Z
             };
         }
 

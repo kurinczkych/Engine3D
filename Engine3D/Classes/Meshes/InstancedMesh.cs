@@ -64,7 +64,7 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
@@ -75,7 +75,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
@@ -91,12 +91,18 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
-            this.tris = new List<triangle>(tris);
 
-            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            uniqueVertices = meshData.vertices;
+            visibleVerticesData = meshData.visibleVerticesData;
+            indices = meshData.indices;
+            Bounds = meshData.bounds;
+
+            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
+            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+                ComputeVertexNormals();
 
             ComputeTangents();
 
@@ -104,7 +110,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, List<triangle> tris, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
@@ -115,12 +121,18 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
-            this.tris = new List<triangle>(tris);
 
-            if (tris.Count() > 0 && !tris[0].gotPointNormals)
+            uniqueVertices = meshData.vertices;
+            visibleVerticesData = meshData.visibleVerticesData;
+            indices = meshData.indices;
+            Bounds = meshData.bounds;
+
+            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
+            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+                ComputeVertexNormals();
 
             ComputeTangents();
 
@@ -320,15 +332,6 @@ namespace Engine3D
             instancedVertices = new List<float>();
 
             ObjectType type = parentObject.GetObjectType();
-
-            if (parentObject.BSPStruct != null)
-            {
-                tris = parentObject.BSPStruct.GetTrianglesFrontToBack(camera);
-            }
-            else if (parentObject.GridStructure != null)
-            {
-                tris = parentObject.GridStructure.GetTriangles(camera);
-            }
 
             //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             //Parallel.ForEach(tris, parallelOptions,

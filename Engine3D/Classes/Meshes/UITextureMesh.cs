@@ -140,13 +140,14 @@ namespace Engine3D
 
         private void OnlyQuad()
         {
-            tris = new List<triangle>
-            {
-                new triangle(new Vector3[] { new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 0, 0) },
-                                  new Vec2d[] { new Vec2d(0, 0), new Vec2d(0, 1), new Vec2d(1, 0) }),
-                new triangle(new Vector3[] { new Vector3(1, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0) },
-                                  new Vec2d[] { new Vec2d(1, 0), new Vec2d(0, 1), new Vec2d(1, 1) })
-            };
+            throw new NotImplementedException();
+            //tris = new List<triangle>
+            //{
+            //    new triangle(new Vector3[] { new Vector3(0, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 0, 0) },
+            //                      new Vec2d[] { new Vec2d(0, 0), new Vec2d(0, 1), new Vec2d(1, 0) }),
+            //    new triangle(new Vector3[] { new Vector3(1, 0, 0), new Vector3(0, 1, 0), new Vector3(1, 1, 0) },
+            //                      new Vec2d[] { new Vec2d(1, 0), new Vec2d(0, 1), new Vec2d(1, 1) })
+            //};
         }
     }
 }

@@ -67,7 +67,12 @@ namespace Engine3D
         public void ChangeText(string text)
         {
             currentText = text;
-            tris = textGenerator.GetTriangles(text);
+
+            MeshData meshData = textGenerator.GetTriangles(text);
+            uniqueVertices = meshData.vertices;
+            visibleVerticesData = meshData.visibleVerticesData;
+            indices = meshData.indices;
+            Bounds = meshData.bounds;
         }
 
         private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
@@ -129,12 +134,14 @@ namespace Engine3D
                 transformMatrix = s * toOrigin * rZ * fromOrigin * t;
             }
 
-            foreach (triangle tri in tris)
-            {
-                vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
-                vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
-                vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
-            }
+            throw new NotImplementedException();
+
+            //foreach (triangle tri in tris)
+            //{
+            //    vertices.AddRange(ConvertToNDC(tri, 0, ref transformMatrix));
+            //    vertices.AddRange(ConvertToNDC(tri, 1, ref transformMatrix));
+            //    vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
+            //}
 
             SendUniforms();
             parentObject.texture.Bind();

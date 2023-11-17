@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Reflection.Metadata.Ecma335;
 
 #pragma warning disable CS8767
 
@@ -309,11 +310,11 @@ namespace Engine3D
                 mesh.modelName = Path.GetFileName(mesh.modelPath);
                 mesh.ProcessObj(mesh.modelPath);
 
-                if (mesh.tris.Count() > 0 && !mesh.tris[0].gotPointNormals)
+                if (mesh.uniqueVertices.Count() > 0 && !mesh.uniqueVertices[0].gotNormal)
                 {
                     mesh.ComputeVertexNormalsSpherical();
                 }
-                else if (mesh.tris.Count() > 0 && mesh.tris[0].gotPointNormals)
+                else if (mesh.uniqueVertices.Count() > 0 && mesh.uniqueVertices[0].gotNormal)
                     mesh.ComputeVertexNormals();
 
                 mesh.ComputeTangents();
@@ -476,9 +477,9 @@ namespace Engine3D
             meshType = mesh.GetType();
 
             Bounds = new AABB();
-            foreach(triangle tri in mesh.tris)
+            foreach(Vertex v in mesh.uniqueVertices)
             {
-                Bounds.Enclose(tri);
+                Bounds.Enclose(v);
             }
 
             StaticFriction = 0.5f;
@@ -492,29 +493,33 @@ namespace Engine3D
         public void BuildBVH()
         {
             //Calculating bounding volume hiearchy
-            if (meshType == typeof(Mesh) ||
-                meshType == typeof(InstancedMesh))
-            {
-                mesh.BVHStruct = new BVH(mesh.tris);
-            }
+            //if (meshType == typeof(Mesh) ||
+            //    meshType == typeof(InstancedMesh))
+            //{
+            //    mesh.BVHStruct = new BVH(mesh.tris);
+            //}
+            throw new NotImplementedException();
         }
 
         public void BuildBSP()
         {
-            BSPStruct = new BSP(((Mesh)mesh).tris);
+            //BSPStruct = new BSP(((Mesh)mesh).tris);
+            throw new NotImplementedException();
         }
 
         public void BuildOctree()
         {
-            Octree = new Octree();
-            Octree.Build(((Mesh)mesh).tris, ((Mesh)mesh).Bounds);
+            //Octree = new Octree();
+            //Octree.Build(((Mesh)mesh).tris, ((Mesh)mesh).Bounds);
+            throw new NotImplementedException();
         }
 
         public void BuildGrid(Shader currentShader, Shader GridShader)
         {
-            GridShader.Use();
-            GridStructure = new GridStructure(((Mesh)mesh).tris, ((Mesh)mesh).Bounds, 20, GridShader.id);
-            currentShader.Use();
+            //GridShader.Use();
+            //GridStructure = new GridStructure(((Mesh)mesh).tris, ((Mesh)mesh).Bounds, 20, GridShader.id);
+            //currentShader.Use();
+            throw new NotImplementedException();
         }
 
         public void SetBillboarding(bool useBillboarding)
@@ -885,7 +890,7 @@ namespace Engine3D
             if (!mesh.hasIndices)
                 throw new Exception("The mesh doesn't have triangle indices!");
 
-            uint count = (uint)((Mesh)mesh).tris.Count() * 3;
+            uint count = (uint)((Mesh)mesh).indices.Count;
             PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
             meshDesc.points.count = count;
             meshDesc.points.stride = (uint)sizeof(PxVec3);
@@ -904,7 +909,7 @@ namespace Engine3D
 
             meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
 
-            meshDesc.triangles.count = (uint)((Mesh)mesh).tris.Count();
+            meshDesc.triangles.count = (uint)((Mesh)mesh).indices.Count() / 3;
             meshDesc.triangles.stride = 3 * sizeof(int);
             meshDesc.triangles.data = (int*)indicesHandle.AddrOfPinnedObject().ToPointer();
 
@@ -917,7 +922,7 @@ namespace Engine3D
             {
                 // Establish a no GC region. The size parameter specifies how much memory
                 // to reserve for the small object heap.
-                if (GC.TryStartNoGCRegion(((Mesh)mesh).tris.Count() * 60))
+                if (GC.TryStartNoGCRegion((uint)((Mesh)mesh).indices.Count() / 3 * 60))
                 {
                     triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
 
@@ -1062,11 +1067,24 @@ namespace Engine3D
         #endregion
 
         #region SimpleMeshes
-        public static List<triangle> GetUnitCube(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Vec2d[] t, Color4 c)
+        {
+            list.Add(new Vertex(v[0], t[0]) { c = c });
+            list.Add(new Vertex(v[1], t[1]) { c = c });
+            list.Add(new Vertex(v[2], t[2]) { c = c });
+        }
+        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Color4 c)
+        {
+            list.Add(new Vertex(v[0]) { c = c });
+            list.Add(new Vertex(v[1]) { c = c });
+            list.Add(new Vertex(v[2]) { c = c });
+        }
+
+        public static MeshData GetUnitCube(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
             Color4 c = new Color4(r, g, b, a);
 
-            List<triangle> tris = new List<triangle>();
+            MeshData meshData = new MeshData();
 
             float halfSize = 0.5f;
 
@@ -1085,36 +1103,47 @@ namespace Engine3D
             Vec2d t3 = new Vec2d(1, 1);
             Vec2d t4 = new Vec2d(0, 1);
 
-            // Back face
-            tris.Add(new triangle(new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }, new Color4[] { c, c, c }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }, new Color4[] { c, c, c }) { visibile = true });
+            List<Vertex> list = new List<Vertex>();
 
-            // Front face
-            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, new Color4[] { c, c, c }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, new Color4[] { c, c, c }) { visibile = true });
+            AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }, c);
+            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
+            AddToVertexList(ref list, new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }, c);
+            AddToVertexList(ref list, new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }, c);
+            AddToVertexList(ref list, new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }, c);
+            AddToVertexList(ref list, new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }, c);
 
-            // Left face
-            tris.Add(new triangle(new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }, new Color4[] { c, c, c }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }, new Color4[] { c, c, c }) { visibile = true });
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.vertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
+                    meshData.bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
 
-            // Right face
-            tris.Add(new triangle(new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }, new Color4[] { c, c, c }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }, new Color4[] { c, c, c }) { visibile = true });
-
-            // Top face
-            tris.Add(new triangle(new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }, new Color4[] { c, c, c }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }, new Color4[] { c, c, c }) { visibile = true });
-
-            // Bottom face
-            tris.Add(new triangle(new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }, new Color4[] { c, c, c }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }, new Color4[] { c, c, c }) { visibile = true });
-
-            return tris;
+            return meshData;
         }
 
-        public static List<triangle> GetUnitFace()
+        public static MeshData GetUnitFace(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
-            List<triangle> tris = new List<triangle>();
+            Color4 c = new Color4(r, g, b, a);
+
+            MeshData meshData = new MeshData();
 
             float halfSize = 0.5f;
 
@@ -1129,21 +1158,45 @@ namespace Engine3D
             Vec2d t3 = new Vec2d(1, 1);
             Vec2d t4 = new Vec2d(0, 1);
 
-            // Front face
-            tris.Add(new triangle(new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }) { visibile = true });
-            tris.Add(new triangle(new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }) { visibile = true });
+            List<Vertex> list = new List<Vertex>();
 
-            return tris;
+            // Front face
+            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
+
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.vertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
+                    meshData.bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            return meshData;
         }
 
-        public static List<triangle> GetUnitSphere(float radius = 1, int resolution = 10)
+        public static MeshData GetUnitSphere(float radius = 1, int resolution = 10, 
+                                                                                  float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
-            List<triangle> tris = new List<triangle>();
+            Color4 c = new Color4(r, g, b, a);
+
+            MeshData meshData = new MeshData();
 
             // Validate inputs
             if (radius <= 0 || resolution < 3)
                 throw new ArgumentException("Invalid radius or resolution.");
 
+            List<Vertex> list = new List<Vertex>();
             for (int i = 0; i < resolution; i++)
             {
                 for (int j = 0; j < resolution; j++)
@@ -1173,22 +1226,44 @@ namespace Engine3D
                         radius * MathF.Cos(v2),
                         radius * MathF.Sin(v2) * MathF.Sin(u2));
 
-                    tris.Add(new triangle(new Vector3[] { p1, p2, p3 }) { visibile = true });
-                    tris.Add(new triangle(new Vector3[] { p2, p4, p3 }) { visibile = true });
+                    AddToVertexList(ref list, new Vector3[] { p1, p2, p3 }, c);
+                    AddToVertexList(ref list, new Vector3[] { p2, p4, p3 }, c);
                 }
             }
 
-            return tris;
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.vertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
+                    meshData.bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            return meshData;
         }
 
-        public static List<triangle> GetUnitCapsule(float radius = 0.5f, float halfHeight = 0.5f, int resolution = 10)
+        public static MeshData GetUnitCapsule(float radius = 0.5f, float halfHeight = 0.5f, int resolution = 10,
+                                                                                   float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
-            List<triangle>  tris = new List<triangle>();
+            Color4 c = new Color4(r, g, b, a);
+
+            MeshData meshData = new MeshData();
 
             // Validate inputs
             if (radius <= 0 || resolution < 3)
                 throw new ArgumentException("Invalid radius or resolution.");
 
+            List<Vertex> list = new List<Vertex>();
             // Generate the top and bottom hemispheres
             for (int i = 0; i < resolution; i++)
             {
@@ -1219,8 +1294,8 @@ namespace Engine3D
                         radius * MathF.Sin(v2) * MathF.Cos(u2),
                         radius * MathF.Sin(v2) * MathF.Sin(u2));
 
-                    tris.Add(new triangle(p1, p3, p2));
-                    tris.Add(new triangle(p2, p3, p4));
+                    AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, c);
+                    AddToVertexList(ref list, new Vector3[] { p2, p3, p4 }, c);
 
                     // Back hemisphere (invert the x-coordinates)
                     Vector3 p1b = new Vector3(-p1.X, p1.Y, p1.Z);
@@ -1228,8 +1303,8 @@ namespace Engine3D
                     Vector3 p3b = new Vector3(-p3.X, p3.Y, p3.Z);
                     Vector3 p4b = new Vector3(-p4.X, p4.Y, p4.Z);
 
-                    tris.Add(new triangle(p1b, p2b, p3b) { visibile = true });
-                    tris.Add(new triangle(p2b, p4b, p3b) { visibile = true });
+                    AddToVertexList(ref list, new Vector3[] { p1b, p2b, p3b }, c);
+                    AddToVertexList(ref list, new Vector3[] { p2b, p4b, p3b }, c);
                 }
             }
 
@@ -1245,11 +1320,29 @@ namespace Engine3D
                 Vector3 p3 = new Vector3(-halfHeight, p1.Y, p1.Z);
                 Vector3 p4 = new Vector3(-halfHeight, p2.Y, p2.Z);
 
-                tris.Add(new triangle(p1, p3, p2) { visibile = true });
-                tris.Add(new triangle(p2, p3, p4) { visibile = true });
+                AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, c);
+                AddToVertexList(ref list, new Vector3[] { p2, p3, p4 }, c);
             }
 
-            return tris;
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.vertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
+                    meshData.bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            return meshData;
         }
         #endregion
     }

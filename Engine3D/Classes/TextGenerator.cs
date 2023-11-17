@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Intrinsics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -43,8 +44,13 @@ namespace Engine3D
             public int y { get; set; }
             public int yoffset { get; set; }
 
-            public triangle t1;
-            public triangle t2;
+            public Vertex v1;
+            public Vertex v2;
+            public Vertex v3;
+
+            public Vertex v4;
+            public Vertex v5;
+            public Vertex v6;
         }
 
         private SortedDictionary<char, Symbol> symbols { get; set; }
@@ -69,15 +75,19 @@ namespace Engine3D
             symbols = new SortedDictionary<char, Symbol>();
             foreach (Symbol s in font.symbols)
             {
-                var tris = Generate(s.c, s);
-                s.t1 = tris[0];
-                s.t2 = tris[1];
+                var vertices = Generate(s.c, s);
+                s.v1 = vertices[0];
+                s.v2 = vertices[1];
+                s.v3 = vertices[2];
+                s.v4 = vertices[3];
+                s.v5 = vertices[4];
+                s.v6 = vertices[5];
 
                 symbols.Add(s.c, s);
             }
         }
 
-        private List<triangle> Generate(char c, Symbol s)
+        private List<Vertex> Generate(char c, Symbol s)
         {
             Vector2 start = Vector2.Zero;
 
@@ -94,63 +104,92 @@ namespace Engine3D
             Vector2 bottomLeft = new Vector2(s.x / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
             Vector2 bottomRight = new Vector2((s.x + s.width) / (float)font.config.textureWidth, (s.y + s.height) / (float)font.config.textureHeight);
 
-            triangle t1 = new triangle();
-            t1.v[0].p.X = start.X;
-            t1.v[0].p.Y = start.Y;
-            t1.v[0].t.u = topleft.X;
-            t1.v[0].t.v = topleft.Y;
-            t1.v[0].c = color;
-            t1.v[2].p.X = start.X;
-            t1.v[2].p.Y = start.Y + height;
-            t1.v[2].t.u = bottomLeft.X;
-            t1.v[2].t.v = bottomLeft.Y;
-            t1.v[2].c = color;
-            t1.v[1].p.X = start.X + width;
-            t1.v[1].p.Y = start.Y;
-            t1.v[1].t.u = topRight.X;
-            t1.v[1].t.v = topRight.Y;
-            t1.v[1].c = color;
+            Vertex v1 = new Vertex();
+            v1.p.X = start.X;
+            v1.p.Y = start.Y;
+            v1.t.u = topleft.X;
+            v1.t.v = topleft.Y;
+            v1.c = color;
+            Vertex v3 = new Vertex();
+            v3.p.X = start.X;
+            v3.p.Y = start.Y + height;
+            v3.t.u = bottomLeft.X;
+            v3.t.v = bottomLeft.Y;
+            v3.c = color;
+            Vertex v2 = new Vertex();
+            v2.p.X = start.X + width;
+            v2.p.Y = start.Y;
+            v2.t.u = topRight.X;
+            v2.t.v = topRight.Y;
+            v2.c = color;
 
-            triangle t2 = new triangle();
-            t2.v[0].p.X = start.X + width;
-            t2.v[0].p.Y = start.Y;
-            t2.v[0].t.u = topRight.X;
-            t2.v[0].t.v = topRight.Y;
-            t2.v[0].c = color;
-            t2.v[2].p.X = start.X;
-            t2.v[2].p.Y = start.Y + height;
-            t2.v[2].t.u = bottomLeft.X;
-            t2.v[2].t.v = bottomLeft.Y;
-            t2.v[2].c = color;
-            t2.v[1].p.X = start.X + width;
-            t2.v[1].p.Y = start.Y + height;
-            t2.v[1].t.u = bottomRight.X;
-            t2.v[1].t.v = bottomRight.Y;
-            t2.v[1].c = color;
+            Vertex v4 = new Vertex();
+            v4.p.X = start.X + width;
+            v4.p.Y = start.Y;
+            v4.t.u = topRight.X;
+            v4.t.v = topRight.Y;
+            v4.c = color;
+            Vertex v6 = new Vertex();
+            v6.p.X = start.X;
+            v6.p.Y = start.Y + height;
+            v6.t.u = bottomLeft.X;
+            v6.t.v = bottomLeft.Y;
+            v6.c = color;
+            Vertex v5 = new Vertex();
+            v5.p.X = start.X + width;
+            v5.p.Y = start.Y + height;
+            v5.t.u = bottomRight.X;
+            v5.t.v = bottomRight.Y;
+            v5.c = color;
 
-            return new List<triangle> { t1, t2 };
+            return new List<Vertex>() { v1, v2, v3, v4, v5, v6 };
         }
 
-        public List<triangle> GetTriangles(string t)
+
+        public MeshData GetTriangles(string t)
         {
-            List<triangle> tris = new List<triangle>();
+            MeshData meshData = new MeshData();
+
+            List<Vertex> list = new List<Vertex>();
 
             Vector2 currentPos = Vector2.Zero;
             foreach(char c in t)
             {
                 Symbol s = symbols[c];
-                triangle t1 = s.t1.GetCopy();
-                triangle t2 = s.t2.GetCopy();
-                t1.TransformPosition(new Vector3(currentPos.X, currentPos.Y, 0));
-                t2.TransformPosition(new Vector3(currentPos.X, currentPos.Y, 0));
 
-                tris.Add(t1);
-                tris.Add(t2);
+                Vertex v1 = s.v1; Vertex v2 = s.v2; Vertex v3 = s.v3;
+                Vertex v4 = s.v4; Vertex v5 = s.v5; Vertex v6 = s.v6;
+                List<Vertex> sublist = new List<Vertex>() { v1, v2, v3, v4, v5, v6 };
+
+                for (int i = 0; i < sublist.Count; i++)
+                {
+                    var a = sublist[i];
+                    a.p += new Vector3(currentPos.X, currentPos.Y, 0);
+                    sublist[i] = a;
+                }
 
                 currentPos.X += s.width;
             }
 
-            return tris;
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.vertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
+                    meshData.bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            return meshData;
         }
 
         private string GetFile(string fileName)
