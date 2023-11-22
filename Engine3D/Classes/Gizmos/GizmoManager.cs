@@ -113,59 +113,45 @@ namespace Engine3D
                 }
 
                 moverGizmo.GetMesh().RecalculateModelMatrix(toUpdate);
+                moverGizmo.GetMesh().AllIndicesVisible();
             }
             lastGizmoType = gizmoType;
         }
 
         private void CreateMoverGizmos()
         {
-            //float moverGizmoSize = 3;
-            //float otherAxisScale = 0.5f;
+            float moverGizmoSize = 3;
+            float otherAxisScale = 0.5f;
 
-            //List<triangle> xTris = Object.GetUnitCube(1,0,0,1);
-            //Object moverGizmoX = new Object(ObjectType.Cube, 1);
-            //Matrix4 xMat = Matrix4.CreateScale(new Vector3(moverGizmoSize, otherAxisScale, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(2, 0, 0));
-            //foreach (triangle tri in xTris)
-            //{
-            //    for (int i = 0; i < 3; i++)
-            //    {
-            //        tri.v[i].p = Vector3.TransformPosition(tri.v[i].p, xMat);
-            //    }
-            //}
-            //Mesh xMesh = new Mesh(vao, vbo, shader.id, "xMesh", xTris, camera.screenSize, ref camera, ref moverGizmoX);
-            //xMesh.useShading = false;
-            //moverGizmoX.AddMesh(xMesh);
-            //moverGizmos.Add(moverGizmoX);
+            MeshData meshDataX = Object.GetUnitCube(1, 0, 0, 1);
+            Object moverGizmoX = new Object(ObjectType.Cube, 1);
+            Matrix4 xMat = Matrix4.CreateScale(new Vector3(moverGizmoSize, otherAxisScale, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(2, 0, 0));
+            meshDataX.TransformMeshData(xMat);
+            Mesh xMesh = new Mesh(vao, vbo, shader.id, "xMesh", meshDataX, camera.screenSize, ref camera, ref moverGizmoX);
+            xMesh.useShading = false;
+            moverGizmoX.AddMesh(xMesh);
+            xMesh.AllIndicesVisible();
+            moverGizmos.Add(moverGizmoX);
 
-            //List<triangle> yTris = Object.GetUnitCube(0, 1, 0, 1);
-            //Object moverGizmoY = new Object(ObjectType.Cube, 2);
-            //Matrix4 yMat = Matrix4.CreateScale(new Vector3(otherAxisScale, moverGizmoSize, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(0, 2, 0));
-            //foreach (triangle tri in yTris)
-            //{
-            //    for (int i = 0; i < 3; i++)
-            //    {
-            //        tri.v[i].p = Vector3.TransformPosition(tri.v[i].p, yMat);
-            //    }
-            //}
-            //Mesh yMesh = new Mesh(vao, vbo, shader.id, "yMesh", yTris, camera.screenSize, ref camera, ref moverGizmoY);
-            //yMesh.useShading = false;
-            //moverGizmoY.AddMesh(yMesh);
-            //moverGizmos.Add(moverGizmoY);
+            MeshData meshDataY = Object.GetUnitCube(0, 1, 0, 1);
+            Object moverGizmoY = new Object(ObjectType.Cube, 2);
+            Matrix4 yMat = Matrix4.CreateScale(new Vector3(otherAxisScale, moverGizmoSize, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(0, 2, 0));
+            meshDataY.TransformMeshData(yMat);
+            Mesh yMesh = new Mesh(vao, vbo, shader.id, "yMesh", meshDataY, camera.screenSize, ref camera, ref moverGizmoY);
+            yMesh.useShading = false;
+            moverGizmoY.AddMesh(yMesh);
+            yMesh.AllIndicesVisible();
+            moverGizmos.Add(moverGizmoY);
 
-            //List<triangle> zTris = Object.GetUnitCube(0, 0, 1, 1);
-            //Object moverGizmoZ = new Object(ObjectType.Cube, 3);
-            //Matrix4 zMat = Matrix4.CreateScale(new Vector3(otherAxisScale, otherAxisScale, moverGizmoSize)) * Matrix4.CreateTranslation(new Vector3(0, 0, 2));
-            //foreach (triangle tri in zTris)
-            //{
-            //    for (int i = 0; i < 3; i++)
-            //    {
-            //        tri.v[i].p = Vector3.TransformPosition(tri.v[i].p, zMat);
-            //    }
-            //}
-            //Mesh zMesh = new Mesh(vao, vbo, shader.id, "zMesh", zTris, camera.screenSize, ref camera, ref moverGizmoZ);
-            //zMesh.useShading = false;
-            //moverGizmoZ.AddMesh(zMesh);
-            //moverGizmos.Add(moverGizmoZ);
+            MeshData meshDataZ = Object.GetUnitCube(0, 0, 1, 1);
+            Object moverGizmoZ = new Object(ObjectType.Cube, 3);
+            Matrix4 zMat = Matrix4.CreateScale(new Vector3(otherAxisScale, otherAxisScale, moverGizmoSize)) * Matrix4.CreateTranslation(new Vector3(0, 0, 2));
+            meshDataZ.TransformMeshData(zMat);
+            Mesh zMesh = new Mesh(vao, vbo, shader.id, "zMesh", meshDataZ, camera.screenSize, ref camera, ref moverGizmoZ);
+            zMesh.useShading = false;
+            moverGizmoZ.AddMesh(zMesh);
+            zMesh.AllIndicesVisible();
+            moverGizmos.Add(moverGizmoZ);
         }
     }
 }

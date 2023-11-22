@@ -1136,6 +1136,12 @@ namespace Engine3D
                 }
             }
 
+            meshData.groupedIndices = meshData.indices
+               .Select((x, i) => new { Index = i, Value = x })
+               .GroupBy(x => x.Index / 3)
+               .Select(x => x.Select(v => v.Value).ToList())
+               .ToList();
+
             return meshData;
         }
 
@@ -1181,6 +1187,12 @@ namespace Engine3D
                     meshData.indices.Add(hash[vh]);
                 }
             }
+
+            meshData.groupedIndices = meshData.indices
+               .Select((x, i) => new { Index = i, Value = x })
+               .GroupBy(x => x.Index / 3)
+               .Select(x => x.Select(v => v.Value).ToList())
+               .ToList();
 
             return meshData;
         }
@@ -1248,6 +1260,12 @@ namespace Engine3D
                     meshData.indices.Add(hash[vh]);
                 }
             }
+
+            meshData.groupedIndices = meshData.indices
+               .Select((x, i) => new { Index = i, Value = x })
+               .GroupBy(x => x.Index / 3)
+               .Select(x => x.Select(v => v.Value).ToList())
+               .ToList();
 
             return meshData;
         }
@@ -1341,6 +1359,12 @@ namespace Engine3D
                     meshData.indices.Add(hash[vh]);
                 }
             }
+
+            meshData.groupedIndices = meshData.indices
+               .Select((x, i) => new { Index = i, Value = x })
+               .GroupBy(x => x.Index / 3)
+               .Select(x => x.Select(v => v.Value).ToList())
+               .ToList();
 
             return meshData;
         }

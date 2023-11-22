@@ -41,8 +41,8 @@ namespace Engine3D
                             int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
-                            List<uint> indices = new List<uint>();
-                            List<float> verticesUnique = new List<float>();
+                            indices.Clear();
+                            verticesUnique.Clear();
                             (verticesUnique, indices) = mesh.DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
                             onlyPosIbo.Buffer(indices);
                             onlyPosVbo.Buffer(verticesUnique);
@@ -59,11 +59,15 @@ namespace Engine3D
                             int objectIdLoc = GL.GetUniformLocation(pickingInstancedShader.id, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
+                            indices.Clear();
+                            verticesUnique.Clear();
                             List<float> instancedVertices = new List<float>();
-                            (vertices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, pickingInstancedShader, instancedOnlyPosAndNormalVao);
+                            (verticesUnique, indices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, pickingInstancedShader, instancedOnlyPosAndNormalVao);
+                            onlyPosAndNormalIbo.Buffer(indices);
+                            onlyPosAndNormalVbo.Buffer(verticesUnique);
                             instancedOnlyPosAndNormalVbo.Buffer(instancedVertices);
-                            onlyPosAndNormalVbo.Buffer(vertices);
-                            GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
+
+                            GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
                         }
 
 
@@ -87,8 +91,8 @@ namespace Engine3D
                                 GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
                                 GL.Uniform1(drawIdLoc, (uint)0);
 
-                                List<uint> indices = new List<uint>();
-                                List<float> verticesUnique = new List<float>();
+                                indices.Clear();
+                                verticesUnique.Clear();
                                 (verticesUnique, indices) = ((Mesh)moverGizmo.GetMesh()).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao);
                                 onlyPosIbo.Buffer(indices);
                                 onlyPosVbo.Buffer(verticesUnique);

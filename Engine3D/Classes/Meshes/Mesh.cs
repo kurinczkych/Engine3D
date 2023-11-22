@@ -18,6 +18,7 @@ using System.Diagnostics.SymbolStore;
 using Cyotek.Drawing.BitmapFont;
 using System.Runtime.CompilerServices;
 using static OpenTK.Graphics.OpenGL.GL;
+using OpenTK.Windowing.Common;
 
 #pragma warning disable CS8600
 #pragma warning disable CS8604
@@ -128,6 +129,7 @@ namespace Engine3D
             visibleVerticesData = meshData.visibleVerticesData;
             indices = meshData.indices;
             Bounds = meshData.bounds;
+            groupedIndices = meshData.groupedIndices;
 
             if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
@@ -160,6 +162,7 @@ namespace Engine3D
             visibleVerticesData = meshData.visibleVerticesData;
             indices = meshData.indices;
             Bounds = meshData.bounds;
+            groupedIndices = meshData.groupedIndices;
 
             if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
@@ -307,7 +310,11 @@ namespace Engine3D
             viewMatrix = camera.viewMatrix;
             cameraPos = camera.GetPosition();
 
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);
+            var b = GL.GetError();
+            var a = GL.GetUniformLocation(shader.id, "modelMatrix");
+            var c = GL.GetError();
+
+            GL.UniformMatrix4(a, true, ref modelMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "viewMatrix"), true, ref viewMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "projectionMatrix"), true, ref projectionMatrix);
             GL.Uniform3(GL.GetUniformLocation(shader.id, "cameraPos"), cameraPos);
@@ -372,7 +379,7 @@ namespace Engine3D
                             parentObject.textureMetal.Bind();
                     }
 
-                    return (visibleVerticesData, visibleIndices);
+                    return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices));
                 }
             }
             else
@@ -431,7 +438,7 @@ namespace Engine3D
                     parentObject.textureMetal.Bind();
             }
 
-            return (visibleVerticesData, visibleIndices);
+            return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices));
         }
 
         public (List<float>, List<uint>) DrawOnlyPos(GameState gameRunning, Shader shader, VAO _vao)
@@ -447,7 +454,7 @@ namespace Engine3D
                 {
                     SendUniformsOnlyPos(shader);
 
-                    return (visibleVerticesDataOnlyPos, visibleIndices);
+                    return (new List<float>(visibleVerticesDataOnlyPos), new List<uint>(visibleIndices));
                 }
             }
             else
@@ -458,7 +465,7 @@ namespace Engine3D
 
             SendUniformsOnlyPos(shader);
 
-            return (visibleVerticesDataOnlyPos, visibleIndices);
+            return (new List<float>(visibleVerticesDataOnlyPos), new List<uint>(visibleIndices));
         }
         
         public (List<float>, List<uint>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO _vao)
@@ -474,7 +481,7 @@ namespace Engine3D
                 {
                     SendUniformsOnlyPos(shader);
 
-                    return (visibleVerticesDataOnlyPosAndNormal, visibleIndices);
+                    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices));
                 }
             }
             else
@@ -485,7 +492,7 @@ namespace Engine3D
 
             SendUniformsOnlyPos(shader);
 
-            return (visibleVerticesDataOnlyPos, visibleIndices);
+            return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices));
         }
 
         //public List<float> DrawNotOccluded(List<triangle> notOccludedTris)

@@ -96,6 +96,7 @@ namespace Engine3D
             visibleVerticesData = meshData.visibleVerticesData;
             indices = meshData.indices;
             Bounds = meshData.bounds;
+            groupedIndices = meshData.groupedIndices;
 
             if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
@@ -126,6 +127,7 @@ namespace Engine3D
             visibleVerticesData = meshData.visibleVerticesData;
             indices = meshData.indices;
             Bounds = meshData.bounds;
+            groupedIndices = meshData.groupedIndices;
 
             if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
             {
@@ -291,10 +293,10 @@ namespace Engine3D
         //    }
         //}
 
-        public (List<float>, List<float>) Draw(GameState gameRunning)
+        public (List<float>, List<uint>, List<float>) Draw(GameState gameRunning)
         {
             if (!parentObject.isEnabled)
-                return (new List<float>(), new List<float>());
+                return (new List<float>(), new List<uint>(), new List<float>());
 
             Vao.Bind();
 
@@ -319,7 +321,7 @@ namespace Engine3D
                             parentObject.textureMetal.Bind();
                     }
 
-                    return (vertices, instancedVertices);
+                    return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices), instancedVertices);
                 }
             }
             else
@@ -328,29 +330,7 @@ namespace Engine3D
                 CalculateFrustumVisibility();
             }
 
-            vertices = new List<float>();
-            instancedVertices = new List<float>();
-
             ObjectType type = parentObject.GetObjectType();
-
-            //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            //Parallel.ForEach(tris, parallelOptions,
-            //     () => new List<float>(),
-            //     (tri, loopState, localVertices) =>
-            //     {
-            //         if (tri.visibile)
-            //         {
-            //             AddVertices(localVertices, tri);
-            //         }
-            //         return localVertices;
-            //     },
-            //     localVertices =>
-            //     {
-            //         lock (vertices)
-            //         {
-            //             vertices.AddRange(localVertices);
-            //         }
-            //     });
 
             SendUniforms();
 
@@ -369,38 +349,40 @@ namespace Engine3D
                     parentObject.textureMetal.Bind();
             }
 
-            //Parallel.ForEach(instancedData, parallelOptions,
-            //     () => new List<float>(),
-            //     (instancedData, loopState, localVertices) =>
-            //     {
-            //         ConvertToNDCInstance(ref localVertices, instancedData);
-            //         return localVertices;
-            //     },
-            //     localVertices =>
-            //     {
-            //         lock (instancedVertices)
-            //         {
-            //             instancedVertices.AddRange(localVertices);
-            //         }
-            //     });
+            instancedVertices.Clear();
+            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+            Parallel.ForEach(instancedData, parallelOptions,
+                 () => new List<float>(),
+                 (instancedData, loopState, localVertices) =>
+                 {
+                     ConvertToNDCInstance(ref localVertices, instancedData);
+                     return localVertices;
+                 },
+                 localVertices =>
+                 {
+                     lock (instancedVertices)
+                     {
+                         instancedVertices.AddRange(localVertices);
+                     }
+                 });
 
-            return (vertices, instancedVertices);
+            return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices), new List<float>(instancedVertices));
         }
 
-        public (List<float>, List<float>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao)
+        public (List<float>, List<uint>, List<float>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao)
         {
             if (!parentObject.isEnabled)
-                return (new List<float>(), new List<float>());
+                return (new List<float>(), new List<uint>(), new List<float>());
 
             _vao.Bind();
 
             if (!recalculateOnlyPosAndNormal)
             {
-                if (gameRunning == GameState.Stopped && verticesOnlyPosAndNormal.Count > 0 && instancedVertices.Count > 0)
+                if (gameRunning == GameState.Stopped && visibleVerticesDataOnlyPosAndNormal.Count > 0 && instancedVertices.Count > 0)
                 {
                     SendUniformsOnlyPos(shader);
 
-                    return (verticesOnlyPosAndNormal, instancedVertices);
+                    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
                 }
             }
             else
@@ -409,48 +391,10 @@ namespace Engine3D
                 CalculateFrustumVisibility();
             }
 
-            verticesOnlyPosAndNormal = new List<float>();
-            instancedVertices = new List<float>();
-
-            ObjectType type = parentObject.GetObjectType();
-
-            //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            //Parallel.ForEach(tris, parallelOptions,
-            //     () => new List<float>(),
-            //     (tri, loopState, localVertices) =>
-            //     {
-            //         if (tri.visibile)
-            //         {
-            //             AddVerticesOnlyPosAndNormal(localVertices, tri);
-            //         }
-            //         return localVertices;
-            //     },
-            //     localVertices =>
-            //     {
-            //         lock (verticesOnlyPosAndNormal)
-            //         {
-            //             verticesOnlyPosAndNormal.AddRange(localVertices);
-            //         }
-            //     });
-
             SendUniformsOnlyPos(shader);
 
-            //Parallel.ForEach(instancedData, parallelOptions,
-            //     () => new List<float>(),
-            //     (instancedData, loopState, localVertices) =>
-            //     {
-            //         ConvertToNDCInstance(ref localVertices, instancedData);
-            //         return localVertices;
-            //     },
-            //     localVertices =>
-            //     {
-            //         lock (instancedVertices)
-            //         {
-            //             instancedVertices.AddRange(localVertices);
-            //         }
-            //     });
 
-            return (verticesOnlyPosAndNormal, instancedVertices);
+            return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
         }
     }
 }

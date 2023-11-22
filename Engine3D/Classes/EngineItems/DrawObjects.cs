@@ -72,8 +72,8 @@ namespace Engine3D
                                     GL.StencilMask(0xFF);
                                 }
 
-                                List<uint> indices = new List<uint>();
-                                List<float> verticesUnique = new List<float>();
+                                indices.Clear();
+                                verticesUnique.Clear();
                                 (verticesUnique, indices) = mesh.Draw(editorData.gameRunning);
                                 meshIbo.Buffer(indices);
                                 meshVbo.Buffer(verticesUnique);
@@ -126,14 +126,17 @@ namespace Engine3D
                                 GL.StencilMask(0xFF);
                             }
 
-
+                            indices.Clear();
+                            verticesUnique.Clear();
                             List<float> instancedVertices = new List<float>();
-                            (vertices, instancedVertices) = mesh.Draw(editorData.gameRunning);
+                            (verticesUnique, indices, instancedVertices) = mesh.Draw(editorData.gameRunning); 
+                            meshIbo.Buffer(indices);
+                            meshVbo.Buffer(verticesUnique);
+                            instancedMeshVbo.Buffer(instancedVertices);
+
                             currentMeshType = typeof(InstancedMesh);
 
-                            meshVbo.Buffer(vertices);
-                            instancedMeshVbo.Buffer(instancedVertices);
-                            GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
+                            GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
                             vertices.Clear();
 
 
@@ -146,10 +149,14 @@ namespace Engine3D
 
                                 outlineInstancedShader.Use();
 
-                                (vertices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao);
+                                indices.Clear();
+                                verticesUnique.Clear();
+                                instancedVertices.Clear();
+                                (verticesUnique, indices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao);
+                                onlyPosAndNormalIbo.Buffer(indices);
+                                onlyPosAndNormalVbo.Buffer(verticesUnique);
                                 instancedOnlyPosAndNormalVbo.Buffer(instancedVertices);
-                                onlyPosAndNormalVbo.Buffer(vertices);
-                                GL.DrawArraysInstanced(PrimitiveType.Triangles, 0, vertices.Count, mesh.instancedData.Count());
+                                GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
 
                                 GL.StencilMask(0xFF);
                                 GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
@@ -157,7 +164,7 @@ namespace Engine3D
                                 GL.Enable(EnableCap.DepthTest);
 
                                 instancedShaderProgram.Use();
-                                vertices.Clear();
+                                //vertices.Clear();
                             }
                         }
                     }

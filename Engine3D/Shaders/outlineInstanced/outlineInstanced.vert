@@ -98,7 +98,7 @@ void main()
     finalPosition += instRotatedNormal * outlineWidth;
 
     // Apply model, view, and projection transformations
-    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(finalPosition, 1.0);
+    gl_Position = vec4(finalPosition, 1.0) * modelMatrix * viewMatrix * projectionMatrix;
 
 
 
