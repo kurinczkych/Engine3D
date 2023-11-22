@@ -14,21 +14,6 @@ uniform mat4 projectionMatrix;
 uniform mat4 _scaleMatrix;
 uniform mat4 _rotMatrix;
 
-mat4 GetTranslationMatrix(mat4 mMatrix)
-{
-    vec3 translation = vec3(mMatrix[0][3], mMatrix[1][3], mMatrix[2][3]);
-
-    // Construct a translation-only matrix
-    mat4 translationMatrix = mat4(
-        vec4(1.0, 0.0, 0.0, translation.x),
-        vec4(0.0, 1.0, 0.0, translation.y),
-        vec4(0.0, 0.0, 1.0, translation.z),
-        vec4(0.0, 0.0, 0.0, 1.0) // Set the translation component
-    );
-
-    return translationMatrix;
-}
-
 mat3 convertQuaternionToMat3(vec4 q) {
     // Convert quaternion to 3x3 rotation matrix
     float qx2 = q.x * q.x;
@@ -60,101 +45,89 @@ mat3 convertQuaternionToMat3(vec4 q) {
     return m;
 }
 
+mat4 constructRotationMatrix(vec4 quat) {
+    float x = quat.x;
+    float y = quat.y;
+    float z = quat.z;
+    float w = quat.w;
 
-mat4 createTranslationMatrix(vec3 translation) {
     return mat4(
-        vec4(1.0, 0.0, 0.0, 0.0),
-        vec4(0.0, 1.0, 0.0, 0.0),
-        vec4(0.0, 0.0, 1.0, 0.0),
-        vec4(translation, 1.0)
+        1 - 2 * y * y - 2 * z * z,     2 * x * y + 2 * z * w,       2 * x * z - 2 * y * w,       0,
+        2 * x * y - 2 * z * w,         1 - 2 * x * x - 2 * z * z,   2 * y * z + 2 * x * w,       0,
+        2 * x * z + 2 * y * w,         2 * y * z - 2 * x * w,       1 - 2 * x * x - 2 * y * y,   0,
+        0,                             0,                           0,                           1
     );
 }
 
-//vec3 applyQuaternionToVector(vec4 q, vec3 v) {
-//    // Implement quaternion to vector rotation here
-//}
-
-void main()
+mat4 GetTranslationMatrix(mat4 mMatrix)
 {
-    float outlineWidth = 1;
+    vec3 translation = vec3(mMatrix[0][3], mMatrix[1][3], mMatrix[2][3]);
 
-    vec3 scaledNormal = mat3(_scaleMatrix) * inNormal;
-    vec3 rotatedPosition = vec3(_rotMatrix * vec4(inPosition, 1.0));
-
-    mat3 rotationMatrix = convertQuaternionToMat3(instRotation);
-	mat4 instRotMatrix = mat4(
-        vec4(rotationMatrix[0], 0.0),
-        vec4(rotationMatrix[1], 0.0),
-        vec4(rotationMatrix[2], 0.0),
-        vec4(0.0, 0.0, 0.0, 1.0)
+    // Construct a translation-only matrix
+    mat4 translationMatrix = mat4(
+        vec4(1.0, 0.0, 0.0, translation.x),
+        vec4(0.0, 1.0, 0.0, translation.y),
+        vec4(0.0, 0.0, 1.0, translation.z),
+        vec4(0.0, 0.0, 0.0, 1.0) // Set the translation component
     );
 
-    // Apply instance transformations
-    vec3 instRotatedPosition = vec3(instRotMatrix * vec4(rotatedPosition, 1.0));
-    vec3 instRotatedNormal = mat3(instRotMatrix) * scaledNormal;
-    vec3 finalPosition = instRotatedPosition * instScale + instPosition;
+    return translationMatrix;
+}
 
-    // Extrude outline
-    finalPosition += instRotatedNormal * outlineWidth;
+mat4 GetTranslationMatrixVec3(vec3 translation)
+{
+    // Construct a translation-only matrix
+    mat4 translationMatrix = mat4(
+        vec4(1.0, 0.0, 0.0, translation.x),
+        vec4(0.0, 1.0, 0.0, translation.y),
+        vec4(0.0, 0.0, 1.0, translation.z),
+        vec4(0.0, 0.0, 0.0, 1.0) // Set the translation component
+    );
 
-    // Apply model, view, and projection transformations
-    gl_Position = vec4(finalPosition, 1.0) * modelMatrix * viewMatrix * projectionMatrix;
-
-
-
-
-//    mat4 scaleMatrix = mat4(
-//        vec4(instScale.x, 0.0, 0.0, 0.0),
-//        vec4(0.0, instScale.y, 0.0, 0.0),
-//        vec4(0.0, 0.0, instScale.z, 0.0),
-//        vec4(0.0, 0.0, 0.0, 1.0)
-//    );
-//
-//    mat3 rotationMatrix = convertQuaternionToMat3(instRotation);
-//	mat4 pureRotationMatrix = mat4(
-//        vec4(rotationMatrix[0], 0.0),
-//        vec4(rotationMatrix[1], 0.0),
-//        vec4(rotationMatrix[2], 0.0),
-//        vec4(0.0, 0.0, 0.0, 1.0)
-//    );
-//    mat4 transMatrix = createTranslationMatrix(instPosition);
-//
-//    vec4 scaleVertex = vec4(inPosition, 1.0) * scaleMatrix;
-//	vec4 rotatedVertex = pureRotationMatrix * scaleVertex;
-//    vec4 positionedVertex = transMatrix * rotatedVertex;
-//
-//    vec4 rotatedNormal = vec4(inNormal * outlineWidth, 1.0) * pureRotationMatrix;
-//    vec4 final = positionedVertex + rotatedNormal;
-//
-//    gl_Position = vec4(final.xyz,1.0) * viewMatrix * projectionMatrix;
+    return translationMatrix;
+}
 
 
+void main() {
+    float outlineWidth = 1.0;
 
-//
-//    mat4 transMatrix = GetTranslationMatrix(modelMatrix);
-//
-//    mat3 rotationMatrix = convertQuaternionToMat3(instRotation);
-//    mat4 rotationMatrix4 = mat4(
-//        vec4(rotationMatrix[0], 0),
-//        vec4(rotationMatrix[1], 0),
-//        vec4(rotationMatrix[2], 0),
-//        vec4(0, 0, 0, 1)
-//    );
-//    mat4 scaleMatrix = mat4(
-//        vec4(instScale.x, 0.0, 0.0, 0.0),
-//        vec4(0.0, instScale.y, 0.0, 0.0),
-//        vec4(0.0, 0.0, instScale.z, 0.0),
-//        vec4(0.0, 0.0, 0.0, 1.0)
-//    );
-//
-//    vec4 rotatedVertex = vec4((rotationMatrix4 * vec4(inPosition,1.0)).xyz, 1.0);
-//    vec4 scaledVertex = (scaleMatrix*_scaleMatrix) * rotatedVertex;
-//
-//    vec4 positionedVertex = vec4(inPosition+instPosition, 1.0) * (scaleMatrix*_scaleMatrix) * rotationMatrix4 * transMatrix * _rotMatrix;
-////    vec4 positionedVertex = vec4(inPosition+instPosition, 1.0) * _scaleMatrix * rotationMatrix4 * transMatrix * _rotMatrix;
-//    vec4 rotatedNormal = vec4(inNormal * outlineWidth, 1.0) * (rotationMatrix4 * _rotMatrix);
-////    vec4 rotatedNormal = vec4(inNormal * outlineWidth, 1.0) *_rotMatrix;
-//    vec4 final = positionedVertex + rotatedNormal;
-//
-//	gl_Position = vec4(final.xyz,1.0) * viewMatrix * projectionMatrix;
+	mat4 instRotMatrix = constructRotationMatrix(instRotation);
+    mat4 rotMatrix = _rotMatrix * instRotMatrix;
+
+    mat4 instScaleMatrix = mat4(
+        vec4(instScale.x, 0.0, 0.0, 0.0),
+        vec4(0.0, instScale.y, 0.0, 0.0),
+        vec4(0.0, 0.0, instScale.z, 0.0),
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+    mat4 scaleMatrix = _scaleMatrix * instScaleMatrix;
+
+    mat4 _transMatrix = GetTranslationMatrix(modelMatrix);
+    mat4 instTransMatrix = GetTranslationMatrixVec3(instPosition);
+    mat4 transMatrix = _transMatrix * instTransMatrix;
+
+
+//    vec4 pos = vec4(inPosition,1.0) * scaleMatrix * rotMatrix * transMatrix;
+    vec4 pos = vec4(inPosition,1.0);
+//    pos = pos * scaleMatrix;
+    pos = pos * instRotMatrix;
+    pos = pos * transMatrix;
+    pos = pos * _rotMatrix;
+
+
+//    vec4 norm = vec4(inNormal,1.0) * outlineWidth * rotMatrix;
+//    norm.w = 0;
+    vec4 norm = vec4(inNormal,1.0) * outlineWidth;
+    norm.w = 0.0;
+
+//    norm = norm * instRotation;
+//    norm = norm * transMatrix;
+//    norm = norm * _rotMatrix;
+//    norm = norm * inverse(transMatrix);
+//    norm.w = 0;
+
+    vec4 final = pos + norm;
+    final.w = 1.0;
+
+    gl_Position = final * viewMatrix * projectionMatrix;
 }
