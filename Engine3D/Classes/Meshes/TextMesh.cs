@@ -69,10 +69,12 @@ namespace Engine3D
             currentText = text;
 
             MeshData meshData = textGenerator.GetTriangles(text);
-            uniqueVertices = meshData.vertices;
+            uniqueVertices = meshData.uniqueVertices;
             visibleVerticesData = meshData.visibleVerticesData;
+            visibleVerticesDataOnlyPos = meshData.visibleVerticesDataOnlyPos;
+            visibleVerticesDataOnlyPosAndNormal = meshData.visibleVerticesDataOnlyPosAndNormal;
             indices = meshData.indices;
-            Bounds = meshData.bounds;
+            Bounds = meshData.Bounds;
         }
 
         private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)

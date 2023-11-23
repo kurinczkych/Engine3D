@@ -64,7 +64,7 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
+            if(model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
@@ -75,7 +75,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
@@ -91,18 +91,13 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
+            this.model = model;
 
-            uniqueVertices = meshData.vertices;
-            visibleVerticesData = meshData.visibleVerticesData;
-            indices = meshData.indices;
-            Bounds = meshData.bounds;
-            groupedIndices = meshData.groupedIndices;
-
-            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
+            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -111,7 +106,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
 
@@ -122,18 +117,13 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
+            this.model = model;
 
-            uniqueVertices = meshData.vertices;
-            visibleVerticesData = meshData.visibleVerticesData;
-            indices = meshData.indices;
-            Bounds = meshData.bounds;
-            groupedIndices = meshData.groupedIndices;
-
-            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
+            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -254,7 +244,7 @@ namespace Engine3D
 
         public (List<float>, List<uint>, List<float>) Draw(GameState gameRunning)
         {
-            if (!parentObject.isEnabled)
+            if (!parentObject.isEnabled || model == null || model.meshes.Count == 0)
                 return (new List<float>(), new List<uint>(), new List<float>());
 
             Vao.Bind();
@@ -280,7 +270,7 @@ namespace Engine3D
                             parentObject.textureMetal.Bind();
                     }
 
-                    return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices), instancedVertices);
+                    return (new List<float>(model.meshes[0].visibleVerticesData), new List<uint>(model.meshes[0].visibleIndices), instancedVertices);
                 }
             }
             else
@@ -325,7 +315,7 @@ namespace Engine3D
                      }
                  });
 
-            return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices), new List<float>(instancedVertices));
+            return (new List<float>(model.meshes[0].visibleVerticesData), new List<uint>(model.meshes[0].visibleIndices), new List<float>(instancedVertices));
         }
 
         public (List<float>, List<uint>, List<float>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao, int instIndex = -1)
@@ -337,11 +327,11 @@ namespace Engine3D
 
             if (!recalculateOnlyPosAndNormal)
             {
-                if (gameRunning == GameState.Stopped && visibleVerticesDataOnlyPosAndNormal.Count > 0 && instancedVertices.Count > 0)
+                if (gameRunning == GameState.Stopped && model.meshes[0].visibleVerticesDataOnlyPosAndNormal.Count > 0 && instancedVertices.Count > 0)
                 {
                     SendUniformsOnlyPos(shader);
 
-                    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
+                    return (new List<float>(model.meshes[0].visibleVerticesDataOnlyPosAndNormal), new List<uint>(model.meshes[0].visibleIndices), new List<float>(instancedVertices));
                 }
             }
             else
@@ -352,7 +342,7 @@ namespace Engine3D
 
             SendUniformsOnlyPos(shader);
 
-            return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
+            return (new List<float>(model.meshes[0].visibleVerticesDataOnlyPosAndNormal), new List<uint>(model.meshes[0].visibleIndices), new List<float>(instancedVertices));
 
             //if (instIndex == -1)
             //    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));

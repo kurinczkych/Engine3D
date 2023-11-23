@@ -8,7 +8,6 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Diagnostics;
-using Engine3D.Classes;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -540,8 +539,13 @@ namespace Engine3D
             //o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             //objects.Add(o);
 
+            //Object o2 = new Object(ObjectType.Cube, ref physx);
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.fbx", "level.png", windowSize, ref camera, ref o2));
+            //objects.Add(o2);
+            //_meshObjects.Add(o2);
+
             Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o2));
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "Twilight_CharacterR.fbx", "TwilightNormalSkin_Twilight_BaseColor.png", windowSize, ref camera, ref o2));
             objects.Add(o2);
             _meshObjects.Add(o2);
 

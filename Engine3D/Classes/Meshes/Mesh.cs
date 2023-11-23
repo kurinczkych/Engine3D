@@ -63,11 +63,11 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
+            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
 
@@ -93,11 +93,11 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
+            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -106,7 +106,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
             this.parentObject.name = modelName;
@@ -124,18 +124,13 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
+            this.model = model;
 
-            uniqueVertices = meshData.vertices;
-            visibleVerticesData = meshData.visibleVerticesData;
-            indices = meshData.indices;
-            Bounds = meshData.bounds;
-            groupedIndices = meshData.groupedIndices;
-
-            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
+            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -144,7 +139,7 @@ namespace Engine3D
             SendUniforms();
         }
 
-        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, MeshData meshData, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
+        public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
             this.parentObject.name = modelName;
@@ -157,18 +152,13 @@ namespace Engine3D
             this.camera = camera;
 
             this.modelName = modelName;
+            this.model = model;
 
-            uniqueVertices = meshData.vertices;
-            visibleVerticesData = meshData.visibleVerticesData;
-            indices = meshData.indices;
-            Bounds = meshData.bounds;
-            groupedIndices = meshData.groupedIndices;
-
-            if (uniqueVertices.Count() > 0 && !uniqueVertices[0].gotNormal)
+            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
             {
                 ComputeVertexNormalsSpherical();
             }
-            else if (uniqueVertices.Count() > 0 && uniqueVertices[0].gotNormal)
+            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
                 ComputeVertexNormals();
 
             ComputeTangents();
@@ -194,9 +184,9 @@ namespace Engine3D
             });
         }
 
-        private PxVec3 ConvertToNDCPxVec3(int index)
+        private PxVec3 ConvertToNDCPxVec3(int index, int meshIndex)
         {
-            Vector3 v = Vector3.TransformPosition(allVerts[index], modelMatrix);
+            Vector3 v = Vector3.TransformPosition(model.meshes[meshIndex].allVerts[index], modelMatrix);
 
             PxVec3 vec = new PxVec3();
             vec.x = v.X;
@@ -554,17 +544,15 @@ namespace Engine3D
                 verts[i] = ConvertToNDCPxVec3(i);
             }
 
-            indicesOut = indices.Select(x => (int)x).ToArray();
-            ;
-            //for (int i = 0; i < indices.Count; i+=3)
-            //{
-            //    indicesOut[index] = uniqueVertices[(int)indices[i]].pi;
-            //    index++;
-            //    indicesOut[index] = uniqueVertices[(int)indices[i]+1].pi;
-            //    index++;
-            //    indicesOut[index] = uniqueVertices[(int)indices[i]+2].pi;
-            //    index++;
-            //}
+            for (int i = 0; i < indices.Count; i += 3)
+            {
+                indicesOut[index] = uniqueVertices[(int)indices[i]].pi;
+                index++;
+                indicesOut[index] = uniqueVertices[(int)indices[i + 1] ].pi;
+                index++;
+                indicesOut[index] = uniqueVertices[(int)indices[i + 2] ].pi;
+                index++;
+            }
         }
     }
 }

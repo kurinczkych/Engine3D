@@ -1124,11 +1124,13 @@ namespace Engine3D
                 int vh = list[i].GetHashCode();
                 if (!hash.ContainsKey(vh))
                 {
-                    meshData.vertices.Add(list[i]);
+                    meshData.uniqueVertices.Add(list[i]);
                     meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
-                    meshData.bounds.Enclose(list[i]);
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
                 }
                 else
                 {
@@ -1136,11 +1138,7 @@ namespace Engine3D
                 }
             }
 
-            meshData.groupedIndices = meshData.indices
-               .Select((x, i) => new { Index = i, Value = x })
-               .GroupBy(x => x.Index / 3)
-               .Select(x => x.Select(v => v.Value).ToList())
-               .ToList();
+            meshData.CalculateGroupedIndices();
 
             return meshData;
         }
@@ -1176,11 +1174,13 @@ namespace Engine3D
                 int vh = list[i].GetHashCode();
                 if (!hash.ContainsKey(vh))
                 {
-                    meshData.vertices.Add(list[i]);
+                    meshData.uniqueVertices.Add(list[i]);
                     meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
-                    meshData.bounds.Enclose(list[i]);
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
                 }
                 else
                 {
@@ -1188,11 +1188,7 @@ namespace Engine3D
                 }
             }
 
-            meshData.groupedIndices = meshData.indices
-               .Select((x, i) => new { Index = i, Value = x })
-               .GroupBy(x => x.Index / 3)
-               .Select(x => x.Select(v => v.Value).ToList())
-               .ToList();
+            meshData.CalculateGroupedIndices();
 
             return meshData;
         }
@@ -1249,11 +1245,13 @@ namespace Engine3D
                 int vh = list[i].GetHashCode();
                 if (!hash.ContainsKey(vh))
                 {
-                    meshData.vertices.Add(list[i]);
+                    meshData.uniqueVertices.Add(list[i]);
                     meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
-                    meshData.bounds.Enclose(list[i]);
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
                 }
                 else
                 {
@@ -1261,11 +1259,7 @@ namespace Engine3D
                 }
             }
 
-            meshData.groupedIndices = meshData.indices
-               .Select((x, i) => new { Index = i, Value = x })
-               .GroupBy(x => x.Index / 3)
-               .Select(x => x.Select(v => v.Value).ToList())
-               .ToList();
+            meshData.CalculateGroupedIndices();
 
             return meshData;
         }
@@ -1348,11 +1342,13 @@ namespace Engine3D
                 int vh = list[i].GetHashCode();
                 if (!hash.ContainsKey(vh))
                 {
-                    meshData.vertices.Add(list[i]);
+                    meshData.uniqueVertices.Add(list[i]);
                     meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.indices.Add((uint)meshData.vertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.vertices.Count - 1);
-                    meshData.bounds.Enclose(list[i]);
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
                 }
                 else
                 {
@@ -1360,11 +1356,7 @@ namespace Engine3D
                 }
             }
 
-            meshData.groupedIndices = meshData.indices
-               .Select((x, i) => new { Index = i, Value = x })
-               .GroupBy(x => x.Index / 3)
-               .Select(x => x.Select(v => v.Value).ToList())
-               .ToList();
+            meshData.CalculateGroupedIndices();
 
             return meshData;
         }

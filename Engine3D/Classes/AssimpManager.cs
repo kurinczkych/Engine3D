@@ -7,9 +7,9 @@ using Assimp;
 using FontStashSharp;
 using OpenTK.Mathematics;
 
-namespace Engine3D.Classes
+namespace Engine3D
 {
-    public class ModelData
+    public class MeshData
     {
         public List<Vec2d> uvs = new List<Vec2d>();
         public List<Vector3> normals = new List<Vector3>();
@@ -19,21 +19,62 @@ namespace Engine3D.Classes
         public List<float> visibleVerticesData = new List<float>();
         public List<float> visibleVerticesDataOnlyPos = new List<float>();
         public List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
-        public List<uint> indices = new List<uint>();
 
+        public List<uint> indices = new List<uint>();
+        public List<uint> visibleIndices = new List<uint>();
+        public uint maxVisibleIndex = 0;
+
+        public bool hasIndices = false;
         public AABB Bounds = new AABB();
 
-        public ModelData() { }
+        public List<List<uint>> groupedIndices = new List<List<uint>>();
 
-        /*
-         List Vertex            uniqueVertices.Add(v1);
-         List float             visibleVerticesData.AddRange(v1.GetData());
-         List float             visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
-         List float             visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
-         List uint              indices.Add((uint)uniqueVertices.Count - 1);
-         Dictionary<int,uint>   vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
-         AABB                   Bounds.Enclose(v1);
-        */
+        public MeshData() { }
+
+        public void CalculateGroupedIndices()
+        {
+            groupedIndices = indices
+                   .Select((x, i) => new { Index = i, Value = x })
+                   .GroupBy(x => x.Index / 3)
+                   .Select(x => x.Select(v => v.Value).ToList())
+                   .ToList();
+        }
+
+        public void TransformMeshData(Matrix4 trans)
+        {
+            visibleVerticesData.Clear();
+            for (int i = 0; i < uniqueVertices.Count; i++)
+            {
+                var a = uniqueVertices[i];
+                a.p = Vector3.TransformPosition(uniqueVertices[i].p, trans);
+                uniqueVertices[i] = a;
+
+                visibleVerticesData.AddRange(uniqueVertices[i].GetData());
+                visibleVerticesDataOnlyPos.AddRange(uniqueVertices[i].GetDataOnlyPos());
+                visibleVerticesDataOnlyPosAndNormal.AddRange(uniqueVertices[i].GetDataOnlyPosAndNormal());
+            }
+        }
+    }
+
+    public class ModelData
+    {
+        public List<MeshData> meshes = new List<MeshData>();
+
+        public List<Vertex> uniqueVertices = new List<Vertex>();
+        public List<float> visibleVerticesData = new List<float>();
+        public List<float> visibleVerticesDataOnlyPos = new List<float>();
+        public List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
+
+        public List<uint> indices = new List<uint>();
+        public List<uint> visibleIndices = new List<uint>();
+        public uint maxVisibleIndex = 0;
+
+        public bool hasIndices = false;
+        public AABB Bounds = new AABB();
+
+        public List<List<uint>> groupedIndices = new List<List<uint>>();
+
+        public ModelData() { }
     }
 
     public class AssimpManager
@@ -43,12 +84,9 @@ namespace Engine3D.Classes
         public AssimpManager()
         {
             context = new AssimpContext();
-
-            //ProcessModel("level2Rot.obj");
-            //ProcessModel("cube.obj");
         }
 
-        public ModelData ProcessModel(string relativeModelPath, float cr = 1, float cg = 1, float cb = 1, float ca = 1)
+        public ModelData? ProcessModel(string relativeModelPath, float cr = 1, float cg = 1, float cb = 1, float ca = 1)
         {
             ModelData modelData = new ModelData();
 
@@ -61,122 +99,113 @@ namespace Engine3D.Classes
                 return null;
             }
 
-            var model = context.ImportFile("Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath);
+            var model = context.ImportFile("Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath, PostProcessSteps.Triangulate);
 
-            var mesh = model.Meshes.First();
-
-            HashSet<int> normalsHash = new HashSet<int>();
-            for (int i = 0; i < mesh.Normals.Count; i++)
+            foreach (var mesh in model.Meshes)
             {
-                Vector3 n = AssimpVector3(mesh.Normals[i]);
-                var hash = n.GetHashCode();
-                if (!normalsHash.Contains(hash))
-                {
-                    normalsHash.Add(hash);
-                    modelData.normals.Add(n);
-                }
-            }
+                MeshData meshData = new MeshData();
 
-            HashSet<int> uvsHash = new HashSet<int>();
-            for (int i = 0; i < mesh.TextureCoordinateChannels.First().Count; i++)
-            {
-                Vec2d uv = AssimpVec2d(mesh.TextureCoordinateChannels.First()[i]);
-                var hash = uv.GetHashCode();
-                if (!uvsHash.Contains(hash))
+                HashSet<int> normalsHash = new HashSet<int>();
+                for (int i = 0; i < mesh.Normals.Count; i++)
                 {
-                    uvsHash.Add(hash);
-                    modelData.uvs.Add(uv);
-                }
-            }
-
-            HashSet<Vector3> vertsHash = new HashSet<Vector3>();
-            //for (int i = 0; i < mesh.Vertices.Count; i++)
-            //{
-            //    Vector3 n = AssimpVector3(mesh.Vertices[i]);
-            //    if (!vertsHash.Contains(n))
-            //    {
-            //        vertsHash.Add(n);
-            //        modelData.allVerts.Add(n);
-            //    }
-            //}
-            ;
-
-            Dictionary<int, uint> vertexHash = new Dictionary<int, uint>();
-            for (int i = 0; i < mesh.Faces.Count; i++)
-            {
-                var face = mesh.Faces[i];
-                (Vector3 vv1, Vec2d uv1, Vector3 nv1) = AssimpGetElement(face.Indices[0], mesh);
-                Vertex v1 = new Vertex(vv1, nv1, uv1) { c = color };
-                (Vector3 vv2, Vec2d uv2, Vector3 nv2) = AssimpGetElement(face.Indices[1], mesh);
-                Vertex v2 = new Vertex(vv2, nv2, uv2) { c = color };
-                (Vector3 vv3, Vec2d uv3, Vector3 nv3) = AssimpGetElement(face.Indices[2], mesh);
-                Vertex v3 = new Vertex(vv3, nv3, uv3) { c = color };
-
-                if (!vertsHash.Contains(vv1))
-                {
-                    vertsHash.Add(vv1);
-                    modelData.allVerts.Add(vv1);
-                }
-                if (!vertsHash.Contains(vv2))
-                {
-                    vertsHash.Add(vv2);
-                    modelData.allVerts.Add(vv2);
-                }
-                if (!vertsHash.Contains(vv3))
-                {
-                    vertsHash.Add(vv3);
-                    modelData.allVerts.Add(vv3);
+                    Vector3 n = AssimpVector3(mesh.Normals[i]);
+                    var hash = n.GetHashCode();
+                    if (!normalsHash.Contains(hash))
+                    {
+                        normalsHash.Add(hash);
+                        meshData.normals.Add(n);
+                    }
                 }
 
-                //int[] v = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
+                HashSet<int> uvsHash = new HashSet<int>();
+                for (int i = 0; i < mesh.TextureCoordinateChannels.First().Count; i++)
+                {
+                    Vec2d uv = AssimpVec2d(mesh.TextureCoordinateChannels.First()[i]);
+                    var hash = uv.GetHashCode();
+                    if (!uvsHash.Contains(hash))
+                    {
+                        uvsHash.Add(hash);
+                        meshData.uvs.Add(uv);
+                    }
+                }
 
-                //Vertex v1 = new Vertex(verts[v[0] - 1]) { pi = v[0] - 1, c = color };
+                HashSet<Vector3> vertsHash = new HashSet<Vector3>();
+                for (int i = 0; i < mesh.Vertices.Count; i++)
+                {
+                    Vector3 n = AssimpVector3(mesh.Vertices[i]);
+                    if (!vertsHash.Contains(n))
+                    {
+                        vertsHash.Add(n);
+                        meshData.allVerts.Add(n);
+                    }
+                }
 
-                int v1h = v1.GetHashCode();
-                if (!vertexHash.ContainsKey(v1h))
+                Dictionary<int, uint> vertexHash = new Dictionary<int, uint>();
+                for (int i = 0; i < mesh.Faces.Count; i++)
                 {
-                    modelData.uniqueVertices.Add(v1);
-                    modelData.visibleVerticesData.AddRange(v1.GetData());
-                    modelData.visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
-                    modelData.visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
-                    modelData.indices.Add((uint)modelData.uniqueVertices.Count - 1);
-                    vertexHash.Add(v1h, (uint)modelData.uniqueVertices.Count - 1);
-                    modelData.Bounds.Enclose(v1);
+                    var face = mesh.Faces[i];
+
+                    if (mesh.TextureCoordinateChannelCount == 0)
+                        ;
+
+                    (Vector3 vv1, Vec2d uv1, Vector3 nv1) = AssimpGetElement(face.Indices[0], mesh);
+                    Vertex v1 = new Vertex(vv1, nv1, uv1) { c = color, pi = meshData.allVerts.IndexOf(vv1) };
+                    (Vector3 vv2, Vec2d uv2, Vector3 nv2) = AssimpGetElement(face.Indices[1], mesh);
+                    Vertex v2 = new Vertex(vv2, nv2, uv2) { c = color, pi = meshData.allVerts.IndexOf(vv2) };
+                    (Vector3 vv3, Vec2d uv3, Vector3 nv3) = AssimpGetElement(face.Indices[2], mesh);
+                    Vertex v3 = new Vertex(vv3, nv3, uv3) { c = color, pi = meshData.allVerts.IndexOf(vv3) };
+
+                    int v1h = v1.GetHashCode();
+                    if (!vertexHash.ContainsKey(v1h))
+                    {
+                        meshData.uniqueVertices.Add(v1);
+                        meshData.visibleVerticesData.AddRange(v1.GetData());
+                        meshData.visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
+                        meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
+                        meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                        vertexHash.Add(v1h, (uint)meshData.uniqueVertices.Count - 1);
+                        meshData.Bounds.Enclose(v1);
+                    }
+                    else
+                    {
+                        meshData.indices.Add(vertexHash[v1h]);
+                    }
+                    int v2h = v2.GetHashCode();
+                    if (!vertexHash.ContainsKey(v2h))
+                    {
+                        meshData.uniqueVertices.Add(v2);
+                        meshData.visibleVerticesData.AddRange(v2.GetData());
+                        meshData.visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
+                        meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
+                        meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                        vertexHash.Add(v2h, (uint)meshData.uniqueVertices.Count - 1);
+                        meshData.Bounds.Enclose(v2);
+                    }
+                    else
+                    {
+                        meshData.indices.Add(vertexHash[v2h]);
+                    }
+                    int v3h = v3.GetHashCode();
+                    if (!vertexHash.ContainsKey(v3h))
+                    {
+                        meshData.uniqueVertices.Add(v3);
+                        meshData.visibleVerticesData.AddRange(v3.GetData());
+                        meshData.visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
+                        meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
+                        meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                        vertexHash.Add(v3h, (uint)meshData.uniqueVertices.Count - 1);
+                        meshData.Bounds.Enclose(v3);
+                    }
+                    else
+                    {
+                        meshData.indices.Add(vertexHash[v3h]);
+                    }
                 }
-                else
-                {
-                    modelData.indices.Add(vertexHash[v1h]);
-                }
-                int v2h = v2.GetHashCode();
-                if (!vertexHash.ContainsKey(v2h))
-                {
-                    modelData.uniqueVertices.Add(v2);
-                    modelData.visibleVerticesData.AddRange(v2.GetData());
-                    modelData.visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
-                    modelData.visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
-                    modelData.indices.Add((uint)modelData.uniqueVertices.Count - 1);
-                    vertexHash.Add(v2h, (uint)modelData.uniqueVertices.Count - 1);
-                    modelData.Bounds.Enclose(v2);
-                }
-                else
-                {
-                    modelData.indices.Add(vertexHash[v2h]);
-                }
-                int v3h = v3.GetHashCode();
-                if (!vertexHash.ContainsKey(v3h))
-                {
-                    modelData.uniqueVertices.Add(v3);
-                    modelData.visibleVerticesData.AddRange(v3.GetData());
-                    modelData.visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
-                    modelData.visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
-                    modelData.indices.Add((uint)modelData.uniqueVertices.Count - 1);
-                    vertexHash.Add(v3h, (uint)modelData.uniqueVertices.Count - 1);
-                    modelData.Bounds.Enclose(v3);
-                }
-                else
-                {
-                    modelData.indices.Add(vertexHash[v3h]);
-                }
+
+                meshData.visibleIndices = new List<uint>(meshData.indices);
+                meshData.hasIndices = true;
+                meshData.CalculateGroupedIndices();
+                modelData.meshes.Add(meshData);
             }
 
             return modelData;
@@ -190,6 +219,11 @@ namespace Engine3D.Classes
         private Vector3 AssimpVector3(Vector3D v)
         {
             return new Vector3(v.X, v.Y, v.Z);
+        }
+
+        private Vector3D AssimpVector3D(Vector3 v)
+        {
+            return new Vector3D(v.X, v.Y, v.Z);
         }
 
         private Vec2d AssimpVec2d(Vector3D v)
