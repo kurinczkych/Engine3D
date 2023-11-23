@@ -936,7 +936,7 @@ namespace Engine3D
                     GC.EndNoGCRegion();
                 }
             }
-
+            ;
             if (triMesh == null || &triMesh == null)
             {
                 throw new Exception("TriangleMesh cooking didn't work!");

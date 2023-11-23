@@ -1,4 +1,5 @@
-﻿using FontStashSharp;
+﻿using Engine3D.Classes;
+using FontStashSharp;
 using MagicPhysX;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -493,269 +494,280 @@ namespace Engine3D
 
         public void ProcessObj(string relativeModelPath, float cr=1, float cg=1, float cb=1, float ca=1)
         {
-            Color4 color = new Color4(cr, cg, cb, ca);
+            //Color4 color = new Color4(cr, cg, cb, ca);
 
-            string result;
-            int fPerCount = -1;
-            List<Vector3> verts = new List<Vector3>();
-            List<Vector3> normals = new List<Vector3>();
-            List<Vec2d> uvs = new List<Vec2d>();
+            //string result;
+            //int fPerCount = -1;
+            //List<Vector3> verts = new List<Vector3>();
+            //List<Vector3> normals = new List<Vector3>();
+            //List<Vec2d> uvs = new List<Vec2d>();
 
-            Dictionary<int, uint> vertexHash = new Dictionary<int, uint>();
+            //Dictionary<int, uint> vertexHash = new Dictionary<int, uint>();
 
-            string filePath = Environment.CurrentDirectory + "\\Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath;
-            if(!File.Exists(filePath))
-            {
-                Engine.consoleManager.AddLog("File '" + filePath + "' not found!", LogType.Warning);
-                return;
-            }
+            //string filePath = Environment.CurrentDirectory + "\\Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath;
+            //if (!File.Exists(filePath))
+            //{
+            //    Engine.consoleManager.AddLog("File '" + filePath + "' not found!", LogType.Warning);
+            //    return;
+            //}
 
-            using (Stream stream = FileManager.GetFileStream(filePath))
-            using (StreamReader reader = new StreamReader(stream))
-            {
-                while (true)
-                {
-                    result = reader.ReadLine();
-                    if (result != null && result.Length > 0)
-                    {
-                        if (result[0] == 'v')
-                        {
-                            if (result[1] == 't')
-                            {
-                                string[] vStr = result.Substring(3).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                Vec2d v = new Vec2d(a, b);
-                                uvs.Add(v);
-                            }
-                            else if (result[1] == 'n')
-                            {
-                                string[] vStr = result.Substring(3).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                var c = float.Parse(vStr[2]);
-                                Vector3 v = new Vector3(a, b, c);
-                                normals.Add(v);
-                            }
-                            else
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                var a = float.Parse(vStr[0]);
-                                var b = float.Parse(vStr[1]);
-                                var c = float.Parse(vStr[2]);
-                                Vector3 v = new Vector3(a, b, c);
-                                verts.Add(v);
-                                allVerts.Add(v);
-                            }
-                        }
-                        else if (result[0] == 'f')
-                        {
-                            if (result.Contains("//"))
-                            {
+            //using (Stream stream = FileManager.GetFileStream(filePath))
+            //using (StreamReader reader = new StreamReader(stream))
+            //{
+            //    while (true)
+            //    {
+            //        result = reader.ReadLine();
+            //        if (result != null && result.Length > 0)
+            //        {
+            //            if (result[0] == 'v')
+            //            {
+            //                if (result[1] == 't')
+            //                {
+            //                    string[] vStr = result.Substring(3).Split(" ");
+            //                    var a = float.Parse(vStr[0]);
+            //                    var b = float.Parse(vStr[1]);
+            //                    Vec2d v = new Vec2d(a, b);
+            //                    uvs.Add(v);
+            //                }
+            //                else if (result[1] == 'n')
+            //                {
+            //                    string[] vStr = result.Substring(3).Split(" ");
+            //                    var a = float.Parse(vStr[0]);
+            //                    var b = float.Parse(vStr[1]);
+            //                    var c = float.Parse(vStr[2]);
+            //                    Vector3 v = new Vector3(a, b, c);
+            //                    normals.Add(v);
+            //                }
+            //                else
+            //                {
+            //                    string[] vStr = result.Substring(2).Split(" ");
+            //                    var a = float.Parse(vStr[0]);
+            //                    var b = float.Parse(vStr[1]);
+            //                    var c = float.Parse(vStr[2]);
+            //                    Vector3 v = new Vector3(a, b, c);
+            //                    verts.Add(v);
+            //                    allVerts.Add(v);
+            //                }
+            //            }
+            //            else if (result[0] == 'f')
+            //            {
+            //                if (result.Contains("//"))
+            //                {
 
-                            }
-                            else if (result.Contains("/"))
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                if (vStr.Length > 3)
-                                    throw new Exception();
+            //                }
+            //                else if (result.Contains("/"))
+            //                {
+            //                    string[] vStr = result.Substring(2).Split(" ");
+            //                    if (vStr.Length > 3)
+            //                        throw new Exception();
 
-                                if (fPerCount == -1)
-                                    fPerCount = vStr[0].Count(x => x == '/');
+            //                    if (fPerCount == -1)
+            //                        fPerCount = vStr[0].Count(x => x == '/');
 
-                                if (fPerCount == 2)
-                                {
-                                    // 1/1/1, 2/2/2, 3/3/3
-                                    int[] v = new int[3];
-                                    int[] n = new int[3];
-                                    int[] uv = new int[3];
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        string[] fStr = vStr[i].Split("/");
-                                        v[i] = int.Parse(fStr[0]);
-                                        uv[i] = int.Parse(fStr[1]);
-                                        n[i] = int.Parse(fStr[2]);
-                                    }
+            //                    if (fPerCount == 2)
+            //                    {
+            //                        // 1/1/1, 2/2/2, 3/3/3
+            //                        int[] v = new int[3];
+            //                        int[] n = new int[3];
+            //                        int[] uv = new int[3];
+            //                        for (int i = 0; i < 3; i++)
+            //                        {
+            //                            string[] fStr = vStr[i].Split("/");
+            //                            v[i] = int.Parse(fStr[0]);
+            //                            uv[i] = int.Parse(fStr[1]);
+            //                            n[i] = int.Parse(fStr[2]);
+            //                        }
 
-                                    Vertex v1 = new Vertex(verts[v[0] - 1], normals[n[0] - 1], uvs[uv[0] - 1]) { pi = v[0] - 1, c = color };
-                                    Vertex v2 = new Vertex(verts[v[1] - 1], normals[n[1] - 1], uvs[uv[1] - 1]) { pi = v[1] - 1, c = color };
-                                    Vertex v3 = new Vertex(verts[v[2] - 1], normals[n[2] - 1], uvs[uv[2] - 1]) { pi = v[2] - 1, c = color };
-                                    int v1h = v1.GetHashCode();
-                                    if (!vertexHash.ContainsKey(v1h))
-                                    {
-                                        uniqueVertices.Add(v1);
-                                        visibleVerticesData.AddRange(v1.GetData());
-                                        visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
-                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
-                                        indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
-                                        Bounds.Enclose(v1);
-                                    }
-                                    else
-                                    {
-                                        indices.Add(vertexHash[v1h]);
-                                    }
-                                    int v2h = v2.GetHashCode();
-                                    if (!vertexHash.ContainsKey(v2h))
-                                    {
-                                        uniqueVertices.Add(v2);
-                                        visibleVerticesData.AddRange(v2.GetData());
-                                        visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
-                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
-                                        indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
-                                        Bounds.Enclose(v2);
-                                    }
-                                    else
-                                    {
-                                        indices.Add(vertexHash[v2h]);
-                                    }
-                                    int v3h = v3.GetHashCode();
-                                    if (!vertexHash.ContainsKey(v3h))
-                                    {
-                                        uniqueVertices.Add(v3);
-                                        visibleVerticesData.AddRange(v3.GetData());
-                                        visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
-                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
-                                        indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
-                                        Bounds.Enclose(v3);
-                                    }
-                                    else
-                                    {
-                                        indices.Add(vertexHash[v3h]);
-                                    }
+            //                        Vertex v1 = new Vertex(verts[v[0] - 1], normals[n[0] - 1], uvs[uv[0] - 1]) { pi = v[0] - 1, c = color };
+            //                        Vertex v2 = new Vertex(verts[v[1] - 1], normals[n[1] - 1], uvs[uv[1] - 1]) { pi = v[1] - 1, c = color };
+            //                        Vertex v3 = new Vertex(verts[v[2] - 1], normals[n[2] - 1], uvs[uv[2] - 1]) { pi = v[2] - 1, c = color };
+            //                        int v1h = v1.GetHashCode();
+            //                        if (!vertexHash.ContainsKey(v1h))
+            //                        {
+            //                            uniqueVertices.Add(v1);
+            //                            visibleVerticesData.AddRange(v1.GetData());
+            //                            visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
+            //                            visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
+            //                            indices.Add((uint)uniqueVertices.Count - 1);
+            //                            vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
+            //                            Bounds.Enclose(v1);
+            //                        }
+            //                        else
+            //                        {
+            //                            indices.Add(vertexHash[v1h]);
+            //                        }
+            //                        int v2h = v2.GetHashCode();
+            //                        if (!vertexHash.ContainsKey(v2h))
+            //                        {
+            //                            uniqueVertices.Add(v2);
+            //                            visibleVerticesData.AddRange(v2.GetData());
+            //                            visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
+            //                            visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
+            //                            indices.Add((uint)uniqueVertices.Count - 1);
+            //                            vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
+            //                            Bounds.Enclose(v2);
+            //                        }
+            //                        else
+            //                        {
+            //                            indices.Add(vertexHash[v2h]);
+            //                        }
+            //                        int v3h = v3.GetHashCode();
+            //                        if (!vertexHash.ContainsKey(v3h))
+            //                        {
+            //                            uniqueVertices.Add(v3);
+            //                            visibleVerticesData.AddRange(v3.GetData());
+            //                            visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
+            //                            visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
+            //                            indices.Add((uint)uniqueVertices.Count - 1);
+            //                            vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
+            //                            Bounds.Enclose(v3);
+            //                        }
+            //                        else
+            //                        {
+            //                            indices.Add(vertexHash[v3h]);
+            //                        }
 
-                                    hasIndices = true;
-                                }
-                                else if (fPerCount == 1)
-                                {
-                                    // 1/1, 2/2, 3/3
-                                    int[] v = new int[3];
-                                    int[] uv = new int[3];
-                                    for (int i = 0; i < 3; i++)
-                                    {
-                                        string[] fStr = vStr[i].Split("/");
-                                        v[i] = int.Parse(fStr[0]);
-                                        uv[i] = int.Parse(fStr[1]);
-                                    }
+            //                        hasIndices = true;
+            //                    }
+            //                    else if (fPerCount == 1)
+            //                    {
+            //                        // 1/1, 2/2, 3/3
+            //                        int[] v = new int[3];
+            //                        int[] uv = new int[3];
+            //                        for (int i = 0; i < 3; i++)
+            //                        {
+            //                            string[] fStr = vStr[i].Split("/");
+            //                            v[i] = int.Parse(fStr[0]);
+            //                            uv[i] = int.Parse(fStr[1]);
+            //                        }
 
-                                    Vertex v1 = new Vertex(verts[v[0] - 1], uvs[uv[0] - 1]) { pi = v[0] - 1, c = color };
-                                    Vertex v2 = new Vertex(verts[v[1] - 1], uvs[uv[1] - 1]) { pi = v[1] - 1, c = color };
-                                    Vertex v3 = new Vertex(verts[v[2] - 1], uvs[uv[2] - 1]) { pi = v[2] - 1, c = color };
-                                    int v1h = v1.GetHashCode();
-                                    if (!vertexHash.ContainsKey(v1h))
-                                    {
-                                        uniqueVertices.Add(v1);
-                                        visibleVerticesData.AddRange(v1.GetData());
-                                        visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
-                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
-                                        indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
-                                        Bounds.Enclose(v1);
-                                    }
-                                    else
-                                    {
-                                        indices.Add(vertexHash[v1h]);
-                                    }
-                                    int v2h = v2.GetHashCode();
-                                    if (!vertexHash.ContainsKey(v2h))
-                                    {
-                                        uniqueVertices.Add(v2);
-                                        visibleVerticesData.AddRange(v2.GetData());
-                                        visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
-                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
-                                        indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
-                                        Bounds.Enclose(v2);
-                                    }
-                                    else
-                                    {
-                                        indices.Add(vertexHash[v2h]);
-                                    }
-                                    int v3h = v3.GetHashCode();
-                                    if (!vertexHash.ContainsKey(v3h))
-                                    {
-                                        uniqueVertices.Add(v3);
-                                        visibleVerticesData.AddRange(v3.GetData());
-                                        visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
-                                        visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
-                                        indices.Add((uint)uniqueVertices.Count - 1);
-                                        vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
-                                        Bounds.Enclose(v3);
-                                    }
-                                    else
-                                    {
-                                        indices.Add(vertexHash[v3h]);
-                                    }
+            //                        Vertex v1 = new Vertex(verts[v[0] - 1], uvs[uv[0] - 1]) { pi = v[0] - 1, c = color };
+            //                        Vertex v2 = new Vertex(verts[v[1] - 1], uvs[uv[1] - 1]) { pi = v[1] - 1, c = color };
+            //                        Vertex v3 = new Vertex(verts[v[2] - 1], uvs[uv[2] - 1]) { pi = v[2] - 1, c = color };
+            //                        int v1h = v1.GetHashCode();
+            //                        if (!vertexHash.ContainsKey(v1h))
+            //                        {
+            //                            uniqueVertices.Add(v1);
+            //                            visibleVerticesData.AddRange(v1.GetData());
+            //                            visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
+            //                            visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
+            //                            indices.Add((uint)uniqueVertices.Count - 1);
+            //                            vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
+            //                            Bounds.Enclose(v1);
+            //                        }
+            //                        else
+            //                        {
+            //                            indices.Add(vertexHash[v1h]);
+            //                        }
+            //                        int v2h = v2.GetHashCode();
+            //                        if (!vertexHash.ContainsKey(v2h))
+            //                        {
+            //                            uniqueVertices.Add(v2);
+            //                            visibleVerticesData.AddRange(v2.GetData());
+            //                            visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
+            //                            visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
+            //                            indices.Add((uint)uniqueVertices.Count - 1);
+            //                            vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
+            //                            Bounds.Enclose(v2);
+            //                        }
+            //                        else
+            //                        {
+            //                            indices.Add(vertexHash[v2h]);
+            //                        }
+            //                        int v3h = v3.GetHashCode();
+            //                        if (!vertexHash.ContainsKey(v3h))
+            //                        {
+            //                            uniqueVertices.Add(v3);
+            //                            visibleVerticesData.AddRange(v3.GetData());
+            //                            visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
+            //                            visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
+            //                            indices.Add((uint)uniqueVertices.Count - 1);
+            //                            vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
+            //                            Bounds.Enclose(v3);
+            //                        }
+            //                        else
+            //                        {
+            //                            indices.Add(vertexHash[v3h]);
+            //                        }
 
-                                    hasIndices = true;
-                                }
+            //                        hasIndices = true;
+            //                    }
 
-                            }
-                            else
-                            {
-                                string[] vStr = result.Substring(2).Split(" ");
-                                int[] v = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
+            //                }
+            //                else
+            //                {
+            //                    string[] vStr = result.Substring(2).Split(" ");
+            //                    int[] v = { int.Parse(vStr[0]), int.Parse(vStr[1]), int.Parse(vStr[2]) };
 
-                                Vertex v1 = new Vertex(verts[v[0] - 1]) { pi = v[0] - 1, c = color };
-                                Vertex v2 = new Vertex(verts[v[1] - 1]) { pi = v[1] - 1, c = color };
-                                Vertex v3 = new Vertex(verts[v[2] - 1]) { pi = v[2] - 1, c = color };
-                                int v1h = v1.GetHashCode();
-                                if (!vertexHash.ContainsKey(v1h))
-                                {
-                                    uniqueVertices.Add(v1);
-                                    visibleVerticesData.AddRange(v1.GetData());
-                                    visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
-                                    visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
-                                    indices.Add((uint)uniqueVertices.Count - 1);
-                                    vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
-                                    Bounds.Enclose(v1);
-                                }
-                                else
-                                {
-                                    indices.Add(vertexHash[v1h]);
-                                }
-                                int v2h = v2.GetHashCode();
-                                if (!vertexHash.ContainsKey(v2h))
-                                {
-                                    uniqueVertices.Add(v2);
-                                    visibleVerticesData.AddRange(v2.GetData());
-                                    visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
-                                    visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
-                                    indices.Add((uint)uniqueVertices.Count - 1);
-                                    vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
-                                    Bounds.Enclose(v2);
-                                }
-                                else
-                                {
-                                    indices.Add(vertexHash[v2h]);
-                                }
-                                int v3h = v3.GetHashCode();
-                                if (!vertexHash.ContainsKey(v3h))
-                                {
-                                    uniqueVertices.Add(v3);
-                                    visibleVerticesData.AddRange(v3.GetData());
-                                    visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
-                                    visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
-                                    indices.Add((uint)uniqueVertices.Count - 1);
-                                    vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
-                                    Bounds.Enclose(v3);
-                                }
-                                else
-                                {
-                                    indices.Add(vertexHash[v3h]);
-                                }
+            //                    Vertex v1 = new Vertex(verts[v[0] - 1]) { pi = v[0] - 1, c = color };
+            //                    Vertex v2 = new Vertex(verts[v[1] - 1]) { pi = v[1] - 1, c = color };
+            //                    Vertex v3 = new Vertex(verts[v[2] - 1]) { pi = v[2] - 1, c = color };
+            //                    int v1h = v1.GetHashCode();
+            //                    if (!vertexHash.ContainsKey(v1h))
+            //                    {
+            //                        uniqueVertices.Add(v1);
+            //                        visibleVerticesData.AddRange(v1.GetData());
+            //                        visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
+            //                        visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
+            //                        indices.Add((uint)uniqueVertices.Count - 1);
+            //                        vertexHash.Add(v1h, (uint)uniqueVertices.Count - 1);
+            //                        Bounds.Enclose(v1);
+            //                    }
+            //                    else
+            //                    {
+            //                        indices.Add(vertexHash[v1h]);
+            //                    }
+            //                    int v2h = v2.GetHashCode();
+            //                    if (!vertexHash.ContainsKey(v2h))
+            //                    {
+            //                        uniqueVertices.Add(v2);
+            //                        visibleVerticesData.AddRange(v2.GetData());
+            //                        visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
+            //                        visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
+            //                        indices.Add((uint)uniqueVertices.Count - 1);
+            //                        vertexHash.Add(v2h, (uint)uniqueVertices.Count - 1);
+            //                        Bounds.Enclose(v2);
+            //                    }
+            //                    else
+            //                    {
+            //                        indices.Add(vertexHash[v2h]);
+            //                    }
+            //                    int v3h = v3.GetHashCode();
+            //                    if (!vertexHash.ContainsKey(v3h))
+            //                    {
+            //                        uniqueVertices.Add(v3);
+            //                        visibleVerticesData.AddRange(v3.GetData());
+            //                        visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
+            //                        visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
+            //                        indices.Add((uint)uniqueVertices.Count - 1);
+            //                        vertexHash.Add(v3h, (uint)uniqueVertices.Count - 1);
+            //                        Bounds.Enclose(v3);
+            //                    }
+            //                    else
+            //                    {
+            //                        indices.Add(vertexHash[v3h]);
+            //                    }
 
-                                hasIndices = true;
-                            }
-                        }
-                    }
+            //                    hasIndices = true;
+            //                }
+            //            }
+            //        }
 
-                    if (result == null)
-                        break;
-                }
-            }
+            //        if (result == null)
+            //            break;
+            //    }
+            //}
+
+            ;
+
+            ModelData md = Engine.assimpManager.ProcessModel(relativeModelPath, cr, cg, cb, ca);
+            uniqueVertices = md.uniqueVertices;
+            visibleVerticesData = md.visibleVerticesData;
+            visibleVerticesDataOnlyPos = md.visibleVerticesDataOnlyPos;
+            visibleVerticesDataOnlyPosAndNormal = md.visibleVerticesDataOnlyPosAndNormal;
+            indices = md.indices;
+            allVerts = md.allVerts;
+            Bounds = md.Bounds;
 
             visibleIndices = new List<uint>(indices);
             groupedIndices = indices
@@ -763,6 +775,7 @@ namespace Engine3D
                .GroupBy(x => x.Index / 3)
                .Select(x => x.Select(v => v.Value).ToList())
                .ToList();
+            hasIndices = true;
             ;
         }
 

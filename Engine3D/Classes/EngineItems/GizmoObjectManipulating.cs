@@ -18,20 +18,101 @@ namespace Engine3D
                 if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && editorData.selectedItem is Object insto &&
                     insto.meshType == typeof(InstancedMesh))
                 {
-                    if (objectMovingAxis == Axis.X)
+                    if (objectMovingAxis == Axis.X && objectMovingPlane != null)
                     {
-                        ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
-                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position - new Vector3(deltaX / 10, 0, 0);
+                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+
+                        if (_pos != null)
+                        {
+                            Vector3 pos = (Vector3)_pos;
+                            if (editorData.gizmoManager.AbsoluteMoving)
+                            {
+                                pos.Y = objectMovingOrig.Y;
+                            }
+                            else
+                            {
+                                Vector3 searchDir = Vector3.Transform(new Vector3(1, 0, 0), insto.Rotation);
+                                if (searchDir.X == 0)
+                                    searchDir.X = 0.01f;
+                                float slopeY = searchDir.Y / searchDir.X;
+                                float yIntercept = 0 - slopeY * 0;
+
+                                float slopeZ = searchDir.Z / searchDir.X;
+                                float zIntercept = 0 - slopeZ * 0;
+
+                                pos.Y = slopeY * pos.X + yIntercept;
+                                pos.Z = slopeZ * pos.X + zIntercept;
+                            }
+
+                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
+                                ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
+                            objectMovingOrig = pos;
+                        }
                     }
-                    else if (objectMovingAxis == Axis.Y)
+                    else if (objectMovingAxis == Axis.Y && objectMovingPlane != null)
                     {
-                        ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
-                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position - new Vector3(0, deltaY / 10, 0);
+                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+
+                        if (_pos != null)
+                        {
+                            Vector3 pos = (Vector3)_pos;
+                            if (editorData.gizmoManager.AbsoluteMoving)
+                            {
+                                pos.X = objectMovingOrig.X;
+                            }
+                            else
+                            {
+                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 1, 0), insto.Rotation);
+                                if (searchDir.Y == 0)
+                                    searchDir.Y = 0.01f;
+                                float slopeX = searchDir.X / searchDir.Y;
+                                float xIntercept = 0 - slopeX * 0;
+
+                                float slopeZ = searchDir.Z / searchDir.Y;
+                                float zIntercept = 0 - slopeZ * 0;
+
+                                pos.X = slopeX * pos.Y + xIntercept;
+                                pos.Z = slopeZ * pos.Y + zIntercept;
+                            }
+                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
+                                ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
+                            objectMovingOrig = pos;
+                        }
                     }
-                    else if (objectMovingAxis == Axis.Z)
+                    else if (objectMovingAxis == Axis.Z && objectMovingPlane != null)
                     {
-                        ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
-                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position + new Vector3(0, 0, deltaX / 10);
+                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+
+                        if (_pos != null)
+                        {
+                            Vector3 pos = (Vector3)_pos;
+
+                            if (editorData.gizmoManager.AbsoluteMoving)
+                            {
+                                pos.Y = objectMovingOrig.Y;
+                            }
+                            else
+                            {
+                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 0, 1), insto.Rotation);
+                                if (searchDir.Z == 0)
+                                    searchDir.Z = 0.01f;
+                                float slopeY = searchDir.Y / searchDir.Z;
+                                float yIntercept = 0 - slopeY * 0;
+
+                                float slopeX = searchDir.X / searchDir.Z;
+                                float xIntercept = 0 - slopeX * 0;
+
+                                pos.Y = slopeY * pos.Z + yIntercept;
+                                pos.X = slopeX * pos.Z + xIntercept;
+                            }
+
+                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
+                                ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
+                            objectMovingOrig = pos;
+                        }
                     }
                 }
                 else if(editorData.selectedItem is Object o)

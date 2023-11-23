@@ -147,16 +147,26 @@ namespace Engine3D
                                 GL.StencilMask(0x00);
                                 GL.Disable(EnableCap.DepthTest);
 
+                                int instIndex = -1;
+                                //if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1)
+                                //    instIndex = editorData.instIndex;
+
                                 outlineInstancedShader.Use();
 
                                 indices.Clear();
                                 verticesUnique.Clear();
                                 instancedVertices.Clear();
-                                (verticesUnique, indices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao);
+                                (verticesUnique, indices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao, instIndex);
                                 onlyPosAndNormalIbo.Buffer(indices);
                                 onlyPosAndNormalVbo.Buffer(verticesUnique);
                                 instancedOnlyPosAndNormalVbo.Buffer(instancedVertices);
+
                                 GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
+
+                                //if(instIndex == -1)
+                                //    GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
+                                //else
+                                //    GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, 1);
 
                                 GL.StencilMask(0xFF);
                                 GL.StencilFunc(StencilFunction.Always, 0, 0xFF);

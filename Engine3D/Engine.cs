@@ -8,6 +8,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Diagnostics;
+using Engine3D.Classes;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -111,6 +112,7 @@ namespace Engine3D
         private Stopwatch fileDetectorStopWatch;
         public static TextureManager textureManager;
         public static ConsoleManager consoleManager = new ConsoleManager();
+        public static AssimpManager assimpManager = new AssimpManager();
 
         private TextGenerator textGenerator;
         private Dictionary<string, TextMesh> texts;
@@ -538,10 +540,10 @@ namespace Engine3D
             //o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o));
             //objects.Add(o);
 
-            //Object o2 = new Object(ObjectType.Cube, ref physx);
-            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o2));
-            //objects.Add(o2);
-            //_meshObjects.Add(o2);
+            Object o2 = new Object(ObjectType.Cube, ref physx);
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o2));
+            objects.Add(o2);
+            _meshObjects.Add(o2);
 
             //Object o2 = new Object(ObjectType.Cube, ref physx);
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), "red_t.png", windowSize, ref camera, ref o2));
@@ -567,41 +569,41 @@ namespace Engine3D
             //objects.Last().SetSize(2);
             //objects.Last().AddSphereCollider(false);
 
-            Object o3 = new Object(ObjectType.TriangleMesh, ref physx);
-            o3.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", Object.GetUnitCube(), windowSize, ref camera, ref o3));
+            //////Object o3 = new Object(ObjectType.TriangleMesh, ref physx);
+            //////o3.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", Object.GetUnitCube(), windowSize, ref camera, ref o3));
 
-            //for (int i = 0; i < 1; i++)
-            //{
-            //    InstancedMeshData instData = new InstancedMeshData();
-            //    //instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
-            //    instData.Position = new Vector3(0,0,10);
-            //    //instData.Rotation = Helper.GetRandomQuaternion();
-            //    instData.Rotation = Quaternion.Identity;
-            //    //instData.Rotation = Helper.QuaternionFromEuler(new Vector3(45, 0, 0));
-            //    //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
-            //    //instData.Scale = new Vector3(3, 3, 3);
-            //    instData.Scale = new Vector3(1, 1, 1);
-            //    //instData.Color = Helper.GetRandomColor();
-            //    instData.Color = Color4.Blue;
+            ////////for (int i = 0; i < 1; i++)
+            ////////{
+            ////////    InstancedMeshData instData = new InstancedMeshData();
+            ////////    //instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
+            ////////    instData.Position = new Vector3(0,0,10);
+            ////////    //instData.Rotation = Helper.GetRandomQuaternion();
+            ////////    instData.Rotation = Quaternion.Identity;
+            ////////    //instData.Rotation = Helper.QuaternionFromEuler(new Vector3(45, 0, 0));
+            ////////    //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
+            ////////    //instData.Scale = new Vector3(3, 3, 3);
+            ////////    instData.Scale = new Vector3(1, 1, 1);
+            ////////    //instData.Color = Helper.GetRandomColor();
+            ////////    instData.Color = Color4.Blue;
 
-            //    ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
-            //}
+            ////////    ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
+            ////////}
 
-            for (int i = 0; i < 5; i++)
-            {
-                InstancedMeshData instData = new InstancedMeshData();
-                //instData.Position = new Vector3(0, 0, 0);
-                instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
-                instData.Rotation = Quaternion.Identity;
-                //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
-                instData.Scale = new Vector3(1, 1, 1);
-                //instData.Color = Helper.GetRandomColor();
-                instData.Color = Color4.Blue;
+            //////for (int i = 0; i < 5; i++)
+            //////{
+            //////    InstancedMeshData instData = new InstancedMeshData();
+            //////    //instData.Position = new Vector3(0, 0, 0);
+            //////    instData.Position = Helper.GetRandomVectorInAABB(new AABB(new Vector3(-10, -10, -10), new Vector3(10, 10, 10)));
+            //////    instData.Rotation = Quaternion.Identity;
+            //////    //instData.Scale = Helper.GetRandomScale(new AABB(new Vector3(1, 1, 1), new Vector3(5, 5, 5)));
+            //////    instData.Scale = new Vector3(1, 1, 1);
+            //////    //instData.Color = Helper.GetRandomColor();
+            //////    instData.Color = Color4.Blue;
 
-                ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
-            }
-            objects.Add(o3);
-            _instObjects.Add(o3);
+            //////    ((InstancedMesh)o3.GetMesh()).instancedData.Add(instData);
+            //////}
+            //////objects.Add(o3);
+            //////_instObjects.Add(o3);
 
             //ParticleSystem ps = new ParticleSystem(new Object(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, Object.GetUnitFace(), "smoke.png", windowSize, ref camera, ref textureCount), ObjectType.TriangleMesh, ref physx));
             //ps.GetObject().SetBillboarding(true);

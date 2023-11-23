@@ -177,18 +177,6 @@ namespace Engine3D
             SendUniforms();
         }
 
-        //private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
-        //{
-        //    vertices.AddRange(new float[]
-        //        {
-        //            tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-        //            tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-        //            tri.t[index].u, tri.t[index].v,
-        //            tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-        //            tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
-        //        });
-        //}
-
         private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index)
         {
             vertices.AddRange(new float[]
@@ -321,34 +309,6 @@ namespace Engine3D
 
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_scaleMatrix"), true, ref scaleMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
-        }
-
-        private void AddVertices(List<float> vertices, Vertex v)
-        {
-            lock (vertices) // Lock to ensure thread-safety when modifying the list
-            {
-                vertices.AddRange(v.GetData());
-            }
-        }
-
-        private void AddVerticesOnlyPos(List<float> vertices, triangle tri)
-        {
-            lock (vertices) // Lock to ensure thread-safety when modifying the list
-            {
-                ConvertToNDCOnlyPos(ref vertices, tri, 0);
-                ConvertToNDCOnlyPos(ref vertices, tri, 1);
-                ConvertToNDCOnlyPos(ref vertices, tri, 2);
-            }
-        }
-
-        private void AddVerticesOnlyPosAndNormal(List<float> vertices, triangle tri)
-        {
-            lock (vertices) // Lock to ensure thread-safety when modifying the list
-            {
-                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 0);
-                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 1);
-                ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 2);
-            }
         }
 
         public (List<float>, List<uint>) Draw(GameState gameRunning)
@@ -594,15 +554,17 @@ namespace Engine3D
                 verts[i] = ConvertToNDCPxVec3(i);
             }
 
-            for (int i = 0; i < indices.Count; i+=3)
-            {
-                indicesOut[index] = uniqueVertices[(int)indices[i]].pi;
-                index++;
-                indicesOut[index] = uniqueVertices[(int)indices[i]+1].pi;
-                index++;
-                indicesOut[index] = uniqueVertices[(int)indices[i]+2].pi;
-                index++;
-            }
+            indicesOut = indices.Select(x => (int)x).ToArray();
+            ;
+            //for (int i = 0; i < indices.Count; i+=3)
+            //{
+            //    indicesOut[index] = uniqueVertices[(int)indices[i]].pi;
+            //    index++;
+            //    indicesOut[index] = uniqueVertices[(int)indices[i]+1].pi;
+            //    index++;
+            //    indicesOut[index] = uniqueVertices[(int)indices[i]+2].pi;
+            //    index++;
+            //}
         }
     }
 }

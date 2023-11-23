@@ -241,27 +241,6 @@ namespace Engine3D
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
-        //private void ConvertToNDC(ref List<float> vertices, triangle tri, int index)
-        //{
-        //    vertices.AddRange(new float[]
-        //        {
-        //            tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-        //            tri.n[index].X, tri.n[index].Y, tri.n[index].Z,
-        //            tri.t[index].u, tri.t[index].v,
-        //            tri.c[index].R, tri.c[index].G, tri.c[index].B, tri.c[index].A,
-        //            tri.tan[index].X, tri.tan[index].Y, tri.tan[index].Z
-        //        });
-        //}
-
-        //private void ConvertToNDCOnlyPosAndNormal(ref List<float> vertices, triangle tri, int index)
-        //{
-        //    vertices.AddRange(new float[]
-        //    {
-        //        tri.p[index].X, tri.p[index].Y, tri.p[index].Z,
-        //        tri.n[index].X, tri.n[index].Y, tri.n[index].Z
-        //    });
-        //}
-
         private void ConvertToNDCInstance(ref List<float> vertices, InstancedMeshData data)
         {
             vertices.AddRange(new float[]
@@ -272,26 +251,6 @@ namespace Engine3D
                 data.Color.R, data.Color.G, data.Color.B, data.Color.A
             });
         }
-
-        //private void AddVertices(List<float> vertices, triangle tri)
-        //{
-        //    lock (vertices) // Lock to ensure thread-safety when modifying the list
-        //    {
-        //        ConvertToNDC(ref vertices, tri, 0);
-        //        ConvertToNDC(ref vertices, tri, 1);
-        //        ConvertToNDC(ref vertices, tri, 2);
-        //    }
-        //}
-
-        //private void AddVerticesOnlyPosAndNormal(List<float> vertices, triangle tri)
-        //{
-        //    lock (vertices) // Lock to ensure thread-safety when modifying the list
-        //    {
-        //        ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 0);
-        //        ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 1);
-        //        ConvertToNDCOnlyPosAndNormal(ref vertices, tri, 2);
-        //    }
-        //}
 
         public (List<float>, List<uint>, List<float>) Draw(GameState gameRunning)
         {
@@ -353,9 +312,9 @@ namespace Engine3D
             ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
             Parallel.ForEach(instancedData, parallelOptions,
                  () => new List<float>(),
-                 (instancedData, loopState, localVertices) =>
+                 (instancedData_, loopState, localVertices) =>
                  {
-                     ConvertToNDCInstance(ref localVertices, instancedData);
+                     ConvertToNDCInstance(ref localVertices, instancedData_);
                      return localVertices;
                  },
                  localVertices =>
@@ -369,7 +328,7 @@ namespace Engine3D
             return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices), new List<float>(instancedVertices));
         }
 
-        public (List<float>, List<uint>, List<float>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao)
+        public (List<float>, List<uint>, List<float>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao, int instIndex = -1)
         {
             if (!parentObject.isEnabled)
                 return (new List<float>(), new List<uint>(), new List<float>());
@@ -393,8 +352,16 @@ namespace Engine3D
 
             SendUniformsOnlyPos(shader);
 
-
             return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
+
+            //if (instIndex == -1)
+            //    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
+            //else
+            //{
+            //    List<float> instancedVertex = new List<float>();
+            //    ConvertToNDCInstance(ref instancedVertex, instancedData[instIndex]);
+            //    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), instancedVertex);
+            //}
         }
     }
 }

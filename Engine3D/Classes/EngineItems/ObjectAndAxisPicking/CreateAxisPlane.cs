@@ -18,12 +18,29 @@ namespace Engine3D
                     objectMovingAxis = Axis.X;
                     if (editorData.gizmoManager.AbsoluteMoving)
                     {
-                        objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.Position.Z);
+                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.meshType == typeof(InstancedMesh))
+                        {
+                            Vector3 instPos = ((InstancedMesh)selectedO.GetMesh()).instancedData[editorData.instIndex].Position;
+                            objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.Position.Z + instPos.Z);
+                        }
+                        else
+                            objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.Position.Z);
                     }
                     else
                     {
-                        objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.Rotation),
-                                          selectedO.Position);
+                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.meshType == typeof(InstancedMesh))
+                        {
+                            Vector3 instPos = ((InstancedMesh)selectedO.GetMesh()).instancedData[editorData.instIndex].Position;
+                            Quaternion instRot = ((InstancedMesh)selectedO.GetMesh()).instancedData[editorData.instIndex].Rotation;
+
+                            objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.Rotation * instRot),
+                                              selectedO.Position + instPos);
+                        }
+                        else
+                        {
+                            objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.Rotation),
+                                              selectedO.Position);
+                        }
                     }
 
                     Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
