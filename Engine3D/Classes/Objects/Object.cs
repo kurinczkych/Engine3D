@@ -310,11 +310,11 @@ namespace Engine3D
                 mesh.modelName = Path.GetFileName(mesh.modelPath);
                 mesh.ProcessObj(mesh.modelPath);
 
-                if (mesh.uniqueVertices.Count() > 0 && !mesh.uniqueVertices[0].gotNormal)
+                if (mesh.model.meshes.Count > 0 && mesh.model.meshes[0].uniqueVertices.Count > 0 && !mesh.model.meshes[0].uniqueVertices[0].gotNormal)
                 {
                     mesh.ComputeVertexNormalsSpherical();
                 }
-                else if (mesh.uniqueVertices.Count() > 0 && mesh.uniqueVertices[0].gotNormal)
+                else if (mesh.model.meshes.Count > 0 && mesh.model.meshes[0].uniqueVertices.Count > 0 && mesh.model.meshes[0].uniqueVertices[0].gotNormal)
                     mesh.ComputeVertexNormals();
 
                 mesh.ComputeTangents();
@@ -477,9 +477,15 @@ namespace Engine3D
             meshType = mesh.GetType();
 
             Bounds = new AABB();
-            foreach(Vertex v in mesh.uniqueVertices)
+            foreach (MeshData meshData in mesh.model.meshes)
             {
-                Bounds.Enclose(v);
+                if(meshData.Bounds.Min.X < Bounds.Min.X) Bounds.Min.X = meshData.Bounds.Min.X;
+                if(meshData.Bounds.Min.Y < Bounds.Min.Y) Bounds.Min.Y = meshData.Bounds.Min.Y;
+                if(meshData.Bounds.Min.Z < Bounds.Min.Z) Bounds.Min.Z = meshData.Bounds.Min.Z;
+
+                if(meshData.Bounds.Max.X > Bounds.Max.X) Bounds.Max.X = meshData.Bounds.Max.X;
+                if(meshData.Bounds.Max.Y > Bounds.Max.Y) Bounds.Max.Y = meshData.Bounds.Max.Y;
+                if(meshData.Bounds.Max.Z > Bounds.Max.Z) Bounds.Max.Z = meshData.Bounds.Max.Z;
             }
 
             StaticFriction = 0.5f;
@@ -881,24 +887,55 @@ namespace Engine3D
 
         public void AddTriangleMeshCollider(bool removeCollider=false)
         {
+            List<Vector3> allVerts = new List<Vector3>();
+            List<int> indices = new List<int>();
+            bool hasIndices = true;
+
+            int lastIndex = 0;
+
+            for (int i = 0; i < mesh.model.meshes.Count; i++)
+            {
+                MeshData meshData = mesh.model.meshes[i];
+
+                if (!meshData.hasIndices)
+                    hasIndices = false;
+
+                int largestIndex = (int)meshData.indices.Max();
+
+                for (int j = 0; j < meshData.allVerts.Count(); j++)
+                {
+                    allVerts.Add(meshData.allVerts[j]);
+                }
+
+                for (int j = 0; j < meshData.indices.Count; j += 3)
+                {
+                    indices.Add(meshData.uniqueVertices[(int)meshData.indices[j]].pi + lastIndex);
+                    indices.Add(meshData.uniqueVertices[(int)meshData.indices[j + 1]].pi + lastIndex);
+                    indices.Add(meshData.uniqueVertices[(int)meshData.indices[j + 2]].pi + lastIndex);
+                }
+
+                lastIndex += largestIndex;
+            }
+
+
             if (removeCollider)
                 RemoveCollider();
 
             Type meshType = mesh.GetType();
             if (meshType != typeof(Mesh))
                 throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
-            if (!mesh.hasIndices)
+            if (!hasIndices)
                 throw new Exception("The mesh doesn't have triangle indices!");
 
-            uint count = (uint)((Mesh)mesh).indices.Count;
+            uint count = (uint)indices.Count;
             PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
             meshDesc.points.count = count;
             meshDesc.points.stride = (uint)sizeof(PxVec3);
-            PxVec3[] verts = new PxVec3[mesh.allVerts.Count()];
-            int[] indices = new int[count];
-            ((Mesh)mesh).GetCookedData(out verts, out indices);
+            PxVec3[] verts = new PxVec3[allVerts.Count()];
+            int[] indices_ = new int[count];
+            ((Mesh)mesh).GetCookedData(out verts, out indices_);
             GCHandle vertsHandle = GCHandle.Alloc(verts, GCHandleType.Pinned);
-            GCHandle indicesHandle = GCHandle.Alloc(indices, GCHandleType.Pinned);
+            GCHandle indicesHandle = GCHandle.Alloc(indices_, GCHandleType.Pinned);
 
             var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
             PxCookingParams cookingParams = PxCookingParams_new(&tolerancesScale);
@@ -909,7 +946,7 @@ namespace Engine3D
 
             meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
 
-            meshDesc.triangles.count = (uint)((Mesh)mesh).indices.Count() / 3;
+            meshDesc.triangles.count = (uint)indices.Count() / 3;
             meshDesc.triangles.stride = 3 * sizeof(int);
             meshDesc.triangles.data = (int*)indicesHandle.AddrOfPinnedObject().ToPointer();
 
@@ -922,7 +959,7 @@ namespace Engine3D
             {
                 // Establish a no GC region. The size parameter specifies how much memory
                 // to reserve for the small object heap.
-                if (GC.TryStartNoGCRegion((uint)((Mesh)mesh).indices.Count() / 3 * 60))
+                if (GC.TryStartNoGCRegion(indices.Count() / 3 * 60))
                 {
                     triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
 
@@ -1080,7 +1117,7 @@ namespace Engine3D
             list.Add(new Vertex(v[2]) { c = c });
         }
 
-        public static MeshData GetUnitCube(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+        public static ModelData GetUnitCube(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
             Color4 c = new Color4(r, g, b, a);
 
@@ -1140,10 +1177,12 @@ namespace Engine3D
 
             meshData.CalculateGroupedIndices();
 
-            return meshData;
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
         }
 
-        public static MeshData GetUnitFace(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+        public static ModelData GetUnitFace(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
             Color4 c = new Color4(r, g, b, a);
 
@@ -1190,10 +1229,12 @@ namespace Engine3D
 
             meshData.CalculateGroupedIndices();
 
-            return meshData;
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
         }
 
-        public static MeshData GetUnitSphere(float radius = 1, int resolution = 10, 
+        public static ModelData GetUnitSphere(float radius = 1, int resolution = 10, 
                                                                                   float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
             Color4 c = new Color4(r, g, b, a);
@@ -1261,10 +1302,12 @@ namespace Engine3D
 
             meshData.CalculateGroupedIndices();
 
-            return meshData;
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
         }
 
-        public static MeshData GetUnitCapsule(float radius = 0.5f, float halfHeight = 0.5f, int resolution = 10,
+        public static ModelData GetUnitCapsule(float radius = 0.5f, float halfHeight = 0.5f, int resolution = 10,
                                                                                    float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
             Color4 c = new Color4(r, g, b, a);
@@ -1358,7 +1401,9 @@ namespace Engine3D
 
             meshData.CalculateGroupedIndices();
 
-            return meshData;
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
         }
         #endregion
     }

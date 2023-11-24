@@ -35,12 +35,7 @@ namespace Engine3D
 
                     foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
                     {
-                        verticesUnique.Clear();
-                        indices.Clear();
-                        (verticesUnique, indices) = ((Mesh)moverGizmo.GetMesh()).Draw(editorData.gameRunning);
-                        meshIbo.Buffer(indices);
-                        meshVbo.Buffer(verticesUnique);
-                        GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
+                        ((Mesh)moverGizmo.GetMesh()).Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
                     }
                 }
             }

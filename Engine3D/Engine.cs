@@ -222,7 +222,7 @@ namespace Engine3D
             else if (type == ObjectType.TriangleMesh)
             {
                 Object o = new Object(type, ref physx);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new MeshData(), windowSize, ref character.camera, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
                 _meshObjects.Add(o);
             }
@@ -540,7 +540,7 @@ namespace Engine3D
             //objects.Add(o);
 
             //Object o2 = new Object(ObjectType.Cube, ref physx);
-            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.fbx", "level.png", windowSize, ref camera, ref o2));
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "level2Rot.obj", "level.png", windowSize, ref camera, ref o2));
             //objects.Add(o2);
             //_meshObjects.Add(o2);
 

@@ -123,31 +123,31 @@ namespace Engine3D
             float moverGizmoSize = 3;
             float otherAxisScale = 0.5f;
 
-            MeshData meshDataX = Object.GetUnitCube(1, 0, 0, 1);
+            ModelData modelX = Object.GetUnitCube(1, 0, 0, 1);
             Object moverGizmoX = new Object(ObjectType.Cube, 1);
             Matrix4 xMat = Matrix4.CreateScale(new Vector3(moverGizmoSize, otherAxisScale, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(2, 0, 0));
-            meshDataX.TransformMeshData(xMat);
-            Mesh xMesh = new Mesh(vao, vbo, shader.id, "xMesh", meshDataX, camera.screenSize, ref camera, ref moverGizmoX);
+            modelX.meshes[0].TransformMeshData(xMat);
+            Mesh xMesh = new Mesh(vao, vbo, shader.id, "xMesh", modelX, camera.screenSize, ref camera, ref moverGizmoX);
             xMesh.useShading = false;
             moverGizmoX.AddMesh(xMesh);
             xMesh.AllIndicesVisible();
             moverGizmos.Add(moverGizmoX);
 
-            MeshData meshDataY = Object.GetUnitCube(0, 1, 0, 1);
+            ModelData modelY = Object.GetUnitCube(0, 1, 0, 1);
             Object moverGizmoY = new Object(ObjectType.Cube, 2);
             Matrix4 yMat = Matrix4.CreateScale(new Vector3(otherAxisScale, moverGizmoSize, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(0, 2, 0));
-            meshDataY.TransformMeshData(yMat);
-            Mesh yMesh = new Mesh(vao, vbo, shader.id, "yMesh", meshDataY, camera.screenSize, ref camera, ref moverGizmoY);
+            modelY.meshes[0].TransformMeshData(yMat);
+            Mesh yMesh = new Mesh(vao, vbo, shader.id, "yMesh", modelY, camera.screenSize, ref camera, ref moverGizmoY);
             yMesh.useShading = false;
             moverGizmoY.AddMesh(yMesh);
             yMesh.AllIndicesVisible();
             moverGizmos.Add(moverGizmoY);
 
-            MeshData meshDataZ = Object.GetUnitCube(0, 0, 1, 1);
+            ModelData modelZ = Object.GetUnitCube(0, 0, 1, 1);
             Object moverGizmoZ = new Object(ObjectType.Cube, 3);
             Matrix4 zMat = Matrix4.CreateScale(new Vector3(otherAxisScale, otherAxisScale, moverGizmoSize)) * Matrix4.CreateTranslation(new Vector3(0, 0, 2));
-            meshDataZ.TransformMeshData(zMat);
-            Mesh zMesh = new Mesh(vao, vbo, shader.id, "zMesh", meshDataZ, camera.screenSize, ref camera, ref moverGizmoZ);
+            modelZ.meshes[0].TransformMeshData(zMat);
+            Mesh zMesh = new Mesh(vao, vbo, shader.id, "zMesh", modelZ, camera.screenSize, ref camera, ref moverGizmoZ);
             zMesh.useShading = false;
             moverGizmoZ.AddMesh(zMesh);
             zMesh.AllIndicesVisible();

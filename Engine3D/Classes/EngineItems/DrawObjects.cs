@@ -28,10 +28,6 @@ namespace Engine3D
                     if (o.GetMesh().GetType() == typeof(Mesh))
                     {
                         Mesh mesh = (Mesh)o.GetMesh();
-                        if (currentMeshType == null || currentMeshType != mesh.GetType())
-                        {
-                            shaderProgram.Use();
-                        }
 
                         if (editorData.gameRunning == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
                         {
@@ -72,13 +68,7 @@ namespace Engine3D
                                     GL.StencilMask(0xFF);
                                 }
 
-                                indices.Clear();
-                                verticesUnique.Clear();
-                                (verticesUnique, indices) = mesh.Draw(editorData.gameRunning);
-                                meshIbo.Buffer(indices);
-                                meshVbo.Buffer(verticesUnique);
-                                GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
-                                vertices.Clear();
+                                mesh.Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
 
                                 // OUTLINING
                                 if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
@@ -87,22 +77,12 @@ namespace Engine3D
                                     GL.StencilMask(0x00);
                                     GL.Disable(EnableCap.DepthTest);
 
-                                    outlineShader.Use();
-
-                                    indices.Clear();
-                                    verticesUnique.Clear();
-                                    (verticesUnique, indices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao);
-                                    onlyPosAndNormalIbo.Buffer(indices);
-                                    onlyPosAndNormalVbo.Buffer(verticesUnique);
-                                    GL.DrawElements(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, 0);
+                                    mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao, onlyPosAndNormalVbo, onlyPosAndNormalIbo);
 
                                     GL.StencilMask(0xFF);
                                     GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
                                     GL.Disable(EnableCap.StencilTest);
                                     GL.Enable(EnableCap.DepthTest);
-
-                                    shaderProgram.Use();
-                                    vertices.Clear();
                                 }
                             }
                         }
@@ -126,19 +106,9 @@ namespace Engine3D
                                 GL.StencilMask(0xFF);
                             }
 
-                            indices.Clear();
-                            verticesUnique.Clear();
-                            List<float> instancedVertices = new List<float>();
-                            (verticesUnique, indices, instancedVertices) = mesh.Draw(editorData.gameRunning); 
-                            meshIbo.Buffer(indices);
-                            meshVbo.Buffer(verticesUnique);
-                            instancedMeshVbo.Buffer(instancedVertices);
+                            mesh.Draw(editorData.gameRunning, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo); 
 
                             currentMeshType = typeof(InstancedMesh);
-
-                            GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
-                            vertices.Clear();
-
 
                             // OUTLINING
                             if (o.isSelected && editorData.gameRunning == GameState.Stopped)
@@ -151,30 +121,13 @@ namespace Engine3D
                                 //if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1)
                                 //    instIndex = editorData.instIndex;
 
-                                outlineInstancedShader.Use();
-
-                                indices.Clear();
-                                verticesUnique.Clear();
-                                instancedVertices.Clear();
-                                (verticesUnique, indices, instancedVertices) = mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao, instIndex);
-                                onlyPosAndNormalIbo.Buffer(indices);
-                                onlyPosAndNormalVbo.Buffer(verticesUnique);
-                                instancedOnlyPosAndNormalVbo.Buffer(instancedVertices);
-
-                                GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
-
-                                //if(instIndex == -1)
-                                //    GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
-                                //else
-                                //    GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, 1);
+                                mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao, onlyPosAndNormalVbo,
+                                                          instancedOnlyPosAndNormalVbo, onlyPosAndNormalIbo, instIndex);
 
                                 GL.StencilMask(0xFF);
                                 GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
                                 GL.Disable(EnableCap.StencilTest);
                                 GL.Enable(EnableCap.DepthTest);
-
-                                instancedShaderProgram.Use();
-                                //vertices.Clear();
                             }
                         }
                     }

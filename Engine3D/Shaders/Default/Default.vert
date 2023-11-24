@@ -2,9 +2,11 @@
 
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec3 inNormal;
-layout(location = 2) in vec2 inUV;
-layout(location = 3) in vec4 inColor;
-layout(location = 4) in vec3 inTangent;
+layout (location = 2) in vec2 inUV;
+layout (location = 3) in vec4 inColor;
+layout (location = 4) in vec3 inTangent;
+layout (location = 5) in ivec4 boneIDs;
+layout (location = 6) in vec4 weights;
 
 out vec3 gsFragPos;
 out vec3 gsFragNormal;
@@ -23,11 +25,23 @@ uniform int useNormal;
 uniform int useHeight;
 uniform int useBillboarding;
 
+const int MAX_BONES = 100;
+uniform mat4 boneMatrices[MAX_BONES];
+uniform int boneCount;
+uniform int useAnimation;
+
 void main()
 {
+	//boneIDs contains more than 4 bones, each mesh can contain x count of bones.
+	mat4 boneMatrix = 
+        boneMatrices[boneIDs[0]] * weights[0] +
+        boneMatrices[boneIDs[1]] * weights[1] +
+        boneMatrices[boneIDs[2]] * weights[2] +
+        boneMatrices[boneIDs[3]] * weights[3];
+
 	vec4 position = vec4(inPosition,1.0);
 
-	gl_Position = position * modelMatrix * viewMatrix * projectionMatrix;
+	gl_Position = position * boneMatrix * modelMatrix * viewMatrix * projectionMatrix;
 	vec4 fragPos4 = position * modelMatrix;
 
 	if(useBillboarding == 1)

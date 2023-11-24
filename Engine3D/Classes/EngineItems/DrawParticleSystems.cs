@@ -13,7 +13,6 @@ namespace Engine3D
         {
 
             //GL.BlendFunc(BlendingFactor.SrcColor, BlendingFactor.OneMinusSrcColor);
-            instancedShaderProgram.Use();
             foreach (ParticleSystem ps in particleSystems)
             {
                 Object psO = ps.GetObject();
@@ -21,16 +20,7 @@ namespace Engine3D
 
                 InstancedMesh mesh = (InstancedMesh)psO.GetMesh();
 
-                indices.Clear();
-                verticesUnique.Clear();
-                List<float> instancedVertices = new List<float>();
-                (verticesUnique, indices, instancedVertices) = mesh.Draw(editorData.gameRunning);
-                meshIbo.Buffer(indices);
-                meshVbo.Buffer(verticesUnique);
-                instancedMeshVbo.Buffer(instancedVertices);
-
-                GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
-                vertices.Clear();
+                mesh.Draw(editorData.gameRunning, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo);
             }
             //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         }

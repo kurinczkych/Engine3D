@@ -242,116 +242,135 @@ namespace Engine3D
             });
         }
 
-        public (List<float>, List<uint>, List<float>) Draw(GameState gameRunning)
+        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, VBO instVbo_, IBO ibo_)
         {
             if (!parentObject.isEnabled || model == null || model.meshes.Count == 0)
-                return (new List<float>(), new List<uint>(), new List<float>());
+                return;
 
             Vao.Bind();
-
-            if (!recalculate)
-            {
-                if (gameRunning == GameState.Stopped && vertices.Count > 0 && instancedVertices.Count > 0)
-                {
-                    SendUniforms();
-
-                    if (parentObject.texture != null)
-                    {
-                        parentObject.texture.Bind();
-                        if (parentObject.textureNormal != null)
-                            parentObject.textureNormal.Bind();
-                        if (parentObject.textureHeight != null)
-                            parentObject.textureHeight.Bind();
-                        if (parentObject.textureAO != null)
-                            parentObject.textureAO.Bind();
-                        if (parentObject.textureRough != null)
-                            parentObject.textureRough.Bind();
-                        if (parentObject.textureMetal != null)
-                            parentObject.textureMetal.Bind();
-                    }
-
-                    return (new List<float>(model.meshes[0].visibleVerticesData), new List<uint>(model.meshes[0].visibleIndices), instancedVertices);
-                }
-            }
-            else
-            {
-                recalculate = false;
-                CalculateFrustumVisibility();
-            }
-
-            ObjectType type = parentObject.GetObjectType();
-
+            shader.Use();
             SendUniforms();
 
-            if (parentObject.texture != null)
+            foreach (MeshData mesh in model.meshes)
             {
-                parentObject.texture.Bind();
-                if (parentObject.textureNormal != null)
-                    parentObject.textureNormal.Bind();
-                if (parentObject.textureHeight != null)
-                    parentObject.textureHeight.Bind();
-                if (parentObject.textureAO != null)
-                    parentObject.textureAO.Bind();
-                if (parentObject.textureRough != null)
-                    parentObject.textureRough.Bind();
-                if (parentObject.textureMetal != null)
-                    parentObject.textureMetal.Bind();
-            }
+                if (!recalculate)
+                {
+                    if (gameRunning == GameState.Stopped && vertices.Count > 0 && instancedVertices.Count > 0)
+                    {
+                        if (parentObject.texture != null)
+                        {
+                            parentObject.texture.Bind();
+                            if (parentObject.textureNormal != null)
+                                parentObject.textureNormal.Bind();
+                            if (parentObject.textureHeight != null)
+                                parentObject.textureHeight.Bind();
+                            if (parentObject.textureAO != null)
+                                parentObject.textureAO.Bind();
+                            if (parentObject.textureRough != null)
+                                parentObject.textureRough.Bind();
+                            if (parentObject.textureMetal != null)
+                                parentObject.textureMetal.Bind();
+                        }
 
-            instancedVertices.Clear();
-            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            Parallel.ForEach(instancedData, parallelOptions,
-                 () => new List<float>(),
-                 (instancedData_, loopState, localVertices) =>
-                 {
-                     ConvertToNDCInstance(ref localVertices, instancedData_);
-                     return localVertices;
-                 },
-                 localVertices =>
-                 {
-                     lock (instancedVertices)
+                        ibo_.Buffer(mesh.visibleIndices);
+                        vbo_.Buffer(mesh.visibleVerticesData);
+                        instVbo_.Buffer(instancedVertices);
+                        GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
+                        continue;
+                    }
+                }
+                else
+                {
+                    recalculate = false;
+                    CalculateFrustumVisibility();
+                }
+
+                if (parentObject.texture != null)
+                {
+                    parentObject.texture.Bind();
+                    if (parentObject.textureNormal != null)
+                        parentObject.textureNormal.Bind();
+                    if (parentObject.textureHeight != null)
+                        parentObject.textureHeight.Bind();
+                    if (parentObject.textureAO != null)
+                        parentObject.textureAO.Bind();
+                    if (parentObject.textureRough != null)
+                        parentObject.textureRough.Bind();
+                    if (parentObject.textureMetal != null)
+                        parentObject.textureMetal.Bind();
+                }
+
+                instancedVertices.Clear();
+                ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+                Parallel.ForEach(instancedData, parallelOptions,
+                     () => new List<float>(),
+                     (instancedData_, loopState, localVertices) =>
                      {
-                         instancedVertices.AddRange(localVertices);
-                     }
-                 });
+                         ConvertToNDCInstance(ref localVertices, instancedData_);
+                         return localVertices;
+                     },
+                     localVertices =>
+                     {
+                         lock (instancedVertices)
+                         {
+                             instancedVertices.AddRange(localVertices);
+                         }
+                     });
 
-            return (new List<float>(model.meshes[0].visibleVerticesData), new List<uint>(model.meshes[0].visibleIndices), new List<float>(instancedVertices));
+                ibo_.Buffer(mesh.visibleIndices);
+                vbo_.Buffer(mesh.visibleVerticesData);
+                instVbo_.Buffer(instancedVertices);
+                GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
+            }
         }
 
-        public (List<float>, List<uint>, List<float>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao, int instIndex = -1)
+        public void DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, InstancedVAO _vao, VBO vbo_, VBO instVbo_, IBO ibo_, int instIndex = -1)
         {
             if (!parentObject.isEnabled)
-                return (new List<float>(), new List<uint>(), new List<float>());
+                return;
 
             _vao.Bind();
-
-            if (!recalculateOnlyPosAndNormal)
-            {
-                if (gameRunning == GameState.Stopped && model.meshes[0].visibleVerticesDataOnlyPosAndNormal.Count > 0 && instancedVertices.Count > 0)
-                {
-                    SendUniformsOnlyPos(shader);
-
-                    return (new List<float>(model.meshes[0].visibleVerticesDataOnlyPosAndNormal), new List<uint>(model.meshes[0].visibleIndices), new List<float>(instancedVertices));
-                }
-            }
-            else
-            {
-                recalculateOnlyPosAndNormal = false;
-                CalculateFrustumVisibility();
-            }
-
+            shader.Use();
             SendUniformsOnlyPos(shader);
 
-            return (new List<float>(model.meshes[0].visibleVerticesDataOnlyPosAndNormal), new List<uint>(model.meshes[0].visibleIndices), new List<float>(instancedVertices));
+            foreach (MeshData mesh in model.meshes)
+            {
+                if (!recalculateOnlyPosAndNormal)
+                {
+                    if (gameRunning == GameState.Stopped && model.meshes[0].visibleVerticesDataOnlyPosAndNormal.Count > 0 && instancedVertices.Count > 0)
+                    {
+                        ibo_.Buffer(mesh.visibleIndices);
+                        vbo_.Buffer(mesh.visibleVerticesDataOnlyPosAndNormal);
+                        instVbo_.Buffer(instancedVertices);
+                        GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
+                        continue;
+                    }
+                }
+                else
+                {
+                    recalculateOnlyPosAndNormal = false;
+                    CalculateFrustumVisibility();
+                }
 
-            //if (instIndex == -1)
-            //    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
-            //else
-            //{
-            //    List<float> instancedVertex = new List<float>();
-            //    ConvertToNDCInstance(ref instancedVertex, instancedData[instIndex]);
-            //    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), instancedVertex);
-            //}
+                ibo_.Buffer(mesh.visibleIndices);
+                vbo_.Buffer(mesh.visibleVerticesDataOnlyPosAndNormal);
+                instVbo_.Buffer(instancedVertices);
+                GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
+
+                //if(instIndex == -1)
+                //    GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());
+                //else
+                //    GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, 1);
+
+                //if (instIndex == -1)
+                //    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), new List<float>(instancedVertices));
+                //else
+                //{
+                //    List<float> instancedVertex = new List<float>();
+                //    ConvertToNDCInstance(ref instancedVertex, instancedData[instIndex]);
+                //    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices), instancedVertex);
+                //}
+            }
         }
     }
 }

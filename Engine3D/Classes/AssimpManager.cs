@@ -9,6 +9,26 @@ using OpenTK.Mathematics;
 
 namespace Engine3D
 {
+    public class Bone
+    {
+        public List<VertexWeight> weights;
+        public Matrix4 offsetMatrix;
+
+        public Bone(List<VertexWeight> weights, Matrix4x4 offsetMatrix)
+        {
+            this.weights = new List<VertexWeight>(weights);
+
+            this.offsetMatrix = new Matrix4();
+            for (int x = 0; x < 4; x++)
+            {
+                for (int y = 0; y < 4; y++)
+                {
+                    this.offsetMatrix[x, y] = offsetMatrix[x, y];
+                }
+            }
+        }
+    }
+
     public class MeshData
     {
         public List<Vec2d> uvs = new List<Vec2d>();
@@ -28,6 +48,8 @@ namespace Engine3D
         public AABB Bounds = new AABB();
 
         public List<List<uint>> groupedIndices = new List<List<uint>>();
+
+        public List<Bone> bones = new List<Bone>();
 
         public MeshData() { }
 
@@ -60,20 +82,6 @@ namespace Engine3D
     {
         public List<MeshData> meshes = new List<MeshData>();
 
-        public List<Vertex> uniqueVertices = new List<Vertex>();
-        public List<float> visibleVerticesData = new List<float>();
-        public List<float> visibleVerticesDataOnlyPos = new List<float>();
-        public List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
-
-        public List<uint> indices = new List<uint>();
-        public List<uint> visibleIndices = new List<uint>();
-        public uint maxVisibleIndex = 0;
-
-        public bool hasIndices = false;
-        public AABB Bounds = new AABB();
-
-        public List<List<uint>> groupedIndices = new List<List<uint>>();
-
         public ModelData() { }
     }
 
@@ -104,6 +112,11 @@ namespace Engine3D
             foreach (var mesh in model.Meshes)
             {
                 MeshData meshData = new MeshData();
+
+                foreach(var bone in mesh.Bones)
+                {
+                    meshData.bones.Add(new Bone(bone.VertexWeights, bone.OffsetMatrix));
+                }
 
                 HashSet<int> normalsHash = new HashSet<int>();
                 for (int i = 0; i < mesh.Normals.Count; i++)
@@ -144,9 +157,6 @@ namespace Engine3D
                 for (int i = 0; i < mesh.Faces.Count; i++)
                 {
                     var face = mesh.Faces[i];
-
-                    if (mesh.TextureCoordinateChannelCount == 0)
-                        ;
 
                     (Vector3 vv1, Vec2d uv1, Vector3 nv1) = AssimpGetElement(face.Indices[0], mesh);
                     Vertex v1 = new Vertex(vv1, nv1, uv1) { c = color, pi = meshData.allVerts.IndexOf(vv1) };

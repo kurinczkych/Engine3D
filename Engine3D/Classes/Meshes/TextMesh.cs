@@ -57,6 +57,8 @@ namespace Engine3D
             Rotation = 0;
             Scale = Vector2.One;
 
+            model = new ModelData();
+
             this.windowSize = windowSize;
             this.textGenerator = tg;
 
@@ -69,12 +71,8 @@ namespace Engine3D
             currentText = text;
 
             MeshData meshData = textGenerator.GetTriangles(text);
-            uniqueVertices = meshData.uniqueVertices;
-            visibleVerticesData = meshData.visibleVerticesData;
-            visibleVerticesDataOnlyPos = meshData.visibleVerticesDataOnlyPos;
-            visibleVerticesDataOnlyPosAndNormal = meshData.visibleVerticesDataOnlyPosAndNormal;
-            indices = meshData.indices;
-            Bounds = meshData.Bounds;
+
+            model.meshes = new List<MeshData>() { meshData };
         }
 
         private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)

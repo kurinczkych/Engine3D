@@ -205,6 +205,14 @@ namespace Engine3D
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
             uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
+
+            #region AnimationLocations
+            uniformLocations.Add("useAnimation", GL.GetUniformLocation(shaderProgramId, "useAnimation"));
+            uniformLocations.Add("boneCount", GL.GetUniformLocation(shaderProgramId, "boneCount"));
+            uniformLocations.Add("boneMatrices", GL.GetUniformLocation(shaderProgramId, "boneMatrices"));
+            #endregion
+
+            #region TextureLocations
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
             uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
             uniformLocations.Add("useHeight", GL.GetUniformLocation(shaderProgramId, "useHeight"));
@@ -235,6 +243,7 @@ namespace Engine3D
                     uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
                 }
             }
+            #endregion
         }
 
         protected override void SendUniforms()
@@ -282,17 +291,18 @@ namespace Engine3D
             GL.Uniform1(uniformLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
         }
 
+        private void SendAnimationUniform()
+        {
+            //GL.Uniform
+        }
+
         public void SendUniformsOnlyPos(Shader shader)
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
             cameraPos = camera.GetPosition();
 
-            var b = GL.GetError();
-            var a = GL.GetUniformLocation(shader.id, "modelMatrix");
-            var c = GL.GetError();
-
-            GL.UniformMatrix4(a, true, ref modelMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "viewMatrix"), true, ref viewMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "projectionMatrix"), true, ref projectionMatrix);
             GL.Uniform3(GL.GetUniformLocation(shader.id, "cameraPos"), cameraPos);
@@ -301,148 +311,168 @@ namespace Engine3D
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
-        public (List<float>, List<uint>) Draw(GameState gameRunning)
+        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_)
         {
             if (!parentObject.isEnabled)
-                return (new List<float>(), new List<uint>());
+                return;
 
             Vao.Bind();
-
-            if (!recalculate)
-            {
-                if (gameRunning == GameState.Stopped && visibleIndices.Count > 0)
-                {
-                    SendUniforms();
-
-                    if (parentObject.texture != null)
-                    {
-                        parentObject.texture.Bind();
-                        if (parentObject.textureNormal != null)
-                            parentObject.textureNormal.Bind();
-                        if (parentObject.textureHeight != null)
-                            parentObject.textureHeight.Bind();
-                        if (parentObject.textureAO != null)
-                            parentObject.textureAO.Bind();
-                        if (parentObject.textureRough != null)
-                            parentObject.textureRough.Bind();
-                        if (parentObject.textureMetal != null)
-                            parentObject.textureMetal.Bind();
-                    }
-
-                    return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices));
-                }
-            }
-            else
-            {
-                recalculate = false;
-                CalculateFrustumVisibility();
-            }
-
-            #region not working parallelization
-            //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-            //Parallel.ForEach(uniqueVertices, parallelOptions,
-            //    () => new List<float>(),
-            //     (v, loopState, localVertices) =>
-            //     {
-            //         AddVertices(localVertices, v);
-            //         //if (tri.visibile)
-            //         //{
-            //         //    AddVertices(localVertices.LocalVertices1, tri);
-            //         //    if (parentObject.isSelected)
-            //         //    {
-            //         //        AddVerticesOnlyPos(localVertices.LocalVertices2, tri);
-            //         //    }
-            //         //}
-            //         return localVertices;
-            //     },
-            //     localVertices =>
-            //     {
-            //         lock (vertices)
-            //         {
-            //             vertices.AddRange(localVertices);
-            //         }
-            //         //if (parentObject.isSelected)
-            //         //{
-            //         //    lock (verticesOnlyPos)
-            //         //    {
-            //         //        verticesOnlyPos.AddRange(localVertices.LocalVertices2);
-            //         //    }
-            //         //}
-            //     });
-            #endregion
+            shader.Use();
 
             SendUniforms();
 
-            if (parentObject.texture != null)
+            foreach (MeshData mesh in model.meshes)
             {
-                parentObject.texture.Bind();
-                if (parentObject.textureNormal != null)
-                    parentObject.textureNormal.Bind();
-                if (parentObject.textureHeight != null)
-                    parentObject.textureHeight.Bind();
-                if (parentObject.textureAO != null)
-                    parentObject.textureAO.Bind();
-                if (parentObject.textureRough != null)
-                    parentObject.textureRough.Bind();
-                if (parentObject.textureMetal != null)
-                    parentObject.textureMetal.Bind();
-            }
+                if (!recalculate)
+                {
+                    if (gameRunning == GameState.Stopped && mesh.visibleIndices.Count > 0)
+                    {
+                        if (parentObject.texture != null)
+                        {
+                            parentObject.texture.Bind();
+                            if (parentObject.textureNormal != null)
+                                parentObject.textureNormal.Bind();
+                            if (parentObject.textureHeight != null)
+                                parentObject.textureHeight.Bind();
+                            if (parentObject.textureAO != null)
+                                parentObject.textureAO.Bind();
+                            if (parentObject.textureRough != null)
+                                parentObject.textureRough.Bind();
+                            if (parentObject.textureMetal != null)
+                                parentObject.textureMetal.Bind();
+                        }
 
-            return (new List<float>(visibleVerticesData), new List<uint>(visibleIndices));
+                        ibo_.Buffer(mesh.visibleIndices);
+                        vbo_.Buffer(mesh.visibleVerticesData);
+                        GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+                        continue;
+                    }
+                }
+                else
+                {
+                    recalculate = false;
+                    CalculateFrustumVisibility();
+                }
+
+                #region not working parallelization
+                //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+                //Parallel.ForEach(uniqueVertices, parallelOptions,
+                //    () => new List<float>(),
+                //     (v, loopState, localVertices) =>
+                //     {
+                //         AddVertices(localVertices, v);
+                //         //if (tri.visibile)
+                //         //{
+                //         //    AddVertices(localVertices.LocalVertices1, tri);
+                //         //    if (parentObject.isSelected)
+                //         //    {
+                //         //        AddVerticesOnlyPos(localVertices.LocalVertices2, tri);
+                //         //    }
+                //         //}
+                //         return localVertices;
+                //     },
+                //     localVertices =>
+                //     {
+                //         lock (vertices)
+                //         {
+                //             vertices.AddRange(localVertices);
+                //         }
+                //         //if (parentObject.isSelected)
+                //         //{
+                //         //    lock (verticesOnlyPos)
+                //         //    {
+                //         //        verticesOnlyPos.AddRange(localVertices.LocalVertices2);
+                //         //    }
+                //         //}
+                //     });
+                #endregion
+
+
+                if (parentObject.texture != null)
+                {
+                    parentObject.texture.Bind();
+                    if (parentObject.textureNormal != null)
+                        parentObject.textureNormal.Bind();
+                    if (parentObject.textureHeight != null)
+                        parentObject.textureHeight.Bind();
+                    if (parentObject.textureAO != null)
+                        parentObject.textureAO.Bind();
+                    if (parentObject.textureRough != null)
+                        parentObject.textureRough.Bind();
+                    if (parentObject.textureMetal != null)
+                        parentObject.textureMetal.Bind();
+                }
+
+                ibo_.Buffer(mesh.visibleIndices);
+                vbo_.Buffer(mesh.visibleVerticesData);
+                GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+            }
         }
 
-        public (List<float>, List<uint>) DrawOnlyPos(GameState gameRunning, Shader shader, VAO _vao)
+        public void DrawOnlyPos(GameState gameRunning, Shader shader, VAO vao_, VBO vbo_, IBO ibo_)
         {
             if (!parentObject.isEnabled)
-                return (new List<float>(), new List<uint>());
+                return;
 
-            _vao.Bind();
-
-            if (!recalculateOnlyPos)
-            {
-                if (gameRunning == GameState.Stopped && visibleVerticesDataOnlyPos.Count > 0)
-                {
-                    SendUniformsOnlyPos(shader);
-
-                    return (new List<float>(visibleVerticesDataOnlyPos), new List<uint>(visibleIndices));
-                }
-            }
-            else
-            {
-                recalculateOnlyPos = false;
-                CalculateFrustumVisibility();
-            }
-
+            vao_.Bind();
+            shader.Use();
             SendUniformsOnlyPos(shader);
 
-            return (new List<float>(visibleVerticesDataOnlyPos), new List<uint>(visibleIndices));
+            foreach (MeshData mesh in model.meshes)
+            {
+                if (!recalculateOnlyPos)
+                {
+                    if (gameRunning == GameState.Stopped && mesh.visibleVerticesDataOnlyPos.Count > 0)
+                    {
+                        ibo_.Buffer(mesh.visibleIndices);
+                        vbo_.Buffer(mesh.visibleVerticesDataOnlyPos);
+                        GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+                        continue;
+                    }
+                }
+                else
+                {
+                    recalculateOnlyPos = false;
+                    CalculateFrustumVisibility();
+                }
+
+                ibo_.Buffer(mesh.visibleIndices);
+                vbo_.Buffer(mesh.visibleVerticesDataOnlyPos);
+                GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+            }
         }
         
-        public (List<float>, List<uint>) DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO _vao)
+        public void DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO vao_, VBO vbo_, IBO ibo_)
         {
             if (!parentObject.isEnabled)
-                return (new List<float>(), new List<uint>());
+                return;
 
-            _vao.Bind();
-
-            if (!recalculateOnlyPosAndNormal)
-            {
-                if (gameRunning == GameState.Stopped && visibleVerticesDataOnlyPosAndNormal.Count > 0)
-                {
-                    SendUniformsOnlyPos(shader);
-
-                    return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices));
-                }
-            }
-            else
-            {
-                recalculateOnlyPosAndNormal = false;
-                CalculateFrustumVisibility();
-            }
-
+            vao_.Bind();
+            shader.Use();
             SendUniformsOnlyPos(shader);
 
-            return (new List<float>(visibleVerticesDataOnlyPosAndNormal), new List<uint>(visibleIndices));
+            foreach (MeshData mesh in model.meshes)
+            {
+                if (!recalculateOnlyPosAndNormal)
+                {
+                    if (gameRunning == GameState.Stopped && mesh.visibleVerticesDataOnlyPosAndNormal.Count > 0)
+                    {
+                        ibo_.Buffer(mesh.visibleIndices);
+                        vbo_.Buffer(mesh.visibleVerticesDataOnlyPosAndNormal);
+                        GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+                        continue;
+                    }
+                }
+                else
+                {
+                    recalculateOnlyPosAndNormal = false;
+                    CalculateFrustumVisibility();
+                }
+
+                ibo_.Buffer(mesh.visibleIndices);
+                vbo_.Buffer(mesh.visibleVerticesDataOnlyPosAndNormal);
+                GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+            }
         }
 
         //public List<float> DrawNotOccluded(List<triangle> notOccludedTris)
@@ -534,25 +564,34 @@ namespace Engine3D
 
         public void GetCookedData(out PxVec3[] verts, out int[] indicesOut)
         {
-            int vertCount = indices.Count;
-            int index = 0;
-            verts = new PxVec3[allVerts.Count()];
-            indicesOut = new int[vertCount];
+            List<PxVec3> verts_ = new List<PxVec3>();
+            List<int> indicesOut_ = new List<int>();
 
-            for (int i = 0; i < allVerts.Count(); i++)
+            int lastIndex = 0;
+
+            for (int i = 0; i < model.meshes.Count; i++)
             {
-                verts[i] = ConvertToNDCPxVec3(i);
+                MeshData mesh = model.meshes[i];
+
+                int largestIndex = (int)mesh.indices.Max();
+
+                for (int j = 0; j < mesh.allVerts.Count(); j++)
+                {
+                    verts_.Add(ConvertToNDCPxVec3(j, i));
+                }
+
+                for (int j = 0; j < mesh.indices.Count; j += 3)
+                {
+                    indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j]].pi + lastIndex);
+                    indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 1]].pi + lastIndex);
+                    indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 2]].pi + lastIndex);
+                }
+
+                lastIndex += largestIndex;
             }
 
-            for (int i = 0; i < indices.Count; i += 3)
-            {
-                indicesOut[index] = uniqueVertices[(int)indices[i]].pi;
-                index++;
-                indicesOut[index] = uniqueVertices[(int)indices[i + 1] ].pi;
-                index++;
-                indicesOut[index] = uniqueVertices[(int)indices[i + 2] ].pi;
-                index++;
-            }
+            verts = verts_.ToArray();
+            indicesOut = indicesOut_.ToArray();
         }
     }
 }

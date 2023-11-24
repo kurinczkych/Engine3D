@@ -1173,6 +1173,10 @@ namespace Engine3D
                                         ImGui.Text("Use BVH for rendering");
                                     }
 
+                                    ImGui.Checkbox("##useShading", ref o.GetMesh().useShading);
+                                    ImGui.SameLine();
+                                    ImGui.Text("Use shading");
+
                                     ImGui.Separator();
 
                                     Encoding.UTF8.GetBytes(o.meshName, 0, o.meshName.ToString().Length, _inputBuffers["##meshPath"], 0);
