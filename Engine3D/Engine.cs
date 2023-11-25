@@ -70,6 +70,10 @@ namespace Engine3D
         private VBO meshVbo;
         private IBO meshIbo;
 
+        private VAO meshAnimVao;
+        private VBO meshAnimVbo;
+        private IBO meshAnimIbo;
+
         private InstancedVAO instancedMeshVao;
         private VBO instancedMeshVbo;
 
@@ -91,6 +95,7 @@ namespace Engine3D
         private Shader pickingShader;
         private Shader pickingInstancedShader;
         private Shader shaderProgram;
+        private Shader shaderAnimProgram;
         private Shader instancedShaderProgram;
         private Shader posTexShader;
         private Shader onlyPosShaderProgram;
@@ -142,6 +147,8 @@ namespace Engine3D
         private List<Object> objects;
         private List<Object> _meshObjects;
         private List<Object> _instObjects;
+
+        private List<Animation> animations = new List<Animation>();
 
         private Character character;
         private List<float> vertices = new List<float>();
@@ -290,7 +297,7 @@ namespace Engine3D
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
 
-            DrawObjects();
+            DrawObjects(args.Time);
 
             DrawParticleSystems();
 
@@ -433,6 +440,18 @@ namespace Engine3D
             meshVao.LinkToVAO(3, 4, meshVbo);
             meshVao.LinkToVAO(4, 3, meshVbo);
 
+            meshAnimIbo = new IBO();
+            meshAnimVbo = new VBO();
+            meshAnimVao = new VAO(Mesh.floatAnimCount);
+            meshAnimVao.LinkToVAO(0, 3, meshAnimVbo);
+            meshAnimVao.LinkToVAO(1, 3, meshAnimVbo);
+            meshAnimVao.LinkToVAO(2, 2, meshAnimVbo);
+            meshAnimVao.LinkToVAO(3, 4, meshAnimVbo);
+            meshAnimVao.LinkToVAO(4, 3, meshAnimVbo);
+            meshAnimVao.LinkToVAO(5, 4, meshAnimVbo);
+            meshAnimVao.LinkToVAO(6, 4, meshAnimVbo);
+            meshAnimVao.LinkToVAO(7, 1, meshAnimVbo);
+
             //meshVao = new VAO(3);
             //meshVao.LinkToVAO(0, 3, meshVbo);
 
@@ -494,6 +513,7 @@ namespace Engine3D
             pickingShader = new Shader(new List<string>() { "picking.vert", "picking.frag" });
             pickingInstancedShader = new Shader(new List<string>() { "pickingInstanced.vert", "pickingInstanced.frag" });
             shaderProgram = new Shader(new List<string>() { "Default.vert", "Default.frag" });
+            shaderAnimProgram = new Shader(new List<string>() { "DefaultWithBone.vert", "Default.frag" });
             instancedShaderProgram = new Shader(new List<string>() { "Instanced.vert", "Instanced.frag" });
             posTexShader = new Shader(new List<string>() { "postex.vert", "postex.frag" });
             onlyPosShaderProgram = new Shader(new List<string>() { "onlyPos.vert", "onlyPos.frag" });
@@ -517,10 +537,11 @@ namespace Engine3D
             camera.UpdateVectors();
 
             onlyPosShaderProgram.Use();
-            Vector3 characterPos = new Vector3(0, 0, -5);
+
+            Vector3 characterPos = new Vector3(-3.241f, -204f, -12);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
-            character.camera.SetYaw(90f);
-            character.camera.SetPitch(0f);
+            character.camera.SetYaw(270f);
+            character.camera.SetPitch(89.388f);
 
             editorData.gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref camera);
 
@@ -529,6 +550,8 @@ namespace Engine3D
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
+
+            animations.AddRange(assimpManager.ProcessAnimation("Twilight_Run.FBX"));
 
             // Projection matrix and mesh loading
 
@@ -546,6 +569,8 @@ namespace Engine3D
 
             Object o2 = new Object(ObjectType.Cube, ref physx);
             o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "Twilight_CharacterR.fbx", "TwilightNormalSkin_Twilight_BaseColor.png", windowSize, ref camera, ref o2));
+            ((Mesh)o2.GetMesh()).animation = animations[0];
+            ((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
             objects.Add(o2);
             _meshObjects.Add(o2);
 

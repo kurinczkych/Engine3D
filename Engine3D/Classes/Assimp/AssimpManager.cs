@@ -4,86 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Assimp;
+using Assimp.Configs;
 using FontStashSharp;
+using HtmlAgilityPack;
 using OpenTK.Mathematics;
 
 namespace Engine3D
 {
-    public class Bone
-    {
-        public List<VertexWeight> weights;
-        public Matrix4 offsetMatrix;
-
-        public Bone(List<VertexWeight> weights, Matrix4x4 offsetMatrix)
-        {
-            this.weights = new List<VertexWeight>(weights);
-
-            this.offsetMatrix = new Matrix4();
-            for (int x = 0; x < 4; x++)
-            {
-                for (int y = 0; y < 4; y++)
-                {
-                    this.offsetMatrix[x, y] = offsetMatrix[x, y];
-                }
-            }
-        }
-    }
-
-    public class MeshData
-    {
-        public List<Vec2d> uvs = new List<Vec2d>();
-        public List<Vector3> normals = new List<Vector3>();
-        public List<Vector3> allVerts = new List<Vector3>();
-
-        public List<Vertex> uniqueVertices = new List<Vertex>();
-        public List<float> visibleVerticesData = new List<float>();
-        public List<float> visibleVerticesDataOnlyPos = new List<float>();
-        public List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
-
-        public List<uint> indices = new List<uint>();
-        public List<uint> visibleIndices = new List<uint>();
-        public uint maxVisibleIndex = 0;
-
-        public bool hasIndices = false;
-        public AABB Bounds = new AABB();
-
-        public List<List<uint>> groupedIndices = new List<List<uint>>();
-
-        public List<Bone> bones = new List<Bone>();
-
-        public MeshData() { }
-
-        public void CalculateGroupedIndices()
-        {
-            groupedIndices = indices
-                   .Select((x, i) => new { Index = i, Value = x })
-                   .GroupBy(x => x.Index / 3)
-                   .Select(x => x.Select(v => v.Value).ToList())
-                   .ToList();
-        }
-
-        public void TransformMeshData(Matrix4 trans)
-        {
-            visibleVerticesData.Clear();
-            for (int i = 0; i < uniqueVertices.Count; i++)
-            {
-                var a = uniqueVertices[i];
-                a.p = Vector3.TransformPosition(uniqueVertices[i].p, trans);
-                uniqueVertices[i] = a;
-
-                visibleVerticesData.AddRange(uniqueVertices[i].GetData());
-                visibleVerticesDataOnlyPos.AddRange(uniqueVertices[i].GetDataOnlyPos());
-                visibleVerticesDataOnlyPosAndNormal.AddRange(uniqueVertices[i].GetDataOnlyPosAndNormal());
-            }
-        }
-    }
-
-    public class ModelData
-    {
-        public List<MeshData> meshes = new List<MeshData>();
-
-        public ModelData() { }
-    }
 
     public class AssimpManager
     {
@@ -92,6 +19,60 @@ namespace Engine3D
         public AssimpManager()
         {
             context = new AssimpContext();
+        }
+
+        public List<Animation> ProcessAnimation(string relativeAnimationPath)
+        {
+            string filePath = Environment.CurrentDirectory + "\\Assets\\" + FileType.Animations.ToString() + "\\" + relativeAnimationPath;
+            if (!File.Exists(filePath))
+            {
+                Engine.consoleManager.AddLog("File '" + relativeAnimationPath + "' not found!", LogType.Warning);
+                return new List<Animation>();
+            }
+
+            var animFile = context.ImportFile("Assets\\" + FileType.Animations.ToString() + "\\" + relativeAnimationPath);
+
+            List<Animation> anims = new List<Animation>();
+            foreach (var anim in animFile.Animations)
+            {
+                Animation animation = new Animation();
+                animation.DurationInTicks = anim.DurationInTicks;
+                animation.TicksPerSecond = anim.TicksPerSecond;
+
+                foreach(var nodeAnim in anim.NodeAnimationChannels)
+                {
+                    BoneAnimation nodeAnimation = new BoneAnimation();
+                    nodeAnimation.Name = nodeAnim.NodeName;
+                    foreach(var pos in nodeAnim.PositionKeys)
+                    {
+                        nodeAnimation.Positions.Add(Matrix4.CreateTranslation(AssimpVector3(pos.Value)));
+                    }
+                    foreach(var quat in nodeAnim.RotationKeys)
+                    {
+                        nodeAnimation.Rotations.Add(Matrix4.CreateFromQuaternion(AssimpQuaternion(quat.Value)));
+                    }
+                    foreach(var scale in nodeAnim.ScalingKeys)
+                    {
+                        nodeAnimation.Scalings.Add(Matrix4.CreateTranslation(AssimpVector3(scale.Value)));
+                    }
+
+                    if (nodeAnim.PositionKeyCount == nodeAnim.RotationKeyCount &&
+                       nodeAnim.PositionKeyCount == nodeAnim.ScalingKeyCount &&
+                       nodeAnim.RotationKeyCount == nodeAnim.ScalingKeyCount)
+                    {
+                        for (int i = 0; i < nodeAnim.PositionKeyCount; i++)
+                        {
+                            Matrix4 transformationMatrix = nodeAnimation.Scalings[i] * nodeAnimation.Rotations[i] * nodeAnimation.Positions[i];
+                            nodeAnimation.Transformations.Add(transformationMatrix);
+                        }
+
+                        animation.boneAnimations.Add(nodeAnimation);
+                    }
+                }
+                anims.Add(animation);
+            }
+
+            return anims;
         }
 
         public ModelData? ProcessModel(string relativeModelPath, float cr = 1, float cg = 1, float cb = 1, float ca = 1)
@@ -113,9 +94,52 @@ namespace Engine3D
             {
                 MeshData meshData = new MeshData();
 
-                foreach(var bone in mesh.Bones)
+                Dictionary<int, List<(int, float)>> boneDict = new Dictionary<int, List<(int, float)>>();
+
+                if (mesh.Bones.Count > 100)
+                    throw new Exception("MAX_BONES is 100, bone count cannot be larger than that!");
+
+                for (int i = 0; i < mesh.Bones.Count; i++)
                 {
-                    meshData.bones.Add(new Bone(bone.VertexWeights, bone.OffsetMatrix));
+                    Matrix4 offsetMatrix = new Matrix4();
+                    offsetMatrix = new Matrix4();
+                    for (int x = 0; x < 4; x++)
+                    {
+                        for (int y = 0; y < 4; y++)
+                        {
+                            offsetMatrix[x, y] = mesh.Bones[i].OffsetMatrix[x, y];
+                        }
+                    }
+
+                    meshData.boneMatrices.Add(mesh.Bones[i].Name, offsetMatrix);
+
+                    foreach(VertexWeight vw in mesh.Bones[i].VertexWeights)
+                    {
+                        if (boneDict.ContainsKey(vw.VertexID))
+                        {
+                            if (boneDict[vw.VertexID].Count >= 4)
+                            {
+                                float w1 = vw.Weight;
+                                float w2 = 10;
+                                int w2i = -1;
+                                for (int j = 0; j < 4; j++)
+                                {
+                                    if (boneDict[vw.VertexID][j].Item2 < w2)
+                                    {
+                                        w2 = boneDict[vw.VertexID][j].Item2;
+                                        w2i = j;
+                                    }
+                                }
+
+                                if (w1 > w2)
+                                    boneDict[vw.VertexID][w2i] = (boneDict[vw.VertexID][w2i].Item1, w1);
+                            }
+                            else
+                                boneDict[vw.VertexID].Add((i, vw.Weight));
+                        }
+                        else
+                            boneDict.Add(vw.VertexID, new List<(int, float)>() { (i, vw.Weight) });
+                    }
                 }
 
                 HashSet<int> normalsHash = new HashSet<int>();
@@ -160,16 +184,43 @@ namespace Engine3D
 
                     (Vector3 vv1, Vec2d uv1, Vector3 nv1) = AssimpGetElement(face.Indices[0], mesh);
                     Vertex v1 = new Vertex(vv1, nv1, uv1) { c = color, pi = meshData.allVerts.IndexOf(vv1) };
+                    v1.boneCount = boneDict[face.Indices[0]].Count;
+                    if(v1.boneCount < 4)
+                    {
+                        while (boneDict[face.Indices[0]].Count < 4)
+                            boneDict[face.Indices[0]].Add((0, 0));
+                    }
+                    v1.boneIDs = boneDict[face.Indices[0]].Select(x => x.Item1).ToList();
+                    v1.boneWeights = boneDict[face.Indices[0]].Select(x => x.Item2).ToList();
+
                     (Vector3 vv2, Vec2d uv2, Vector3 nv2) = AssimpGetElement(face.Indices[1], mesh);
                     Vertex v2 = new Vertex(vv2, nv2, uv2) { c = color, pi = meshData.allVerts.IndexOf(vv2) };
+                    v2.boneCount = boneDict[face.Indices[1]].Count;
+                    if (v2.boneCount < 4)
+                    {
+                        while (boneDict[face.Indices[1]].Count < 4)
+                            boneDict[face.Indices[1]].Add((0, 0));
+                    }
+                    v2.boneIDs = boneDict[face.Indices[1]].Select(x => x.Item1).ToList();
+                    v2.boneWeights = boneDict[face.Indices[1]].Select(x => x.Item2).ToList();
+
                     (Vector3 vv3, Vec2d uv3, Vector3 nv3) = AssimpGetElement(face.Indices[2], mesh);
                     Vertex v3 = new Vertex(vv3, nv3, uv3) { c = color, pi = meshData.allVerts.IndexOf(vv3) };
+                    v3.boneCount = boneDict[face.Indices[2]].Count;
+                    if (v3.boneCount < 4)
+                    {
+                        while (boneDict[face.Indices[2]].Count < 4)
+                            boneDict[face.Indices[2]].Add((0, 0));
+                    }
+                    v3.boneIDs = boneDict[face.Indices[2]].Select(x => x.Item1).ToList();
+                    v3.boneWeights = boneDict[face.Indices[2]].Select(x => x.Item2).ToList();
 
                     int v1h = v1.GetHashCode();
                     if (!vertexHash.ContainsKey(v1h))
                     {
                         meshData.uniqueVertices.Add(v1);
                         meshData.visibleVerticesData.AddRange(v1.GetData());
+                        meshData.visibleVerticesDataWithAnim.AddRange(v1.GetDataWithAnim());
                         meshData.visibleVerticesDataOnlyPos.AddRange(v1.GetDataOnlyPos());
                         meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(v1.GetDataOnlyPosAndNormal());
                         meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
@@ -185,6 +236,7 @@ namespace Engine3D
                     {
                         meshData.uniqueVertices.Add(v2);
                         meshData.visibleVerticesData.AddRange(v2.GetData());
+                        meshData.visibleVerticesDataWithAnim.AddRange(v2.GetDataWithAnim());
                         meshData.visibleVerticesDataOnlyPos.AddRange(v2.GetDataOnlyPos());
                         meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(v2.GetDataOnlyPosAndNormal());
                         meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
@@ -200,6 +252,7 @@ namespace Engine3D
                     {
                         meshData.uniqueVertices.Add(v3);
                         meshData.visibleVerticesData.AddRange(v3.GetData());
+                        meshData.visibleVerticesDataWithAnim.AddRange(v3.GetDataWithAnim());
                         meshData.visibleVerticesDataOnlyPos.AddRange(v3.GetDataOnlyPos());
                         meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(v3.GetDataOnlyPosAndNormal());
                         meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
@@ -229,6 +282,11 @@ namespace Engine3D
         private Vector3 AssimpVector3(Vector3D v)
         {
             return new Vector3(v.X, v.Y, v.Z);
+        }
+
+        private OpenTK.Mathematics.Quaternion AssimpQuaternion(Assimp.Quaternion quat)
+        {
+            return new OpenTK.Mathematics.Quaternion(quat.X, quat.Y, quat.Z, quat.W);
         }
 
         private Vector3D AssimpVector3D(Vector3 v)

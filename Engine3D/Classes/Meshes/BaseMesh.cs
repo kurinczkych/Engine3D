@@ -44,7 +44,8 @@ namespace Engine3D
 
         protected Camera camera;
 
-        public Dictionary<string, int> uniformLocations;
+        public Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
+        public Dictionary<string, int> uniformAnimLocations = new Dictionary<string, int>();
 
         public BVH? BVHStruct;
 
@@ -320,6 +321,12 @@ namespace Engine3D
                 mesh.visibleVerticesData.Clear();
                 mesh.visibleVerticesDataOnlyPos.Clear();
                 mesh.visibleVerticesDataOnlyPosAndNormal.Clear();
+                bool anim = false;
+                if (mesh.visibleVerticesDataWithAnim.Count > 0)
+                {
+                    mesh.visibleVerticesDataWithAnim.Clear();
+                    anim = true;
+                }
 
                 for (int i = 0; i < mesh.uniqueVertices.Count; i++)
                 {
@@ -328,6 +335,8 @@ namespace Engine3D
                     mesh.uniqueVertices[i] = v;
 
                     mesh.visibleVerticesData.AddRange(v.GetData());
+                    if(anim)
+                        mesh.visibleVerticesDataWithAnim.AddRange(v.GetDataWithAnim());
                     mesh.visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
                     mesh.visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
                 }
@@ -341,6 +350,12 @@ namespace Engine3D
                 mesh.visibleVerticesData.Clear();
                 mesh.visibleVerticesDataOnlyPos.Clear();
                 mesh.visibleVerticesDataOnlyPosAndNormal.Clear();
+                bool anim = false;
+                if (mesh.visibleVerticesDataWithAnim.Count > 0)
+                {
+                    mesh.visibleVerticesDataWithAnim.Clear();
+                    anim = true;
+                }
 
                 Dictionary<Vector3, Vector3> vertexNormals = new Dictionary<Vector3, Vector3>();
                 Dictionary<Vector3, int> vertexNormalsCounts = new Dictionary<Vector3, int>();
@@ -366,6 +381,7 @@ namespace Engine3D
                     }
                 }
 
+
                 for (int i = 0; i < mesh.uniqueVertices.Count; i++)
                 {
                     var v = mesh.uniqueVertices[i];
@@ -373,6 +389,8 @@ namespace Engine3D
                     mesh.uniqueVertices[i] = v;
 
                     mesh.visibleVerticesData.AddRange(v.GetData());
+                    if(anim)
+                        mesh.visibleVerticesDataWithAnim.AddRange(v.GetDataWithAnim());
                     mesh.visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
                     mesh.visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
                 }
@@ -386,6 +404,12 @@ namespace Engine3D
                 mesh.visibleVerticesData.Clear();
                 mesh.visibleVerticesDataOnlyPos.Clear();
                 mesh.visibleVerticesDataOnlyPosAndNormal.Clear();
+                bool anim = false;
+                if (mesh.visibleVerticesDataWithAnim.Count > 0)
+                {
+                    mesh.visibleVerticesDataWithAnim.Clear();
+                    anim = true;
+                }
 
                 // Initialize tangent and bitangent lists with zeros
                 Dictionary<Vector3, List<Vector3>> tangentSums = new Dictionary<Vector3, List<Vector3>>();
@@ -461,6 +485,8 @@ namespace Engine3D
                     mesh.uniqueVertices[i] = v;
 
                     mesh.visibleVerticesData.AddRange(v.GetData());
+                    if(anim)
+                        mesh.visibleVerticesDataWithAnim.AddRange(v.GetDataWithAnim());
                     mesh.visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
                     mesh.visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
                 }

@@ -12,7 +12,8 @@ namespace Engine3D
         Textures,
         Fonts,
         Audio,
-        Models
+        Models,
+        Animations
     }
 
     public static class FileManager

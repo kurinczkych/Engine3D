@@ -30,6 +30,7 @@ namespace Engine3D
     public class Mesh : BaseMesh
     {
         public static int floatCount = 15;
+        public static int floatAnimCount = 24;
 
         public bool drawNormals = false;
         public WireframeMesh normalMesh;
@@ -38,6 +39,10 @@ namespace Engine3D
 
         private Matrix4 viewMatrix, projectionMatrix;
         private Vector3 cameraPos;
+
+        public Animation? animation;
+        protected double animDeltaTime = 0;
+        protected int currentAnim = 0;
 
         private VAO Vao;
         private VBO Vbo;
@@ -206,12 +211,6 @@ namespace Engine3D
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
             uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
 
-            #region AnimationLocations
-            uniformLocations.Add("useAnimation", GL.GetUniformLocation(shaderProgramId, "useAnimation"));
-            uniformLocations.Add("boneCount", GL.GetUniformLocation(shaderProgramId, "boneCount"));
-            uniformLocations.Add("boneMatrices", GL.GetUniformLocation(shaderProgramId, "boneMatrices"));
-            #endregion
-
             #region TextureLocations
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
             uniformLocations.Add("useNormal", GL.GetUniformLocation(shaderProgramId, "useNormal"));
@@ -241,6 +240,54 @@ namespace Engine3D
                 if (parentObject.textureMetal != null)
                 {
                     uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
+                }
+            }
+            #endregion
+        }
+
+        public void GetUniformLocationsAnim(Shader shader)
+        {
+            shader.Use();
+
+            uniformAnimLocations.Add("windowSize", GL.GetUniformLocation(shader.id, "windowSize"));
+            uniformAnimLocations.Add("modelMatrix", GL.GetUniformLocation(shader.id, "modelMatrix"));
+            uniformAnimLocations.Add("viewMatrix", GL.GetUniformLocation(shader.id, "viewMatrix"));
+            uniformAnimLocations.Add("projectionMatrix", GL.GetUniformLocation(shader.id, "projectionMatrix"));
+            uniformAnimLocations.Add("cameraPosition", GL.GetUniformLocation(shader.id, "cameraPosition"));
+            uniformAnimLocations.Add("useBillboarding", GL.GetUniformLocation(shader.id, "useBillboarding"));
+            uniformAnimLocations.Add("useShading", GL.GetUniformLocation(shader.id, "useShading"));
+            uniformAnimLocations.Add("useAnimation", GL.GetUniformLocation(shader.id, "useAnimation"));
+            uniformAnimLocations.Add("boneMatrices", GL.GetUniformLocation(shader.id, "boneMatrices"));
+
+            #region TextureLocations
+            uniformAnimLocations.Add("useTexture", GL.GetUniformLocation(shader.id, "useTexture"));
+            uniformAnimLocations.Add("useNormal", GL.GetUniformLocation(shader.id, "useNormal"));
+            uniformAnimLocations.Add("useHeight", GL.GetUniformLocation(shader.id, "useHeight"));
+            uniformAnimLocations.Add("useAO", GL.GetUniformLocation(shader.id, "useAO"));
+            uniformAnimLocations.Add("useRough", GL.GetUniformLocation(shader.id, "useRough"));
+            uniformAnimLocations.Add("useMetal", GL.GetUniformLocation(shader.id, "useMetal"));
+            if (parentObject.texture != null)
+            {
+                uniformAnimLocations.Add("textureSampler", GL.GetUniformLocation(shader.id, "textureSampler"));
+                if (parentObject.textureNormal != null)
+                {
+                    uniformAnimLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shader.id, "textureSamplerNormal"));
+                }
+                if (parentObject.textureHeight != null)
+                {
+                    uniformAnimLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shader.id, "textureSamplerHeight"));
+                }
+                if (parentObject.textureAO != null)
+                {
+                    uniformAnimLocations.Add("textureSamplerAO", GL.GetUniformLocation(shader.id, "textureSamplerAO"));
+                }
+                if (parentObject.textureRough != null)
+                {
+                    uniformAnimLocations.Add("textureSamplerRough", GL.GetUniformLocation(shader.id, "textureSamplerRough"));
+                }
+                if (parentObject.textureMetal != null)
+                {
+                    uniformAnimLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shader.id, "textureSamplerMetal"));
                 }
             }
             #endregion
@@ -291,10 +338,101 @@ namespace Engine3D
             GL.Uniform1(uniformLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
         }
 
-        private void SendAnimationUniform()
+        protected void SendAnimationUniforms(int meshId, double delta)
         {
-            //GL.Uniform
+            projectionMatrix = camera.projectionMatrix;
+            viewMatrix = camera.viewMatrix;
+
+            GL.UniformMatrix4(uniformAnimLocations["modelMatrix"], true, ref modelMatrix);
+            GL.UniformMatrix4(uniformAnimLocations["viewMatrix"], true, ref viewMatrix);
+            GL.UniformMatrix4(uniformAnimLocations["projectionMatrix"], true, ref projectionMatrix);
+            GL.Uniform2(uniformAnimLocations["windowSize"], windowSize);
+            GL.Uniform3(uniformAnimLocations["cameraPosition"], camera.GetPosition());
+            GL.Uniform1(uniformAnimLocations["useBillboarding"], useBillboarding);
+            GL.Uniform1(uniformAnimLocations["useShading"], useShading ? 1 : 0);
+            if (parentObject.texture != null)
+            {
+                GL.Uniform1(uniformAnimLocations["textureSampler"], parentObject.texture.TextureUnit);
+                if (parentObject.textureNormal != null)
+                {
+                    GL.Uniform1(uniformAnimLocations["textureSamplerNormal"], parentObject.textureNormal.TextureUnit);
+                }
+                if (parentObject.textureHeight != null)
+                {
+                    GL.Uniform1(uniformAnimLocations["textureSamplerHeight"], parentObject.textureHeight.TextureUnit);
+                }
+                if (parentObject.textureAO != null)
+                {
+                    GL.Uniform1(uniformAnimLocations["textureSamplerAO"], parentObject.textureAO.TextureUnit);
+                }
+                if (parentObject.textureRough != null)
+                {
+                    GL.Uniform1(uniformAnimLocations["textureSamplerRough"], parentObject.textureRough.TextureUnit);
+                }
+                if (parentObject.textureMetal != null)
+                {
+                    GL.Uniform1(uniformAnimLocations["textureSamplerMetal"], parentObject.textureMetal.TextureUnit);
+                }
+            }
+
+            GL.Uniform1(uniformAnimLocations["useTexture"], parentObject.texture != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useNormal"], parentObject.textureNormal != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useHeight"], parentObject.textureHeight != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useAO"], parentObject.textureAO != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useRough"], parentObject.textureRough != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useAnimation"], 1);
+
+            animDeltaTime += delta;
+
+            if (animation != null)
+            {
+                //if (animDeltaTime >= 1.0/animation.TicksPerSecond)
+                if (animDeltaTime >= 1)
+                {
+                    currentAnim++;
+                    animDeltaTime = 0;
+                }
+
+                //TODO is the animation looping or just once?
+                if (currentAnim > animation.DurationInTicks)
+                    currentAnim = 0;
+
+
+                int i = 0;
+                int j = 0;
+                while (i < animation.boneAnimations.Count)
+                {
+                    if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[i].Name))
+                    {
+                        Matrix4 boneMatrix = Matrix4.Identity;
+                        if (currentAnim <= 2)
+                            boneMatrix = boneMatrix * Matrix4.CreateTranslation(currentAnim * 2, 0, 0);
+                        else
+                        {
+                            boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[i].Name] *
+                                                 animation.boneAnimations[i].Transformations[currentAnim];
+                        }
+
+                        GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + j, true, ref boneMatrix);
+                        j++;
+                    }
+
+                    i++;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < model.meshes[meshId].boneMatrices.Count; i++)
+                {
+                    Matrix4 boneMatrix = Matrix4.Identity;
+
+                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref boneMatrix);
+                }
+            }
         }
+
+
 
         public void SendUniformsOnlyPos(Shader shader)
         {
@@ -405,6 +543,105 @@ namespace Engine3D
 
                 ibo_.Buffer(mesh.visibleIndices);
                 vbo_.Buffer(mesh.visibleVerticesData);
+                GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+            }
+        }
+        
+        public void DrawAnimated(GameState gameRunning, Shader shader, VAO vao_, VBO vbo_, IBO ibo_, double delta)
+        {
+            if (!parentObject.isEnabled)
+                return;
+
+            vao_.Bind();
+            shader.Use();
+
+            for(int i = 0; i < model.meshes.Count; i++)
+            {
+                MeshData mesh = model.meshes[i];
+                SendAnimationUniforms(i, delta);
+
+                if (!recalculate)
+                {
+                    if (gameRunning == GameState.Stopped && mesh.visibleIndices.Count > 0)
+                    {
+                        if (parentObject.texture != null)
+                        {
+                            parentObject.texture.Bind();
+                            if (parentObject.textureNormal != null)
+                                parentObject.textureNormal.Bind();
+                            if (parentObject.textureHeight != null)
+                                parentObject.textureHeight.Bind();
+                            if (parentObject.textureAO != null)
+                                parentObject.textureAO.Bind();
+                            if (parentObject.textureRough != null)
+                                parentObject.textureRough.Bind();
+                            if (parentObject.textureMetal != null)
+                                parentObject.textureMetal.Bind();
+                        }
+
+                        ibo_.Buffer(mesh.visibleIndices);
+                        vbo_.Buffer(mesh.visibleVerticesDataWithAnim);
+                        GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
+                        continue;
+                    }
+                }
+                else
+                {
+                    recalculate = false;
+                    CalculateFrustumVisibility();
+                }
+
+                #region not working parallelization
+                //ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+                //Parallel.ForEach(uniqueVertices, parallelOptions,
+                //    () => new List<float>(),
+                //     (v, loopState, localVertices) =>
+                //     {
+                //         AddVertices(localVertices, v);
+                //         //if (tri.visibile)
+                //         //{
+                //         //    AddVertices(localVertices.LocalVertices1, tri);
+                //         //    if (parentObject.isSelected)
+                //         //    {
+                //         //        AddVerticesOnlyPos(localVertices.LocalVertices2, tri);
+                //         //    }
+                //         //}
+                //         return localVertices;
+                //     },
+                //     localVertices =>
+                //     {
+                //         lock (vertices)
+                //         {
+                //             vertices.AddRange(localVertices);
+                //         }
+                //         //if (parentObject.isSelected)
+                //         //{
+                //         //    lock (verticesOnlyPos)
+                //         //    {
+                //         //        verticesOnlyPos.AddRange(localVertices.LocalVertices2);
+                //         //    }
+                //         //}
+                //     });
+                #endregion
+
+
+                if (parentObject.texture != null)
+                {
+                    parentObject.texture.Bind();
+                    if (parentObject.textureNormal != null)
+                        parentObject.textureNormal.Bind();
+                    if (parentObject.textureHeight != null)
+                        parentObject.textureHeight.Bind();
+                    if (parentObject.textureAO != null)
+                        parentObject.textureAO.Bind();
+                    if (parentObject.textureRough != null)
+                        parentObject.textureRough.Bind();
+                    if (parentObject.textureMetal != null)
+                        parentObject.textureMetal.Bind();
+                }
+
+                ibo_.Buffer(mesh.visibleIndices);
+                vbo_.Buffer(mesh.visibleVerticesDataWithAnim);
                 GL.DrawElements(PrimitiveType.Triangles, mesh.visibleIndices.Count, DrawElementsType.UnsignedInt, 0);
             }
         }

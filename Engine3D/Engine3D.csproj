@@ -33,6 +33,7 @@
     <None Remove="Shaders\Default\Default.geom" />
     <None Remove="Shaders\Default\Default.vert" />
     <None Remove="Shaders\Default\DefaultForGeom.vert" />
+    <None Remove="Shaders\Default\DefaultWithBone.vert" />
     <None Remove="Shaders\Instanced\Instanced.frag" />
     <None Remove="Shaders\Instanced\Instanced.vert" />
     <None Remove="Shaders\onlyPos\onlyPos.frag" />
@@ -97,6 +98,7 @@
     <EmbeddedResource Include="Shaders\aabb\aabb.frag" />
     <EmbeddedResource Include="Shaders\aabb\aabb.vert" />
     <EmbeddedResource Include="Shaders\ComputeShaders\cullingshader.comp" />
+    <EmbeddedResource Include="Shaders\Default\DefaultWithBone.vert" />
     <EmbeddedResource Include="Shaders\Default\Default.frag" />
     <EmbeddedResource Include="Shaders\Default\Default.geom" />
     <EmbeddedResource Include="Shaders\Default\Default.vert" />

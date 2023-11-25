@@ -10,7 +10,7 @@ namespace Engine3D
 {
     public partial class Engine
     {
-        private void DrawObjects()
+        private void DrawObjects(double delta)
         {
             GL.ClearColor(Color4.Cyan);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
@@ -68,7 +68,8 @@ namespace Engine3D
                                     GL.StencilMask(0xFF);
                                 }
 
-                                mesh.Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
+                                //mesh.Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
+                                mesh.DrawAnimated(editorData.gameRunning, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
 
                                 // OUTLINING
                                 if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)

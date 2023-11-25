@@ -16,6 +16,9 @@ namespace Engine3D
         public int pi;
         public Vector3 tan;
         public Vector3 bitan;
+        public List<int> boneIDs = new List<int>();
+        public List<float> boneWeights = new List<float>();
+        public int boneCount = 0;
 
         public bool gotNormal;
 
@@ -76,6 +79,21 @@ namespace Engine3D
                 t.u, t.v,
                 c.R, c.G, c.B, c.A,
                 tan.X, tan.Y, tan.Z
+            };
+        }
+
+        public float[] GetDataWithAnim()
+        {
+            return new float[]
+            {
+                p.X, p.Y, p.Z,
+                n.X, n.Y, n.Z,
+                t.u, t.v,
+                c.R, c.G, c.B, c.A,
+                tan.X, tan.Y, tan.Z,
+                boneIDs[0], boneIDs[1], boneIDs[2], boneIDs[3],
+                boneWeights[0], boneWeights[1], boneWeights[2], boneWeights[3],
+                boneCount
             };
         }
 
