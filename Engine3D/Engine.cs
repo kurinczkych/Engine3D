@@ -538,10 +538,10 @@ namespace Engine3D
 
             onlyPosShaderProgram.Use();
 
-            Vector3 characterPos = new Vector3(-3.241f, -204f, -12);
+            Vector3 characterPos = new Vector3(0,5,0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
-            character.camera.SetYaw(270f);
-            character.camera.SetPitch(89.388f);
+            character.camera.SetYaw(90);
+            character.camera.SetPitch(-89.388f);
 
             editorData.gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref camera);
 
@@ -551,7 +551,7 @@ namespace Engine3D
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
 
-            animations.AddRange(assimpManager.ProcessAnimation("Twilight_Run.FBX"));
+            //animations.AddRange(assimpManager.ProcessAnimation("Twilight_Run.FBX"));
 
             // Projection matrix and mesh loading
 
@@ -568,8 +568,8 @@ namespace Engine3D
             //_meshObjects.Add(o2);
 
             Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "Twilight_CharacterR.fbx", "TwilightNormalSkin_Twilight_BaseColor.png", windowSize, ref camera, ref o2));
-            ((Mesh)o2.GetMesh()).animation = animations[0];
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "stickman.fbx", "TwilightNormalSkin_Twilight_BaseColor.png", windowSize, ref camera, ref o2));
+            //((Mesh)o2.GetMesh()).animation = animations[0];
             ((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
             objects.Add(o2);
             _meshObjects.Add(o2);
