@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
 using System.Runtime.CompilerServices;
 using System.IO;
+using MagicPhysX;
 
 namespace Engine3D
 {
@@ -86,28 +87,55 @@ namespace Engine3D
             Unbind();
         }
 
-        public static bool LoadTexture(string filePath, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf, string folder = "Textures")
+        public static bool LoadTexture(string filePath, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf, string folder = "Textures", bool downscale=false)
         {
             Stream? stream_t = FileManager.GetFileStream(filePath);
             if (stream_t != Stream.Null && stream_t != null)
             {
                 using (stream_t)
                 {
-                    Bitmap bitmap = new Bitmap(stream_t);
+                    Bitmap originalBitmap = new Bitmap(stream_t);
                     if (flipY)
-                        bitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
-                    BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                        originalBitmap.RotateFlip(RotateFlipType.RotateNoneFlipY);
 
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)tminf);
-                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)tmagf);
+                    if (downscale)
+                    {
+                        int newWidth = 128;
+                        int newHeight = 128;
 
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                        // Create a new bitmap with the desired dimensions
+                        Bitmap resizedBitmap = new Bitmap(newWidth, newHeight);
 
-                    bitmap.UnlockBits(data);
+                        // Draw the original bitmap onto the resized bitmap
+                        using (Graphics graphics = Graphics.FromImage(resizedBitmap))
+                        {
+                            graphics.DrawImage(originalBitmap, 0, 0, newWidth, newHeight);
+                        }
 
-                    // Texture settings
+                        BitmapData data = resizedBitmap.LockBits(new Rectangle(0, 0, newWidth, newHeight), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)tminf);
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)tmagf);
+
+                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+                        resizedBitmap.UnlockBits(data);
+                    }
+                    else
+                    {
+                        BitmapData data = originalBitmap.LockBits(new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)tminf);
+                        GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)tmagf);
+
+                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, data.Width, data.Height, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+                        originalBitmap.UnlockBits(data);
+                    }
                 }
                 return true;
             }

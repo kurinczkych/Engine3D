@@ -186,8 +186,7 @@ namespace Engine3D
             if(toLoad.Count > 0)
             {
                 Asset a = toLoad[0];
-                if (a.Path.Contains("Space"))
-                    ;
+
                 bool success = false;
                 if(a.EditorType == AssetTypeEditor.UI)
                 {

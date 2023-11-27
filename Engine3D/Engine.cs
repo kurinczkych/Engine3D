@@ -568,9 +568,9 @@ namespace Engine3D
             //_meshObjects.Add(o2);
 
             Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "stickman.fbx", "TwilightNormalSkin_Twilight_BaseColor.png", windowSize, ref camera, ref o2));
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "stickman.fbx", windowSize, ref camera, ref o2));
             //((Mesh)o2.GetMesh()).animation = animations[0];
-            ((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
+            //((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
             objects.Add(o2);
             _meshObjects.Add(o2);
 

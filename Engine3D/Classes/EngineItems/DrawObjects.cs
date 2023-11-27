@@ -68,8 +68,10 @@ namespace Engine3D
                                     GL.StencilMask(0xFF);
                                 }
 
-                                //mesh.Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
-                                mesh.DrawAnimated(editorData.gameRunning, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
+                                if(mesh.animation == null)
+                                    mesh.Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
+                                else
+                                    mesh.DrawAnimated(editorData.gameRunning, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
 
                                 // OUTLINING
                                 if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
