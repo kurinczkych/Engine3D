@@ -34,11 +34,11 @@ void main()
 {
 	//boneIDs contains more than 4 bones, each mesh can contain x count of bones.
 	mat4 boneMatrix = mat4(1.0);
-	boneMatrix = boneMatrices[int(boneIDs[0])] * weights[0];
-//	for(int i = 0; i < int(boneCount); i++)
-//	{
-//		boneMatrix += boneMatrices[int(boneIDs[i])] * weights[i];
-//	}
+//	boneMatrix = boneMatrices[int(boneIDs[0])] * weights[0];
+	for(int i = 0; i < int(boneCount); i++)
+	{
+		boneMatrix += boneMatrices[int(boneIDs[i])] * weights[i];
+	}
 
 	vec4 position = vec4(inPosition,1.0);
 

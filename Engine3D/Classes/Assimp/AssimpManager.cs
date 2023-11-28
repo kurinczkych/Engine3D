@@ -15,64 +15,128 @@ namespace Engine3D
     public class AssimpManager
     {
         private AssimpContext context;
+        public List<Animation> animations = new List<Animation>();
 
         public AssimpManager()
         {
             context = new AssimpContext();
         }
 
-        public List<Animation> ProcessAnimation(string relativeAnimationPath)
+        public void ProcessAnimation(string relativeAnimationPath)
         {
-            string filePath = Environment.CurrentDirectory + "\\Assets\\" + FileType.Animations.ToString() + "\\" + relativeAnimationPath;
-            if (!File.Exists(filePath))
+            //string filePath = Environment.CurrentDirectory + "\\Assets\\" + FileType.Animations.ToString() + "\\" + relativeAnimationPath;
+            //if (!File.Exists(filePath))
+            //{
+            //    Engine.consoleManager.AddLog("File '" + relativeAnimationPath + "' not found!", LogType.Warning);
+            //    return;
+            //}
+
+            //var animFile = context.ImportFile("Assets\\" + FileType.Animations.ToString() + "\\" + relativeAnimationPath);
+
+            //List<Animation> anims = new List<Animation>();
+            //foreach (var anim in animFile.Animations)
+            //{
+            //    Animation animation = new Animation();
+            //    animation.DurationInTicks = anim.DurationInTicks;
+            //    animation.TicksPerSecond = anim.TicksPerSecond;
+
+            //    foreach(var nodeAnim in anim.NodeAnimationChannels)
+            //    {
+            //        BoneAnimation nodeAnimation = new BoneAnimation();
+            //        nodeAnimation.Name = nodeAnim.NodeName;
+            //        foreach(var pos in nodeAnim.PositionKeys)
+            //        {
+            //            nodeAnimation.Positions.Add(Matrix4.CreateTranslation(AssimpVector3(pos.Value)));
+            //        }
+            //        foreach(var quat in nodeAnim.RotationKeys)
+            //        {
+            //            nodeAnimation.Rotations.Add(Matrix4.CreateFromQuaternion(AssimpQuaternion(quat.Value)));
+            //        }
+            //        foreach(var scale in nodeAnim.ScalingKeys)
+            //        {
+            //            nodeAnimation.Scalings.Add(Matrix4.CreateTranslation(AssimpVector3(scale.Value)));
+            //        }
+
+            //        if (nodeAnim.PositionKeyCount == nodeAnim.RotationKeyCount &&
+            //           nodeAnim.PositionKeyCount == nodeAnim.ScalingKeyCount &&
+            //           nodeAnim.RotationKeyCount == nodeAnim.ScalingKeyCount)
+            //        {
+            //            for (int i = 0; i < nodeAnim.PositionKeyCount; i++)
+            //            {
+            //                Matrix4 transformationMatrix = nodeAnimation.Scalings[i] * nodeAnimation.Rotations[i] * nodeAnimation.Positions[i];
+            //                nodeAnimation.Transformations.Add(transformationMatrix);
+            //            }
+
+            //            animation.boneAnimations.Add(nodeAnimation);
+            //        }
+            //    }
+            //    anims.Add(animation);
+            //}
+
+            //animations.AddRange(anims);
+        }
+
+        private void AddAnimation(Assimp.Animation anim)
+        {
+            Animation animation = new Animation();
+            animation.DurationInTicks = anim.DurationInTicks;
+            animation.TicksPerSecond = anim.TicksPerSecond;
+
+            foreach (var nodeAnim in anim.NodeAnimationChannels)
             {
-                Engine.consoleManager.AddLog("File '" + relativeAnimationPath + "' not found!", LogType.Warning);
-                return new List<Animation>();
-            }
-
-            var animFile = context.ImportFile("Assets\\" + FileType.Animations.ToString() + "\\" + relativeAnimationPath);
-
-            List<Animation> anims = new List<Animation>();
-            foreach (var anim in animFile.Animations)
-            {
-                Animation animation = new Animation();
-                animation.DurationInTicks = anim.DurationInTicks;
-                animation.TicksPerSecond = anim.TicksPerSecond;
-
-                foreach(var nodeAnim in anim.NodeAnimationChannels)
+                BoneAnimation nodeAnimation = new BoneAnimation();
+                nodeAnimation.Name = nodeAnim.NodeName;
+                foreach (var pos in nodeAnim.PositionKeys)
                 {
-                    BoneAnimation nodeAnimation = new BoneAnimation();
-                    nodeAnimation.Name = nodeAnim.NodeName;
-                    foreach(var pos in nodeAnim.PositionKeys)
-                    {
-                        nodeAnimation.Positions.Add(Matrix4.CreateTranslation(AssimpVector3(pos.Value)));
-                    }
-                    foreach(var quat in nodeAnim.RotationKeys)
-                    {
-                        nodeAnimation.Rotations.Add(Matrix4.CreateFromQuaternion(AssimpQuaternion(quat.Value)));
-                    }
-                    foreach(var scale in nodeAnim.ScalingKeys)
-                    {
-                        nodeAnimation.Scalings.Add(Matrix4.CreateTranslation(AssimpVector3(scale.Value)));
-                    }
-
-                    if (nodeAnim.PositionKeyCount == nodeAnim.RotationKeyCount &&
-                       nodeAnim.PositionKeyCount == nodeAnim.ScalingKeyCount &&
-                       nodeAnim.RotationKeyCount == nodeAnim.ScalingKeyCount)
-                    {
-                        for (int i = 0; i < nodeAnim.PositionKeyCount; i++)
-                        {
-                            Matrix4 transformationMatrix = nodeAnimation.Scalings[i] * nodeAnimation.Rotations[i] * nodeAnimation.Positions[i];
-                            nodeAnimation.Transformations.Add(transformationMatrix);
-                        }
-
-                        animation.boneAnimations.Add(nodeAnimation);
-                    }
+                    nodeAnimation.Positions.Add(Convert.ToInt32(Math.Round(pos.Time)),AssimpVector3(pos.Value));
                 }
-                anims.Add(animation);
-            }
+                foreach (var quat in nodeAnim.RotationKeys)
+                {
+                    nodeAnimation.Rotations.Add(Convert.ToInt32(Math.Round(quat.Time)), AssimpQuaternion(quat.Value));
+                }
+                foreach (var scale in nodeAnim.ScalingKeys)
+                {
+                    nodeAnimation.Scalings.Add(Convert.ToInt32(Math.Round(scale.Time)), AssimpVector3(scale.Value));
+                }
 
-            return anims;
+                if (nodeAnim.PositionKeyCount == nodeAnim.RotationKeyCount &&
+                   nodeAnim.PositionKeyCount == nodeAnim.ScalingKeyCount &&
+                   nodeAnim.RotationKeyCount == nodeAnim.ScalingKeyCount)
+                {
+                    int lastTime = -1;
+                    int endTime = -1;
+                    for (int i = 0; i <= Convert.ToInt32(animation.DurationInTicks); i++)
+                    {
+                        if(nodeAnimation.Positions.ContainsKey(i))
+                        {
+                            Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Scalings[i]) *
+                                                           Matrix4.CreateFromQuaternion(nodeAnimation.Rotations[i]) *
+                                                           Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
+                            nodeAnimation.Transformations.Add(i, transformationMatrix);
+                            lastTime = i;
+                        }
+                        else
+                        {
+                            if (i > endTime)
+                            {
+                                for (int j = i + 1; j <= Convert.ToInt32(animation.DurationInTicks); j++)
+                                {
+                                    if (nodeAnimation.Positions.ContainsKey(j))
+                                    {
+                                        endTime = j;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            nodeAnimation.Transformations.Add(i, nodeAnimation.GetInterpolatedTransform(lastTime, endTime, i));
+                        }
+                    }
+
+                    animation.boneAnimations.Add(nodeAnimation);
+                }
+            }
+            animations.Add(animation);
         }
 
         public ModelData? ProcessModel(string relativeModelPath, float cr = 1, float cg = 1, float cb = 1, float ca = 1)
@@ -89,6 +153,9 @@ namespace Engine3D
             }
 
             var model = context.ImportFile("Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath, PostProcessSteps.Triangulate);
+
+            foreach (var anim in model.Animations)
+                AddAnimation(anim);
 
             foreach (var mesh in model.Meshes)
             {
