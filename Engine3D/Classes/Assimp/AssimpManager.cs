@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using Assimp;
@@ -109,9 +110,11 @@ namespace Engine3D
                     {
                         if(nodeAnimation.Positions.ContainsKey(i))
                         {
-                            Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Scalings[i]) *
-                                                           Matrix4.CreateFromQuaternion(nodeAnimation.Rotations[i]) *
-                                                           Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
+                            //Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Scalings[i]) *
+                            //                               Matrix4.CreateFromQuaternion(nodeAnimation.Rotations[i]) *
+                            //                               Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
+                            //Matrix4 transformationMatrix = Matrix4.CreateFromQuaternion(nodeAnimation.Rotations[i]);
+                            Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
                             nodeAnimation.Transformations.Add(i, transformationMatrix);
                             lastTime = i;
                         }

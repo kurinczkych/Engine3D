@@ -388,7 +388,7 @@ namespace Engine3D
             if (animation != null)
             {
                 //if (animDeltaTime >= 1.0/animation.TicksPerSecond)
-                if (animDeltaTime >= 0.5)
+                if (animDeltaTime >= 0.1)
                 {
                     currentAnim++;
                     animDeltaTime = 0;
@@ -398,9 +398,29 @@ namespace Engine3D
                 if (currentAnim > animation.DurationInTicks)
                     currentAnim = 0;
 
-                Matrix4 boneMatrix  = model.meshes[meshId].boneMatrices[animation.boneAnimations[0].Name];
+                Matrix4 boneMatrix = Matrix4.Identity;
+                //if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[0].Name))
+                //boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[0].Name];
 
-                GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref boneMatrix);
+                //GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref boneMatrix);
+
+                var asd = model.meshes[meshId].uniqueVertices;
+                var asd2 = animation.boneAnimations[1].Transformations[currentAnim];
+
+                if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[1].Name))
+                    boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[1].Name];
+
+                var final = Matrix4.Identity;
+                final = asd2 * boneMatrix;
+
+                GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref final);
+
+                //Engine.consoleManager.AddLog(currentAnim.ToString());
+
+                //if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[2].Name))
+                //    boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[2].Name];
+
+                //GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 1, true, ref boneMatrix);
 
                 //int i = 0;
                 //int j = 0;
@@ -409,15 +429,10 @@ namespace Engine3D
                 //    if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[i].Name))
                 //    {
                 //        Matrix4 boneMatrix = Matrix4.Identity;
-                //        if (currentAnim <= 2)
-                //            boneMatrix = boneMatrix * Matrix4.CreateTranslation(currentAnim * 2, 0, 0);
-                //        else
-                //        {
-                //            boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[i].Name];
-                //                //* animation.boneAnimations[i].Transformations[currentAnim];
+                //        boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[i].Name];
+                //        //* animation.boneAnimations[i].Transformations[currentAnim];
 
-                //            //boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[i].Name] + animation.boneAnimations[i].Transformations[currentAnim];
-                //        }
+                //        //boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[i].Name] + animation.boneAnimations[i].Transformations[currentAnim];
 
                 //        GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + j, true, ref boneMatrix);
                 //        j++;

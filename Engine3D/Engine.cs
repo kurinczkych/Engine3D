@@ -536,10 +536,10 @@ namespace Engine3D
 
             onlyPosShaderProgram.Use();
 
-            Vector3 characterPos = new Vector3(17, 887.9555f, 161.61398f);
+            Vector3 characterPos = new Vector3(-6, 0, 3);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
-            character.camera.SetYaw(90);
-            character.camera.SetPitch(-89.388f);
+            character.camera.SetYaw(358);
+            character.camera.SetPitch(-4.23f);
 
             editorData.gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref camera);
 
@@ -564,7 +564,7 @@ namespace Engine3D
             //_meshObjects.Add(o2);
 
             Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mario2.fbx", "mario.jpeg", windowSize, ref camera, ref o2));
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "stickPos.fbx",  windowSize, ref camera, ref o2));
             ((Mesh)o2.GetMesh()).animation = assimpManager.animations[0];
             ((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
             objects.Add(o2);
