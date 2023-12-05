@@ -73,6 +73,7 @@ namespace Engine3D
     public class ModelData
     {
         public List<MeshData> meshes = new List<MeshData>();
+        public Matrix4 globalInverseTransform = Matrix4.Identity;
 
         public ModelData() { }
     }

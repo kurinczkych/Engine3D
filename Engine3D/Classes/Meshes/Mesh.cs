@@ -17,7 +17,6 @@ using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
 using Cyotek.Drawing.BitmapFont;
 using System.Runtime.CompilerServices;
-using static OpenTK.Graphics.OpenGL.GL;
 using OpenTK.Windowing.Common;
 
 #pragma warning disable CS8600
@@ -338,7 +337,7 @@ namespace Engine3D
             GL.Uniform1(uniformLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
         }
 
-        protected void SendAnimationUniforms(int meshId, double delta)
+        protected void SendAnimationUniforms(int meshId, double delta, Shader sh)
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
@@ -398,24 +397,56 @@ namespace Engine3D
                 if (currentAnim > animation.DurationInTicks)
                     currentAnim = 0;
 
-                Matrix4 boneMatrix = Matrix4.Identity;
-                //if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[0].Name))
-                //boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[0].Name];
 
-                //GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref boneMatrix);
+                for (int i = 0; i < model.meshes[meshId].boneMatrices.Count; i++)
+                {
+                    var boneName = model.meshes[meshId].boneMatrices.Keys.ElementAt(i);
+                    var boneAnim = animation.boneAnimations.FirstOrDefault(b => b.Name == boneName);
 
-                var asd = model.meshes[meshId].uniqueVertices;
-                var asd2 = animation.boneAnimations[1].Transformations[currentAnim];
+                    Matrix4 final = Matrix4.Identity;
+                    if (boneAnim != null && boneAnim.Transformations.TryGetValue(currentAnim, out final))
+                    {
+                        //final = final * model.meshes[meshId].boneMatrices[boneName];
+                        final = model.globalInverseTransform * model.meshes[meshId].boneMatrices[boneName];
+                        final = Matrix4.CreateTranslation(1, 1, 1);
+                        ;
+                    }
+                    else
+                    {
+                        // Default to identity if no animation is found
+                        final = Matrix4.Identity;
+                    }
 
-                if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[1].Name))
-                    boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[1].Name];
+                    // Send to GPU
+                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref final);
+                }
 
-                var final = Matrix4.Identity;
-                final = asd2 * boneMatrix;
+                Engine.consoleManager.AddLog(currentAnim.ToString());
 
-                GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref final);
 
-                //Engine.consoleManager.AddLog(currentAnim.ToString());
+
+
+
+
+
+                //////Matrix4 boneMatrix = Matrix4.Identity;
+                ////////if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[0].Name))
+                ////////boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[0].Name];
+
+                ////////GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref boneMatrix);
+
+                //////var asd = model.meshes[meshId].uniqueVertices;
+                //////var asd2 = animation.boneAnimations[2].Transformations[currentAnim];
+
+                //////if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[2].Name))
+                //////    boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[2].Name];
+
+                //////var final = Matrix4.Identity;
+                //////final = asd2 * boneMatrix;
+
+                //////GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref final);
+
+                //////Engine.consoleManager.AddLog(currentAnim.ToString());
 
                 //if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[2].Name))
                 //    boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[2].Name];
@@ -578,7 +609,7 @@ namespace Engine3D
             for(int i = 0; i < model.meshes.Count; i++)
             {
                 MeshData mesh = model.meshes[i];
-                SendAnimationUniforms(i, delta);
+                SendAnimationUniforms(i, delta, shader);
 
                 if (!recalculate)
                 {

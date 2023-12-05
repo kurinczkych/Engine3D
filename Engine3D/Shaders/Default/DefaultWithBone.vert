@@ -32,17 +32,33 @@ uniform int useAnimation;
 
 void main()
 {
-	//boneIDs contains more than 4 bones, each mesh can contain x count of bones.
-	mat4 boneMatrix = mat4(1.0);
-//	boneMatrix = boneMatrices[int(boneIDs[0])] * weights[0];
-	for(int i = 0; i < int(boneCount); i++)
-	{
-		boneMatrix += boneMatrices[int(boneIDs[i])] * weights[i];
-	}
-
 	vec4 position = vec4(inPosition,1.0);
+//
+//	mat4 boneMatrix = mat4(0.0);
+//	for(int i = 0; i < int(boneCount); i++)
+//	{
+//		boneMatrix += boneMatrices[int(boneIDs[i])] * weights[i];
+//	}
+//	gl_Position = boneMatrix * position * modelMatrix * viewMatrix * projectionMatrix;
 
-	gl_Position = position * boneMatrix * modelMatrix * viewMatrix * projectionMatrix;
+	vec4 localPos = vec4(0.0);
+	for(int i = 0; i < int(boneCount); i++) {
+		mat4 boneTransform = boneMatrices[int(boneIDs[i])];
+		vec4 posePosition = boneTransform * position;
+		localPos += posePosition * weights[i];
+		// todo: need to apply the bone transformation 
+		// to normal as well
+    }
+	gl_Position = localPos * modelMatrix * viewMatrix * projectionMatrix;
+
+//    mat4 BoneTransform = boneMatrices[int(boneIDs[0])] * weights[0];
+//    BoneTransform +=	 boneMatrices[int(boneIDs[1])] * weights[1];
+//    BoneTransform +=	 boneMatrices[int(boneIDs[2])] * weights[2];
+//    BoneTransform +=	 boneMatrices[int(boneIDs[3])] * weights[3];
+//
+//	vec4 PosL = BoneTransform * position;
+//	gl_Position = PosL * modelMatrix * viewMatrix * projectionMatrix;
+
 	vec4 fragPos4 = position * modelMatrix;
 
 	if(useBillboarding == 1)

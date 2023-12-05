@@ -9,6 +9,7 @@ using Assimp.Configs;
 using FontStashSharp;
 using HtmlAgilityPack;
 using OpenTK.Mathematics;
+using static OpenTK.Graphics.OpenGL.GL;
 
 namespace Engine3D
 {
@@ -110,11 +111,11 @@ namespace Engine3D
                     {
                         if(nodeAnimation.Positions.ContainsKey(i))
                         {
-                            //Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Scalings[i]) *
-                            //                               Matrix4.CreateFromQuaternion(nodeAnimation.Rotations[i]) *
-                            //                               Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
+                            Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Scalings[i]) *
+                                                           Matrix4.CreateFromQuaternion(nodeAnimation.Rotations[i]) *
+                                                           Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
                             //Matrix4 transformationMatrix = Matrix4.CreateFromQuaternion(nodeAnimation.Rotations[i]);
-                            Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
+                            //Matrix4 transformationMatrix = Matrix4.CreateTranslation(nodeAnimation.Positions[i]);
                             nodeAnimation.Transformations.Add(i, transformationMatrix);
                             lastTime = i;
                         }
@@ -155,10 +156,14 @@ namespace Engine3D
                 return null;
             }
 
-            var model = context.ImportFile("Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath, PostProcessSteps.Triangulate);
+            var model = context.ImportFile("Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath, 
+                PostProcessSteps.LimitBoneWeights | PostProcessSteps.Triangulate /*| PostProcessSteps.JoinIdenticalVertices*/ );
 
             foreach (var anim in model.Animations)
                 AddAnimation(anim);
+
+            modelData.globalInverseTransform = AssimpMatrix4(model.RootNode.Transform).Inverted();
+            
 
             foreach (var mesh in model.Meshes)
             {
@@ -171,41 +176,14 @@ namespace Engine3D
 
                 for (int i = 0; i < mesh.Bones.Count; i++)
                 {
-                    Matrix4 offsetMatrix = new Matrix4();
-                    offsetMatrix = new Matrix4();
-                    for (int x = 0; x < 4; x++)
-                    {
-                        for (int y = 0; y < 4; y++)
-                        {
-                            offsetMatrix[x, y] = mesh.Bones[i].OffsetMatrix[x, y];
-                        }
-                    }
-
+                    Matrix4 offsetMatrix = AssimpMatrix4(mesh.Bones[i].OffsetMatrix);
                     meshData.boneMatrices.Add(mesh.Bones[i].Name, offsetMatrix);
 
                     foreach(VertexWeight vw in mesh.Bones[i].VertexWeights)
                     {
                         if (boneDict.ContainsKey(vw.VertexID))
                         {
-                            if (boneDict[vw.VertexID].Count >= 4)
-                            {
-                                float w1 = vw.Weight;
-                                float w2 = 10;
-                                int w2i = -1;
-                                for (int j = 0; j < 4; j++)
-                                {
-                                    if (boneDict[vw.VertexID][j].Item2 < w2)
-                                    {
-                                        w2 = boneDict[vw.VertexID][j].Item2;
-                                        w2i = j;
-                                    }
-                                }
-
-                                if (w1 > w2)
-                                    boneDict[vw.VertexID][w2i] = (boneDict[vw.VertexID][w2i].Item1, w1);
-                            }
-                            else
-                                boneDict[vw.VertexID].Add((i, vw.Weight));
+                            boneDict[vw.VertexID].Add((i, vw.Weight));
                         }
                         else
                             boneDict.Add(vw.VertexID, new List<(int, float)>() { (i, vw.Weight) });
@@ -254,36 +232,66 @@ namespace Engine3D
 
                     (Vector3 vv1, Vec2d uv1, Vector3 nv1) = AssimpGetElement(face.Indices[0], mesh);
                     Vertex v1 = new Vertex(vv1, nv1, uv1) { c = color, pi = meshData.allVerts.IndexOf(vv1) };
-                    v1.boneCount = boneDict[face.Indices[0]].Count;
-                    if(v1.boneCount < 4)
+
+                    if (boneDict.ContainsKey(face.Indices[0]))
                     {
-                        while (boneDict[face.Indices[0]].Count < 4)
-                            boneDict[face.Indices[0]].Add((0, 0));
+                        v1.boneCount = boneDict[face.Indices[0]].Count;
+                        if (v1.boneCount < 4)
+                        {
+                            while (boneDict[face.Indices[0]].Count < 4)
+                                boneDict[face.Indices[0]].Add((0, 0));
+                        }
+                        v1.boneIDs = boneDict[face.Indices[0]].Select(x => x.Item1).ToList();
+                        v1.boneWeights = boneDict[face.Indices[0]].Select(x => x.Item2).ToList();
                     }
-                    v1.boneIDs = boneDict[face.Indices[0]].Select(x => x.Item1).ToList();
-                    v1.boneWeights = boneDict[face.Indices[0]].Select(x => x.Item2).ToList();
+                    else
+                    {
+                        v1.boneCount = 0;
+                        v1.boneIDs = new List<int>() { 0, 0, 0, 0 };
+                        v1.boneWeights = new List<float>() { 0, 0, 0, 0 };
+                    }
 
                     (Vector3 vv2, Vec2d uv2, Vector3 nv2) = AssimpGetElement(face.Indices[1], mesh);
                     Vertex v2 = new Vertex(vv2, nv2, uv2) { c = color, pi = meshData.allVerts.IndexOf(vv2) };
-                    v2.boneCount = boneDict[face.Indices[1]].Count;
-                    if (v2.boneCount < 4)
+
+                    if (boneDict.ContainsKey(face.Indices[1]))
                     {
-                        while (boneDict[face.Indices[1]].Count < 4)
-                            boneDict[face.Indices[1]].Add((0, 0));
+                        v2.boneCount = boneDict[face.Indices[1]].Count;
+                        if (v2.boneCount < 4)
+                        {
+                            while (boneDict[face.Indices[1]].Count < 4)
+                                boneDict[face.Indices[1]].Add((0, 0));
+                        }
+                        v2.boneIDs = boneDict[face.Indices[1]].Select(x => x.Item1).ToList();
+                        v2.boneWeights = boneDict[face.Indices[1]].Select(x => x.Item2).ToList();
                     }
-                    v2.boneIDs = boneDict[face.Indices[1]].Select(x => x.Item1).ToList();
-                    v2.boneWeights = boneDict[face.Indices[1]].Select(x => x.Item2).ToList();
+                    else
+                    {
+                        v2.boneCount = 0;
+                        v2.boneIDs = new List<int>() { 0, 0, 0, 0 };
+                        v2.boneWeights = new List<float>() { 0, 0, 0, 0 };
+                    }
 
                     (Vector3 vv3, Vec2d uv3, Vector3 nv3) = AssimpGetElement(face.Indices[2], mesh);
                     Vertex v3 = new Vertex(vv3, nv3, uv3) { c = color, pi = meshData.allVerts.IndexOf(vv3) };
-                    v3.boneCount = boneDict[face.Indices[2]].Count;
-                    if (v3.boneCount < 4)
+
+                    if (boneDict.ContainsKey(face.Indices[2]))
                     {
-                        while (boneDict[face.Indices[2]].Count < 4)
-                            boneDict[face.Indices[2]].Add((0, 0));
+                        v3.boneCount = boneDict[face.Indices[2]].Count;
+                        if (v3.boneCount < 4)
+                        {
+                            while (boneDict[face.Indices[2]].Count < 4)
+                                boneDict[face.Indices[2]].Add((0, 0));
+                        }
+                        v3.boneIDs = boneDict[face.Indices[2]].Select(x => x.Item1).ToList();
+                        v3.boneWeights = boneDict[face.Indices[2]].Select(x => x.Item2).ToList();
                     }
-                    v3.boneIDs = boneDict[face.Indices[2]].Select(x => x.Item1).ToList();
-                    v3.boneWeights = boneDict[face.Indices[2]].Select(x => x.Item2).ToList();
+                    else
+                    {
+                        v3.boneCount = 0;
+                        v3.boneIDs = new List<int>() { 0, 0, 0, 0 };
+                        v3.boneWeights = new List<float>() { 0, 0, 0, 0 };
+                    }
 
                     int v1h = v1.GetHashCode();
                     if (!vertexHash.ContainsKey(v1h))
@@ -352,6 +360,20 @@ namespace Engine3D
         private Vector3 AssimpVector3(Vector3D v)
         {
             return new Vector3(v.X, v.Y, v.Z);
+        }
+
+        private Matrix4 AssimpMatrix4(Assimp.Matrix4x4 m)
+        {
+            Matrix4 matrix4 = new Matrix4();
+            for (int x = 0; x < 4; x++)
+            {
+                for (int y = 0; y < 4; y++)
+                {
+                    matrix4[x, y] = m[x, y];
+                }
+            }
+            matrix4.Transpose();
+            return matrix4;
         }
 
         private OpenTK.Mathematics.Quaternion AssimpQuaternion(Assimp.Quaternion quat)
