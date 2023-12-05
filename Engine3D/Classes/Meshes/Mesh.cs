@@ -407,8 +407,9 @@ namespace Engine3D
                     if (boneAnim != null && boneAnim.Transformations.TryGetValue(currentAnim, out final))
                     {
                         //final = final * model.meshes[meshId].boneMatrices[boneName];
-                        final = model.globalInverseTransform * model.meshes[meshId].boneMatrices[boneName];
-                        final = Matrix4.CreateTranslation(1, 1, 1);
+                        final = model.meshes[meshId].boneMatrices[boneName];
+                        //final = Matrix4.CreateTranslation(1, 1, 1);
+                        final.Transpose();
                         ;
                     }
                     else
