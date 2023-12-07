@@ -162,7 +162,18 @@ namespace Engine3D
             foreach (var anim in model.Animations)
                 AddAnimation(anim);
 
-            modelData.globalInverseTransform = AssimpMatrix4(model.RootNode.Transform).Inverted();
+            modelData.rootNodeMatrix = AssimpMatrix4(model.RootNode.Transform);
+            Node? nParentNode = model.RootNode.Children.Where(x => x.Name == "Armature").FirstOrDefault();
+            modelData.nodeMatrix = Matrix4.Identity;
+            modelData.nodeParentMatrix = Matrix4.Identity;
+            if (nParentNode != null)
+            {
+                Node? nChildNode = nParentNode.Children.Where(x => x.Name == "Bone").FirstOrDefault();
+                modelData.nodeParentMatrix = AssimpMatrix4(nParentNode.Transform);
+                if (nChildNode != null)
+                    modelData.nodeMatrix = AssimpMatrix4(nChildNode.Transform);// * AssimpMatrix4(model.RootNode.Transform);
+            }
+
             
 
             foreach (var mesh in model.Meshes)
@@ -179,7 +190,11 @@ namespace Engine3D
                     Matrix4 offsetMatrix = AssimpMatrix4(mesh.Bones[i].OffsetMatrix);
                     meshData.boneMatrices.Add(mesh.Bones[i].Name, offsetMatrix);
 
-                    foreach(VertexWeight vw in mesh.Bones[i].VertexWeights)
+                    // OffsetMatrix {{[A1:1 A2:0 A3:0 A4:0] [B1:0 B2:-1.6292067E-07 B3:1 B4:0.8077586] [C1:0 C2:-1 C3:-1.6292067E-07 C4:0] [D1:0 D2:0 D3:0 D4:1]}}
+                    // Armature     {{[A1:100 A2:0 A3:0 A4:0] [B1:0 B2:-1.6292068E-05 B3:100 B4:0] [C1:0 C2:-100 C3:-1.6292068E-05 C4:0] [D1:0 D2:0 D3:0 D4:1]}}
+                    // Cube         {{[A1:100 A2:0 A3:0 A4:0] [B1:0 B2:-1.6292068E-05 B3:100 B4:0] [C1:0 C2:-100 C3:-1.6292068E-05 C4:0] [D1:0 D2:0 D3:0 D4:1]}}
+
+                    foreach (VertexWeight vw in mesh.Bones[i].VertexWeights)
                     {
                         if (boneDict.ContainsKey(vw.VertexID))
                         {

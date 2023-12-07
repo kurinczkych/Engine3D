@@ -536,7 +536,7 @@ namespace Engine3D
 
             onlyPosShaderProgram.Use();
 
-            Vector3 characterPos = new Vector3(-6, 0, 3);
+            Vector3 characterPos = new Vector3(-5, 0, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
             //character.camera.SetYaw(358);
             //character.camera.SetPitch(-4.23f);

@@ -21,6 +21,7 @@ uniform vec2 windowSize;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform mat4 nodeMatrix;
 
 uniform int useNormal;
 uniform int useHeight;
@@ -42,14 +43,20 @@ void main()
 //	gl_Position = boneMatrix * position * modelMatrix * viewMatrix * projectionMatrix;
 
 	vec4 localPos = vec4(0.0);
-	for(int i = 0; i < int(boneCount); i++) {
-		mat4 boneTransform = boneMatrices[int(boneIDs[i])];
-		vec4 posePosition = boneTransform * position;
-		localPos += posePosition * weights[i];
-		// todo: need to apply the bone transformation 
-		// to normal as well
-    }
+	mat4 boneTransform = boneMatrices[int(boneIDs[0])];
+	vec4 posePosition = boneTransform * position;
+	localPos += posePosition * weights[0];
+
+//////	vec4 localPos = vec4(0.0);
+//////	for(int i = 0; i < int(boneCount); i++) {
+//////		mat4 boneTransform = boneMatrices[int(boneIDs[i])];
+//////		vec4 posePosition = boneTransform * position;
+//////		localPos += posePosition * weights[i];
+//////		// todo: need to apply the bone transformation 
+//////		// to normal as well
+//////    }
 	gl_Position = localPos * modelMatrix * viewMatrix * projectionMatrix;
+//	gl_Position = position * nodeMatrix * modelMatrix * viewMatrix * projectionMatrix;
 
 //    mat4 BoneTransform = boneMatrices[int(boneIDs[0])] * weights[0];
 //    BoneTransform +=	 boneMatrices[int(boneIDs[1])] * weights[1];

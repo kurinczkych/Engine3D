@@ -251,6 +251,7 @@ namespace Engine3D
             uniformAnimLocations.Add("windowSize", GL.GetUniformLocation(shader.id, "windowSize"));
             uniformAnimLocations.Add("modelMatrix", GL.GetUniformLocation(shader.id, "modelMatrix"));
             uniformAnimLocations.Add("viewMatrix", GL.GetUniformLocation(shader.id, "viewMatrix"));
+            uniformAnimLocations.Add("nodeMatrix", GL.GetUniformLocation(shader.id, "nodeMatrix"));
             uniformAnimLocations.Add("projectionMatrix", GL.GetUniformLocation(shader.id, "projectionMatrix"));
             uniformAnimLocations.Add("cameraPosition", GL.GetUniformLocation(shader.id, "cameraPosition"));
             uniformAnimLocations.Add("useBillboarding", GL.GetUniformLocation(shader.id, "useBillboarding"));
@@ -345,6 +346,7 @@ namespace Engine3D
             GL.UniformMatrix4(uniformAnimLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformAnimLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(uniformAnimLocations["projectionMatrix"], true, ref projectionMatrix);
+            GL.UniformMatrix4(uniformAnimLocations["nodeMatrix"], true, ref model.nodeMatrix);
             GL.Uniform2(uniformAnimLocations["windowSize"], windowSize);
             GL.Uniform3(uniformAnimLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformAnimLocations["useBillboarding"], useBillboarding);
@@ -403,23 +405,52 @@ namespace Engine3D
                     var boneName = model.meshes[meshId].boneMatrices.Keys.ElementAt(i);
                     var boneAnim = animation.boneAnimations.FirstOrDefault(b => b.Name == boneName);
 
-                    Matrix4 final = Matrix4.Identity;
-                    if (boneAnim != null && boneAnim.Transformations.TryGetValue(currentAnim, out final))
+                    Matrix4 animMatrix = Matrix4.Identity;
+                    if (boneAnim != null && boneAnim.Transformations.TryGetValue(currentAnim, out animMatrix))
                     {
-                        //final = final * model.meshes[meshId].boneMatrices[boneName];
-                        final = model.meshes[meshId].boneMatrices[boneName];
+                        //final = model.globalInverseTransform * final * model.meshes[meshId].boneMatrices[boneName];
+
+                        //final = model.meshes[meshId].boneMatrices[boneName];
+                        //final = Matrix4.Identity;
+                        //final = model.meshes[meshId].boneMatrices[boneName];
                         //final = Matrix4.CreateTranslation(1, 1, 1);
-                        final.Transpose();
+                        //final.Transpose();
+
+
+                        /*
+                            bone->nodeTransform =  bone->getParentTransform() // This retrieve the transformation one level above in the tree
+                            * bone->transform //bone->transform is the assimp matrix assimp_node->mTransformation
+                            * bone->localTransform;  //this is your T * R matrix
+
+                            bone->finalTransform = inverseGlobal // which is scene->mRootNode->mTransformation from assimp
+                                * bone->nodeTransform  //defined above
+                                * bone->boneOffset;  //which is ai_mesh->mBones[i]->mOffsetMatrix
+                        */
+
                         ;
                     }
                     else
                     {
                         // Default to identity if no animation is found
-                        final = Matrix4.Identity;
+                        animMatrix = Matrix4.Identity;
+                    }
+
+                    Matrix4 nodeTransform = Matrix4.Identity * model.nodeMatrix * animMatrix;
+                    Matrix4 final = model.rootNodeMatrix * nodeTransform * model.meshes[meshId].boneMatrices[boneName];
+
+                    Matrix4 t = /*Matrix4.Identity **/ model.meshes[meshId].boneMatrices[boneName];
+                    Matrix4 id = Matrix4.Identity;
+                    
+                    foreach(var v in model.meshes[meshId].allVerts)
+                    {
+                        var b = Helper.Round(Vector3.TransformPosition(v, final),2);
+                        
+                        ;
                     }
 
                     // Send to GPU
-                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref final);
+                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref id);
+                    //GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref final);
                 }
 
                 Engine.consoleManager.AddLog(currentAnim.ToString());

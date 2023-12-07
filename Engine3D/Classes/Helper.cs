@@ -21,6 +21,11 @@ namespace Engine3D
     {
         public static Random rnd = new Random((int)DateTime.Now.Ticks);
 
+        public static Vector3 Round(Vector3 v, int n)
+        {
+            return new Vector3((float)Math.Round(v.X, n), (float)Math.Round(v.Y, n), (float)Math.Round(v.Z, n));
+        }
+
         public static Color4 CalcualteColorBasedOnDistance(float index, float maxIndex)
         {
             float c = InterpolateComponent(index, 0f, maxIndex, 1f, 0f);
