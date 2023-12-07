@@ -162,19 +162,8 @@ namespace Engine3D
             foreach (var anim in model.Animations)
                 AddAnimation(anim);
 
-            modelData.rootNodeMatrix = AssimpMatrix4(model.RootNode.Transform);
-            Node? nParentNode = model.RootNode.Children.Where(x => x.Name == "Armature").FirstOrDefault();
-            modelData.nodeMatrix = Matrix4.Identity;
-            modelData.nodeParentMatrix = Matrix4.Identity;
-            if (nParentNode != null)
-            {
-                Node? nChildNode = nParentNode.Children.Where(x => x.Name == "Bone").FirstOrDefault();
-                modelData.nodeParentMatrix = AssimpMatrix4(nParentNode.Transform);
-                if (nChildNode != null)
-                    modelData.nodeMatrix = AssimpMatrix4(nChildNode.Transform);// * AssimpMatrix4(model.RootNode.Transform);
-            }
-
-            
+            modelData.RootNode = model.RootNode;
+            modelData.GlobalInverseTransform = AssimpMatrix4(model.RootNode.Transform).Inverted();
 
             foreach (var mesh in model.Meshes)
             {
@@ -188,11 +177,7 @@ namespace Engine3D
                 for (int i = 0; i < mesh.Bones.Count; i++)
                 {
                     Matrix4 offsetMatrix = AssimpMatrix4(mesh.Bones[i].OffsetMatrix);
-                    meshData.boneMatrices.Add(mesh.Bones[i].Name, offsetMatrix);
-
-                    // OffsetMatrix {{[A1:1 A2:0 A3:0 A4:0] [B1:0 B2:-1.6292067E-07 B3:1 B4:0.8077586] [C1:0 C2:-1 C3:-1.6292067E-07 C4:0] [D1:0 D2:0 D3:0 D4:1]}}
-                    // Armature     {{[A1:100 A2:0 A3:0 A4:0] [B1:0 B2:-1.6292068E-05 B3:100 B4:0] [C1:0 C2:-100 C3:-1.6292068E-05 C4:0] [D1:0 D2:0 D3:0 D4:1]}}
-                    // Cube         {{[A1:100 A2:0 A3:0 A4:0] [B1:0 B2:-1.6292068E-05 B3:100 B4:0] [C1:0 C2:-100 C3:-1.6292068E-05 C4:0] [D1:0 D2:0 D3:0 D4:1]}}
+                    meshData.boneMatrices.Add(mesh.Bones[i].Name, new Bone(offsetMatrix));
 
                     foreach (VertexWeight vw in mesh.Bones[i].VertexWeights)
                     {
@@ -372,12 +357,12 @@ namespace Engine3D
             return (AssimpVector3(mesh.Vertices[index]), AssimpVec2d(mesh.TextureCoordinateChannels.First()[index]), AssimpVector3(mesh.Normals[index]));
         }
 
-        private Vector3 AssimpVector3(Vector3D v)
+        public static Vector3 AssimpVector3(Vector3D v)
         {
             return new Vector3(v.X, v.Y, v.Z);
         }
 
-        private Matrix4 AssimpMatrix4(Assimp.Matrix4x4 m)
+        public static Matrix4 AssimpMatrix4(Assimp.Matrix4x4 m)
         {
             Matrix4 matrix4 = new Matrix4();
             for (int x = 0; x < 4; x++)
@@ -391,17 +376,17 @@ namespace Engine3D
             return matrix4;
         }
 
-        private OpenTK.Mathematics.Quaternion AssimpQuaternion(Assimp.Quaternion quat)
+        public static OpenTK.Mathematics.Quaternion AssimpQuaternion(Assimp.Quaternion quat)
         {
             return new OpenTK.Mathematics.Quaternion(quat.X, quat.Y, quat.Z, quat.W);
         }
 
-        private Vector3D AssimpVector3D(Vector3 v)
+        public static Vector3D AssimpVector3D(Vector3 v)
         {
             return new Vector3D(v.X, v.Y, v.Z);
         }
 
-        private Vec2d AssimpVec2d(Vector3D v)
+        public static Vec2d AssimpVec2d(Vector3D v)
         {
             return new Vec2d(v.X, v.Y);
         }

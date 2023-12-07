@@ -42,19 +42,19 @@ void main()
 //	}
 //	gl_Position = boneMatrix * position * modelMatrix * viewMatrix * projectionMatrix;
 
-	vec4 localPos = vec4(0.0);
-	mat4 boneTransform = boneMatrices[int(boneIDs[0])];
-	vec4 posePosition = boneTransform * position;
-	localPos += posePosition * weights[0];
+//	vec4 localPos = vec4(0.0);
+//	mat4 boneTransform = boneMatrices[int(boneIDs[0])];
+//	vec4 posePosition = boneTransform * position;
+//	localPos += posePosition * weights[0];
 
-//////	vec4 localPos = vec4(0.0);
-//////	for(int i = 0; i < int(boneCount); i++) {
-//////		mat4 boneTransform = boneMatrices[int(boneIDs[i])];
-//////		vec4 posePosition = boneTransform * position;
-//////		localPos += posePosition * weights[i];
-//////		// todo: need to apply the bone transformation 
-//////		// to normal as well
-//////    }
+	vec4 localPos = vec4(0.0);
+	for(int i = 0; i < int(boneCount); i++) {
+		mat4 boneTransform = boneMatrices[int(boneIDs[i])];
+		vec4 posePosition = boneTransform * position;
+		localPos += posePosition * weights[i];
+		// todo: need to apply the bone transformation 
+		// to normal as well
+    }
 	gl_Position = localPos * modelMatrix * viewMatrix * projectionMatrix;
 //	gl_Position = position * nodeMatrix * modelMatrix * viewMatrix * projectionMatrix;
 

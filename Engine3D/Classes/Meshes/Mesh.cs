@@ -18,6 +18,7 @@ using System.Diagnostics.SymbolStore;
 using Cyotek.Drawing.BitmapFont;
 using System.Runtime.CompilerServices;
 using OpenTK.Windowing.Common;
+using Node = Assimp.Node;
 
 #pragma warning disable CS8600
 #pragma warning disable CS8604
@@ -346,7 +347,6 @@ namespace Engine3D
             GL.UniformMatrix4(uniformAnimLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformAnimLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(uniformAnimLocations["projectionMatrix"], true, ref projectionMatrix);
-            GL.UniformMatrix4(uniformAnimLocations["nodeMatrix"], true, ref model.nodeMatrix);
             GL.Uniform2(uniformAnimLocations["windowSize"], windowSize);
             GL.Uniform3(uniformAnimLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformAnimLocations["useBillboarding"], useBillboarding);
@@ -399,58 +399,18 @@ namespace Engine3D
                 if (currentAnim > animation.DurationInTicks)
                     currentAnim = 0;
 
+                Matrix4 parentTransform = Matrix4.Identity;
+                //Matrix4 parentTransform = AssimpManager.AssimpMatrix4(model.RootNode.Transform);
+                ReadNodeHierarchy(currentAnim, model.RootNode, ref parentTransform , meshId);
 
                 for (int i = 0; i < model.meshes[meshId].boneMatrices.Count; i++)
                 {
                     var boneName = model.meshes[meshId].boneMatrices.Keys.ElementAt(i);
-                    var boneAnim = animation.boneAnimations.FirstOrDefault(b => b.Name == boneName);
 
-                    Matrix4 animMatrix = Matrix4.Identity;
-                    if (boneAnim != null && boneAnim.Transformations.TryGetValue(currentAnim, out animMatrix))
-                    {
-                        //final = model.globalInverseTransform * final * model.meshes[meshId].boneMatrices[boneName];
-
-                        //final = model.meshes[meshId].boneMatrices[boneName];
-                        //final = Matrix4.Identity;
-                        //final = model.meshes[meshId].boneMatrices[boneName];
-                        //final = Matrix4.CreateTranslation(1, 1, 1);
-                        //final.Transpose();
-
-
-                        /*
-                            bone->nodeTransform =  bone->getParentTransform() // This retrieve the transformation one level above in the tree
-                            * bone->transform //bone->transform is the assimp matrix assimp_node->mTransformation
-                            * bone->localTransform;  //this is your T * R matrix
-
-                            bone->finalTransform = inverseGlobal // which is scene->mRootNode->mTransformation from assimp
-                                * bone->nodeTransform  //defined above
-                                * bone->boneOffset;  //which is ai_mesh->mBones[i]->mOffsetMatrix
-                        */
-
-                        ;
-                    }
-                    else
-                    {
-                        // Default to identity if no animation is found
-                        animMatrix = Matrix4.Identity;
-                    }
-
-                    Matrix4 nodeTransform = Matrix4.Identity * model.nodeMatrix * animMatrix;
-                    Matrix4 final = model.rootNodeMatrix * nodeTransform * model.meshes[meshId].boneMatrices[boneName];
-
-                    Matrix4 t = /*Matrix4.Identity **/ model.meshes[meshId].boneMatrices[boneName];
-                    Matrix4 id = Matrix4.Identity;
-                    
-                    foreach(var v in model.meshes[meshId].allVerts)
-                    {
-                        var b = Helper.Round(Vector3.TransformPosition(v, final),2);
-                        
-                        ;
-                    }
+                    Matrix4 final = model.meshes[meshId].boneMatrices[boneName].FinalMatrix;
 
                     // Send to GPU
-                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref id);
-                    //GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref final);
+                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref final);
                 }
 
                 Engine.consoleManager.AddLog(currentAnim.ToString());
@@ -515,7 +475,38 @@ namespace Engine3D
             }
         }
 
+        public void ReadNodeHierarchy(int currentAnim, Node aiNode, ref Matrix4 parentTransform, int meshId)
+        {
+            string nodeName = aiNode.Name;
 
+            Matrix4 NodeTransformation = AssimpManager.AssimpMatrix4(aiNode.Transform);
+
+            if(animation != null)
+            {
+                BoneAnimation? boneAnim = animation.boneAnimations.Where(x => x.Name == nodeName).FirstOrDefault();
+                if (boneAnim != null)
+                {
+
+                    NodeTransformation = boneAnim.Transformations[currentAnim];
+                }
+                else
+                    ;
+            }
+            //Also reversed.
+            Matrix4 GlobalTransformation = NodeTransformation * parentTransform;
+
+            //GlobalTransformation = OpenTK.Matrix4.Identity;
+            if (model.meshes[meshId].boneMatrices.ContainsKey(nodeName))
+            {
+                model.meshes[meshId].boneMatrices[nodeName].FinalMatrix = model.meshes[meshId].boneMatrices[nodeName].OffsetMatrix *
+                                                                          GlobalTransformation * model.GlobalInverseTransform;
+            }
+
+            for (int i = 0; i < aiNode.ChildCount; i++)
+            {
+                ReadNodeHierarchy(currentAnim, aiNode.Children[i], ref GlobalTransformation, meshId);
+            }
+        }
 
         public void SendUniformsOnlyPos(Shader shader)
         {

@@ -30,7 +30,7 @@ namespace Engine3D
 
         public List<List<uint>> groupedIndices = new List<List<uint>>();
 
-        public Dictionary<string, Matrix4> boneMatrices = new Dictionary<string, Matrix4>();
+        public Dictionary<string, Bone> boneMatrices = new Dictionary<string, Bone>();
 
         public MeshData() { }
 
@@ -73,9 +73,8 @@ namespace Engine3D
     public class ModelData
     {
         public List<MeshData> meshes = new List<MeshData>();
-        public Matrix4 rootNodeMatrix = Matrix4.Identity;
-        public Matrix4 nodeMatrix = Matrix4.Identity;
-        public Matrix4 nodeParentMatrix = Matrix4.Identity;
+        public Matrix4 GlobalInverseTransform = Matrix4.Identity;
+        public Node RootNode;
 
         public ModelData() { }
     }

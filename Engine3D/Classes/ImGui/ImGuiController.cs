@@ -1839,7 +1839,7 @@ namespace Engine3D
 
                                         columnI++;
                                     }
-                                    else
+                                    else if(currentTextureAssetFolder.assets.Count > i - folderCount)
                                     {
                                         if (columnI % columns != 0)
                                         {

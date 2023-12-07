@@ -564,7 +564,7 @@ namespace Engine3D
             //_meshObjects.Add(o2);
 
             Object o2 = new Object(ObjectType.Cube, ref physx);
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cubeB.fbx",  windowSize, ref camera, ref o2));
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cubeB.fbx", windowSize, ref camera, ref o2));
             ((Mesh)o2.GetMesh()).animation = assimpManager.animations[0];
             ((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
             objects.Add(o2);
