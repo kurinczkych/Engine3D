@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Assimp;
@@ -162,8 +163,7 @@ namespace Engine3D
             foreach (var anim in model.Animations)
                 AddAnimation(anim);
 
-            modelData.RootNode = model.RootNode;
-            modelData.GlobalInverseTransform = AssimpMatrix4(model.RootNode.Transform).Inverted();
+
 
             foreach (var mesh in model.Meshes)
             {
@@ -364,18 +364,22 @@ namespace Engine3D
 
         public static Matrix4 AssimpMatrix4(Assimp.Matrix4x4 m)
         {
-            Matrix4 matrix4 = new Matrix4();
-            for (int x = 0; x < 4; x++)
-            {
-                for (int y = 0; y < 4; y++)
-                {
-                    matrix4[x, y] = m[x, y];
-                }
-            }
-            matrix4.Transpose();
-            return matrix4;
-        }
+            Matrix4 to = new Matrix4();
+            //for (int x = 0; x < 4; x++)
+            //{
+            //    for (int y = 0; y < 4; y++)
+            //    {
+            //        matrix4[x, y] = m[x, y];
+            //    }
+            //}
+            //matrix4.Transpose();
 
+            to[0,0] = m.A1; to[0,1] = m.B1; to[0,2] = m.C1; to[0,3] = m.D1;
+            to[1,0] = m.A2; to[1,1] = m.B2; to[1,2] = m.C2; to[1,3] = m.D2;
+            to[2,0] = m.A3; to[2,1] = m.B3; to[2,2] = m.C3; to[2,3] = m.D3;
+            to[3,0] = m.A4; to[3,1] = m.B4; to[3,2] = m.C4; to[3,3] = m.D4;
+            return to;
+        }
         public static OpenTK.Mathematics.Quaternion AssimpQuaternion(Assimp.Quaternion quat)
         {
             return new OpenTK.Mathematics.Quaternion(quat.X, quat.Y, quat.Z, quat.W);

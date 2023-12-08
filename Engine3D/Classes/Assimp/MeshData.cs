@@ -69,13 +69,4 @@ namespace Engine3D
             }
         }
     }
-
-    public class ModelData
-    {
-        public List<MeshData> meshes = new List<MeshData>();
-        public Matrix4 GlobalInverseTransform = Matrix4.Identity;
-        public Node RootNode;
-
-        public ModelData() { }
-    }
 }
