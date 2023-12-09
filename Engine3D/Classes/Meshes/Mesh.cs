@@ -399,112 +399,60 @@ namespace Engine3D
                 if (currentAnim > animation.DurationInTicks)
                     currentAnim = 0;
 
-                Matrix4 parentTransform = Matrix4.Identity;
-                //Matrix4 parentTransform = AssimpManager.AssimpMatrix4(model.RootNode.Transform);
-                ReadNodeHierarchy(currentAnim, model.RootNode, ref parentTransform , meshId);
-
-                for (int i = 0; i < model.meshes[meshId].boneMatrices.Count; i++)
+                for (int i = 0; i < animation.boneAnimations.Count; i++)
                 {
-                    var boneName = model.meshes[meshId].boneMatrices.Keys.ElementAt(i);
+                    BoneAnimation boneAnim = animation.boneAnimations[i];
+                    Bone bone = model.skeleton.GetBone(boneAnim.Name);
 
-                    Matrix4 final = model.meshes[meshId].boneMatrices[boneName].FinalMatrix;
+                    if(bone == null || bone.BoneIndex == -1)
+                    {
+                        ;
+                        continue;
+                    }
 
-                    // Send to GPU
-                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref final);
+                    Matrix4 boneMatrix = model.animationMatrices[bone.BoneIndex];
+                    //Matrix4 final = boneAnim.Transformations[currentAnim].Inverted() * boneMatrix;
+                    Matrix4 final = boneMatrix;
+
+                    for (int j = 0; j < model.meshes[meshId].allVerts.Count; j++)
+                    {
+                        var a = model.meshes[meshId].allVerts[j];
+                        var b = Vector3.TransformPosition(a, final);
+                        ;
+                    }
+
+
+                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + bone.BoneIndex, true, ref final);
                 }
 
-                Engine.consoleManager.AddLog(currentAnim.ToString());
-
-
-
-
-
-
-
-                //////Matrix4 boneMatrix = Matrix4.Identity;
-                ////////if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[0].Name))
-                ////////boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[0].Name];
-
-                ////////GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref boneMatrix);
-
-                //////var asd = model.meshes[meshId].uniqueVertices;
-                //////var asd2 = animation.boneAnimations[2].Transformations[currentAnim];
-
-                //////if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[2].Name))
-                //////    boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[2].Name];
-
-                //////var final = Matrix4.Identity;
-                //////final = asd2 * boneMatrix;
-
-                //////GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 0, true, ref final);
-
-                //////Engine.consoleManager.AddLog(currentAnim.ToString());
-
-                //if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[2].Name))
-                //    boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[2].Name];
-
-                //GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + 1, true, ref boneMatrix);
-
-                //int i = 0;
-                //int j = 0;
-                //while (i < animation.boneAnimations.Count)
+                //for (int i = 0; i < model.meshes[meshId].boneMatrices.Count; i++)
                 //{
-                //    if (model.meshes[meshId].boneMatrices.ContainsKey(animation.boneAnimations[i].Name))
-                //    {
-                //        Matrix4 boneMatrix = Matrix4.Identity;
-                //        boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[i].Name];
-                //        //* animation.boneAnimations[i].Transformations[currentAnim];
+                //    Bone bone = model.meshes[meshId].boneMatrices
+                //    var boneName = model.meshes[meshId].boneMatrices.Keys.ElementAt(i);
 
-                //        //boneMatrix = model.meshes[meshId].boneMatrices[animation.boneAnimations[i].Name] + animation.boneAnimations[i].Transformations[currentAnim];
 
-                //        GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + j, true, ref boneMatrix);
-                //        j++;
-                //    }
 
-                //    i++;
+                //    Matrix4 final = model.meshes[meshId].boneMatrices[boneName].FinalMatrix;
+
+                //    // Send to GPU
+                //    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref final);
                 //}
+
+
+
+                //Engine.consoleManager.AddLog(currentAnim.ToString());
+
+
             }
             else
             {
-                for (int i = 0; i < model.meshes[meshId].boneMatrices.Count; i++)
+
+                for (int i = 0; i < model.animationMatrices.Count; i++)
                 {
                     Matrix4 boneMatrix = Matrix4.Identity;
 
                     GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + i, true, ref boneMatrix);
                 }
-            }
-        }
-
-        public void ReadNodeHierarchy(int currentAnim, Node aiNode, ref Matrix4 parentTransform, int meshId)
-        {
-            string nodeName = aiNode.Name;
-
-            Matrix4 NodeTransformation = AssimpManager.AssimpMatrix4(aiNode.Transform);
-
-            if(animation != null)
-            {
-                BoneAnimation? boneAnim = animation.boneAnimations.Where(x => x.Name == nodeName).FirstOrDefault();
-                if (boneAnim != null)
-                {
-
-                    NodeTransformation = boneAnim.Transformations[currentAnim];
-                }
-                else
-                    ;
-            }
-            //Also reversed.
-            Matrix4 GlobalTransformation = NodeTransformation * parentTransform;
-
-            //GlobalTransformation = OpenTK.Matrix4.Identity;
-            if (model.meshes[meshId].boneMatrices.ContainsKey(nodeName))
-            {
-                model.meshes[meshId].boneMatrices[nodeName].FinalMatrix = model.meshes[meshId].boneMatrices[nodeName].OffsetMatrix *
-                                                                          GlobalTransformation * model.GlobalInverseTransform;
-            }
-
-            for (int i = 0; i < aiNode.ChildCount; i++)
-            {
-                ReadNodeHierarchy(currentAnim, aiNode.Children[i], ref GlobalTransformation, meshId);
             }
         }
 

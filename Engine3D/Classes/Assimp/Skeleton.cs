@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,7 +20,7 @@ namespace Engine3D
             RootBone = new Bone();
         }
 
-        public void UpdateSkeleton(Bone? bone)
+        public void UpdateSkeleton(Bone? bone = null)
         {
             if (NumOfBones == 0) return;
 
@@ -74,19 +75,34 @@ namespace Engine3D
             string boneName = node.Name;
 
             if (bone == null)
+            {
                 bone = RootBone;
+            }
+            bone.Name = boneName;
+
+            bone.Children = BoneListResize(bone.Children, node.ChildCount);
 
             if(BoneMapping.ContainsKey(boneName))
             {
-                bone.Name = boneName;
                 hasBone = true;
             }
 
             for (int i = 0; i < node.ChildCount; i++)
             {
-                bone.Children[i].Parent = bone;
+                //bool importRes = false;
+                //if(hasBone)
+                //{
+                //    bone.Children.Add(new Bone() { Name = node.Children[i].Name, Parent = bone });
+                //    importRes = ImportSkeletonBone(node.Children[i], bone.Children[i]);
+                //}
+                //else
+                //{
+                //    importRes = ImportSkeletonBone(node.Children[i], bone.Children[i]);
+                //}
 
+                bone.Children[i].Parent = bone;
                 bool importRes = ImportSkeletonBone(node.Children[i], bone.Children[i]);
+
                 if (importRes)
                     hasUsefulChild = true;
             }
@@ -94,6 +110,9 @@ namespace Engine3D
             if(hasUsefulChild || hasBone)
             {
                 string nodeName = boneName;
+
+                if (hasUsefulChild && !hasBone)
+                    return true;
 
                 bone.BoneOffset = BoneMapping[bone.Name].Offset;
                 bone.BoneIndex = BoneMapping[bone.Name].Index;
@@ -105,6 +124,21 @@ namespace Engine3D
             }
 
             return false;
+        }
+
+        private List<Bone> BoneListResize(List<Bone> list, int addCount)
+        {
+            List<Bone> a = new List<Bone>();
+            int listCount = list==null?0:list.Count;
+            for (int i = 0; i < listCount; i++)
+            {
+                a.Add(list[i]);
+            }
+            for (int i = 0; i < addCount; i++)
+            {
+                a.Add(new Bone());
+            }
+            return a;
         }
 
         public int GetNumberOfBones()
@@ -160,7 +194,7 @@ namespace Engine3D
             for (int i = 0; i < boneToFind.Children.Count; i++)
             {
                 Bone? child = GetBone(nodeName, boneToFind.Children[i]);
-                if (child == null)
+                if (child != null)
                     return child;
             }
 

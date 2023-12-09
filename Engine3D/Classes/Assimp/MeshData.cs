@@ -30,8 +30,6 @@ namespace Engine3D
 
         public List<List<uint>> groupedIndices = new List<List<uint>>();
 
-        public Dictionary<string, Bone> boneMatrices = new Dictionary<string, Bone>();
-
         public MeshData() { }
 
         public void CalculateGroupedIndices()

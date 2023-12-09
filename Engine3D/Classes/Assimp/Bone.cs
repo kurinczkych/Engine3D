@@ -25,6 +25,15 @@ namespace Engine3D
         public Matrix4 GlobalTransform = Matrix4.Identity;
         public Matrix4 FinalTransform = Matrix4.Identity;
         public Matrix4 LocalTransform = Matrix4.Identity;
+        public Matrix4 ParentTransform
+        {
+            get
+            {
+                if (Parent != null)
+                    return Parent.GlobalTransform;
+                return Matrix4.Identity;
+            }
+        }
 
         public Matrix4 GetGlobalTransform()
         {
@@ -40,16 +49,6 @@ namespace Engine3D
         {
             Matrix4 m = model * FinalTransform * BoneOffset.Inverted();
             return m.ExtractTranslation();
-        }
-
-        public Matrix4 ParentTransform
-        {
-            get
-            {
-                if (Parent != null)
-                    return Parent.GlobalTransform;
-                return Matrix4.Identity;
-            }
         }
     }
 }
