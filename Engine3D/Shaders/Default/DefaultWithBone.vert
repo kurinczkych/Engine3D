@@ -21,7 +21,6 @@ uniform vec2 windowSize;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-uniform mat4 nodeMatrix;
 
 uniform int useNormal;
 uniform int useHeight;
@@ -34,37 +33,21 @@ uniform int useAnimation;
 void main()
 {
 	vec4 position = vec4(inPosition,1.0);
-//
-//	mat4 boneMatrix = mat4(0.0);
-//	for(int i = 0; i < int(boneCount); i++)
-//	{
-//		boneMatrix += boneMatrices[int(boneIDs[i])] * weights[i];
-//	}
-//	gl_Position = boneMatrix * position * modelMatrix * viewMatrix * projectionMatrix;
-
-//	vec4 localPos = vec4(0.0);
-//	mat4 boneTransform = boneMatrices[int(boneIDs[0])];
-//	vec4 posePosition = boneTransform * position;
-//	localPos += posePosition * weights[0];
+	vec4 localNormal = vec4(0.0);
 
 	vec4 localPos = vec4(0.0);
 	for(int i = 0; i < int(boneCount); i++) {
 		mat4 boneTransform = boneMatrices[int(boneIDs[i])];
+
 		vec4 posePosition = boneTransform * position;
 		localPos += posePosition * weights[i];
-		// todo: need to apply the bone transformation 
-		// to normal as well
+		
+		mat3 normalMatrix = mat3(boneTransform); // Extract the upper-left 3x3 part of the matrix
+        vec4 poseNormal = vec4(normalMatrix * inNormal, 0.0);
+        localNormal += poseNormal * weights[i];
     }
 	gl_Position = localPos * modelMatrix * viewMatrix * projectionMatrix;
-//	gl_Position = position * nodeMatrix * modelMatrix * viewMatrix * projectionMatrix;
-
-//    mat4 BoneTransform = boneMatrices[int(boneIDs[0])] * weights[0];
-//    BoneTransform +=	 boneMatrices[int(boneIDs[1])] * weights[1];
-//    BoneTransform +=	 boneMatrices[int(boneIDs[2])] * weights[2];
-//    BoneTransform +=	 boneMatrices[int(boneIDs[3])] * weights[3];
-//
-//	vec4 PosL = BoneTransform * position;
-//	gl_Position = PosL * modelMatrix * viewMatrix * projectionMatrix;
+	vec3 transformedNormal = normalize(localNormal.xyz);
 
 	vec4 fragPos4 = position * modelMatrix;
 
@@ -94,7 +77,7 @@ void main()
 
 	gsFragPos = vec3(fragPos4.x,fragPos4.y, fragPos4.z);
 	gsFragTexCoord = inUV;
-	gsFragNormal = inNormal * rotationMatrix;
+	gsFragNormal = transformedNormal * rotationMatrix;
 	gsFragColor = inColor;
 
 	//normal
@@ -103,7 +86,7 @@ void main()
 	vec3 N = vec3(0,0,0);
 	if(useNormal == 1)
 	{
-		N = normalize(mat3(modelMatrix) * inNormal);
+		N = normalize(mat3(modelMatrix) * transformedNormal);
 		T = normalize(mat3(modelMatrix) * inTangent);
 		T = normalize(T - dot(T, N) * N);
 		B = cross(N, T); 

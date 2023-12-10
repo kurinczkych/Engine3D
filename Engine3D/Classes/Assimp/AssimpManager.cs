@@ -140,7 +140,7 @@ namespace Engine3D
                         }
                     }
 
-                    animation.boneAnimations.Add(nodeAnimation);
+                    animation.boneAnimations.Add(nodeAnimation.Name, nodeAnimation);
                 }
             }
             animations.Add(animation);

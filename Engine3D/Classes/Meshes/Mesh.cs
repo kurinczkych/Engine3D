@@ -399,9 +399,12 @@ namespace Engine3D
                 if (currentAnim > animation.DurationInTicks)
                     currentAnim = 0;
 
+                model.skeleton.UpdateSkeleton();
+                model.skeleton.UpdateAnimationMatrix(ref model.animationMatrices);
+
                 for (int i = 0; i < animation.boneAnimations.Count; i++)
                 {
-                    BoneAnimation boneAnim = animation.boneAnimations[i];
+                    BoneAnimation boneAnim = animation.boneAnimations[animation.boneAnimations.Keys.ElementAt(i)];
                     Bone bone = model.skeleton.GetBone(boneAnim.Name);
 
                     if(bone == null || bone.BoneIndex == -1)
@@ -411,16 +414,8 @@ namespace Engine3D
                     }
 
                     Matrix4 boneMatrix = model.animationMatrices[bone.BoneIndex];
-                    //Matrix4 final = boneAnim.Transformations[currentAnim].Inverted() * boneMatrix;
-                    Matrix4 final = boneMatrix;
-
-                    for (int j = 0; j < model.meshes[meshId].allVerts.Count; j++)
-                    {
-                        var a = model.meshes[meshId].allVerts[j];
-                        var b = Vector3.TransformPosition(a, final);
-                        ;
-                    }
-
+                    Matrix4 final = Matrix4.Transpose(boneAnim.Transformations[currentAnim]) * boneMatrix;
+                    //Matrix4 final = boneMatrix;
 
                     GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + bone.BoneIndex, true, ref final);
                 }

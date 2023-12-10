@@ -39,6 +39,6 @@ namespace Engine3D
     {
         public double DurationInTicks;
         public double TicksPerSecond;
-        public List<BoneAnimation> boneAnimations = new List<BoneAnimation>();
+        public Dictionary<string, BoneAnimation> boneAnimations = new Dictionary<string, BoneAnimation>();
     }
 }
