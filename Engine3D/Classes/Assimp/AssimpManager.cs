@@ -223,6 +223,7 @@ namespace Engine3D
                     if (!modelData.skeleton.BoneMapping.ContainsKey(boneName))
                     {
                         BoneInfo boneInfo = new BoneInfo();
+                        boneIndex = modelData.boneCount++;
                         boneInfo.Offset = AssimpMatrix4(aiMesh.Bones[i].OffsetMatrix);
                         boneInfo.Index = boneIndex;
                         modelData.skeleton.BoneMapping.Add(boneName, boneInfo);
