@@ -12,7 +12,7 @@ namespace Engine3D
     {
         public List<MeshData> meshes = new List<MeshData>();
         public Skeleton skeleton;
-        public List<Matrix4> animationMatrices = new List<Matrix4>();
+        public List<Matrix4> boneMatrices = new List<Matrix4>();
         public int boneCount = 0;
 
         public ModelData() { }

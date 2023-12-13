@@ -151,17 +151,17 @@ namespace Engine3D
             return NumOfBones;
         }
 
-        public void UpdateAnimationMatrix(ref List<Matrix4> animMatrices, Bone? bone = null)
+        public void UpdateBoneMatrices(ref List<Matrix4> boneMatrices, Bone? bone = null)
         {
             if(bone == null)
                 bone = RootBone;
 
             if (bone.BoneIndex >= 0)
-                animMatrices[bone.BoneIndex] = bone.FinalTransform;
+                boneMatrices[bone.BoneIndex] = bone.FinalTransform;
 
             for (int i = 0; i < bone.Children.Count; i++)
             {
-                UpdateAnimationMatrix(ref animMatrices, bone.Children[i]);
+                UpdateBoneMatrices(ref boneMatrices, bone.Children[i]);
             }
         }
 

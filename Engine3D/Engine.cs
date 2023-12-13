@@ -564,10 +564,10 @@ namespace Engine3D
             //_meshObjects.Add(o2);
 
             Object o2 = new Object(ObjectType.Cube, ref physx);
-            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "rotating.fbx", windowSize, ref camera, ref o2));
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "rotating.fbx", windowSize, ref camera, ref o2));
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "rotatingSingle.fbx", windowSize, ref camera, ref o2));
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "bob.fbx", windowSize, ref camera, ref o2));
-            ((Mesh)o2.GetMesh()).animation = assimpManager.animations[0];
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "bob.fbx", windowSize, ref camera, ref o2));
+            ((Mesh)o2.GetMesh()).animation = assimpManager.animations.First().Value;
             ((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
             objects.Add(o2);
             _meshObjects.Add(o2);
