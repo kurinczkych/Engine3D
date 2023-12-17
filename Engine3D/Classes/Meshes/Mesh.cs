@@ -400,7 +400,8 @@ namespace Engine3D
                         continue;
                     }
 
-                    Matrix4 boneMatrix = model.boneMatrices[bone.BoneIndex];
+                    Matrix4 boneMatrix = bone.FinalTransform;
+                    //Matrix4 boneMatrix = model.boneMatrices[bone.BoneIndex];
                     for (int x = 0; x < 4; x++)
                     {
                         for (int y = 0; y < 4; y++)
@@ -418,7 +419,8 @@ namespace Engine3D
                     //Matrix4 final = boneMatrix * Matrix4.Transpose(boneAnim.Transformations[currentAnim]);
                     //Matrix4 final = boneAnim.Transformations[currentAnim] * boneMatrix;
                     //Matrix4 final = boneMatrix;
-                    Matrix4 final = boneMatrix * animMatrix;
+                    //Matrix4 final = boneMatrix * animMatrix;
+                    Matrix4 final = animMatrix * boneMatrix;
                     //var a1 = animMatrix.ExtractRotation();
                     //var a2 = animMatrix.ExtractTranslation();
                     //var a3 = animMatrix.ExtractScale();
@@ -428,10 +430,11 @@ namespace Engine3D
                     //Engine.consoleManager.AddLog(b1);
                     //Engine.consoleManager.AddLog(b2);
                     //Engine.consoleManager.AddLog(b3);
+                    //Engine.consoleManager.AddLog(animation.GetLocalTimer().ToString());
                     //Matrix4 final = Matrix4.Transpose(boneMatrix);
                     //Matrix4 final = Matrix4.Identity;
-                    if (boneName != "Bone.001")
-                        final = Matrix4.Identity;
+                    //if (boneName != "Bone.001")
+                    //    final = Matrix4.Identity;
 
                     GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + bone.BoneIndex, true, ref final);
                 }

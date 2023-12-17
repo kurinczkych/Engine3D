@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using Assimp;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,13 +53,19 @@ namespace Engine3D
 
                 if(bone.BoneIndex > -1)
                 {
+                    //bone->finalTransform = bone->parent->finalTransform * local_anim;
+                    //d_animation_matrix[bone_i] = bone->finalTransform * bone_offset; //Change this to match OGL
+
+                    bone.FinalTransform = bone.FinalTransform * localAnim;
+                    Matrix4 final = bone.FinalTransform * bone.BoneOffset;
+
                     //bone.FinalTransform = bone.Parent.FinalTransform * localAnim;
                     //Matrix4 final = bone.FinalTransform * bone.BoneOffset;
 
-                    Matrix4 final = bone.Parent.FinalTransform * localAnim;
-                    final = final * bone.BoneOffset;
+                    //Matrix4 final = bone.Parent.FinalTransform * localAnim;
+                    //final = final * bone.BoneOffset;
 
-                    final = boneT * boneR * bone.BoneOffset;
+                    //final = boneT * boneR * bone.BoneOffset;
                     if (AnimationMatrices.ContainsKey(bone.Name))
                         AnimationMatrices[bone.Name] = final;
                     else
