@@ -1,4 +1,5 @@
-﻿using ImGuiNET;
+﻿using Assimp;
+using ImGuiNET;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common.Input;
@@ -155,6 +156,10 @@ namespace Engine3D
             }
         }
         #endregion
+
+        public int animType = 0;
+        public int animEndType = 0;
+        public int matrixType = 5;
 
         public EditorData()
         {
@@ -2275,6 +2280,47 @@ namespace Engine3D
             else
                 editorData.mouseType = MouseCursor.Default;
             #endregion
+
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(480, 300));
+            if (ImGui.Begin("DebugPanel"))
+            {
+                int sizeX = 10;
+                int sizeY = 20;
+                ImGui.SliderInt("AnimMatrix", ref editorData.animType, 0, 7);
+                ImGui.SameLine();
+                if (ImGui.Button("<1", new System.Numerics.Vector2(sizeX, sizeY)))
+                {
+                    if(editorData.animType > 0) editorData.animType--;
+                }
+                ImGui.SameLine();
+                if (ImGui.Button(">1", new System.Numerics.Vector2(sizeX, sizeY)))
+                {
+                    if(editorData.animType < 7) editorData.animType++;
+                }
+                ImGui.SliderInt("AnimEndMatrix", ref editorData.animEndType, 0, 1);
+                ImGui.SameLine();
+                if (ImGui.Button("<2", new System.Numerics.Vector2(sizeX, sizeY)))
+                {
+                    if (editorData.animEndType == 1) editorData.animEndType--;
+                }
+                ImGui.SameLine();
+                if (ImGui.Button(">2", new System.Numerics.Vector2(sizeX, sizeY)))
+                {
+                    if (editorData.animEndType == 0) editorData.animEndType++;
+                }
+                ImGui.SliderInt("Matrix", ref editorData.matrixType, 0, 7);
+                ImGui.SameLine();
+                if (ImGui.Button("<3", new System.Numerics.Vector2(sizeX, sizeY)))
+                {
+                    if (editorData.matrixType > 0) editorData.matrixType--;
+                }
+                ImGui.SameLine();
+                if (ImGui.Button(">3", new System.Numerics.Vector2(sizeX, sizeY)))
+                {
+                    if (editorData.matrixType < 7) editorData.matrixType++;
+                }
+            }
+
         }
 
         private void DragDropImageSourceUI(ref TextureManager textureManager, string payloadName, string assetName, string payload, System.Numerics.Vector2 size)

@@ -384,60 +384,68 @@ namespace Engine3D
 
             if (animation != null)
             {
-                animation.Update(delta);
-                animation.AnimateKeyFrames(model.skeleton.RootBone, animation.GetLocalTimer());
+                //animation.AnimateKeyFrames(model.skeleton.RootBone, animation.GetLocalTimer());
                 //model.skeleton.UpdateSkeleton();
+                animation.Update(delta);
+                model.skeleton.UpdateSkeleton(animation:animation);
                 //model.skeleton.UpdateBoneMatrices(ref model.boneMatrices);
 
-                for (int i = 0; i < animation.AnimationMatrices.Count; i++)
-                {
-                    string boneName = animation.AnimationMatrices.Keys.ElementAt(i);
-                    Matrix4 animMatrix = animation.AnimationMatrices[boneName];
-                    Bone bone = model.skeleton.GetBone(boneName);
+                List<int> indexes = new List<int>();
+                model.skeleton.SendToGpu(null, ref uniformAnimLocations, ref indexes);
+                string ab = "";
+                foreach(var a in indexes)
+                    ab += a.ToString() + "\n";
+                ;
 
-                    if(bone == null || bone.BoneIndex <= -1)
-                    {
-                        continue;
-                    }
+                //for (int i = 0; i < animation.AnimationMatrices.Count; i++)
+                //{
+                //    string boneName = animation.AnimationMatrices.Keys.ElementAt(i);
+                //    //Matrix4 animMatrix = animation.AnimationMatrices[boneName];
+                //    Bone bone = model.skeleton.GetBone(boneName);
 
-                    Matrix4 boneMatrix = bone.FinalTransform;
-                    //Matrix4 boneMatrix = model.boneMatrices[bone.BoneIndex];
-                    for (int x = 0; x < 4; x++)
-                    {
-                        for (int y = 0; y < 4; y++)
-                        {
-                            boneMatrix[x, y] = (float)Math.Round(boneMatrix[x, y], 5);
-                            animMatrix[x, y] = (float)Math.Round(animMatrix[x, y], 5);
-                            if (boneMatrix[x, y] == -0)
-                                boneMatrix[x, y] = 0;
-                            if (animMatrix[x, y] == -0)
-                                animMatrix[x, y] = 0;
-                        }
-                    }
-                    //Matrix4 final = Matrix4.Transpose(boneAnim.Transformations[currentAnim]) * Matrix4.Transpose(boneMatrix);
-                    //Matrix4 final = Matrix4.Transpose(boneAnim.Transformations[currentAnim]) * boneMatrix;
-                    //Matrix4 final = boneMatrix * Matrix4.Transpose(boneAnim.Transformations[currentAnim]);
-                    //Matrix4 final = boneAnim.Transformations[currentAnim] * boneMatrix;
-                    //Matrix4 final = boneMatrix;
-                    //Matrix4 final = boneMatrix * animMatrix;
-                    Matrix4 final = animMatrix * boneMatrix;
-                    //var a1 = animMatrix.ExtractRotation();
-                    //var a2 = animMatrix.ExtractTranslation();
-                    //var a3 = animMatrix.ExtractScale();
-                    //string b1 = boneName + ": " + a1.W.ToString() + " " + a1.X.ToString() + " " + a1.Y.ToString() + " " + a1.Z.ToString();
-                    //string b2 = boneName + ": " + a2.X.ToString() + " " + a2.Y.ToString() + " " + a2.Z.ToString();
-                    //string b3 = boneName + ": " + a3.X.ToString() + " " + a3.Y.ToString() + " " + a3.Z.ToString();
-                    //Engine.consoleManager.AddLog(b1);
-                    //Engine.consoleManager.AddLog(b2);
-                    //Engine.consoleManager.AddLog(b3);
-                    //Engine.consoleManager.AddLog(animation.GetLocalTimer().ToString());
-                    //Matrix4 final = Matrix4.Transpose(boneMatrix);
-                    //Matrix4 final = Matrix4.Identity;
-                    //if (boneName != "Bone.001")
-                    //    final = Matrix4.Identity;
+                //    if(bone == null || bone.BoneIndex <= -1)
+                //    {
+                //        continue;
+                //    }
 
-                    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + bone.BoneIndex, true, ref final);
-                }
+                //    Matrix4 boneMatrix = bone.FinalTransform;
+                //    //Matrix4 boneMatrix = model.boneMatrices[bone.BoneIndex];
+                //    //for (int x = 0; x < 4; x++)
+                //    //{
+                //    //    for (int y = 0; y < 4; y++)
+                //    //    {
+                //    //        boneMatrix[x, y] = (float)Math.Round(boneMatrix[x, y], 5);
+                //    //        animMatrix[x, y] = (float)Math.Round(animMatrix[x, y], 5);
+                //    //        if (boneMatrix[x, y] == -0)
+                //    //            boneMatrix[x, y] = 0;
+                //    //        if (animMatrix[x, y] == -0)
+                //    //            animMatrix[x, y] = 0;
+                //    //    }
+                //    //}
+                //    //Matrix4 final = Matrix4.Transpose(boneAnim.Transformations[currentAnim]) * Matrix4.Transpose(boneMatrix);
+                //    //Matrix4 final = Matrix4.Transpose(boneAnim.Transformations[currentAnim]) * boneMatrix;
+                //    //Matrix4 final = boneMatrix * Matrix4.Transpose(boneAnim.Transformations[currentAnim]);
+                //    //Matrix4 final = boneAnim.Transformations[currentAnim] * boneMatrix;
+                //    Matrix4 final = boneMatrix;
+                //    //Matrix4 final = boneMatrix * animMatrix;
+                //    //Matrix4 final = animMatrix * boneMatrix;
+                //    //var a1 = animMatrix.ExtractRotation();
+                //    //var a2 = animMatrix.ExtractTranslation();
+                //    //var a3 = animMatrix.ExtractScale();
+                //    //string b1 = boneName + ": " + a1.W.ToString() + " " + a1.X.ToString() + " " + a1.Y.ToString() + " " + a1.Z.ToString();
+                //    //string b2 = boneName + ": " + a2.X.ToString() + " " + a2.Y.ToString() + " " + a2.Z.ToString();
+                //    //string b3 = boneName + ": " + a3.X.ToString() + " " + a3.Y.ToString() + " " + a3.Z.ToString();
+                //    //Engine.consoleManager.AddLog(b1);
+                //    //Engine.consoleManager.AddLog(b2);
+                //    //Engine.consoleManager.AddLog(b3);
+                //    //Engine.consoleManager.AddLog(animation.GetLocalTimer().ToString());
+                //    //Matrix4 final = Matrix4.Transpose(boneMatrix);
+                //    //Matrix4 final = Matrix4.Identity;
+                //    //if (boneName != "Bone.001")
+                //    //    final = Matrix4.Identity;
+
+                //    GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + bone.BoneIndex, true, ref final);
+                //}
 
                 //for (int i = 0; i < model.meshes[meshId].boneMatrices.Count; i++)
                 //{
@@ -460,6 +468,7 @@ namespace Engine3D
             }
             else
             {
+                throw new NotImplementedException();
 
                 //for (int i = 0; i < model.animationMatrices.Count; i++)
                 //{

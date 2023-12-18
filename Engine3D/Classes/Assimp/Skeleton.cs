@@ -1,8 +1,13 @@
-﻿using OpenTK.Mathematics;
+﻿using Assimp;
+using Assimp.Unmanaged;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,19 +25,78 @@ namespace Engine3D
             RootBone = new Bone();
         }
 
-        public void UpdateSkeleton(Bone? bone = null)
+        public void UpdateSkeleton(Bone? bone = null, AnimationClip? animation = null)
         {
             if (NumOfBones == 0) return;
 
             if (bone == null)
                 bone = RootBone;
 
-            bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
-            bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+            Matrix4 animMatrix = Matrix4.Identity;
+            if(animation != null)
+                animMatrix = animation.GetAnimMatrixForBone(bone, animation.GetLocalTimer());
+
+            switch (Engine.editorData.matrixType)
+            {
+                case (0):
+                    bone.GlobalTransform = animMatrix * bone.ParentTransform * bone.Transform * bone.LocalTransform;
+                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+                    break;
+                case (1):
+                    bone.GlobalTransform = bone.ParentTransform * animMatrix * bone.Transform * bone.LocalTransform;
+                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+                    break;
+                case (2):
+                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * animMatrix * bone.LocalTransform;
+                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+                    break;
+                case (3):
+                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform * animMatrix;
+                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+                    break;
+                case (4):
+                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset * animMatrix;
+                    break;
+                case (5):
+                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * animMatrix * bone.BoneOffset;
+                    break;
+                case (6):
+                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+                    bone.FinalTransform = InverseGlobal * animMatrix * bone.GlobalTransform * bone.BoneOffset;
+                    break;
+                case (7):
+                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+                    bone.FinalTransform = animMatrix * InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+                    break;
+            }
+
+            //bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+            //bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
 
             for (int i = 0; i < bone.Children.Count; i++)
             {
-                UpdateSkeleton(bone.Children[i]);
+                UpdateSkeleton(bone.Children[i], animation);
+            }
+        }
+
+        public void SendToGpu(Bone? bone, ref Dictionary<string, int> uniformAnimLocations, ref List<int> indexes)
+        {
+            if (bone == null)
+                bone = RootBone;
+
+            if (bone.BoneIndex > -1)
+            {
+                Matrix4 final = bone.FinalTransform;
+
+                indexes.Add(bone.BoneIndex);
+                GL.UniformMatrix4(uniformAnimLocations["boneMatrices"] + bone.BoneIndex, true, ref final);
+            }
+
+            for (int i = 0; i < bone.Children.Count; i++)
+            {
+                SendToGpu(bone.Children[i], ref uniformAnimLocations, ref indexes);
             }
         }
 

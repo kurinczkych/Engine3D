@@ -105,7 +105,7 @@ namespace Engine3D
             }
 
             var scene = context.ImportFile("Assets\\" + FileType.Models.ToString() + "\\" + relativeModelPath, 
-                PostProcessSteps.LimitBoneWeights | PostProcessSteps.Triangulate /*| PostProcessSteps.JoinIdenticalVertices*/ );
+                /*PostProcessSteps.LimitBoneWeights |*/ PostProcessSteps.Triangulate /*| PostProcessSteps.JoinIdenticalVertices*/ );
 
             foreach (var anim in scene.Animations)
                 AddAnimation(anim);
@@ -182,10 +182,10 @@ namespace Engine3D
                     {
                         if (boneDict.ContainsKey(vw.VertexID))
                         {
-                            boneDict[vw.VertexID].Add((i, vw.Weight));
+                            boneDict[vw.VertexID].Add((boneIndex, vw.Weight));
                         }
                         else
-                            boneDict.Add(vw.VertexID, new List<(int, float)>() { (i, vw.Weight) });
+                            boneDict.Add(vw.VertexID, new List<(int, float)>() { (boneIndex, vw.Weight) });
                     }
                 }
             }
@@ -245,6 +245,12 @@ namespace Engine3D
                     }
                     v1.boneIDs = boneDict[face.Indices[0]].Select(x => x.Item1).ToList();
                     v1.boneWeights = boneDict[face.Indices[0]].Select(x => x.Item2).ToList();
+                    float sum = 0;
+                    for (int j = 0; j < v1.boneCount; j++)
+                        sum += v1.boneWeights[j];
+
+                    for (int j = 0; j < v1.boneCount; j++)
+                        v1.boneWeights[j] /= sum;
                 }
                 else
                 {
@@ -266,6 +272,12 @@ namespace Engine3D
                     }
                     v2.boneIDs = boneDict[face.Indices[1]].Select(x => x.Item1).ToList();
                     v2.boneWeights = boneDict[face.Indices[1]].Select(x => x.Item2).ToList();
+                    float sum = 0;
+                    for (int j = 0; j < v2.boneCount; j++)
+                        sum += v2.boneWeights[j];
+
+                    for (int j = 0; j < v2.boneCount; j++)
+                        v2.boneWeights[j] /= sum;
                 }
                 else
                 {
@@ -287,6 +299,12 @@ namespace Engine3D
                     }
                     v3.boneIDs = boneDict[face.Indices[2]].Select(x => x.Item1).ToList();
                     v3.boneWeights = boneDict[face.Indices[2]].Select(x => x.Item2).ToList();
+                    float sum = 0;
+                    for (int j = 0; j < v3.boneCount; j++)
+                        sum += v3.boneWeights[j];
+
+                    for (int j = 0; j < v3.boneCount; j++)
+                        v3.boneWeights[j] /= sum;
                 }
                 else
                 {

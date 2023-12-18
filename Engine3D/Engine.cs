@@ -138,7 +138,7 @@ namespace Engine3D
         #endregion
 
         #region UI variables
-        private EditorData editorData;
+        public static EditorData editorData;
         private ImGuiController imGuiController;
         #endregion
 
@@ -536,7 +536,7 @@ namespace Engine3D
 
             onlyPosShaderProgram.Use();
 
-            Vector3 characterPos = new Vector3(-5, 0, 0);
+            Vector3 characterPos = new Vector3(-5, -5, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
             //character.camera.SetYaw(358);
             //character.camera.SetPitch(-4.23f);

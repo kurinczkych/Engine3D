@@ -79,6 +79,69 @@ namespace Engine3D
             }
         }
 
+        public Matrix4 GetAnimMatrixForBone(Bone bone, double animTime)
+        {
+            AnimationPose? animPose = GetAnimationPose(bone.Name);
+
+            if (animPose != null)
+            {
+                Matrix4 localAnim = Matrix4.Identity;
+                Matrix4 boneT;
+                Matrix4 boneR;
+
+                if (animPose.AlreadyInterpolated)
+                {
+                    var trans = animPose.GetTranslationKeyFrame(animPose.FindTranslationKeyFrame(animTime)).Translation;
+                    boneT = Matrix4.CreateTranslation(trans);
+                    var rot = animPose.GetRotationKeyFrame(animPose.FindRotationKeyFrame(animTime)).Rotation;
+                    boneR = Matrix4.CreateFromQuaternion(rot);
+                }
+                else
+                {
+                    var trans = animPose.GetInterpolatedTranslationKeyFrame(animTime);
+                    boneT = Matrix4.CreateTranslation(trans);
+                    var rot = animPose.GetInterpolatedRotationKeyFrame(animTime);
+                    boneR = Matrix4.CreateFromQuaternion(rot);
+                    animPose.AlreadyInterpolated = true;
+                }
+
+                switch(Engine.editorData.animType)
+                {
+                    case (0):
+                        localAnim = boneR * boneT;
+                        break;
+                    case (1):
+                        localAnim = boneT * boneR;
+                        break;
+                    case (2):
+                        localAnim = Matrix4.Transpose(boneR) * Matrix4.Transpose(boneT);
+                        break;
+                    case (3):
+                        localAnim = Matrix4.Transpose(boneT) * Matrix4.Transpose(boneR);
+                        break;
+                    case (4):
+                        localAnim = Matrix4.Transpose(boneR) * boneT;
+                        break;
+                    case (5):
+                        localAnim = boneT * Matrix4.Transpose(boneR);
+                        break;
+                    case (6):
+                        localAnim = boneR * Matrix4.Transpose(boneT);
+                        break;
+                    case (7):
+                        localAnim = Matrix4.Transpose(boneT) * boneR;
+                        break;
+                }
+
+                if(Engine.editorData.animEndType == 0)
+                    return Matrix4.Transpose(localAnim);
+                else
+                    return localAnim;
+            }
+
+            return Matrix4.Identity;
+        }
+
         public AnimationPose? GetAnimationPose(string boneName)
         {
             if(BoneMapping.ContainsKey(boneName))
