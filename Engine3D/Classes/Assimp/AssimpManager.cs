@@ -372,7 +372,9 @@ namespace Engine3D
 
         private (Vector3, Vec2d, Vector3) AssimpGetElement(int index, Assimp.Mesh mesh)
         {
-            return (AssimpVector3(mesh.Vertices[index]), AssimpVec2d(mesh.TextureCoordinateChannels.First()[index]), AssimpVector3(mesh.Normals[index]));
+            return (AssimpVector3(mesh.Vertices[index]), 
+                    AssimpVec2d(mesh.TextureCoordinateChannels.First().Count > 0 ? mesh.TextureCoordinateChannels.First()[index] : new Vector3D(0,0,0)), 
+                    AssimpVector3(mesh.Normals[index]));
         }
 
         public static Vector3 AssimpVector3(Vector3D v)

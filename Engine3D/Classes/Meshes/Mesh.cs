@@ -600,7 +600,8 @@ namespace Engine3D
             vao_.Bind();
             shader.Use();
 
-            for(int i = 0; i < model.meshes.Count; i++)
+            //for(int i = 0; i < model.meshes.Count; i++)
+            for(int i = 0; i < 1; i++)
             {
                 MeshData mesh = model.meshes[i];
                 SendAnimationUniforms(i, delta, shader);
