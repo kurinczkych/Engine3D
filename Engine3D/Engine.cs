@@ -566,7 +566,8 @@ namespace Engine3D
             Object o2 = new Object(ObjectType.Cube, ref physx);
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "rotating.fbx", windowSize, ref camera, ref o2));
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "rotatingSingle.fbx", windowSize, ref camera, ref o2));
-            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "bob.fbx", windowSize, ref camera, ref o2)); o2.Rotation = Quaternion.FromEulerAngles(MathHelper.DegreesToRadians(270), 0, MathHelper.DegreesToRadians(270)); o2.Position = new Vector3(0, -3, 0); o2.GetMesh().RecalculateModelMatrix(new bool[3] { true, true, false });
+            //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "bob.fbx", windowSize, ref camera, ref o2)); o2.Rotation = Quaternion.FromEulerAngles(MathHelper.DegreesToRadians(270), 0, MathHelper.DegreesToRadians(270)); o2.Position = new Vector3(0, -3, 0); o2.GetMesh().RecalculateModelMatrix(new bool[3] { true, true, false });
+            o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "roblox.fbx", windowSize, ref camera, ref o2));
             ((Mesh)o2.GetMesh()).animation = assimpManager.animations.First().Value;
             ((Mesh)o2.GetMesh()).GetUniformLocationsAnim(shaderAnimProgram);
             objects.Add(o2);
