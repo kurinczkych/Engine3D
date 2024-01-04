@@ -77,6 +77,8 @@ namespace Engine3D
             foreach (var node in anim.NodeAnimationChannels)
             {
                 AnimationPose animPose = new AnimationPose();
+                if (node.NodeName == "Spine")
+                    ;
 
                 for (int i = 0; i < node.PositionKeyCount; i++)
                     animPose.AddTranslationKey(AssimpVector3(node.PositionKeys[i].Value), node.PositionKeys[i].Time);
@@ -86,6 +88,7 @@ namespace Engine3D
                     animPose.AddScalingKey(AssimpVector3(node.ScalingKeys[i].Value), node.ScalingKeys[i].Time);
 
                 animClip.AddAnimationPose(node.NodeName, animPose);
+                
             }
 
             animations.Add(anim.Name, animClip);
