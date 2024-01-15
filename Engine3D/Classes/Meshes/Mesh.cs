@@ -392,10 +392,10 @@ namespace Engine3D
 
                 List<int> indexes = new List<int>();
                 model.skeleton.SendToGpu(null, ref uniformAnimLocations, ref indexes);
-                string ab = "";
-                foreach(var a in indexes)
-                    ab += a.ToString() + "\n";
-                ;
+                //string ab = "";
+                //foreach(var a in indexes)
+                //    ab += a.ToString() + "\n";
+                //;
 
                 //for (int i = 0; i < animation.AnimationMatrices.Count; i++)
                 //{
