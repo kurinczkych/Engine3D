@@ -91,7 +91,7 @@ namespace Engine3D
                         #region Object selection
                         if (!axisClicked && objectMovingAxis == null)
                         {
-                            if (pixel.objectId != 0)
+                            if (pixel.objectId != 0 && objects.Count > 0)
                             {
                                 Object selectedObject = objects.Where(x => x.id == pixel.objectId).First();
                                 int instIndex = editorData.gizmoManager.PerInstanceMove && selectedObject.meshType == typeof(InstancedMesh) ? pixel.instId : -1;
