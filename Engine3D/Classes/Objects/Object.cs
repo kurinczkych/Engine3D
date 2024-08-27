@@ -28,7 +28,10 @@ namespace Engine3D
         Wireframe,
         TextMesh,
         UIMesh,
-        Plane
+        Plane,
+        AudioEmitter,
+        LightSource,
+        ParticleEmitter
     }
 
     public enum ColliderType

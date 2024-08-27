@@ -711,8 +711,21 @@ namespace Engine3D
 
                                 ImGui.EndMenu();
                             }
-
-                            // More menu items can be added here.
+                            if (ImGui.MenuItem("Particle emitter"))
+                            {
+                                engine.AddObject(ObjectType.ParticleEmitter);
+                                shouldOpenTreeNodeMeshes = true;
+                            }
+                            if (ImGui.MenuItem("Audio emitter"))
+                            {
+                                engine.AddObject(ObjectType.AudioEmitter);
+                                shouldOpenTreeNodeMeshes = true;
+                            }
+                            if (ImGui.MenuItem("Light source"))
+                            {
+                                engine.AddObject(ObjectType.LightSource);
+                                shouldOpenTreeNodeMeshes = true;
+                            }
 
                             ImGui.EndPopup();
                         }
@@ -2266,7 +2279,7 @@ namespace Engine3D
             }
             #endregion
 
-            #region Evere frame variable updates
+            #region Every frame variable updates
             if (isObjectHovered != anyObjectHovered)
                 isObjectHovered = anyObjectHovered;
 

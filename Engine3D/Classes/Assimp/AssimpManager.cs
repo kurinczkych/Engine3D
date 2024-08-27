@@ -61,7 +61,8 @@ namespace Engine3D
                         animClip.AddAnimationPose(node.NodeName, animPose);
                     }
 
-                    animations.Add(anim.Name, animClip);
+                    if (!animations.ContainsKey(anim.Name))
+                        animations.Add(anim.Name, animClip);
                 }
             }
 
@@ -77,8 +78,6 @@ namespace Engine3D
             foreach (var node in anim.NodeAnimationChannels)
             {
                 AnimationPose animPose = new AnimationPose();
-                if (node.NodeName == "Spine")
-                    ;
 
                 for (int i = 0; i < node.PositionKeyCount; i++)
                     animPose.AddTranslationKey(AssimpVector3(node.PositionKeys[i].Value), node.PositionKeys[i].Time);
@@ -91,7 +90,8 @@ namespace Engine3D
                 
             }
 
-            animations.Add(anim.Name, animClip);
+            if(!animations.ContainsKey(anim.Name))
+                animations.Add(anim.Name, animClip);
         }
 
         public ModelData? ProcessModel(string relativeModelPath, float cr = 1, float cg = 1, float cb = 1, float ca = 1)
@@ -117,21 +117,24 @@ namespace Engine3D
 
             ProcessMeshDataRec(scene.RootNode, ref scene, ref modelData, ref color);
 
-            if(!modelData.skeleton.ImportSkeletonBone(scene.RootNode))
+            if (modelData.skeleton.BoneMapping.Count() > 0)
             {
-                throw new Exception("Cannot import skeleton of the model!");
-            }
-            modelData.skeleton.InverseGlobal = AssimpMatrix4(scene.RootNode.Transform);
-
-            if(modelData.skeleton.GetNumberOfBones() > 0)
-            {
-                int numberOfBones = modelData.skeleton.GetNumberOfBones();
-                for (int i = 0; i < numberOfBones; i++)
+                if (!modelData.skeleton.ImportSkeletonBone(scene.RootNode))
                 {
-                    modelData.boneMatrices.Add(Matrix4.Identity); // Add a new Matrix4 instance to the list for each bone
+                    throw new Exception("Cannot import skeleton of the model!");
                 }
-                modelData.skeleton.UpdateSkeleton();
-                modelData.skeleton.UpdateBoneMatrices(ref modelData.boneMatrices);
+                modelData.skeleton.InverseGlobal = AssimpMatrix4(scene.RootNode.Transform);
+
+                if (modelData.skeleton.GetNumberOfBones() > 0)
+                {
+                    int numberOfBones = modelData.skeleton.GetNumberOfBones();
+                    for (int i = 0; i < numberOfBones; i++)
+                    {
+                        modelData.boneMatrices.Add(Matrix4.Identity); // Add a new Matrix4 instance to the list for each bone
+                    }
+                    modelData.skeleton.UpdateSkeleton();
+                    modelData.skeleton.UpdateBoneMatrices(ref modelData.boneMatrices);
+                }
             }
 
             return modelData;
@@ -375,9 +378,9 @@ namespace Engine3D
 
         private (Vector3, Vec2d, Vector3) AssimpGetElement(int index, Assimp.Mesh mesh)
         {
-            return (AssimpVector3(mesh.Vertices[index]), 
-                    AssimpVec2d(mesh.TextureCoordinateChannels.First().Count > 0 ? mesh.TextureCoordinateChannels.First()[index] : new Vector3D(0,0,0)), 
-                    AssimpVector3(mesh.Normals[index]));
+            return (mesh.HasVertices ? AssimpVector3(mesh.Vertices[index]) : new Vector3(),
+                    AssimpVec2d(mesh.TextureCoordinateChannels.First().Count > 0 ? mesh.TextureCoordinateChannels.First()[index] : new Vector3D(0, 0, 0)),
+                    mesh.HasNormals ? AssimpVector3(mesh.Normals[index]) : new Vector3());
         }
 
         public static Vector3 AssimpVector3(Vector3D v)
