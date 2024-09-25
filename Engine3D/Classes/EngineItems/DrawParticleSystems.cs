@@ -15,12 +15,12 @@ namespace Engine3D
             //GL.BlendFunc(BlendingFactor.SrcColor, BlendingFactor.OneMinusSrcColor);
             foreach (ParticleSystem ps in particleSystems)
             {
-                Object psO = ps.GetObject();
-                psO.GetMesh().CalculateFrustumVisibility();
+                BaseMesh mesh = ps.GetParentMesh();
+                mesh.CalculateFrustumVisibility();
 
-                InstancedMesh mesh = (InstancedMesh)psO.GetMesh();
+                InstancedMesh instMesh = (InstancedMesh)mesh;
 
-                mesh.Draw(editorData.gameRunning, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo);
+                instMesh.Draw(editorData.gameRunning, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo);
             }
             //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         }

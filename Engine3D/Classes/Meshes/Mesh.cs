@@ -52,7 +52,7 @@ namespace Engine3D
             this.shaderProgramId = shaderProgramId;
 
             bool success = false;
-            parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
+            texture = Engine.textureManager.AddTexture(texturePath, out success);
             if(!success)
                 Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
 
@@ -116,7 +116,7 @@ namespace Engine3D
             this.shaderProgramId = shaderProgramId;
 
             bool success = false;
-            parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
+            texture = Engine.textureManager.AddTexture(texturePath, out success);
             if(!success)
                 Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
 
@@ -216,26 +216,26 @@ namespace Engine3D
             uniformLocations.Add("useAO", GL.GetUniformLocation(shaderProgramId, "useAO"));
             uniformLocations.Add("useRough", GL.GetUniformLocation(shaderProgramId, "useRough"));
             uniformLocations.Add("useMetal", GL.GetUniformLocation(shaderProgramId, "useMetal"));
-            if (parentObject.texture != null)
+            if (texture != null)
             {
                 uniformLocations.Add("textureSampler", GL.GetUniformLocation(shaderProgramId, "textureSampler"));
-                if (parentObject.textureNormal != null)
+                if (textureNormal != null)
                 {
                     uniformLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shaderProgramId, "textureSamplerNormal"));
                 }
-                if (parentObject.textureHeight != null)
+                if (textureHeight != null)
                 {
                     uniformLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shaderProgramId, "textureSamplerHeight"));
                 }
-                if (parentObject.textureAO != null)
+                if (textureAO != null)
                 {
                     uniformLocations.Add("textureSamplerAO", GL.GetUniformLocation(shaderProgramId, "textureSamplerAO"));
                 }
-                if (parentObject.textureRough != null)
+                if (textureRough != null)
                 {
                     uniformLocations.Add("textureSamplerRough", GL.GetUniformLocation(shaderProgramId, "textureSamplerRough"));
                 }
-                if (parentObject.textureMetal != null)
+                if (textureMetal != null)
                 {
                     uniformLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shaderProgramId, "textureSamplerMetal"));
                 }
@@ -265,26 +265,26 @@ namespace Engine3D
             uniformAnimLocations.Add("useAO", GL.GetUniformLocation(shader.id, "useAO"));
             uniformAnimLocations.Add("useRough", GL.GetUniformLocation(shader.id, "useRough"));
             uniformAnimLocations.Add("useMetal", GL.GetUniformLocation(shader.id, "useMetal"));
-            if (parentObject.texture != null)
+            if (texture != null)
             {
                 uniformAnimLocations.Add("textureSampler", GL.GetUniformLocation(shader.id, "textureSampler"));
-                if (parentObject.textureNormal != null)
+                if (textureNormal != null)
                 {
                     uniformAnimLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shader.id, "textureSamplerNormal"));
                 }
-                if (parentObject.textureHeight != null)
+                if (textureHeight != null)
                 {
                     uniformAnimLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shader.id, "textureSamplerHeight"));
                 }
-                if (parentObject.textureAO != null)
+                if (textureAO != null)
                 {
                     uniformAnimLocations.Add("textureSamplerAO", GL.GetUniformLocation(shader.id, "textureSamplerAO"));
                 }
-                if (parentObject.textureRough != null)
+                if (textureRough != null)
                 {
                     uniformAnimLocations.Add("textureSamplerRough", GL.GetUniformLocation(shader.id, "textureSamplerRough"));
                 }
-                if (parentObject.textureMetal != null)
+                if (textureMetal != null)
                 {
                     uniformAnimLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shader.id, "textureSamplerMetal"));
                 }
@@ -304,37 +304,37 @@ namespace Engine3D
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["useBillboarding"], useBillboarding);
             GL.Uniform1(uniformLocations["useShading"], useShading ? 1 : 0);
-            if (parentObject.texture != null)
+            if (texture != null)
             {
-                GL.Uniform1(uniformLocations["textureSampler"], parentObject.texture.TextureUnit);
-                if (parentObject.textureNormal != null)
+                GL.Uniform1(uniformLocations["textureSampler"], texture.TextureUnit);
+                if (textureNormal != null)
                 {
-                    GL.Uniform1(uniformLocations["textureSamplerNormal"], parentObject.textureNormal.TextureUnit);
+                    GL.Uniform1(uniformLocations["textureSamplerNormal"], textureNormal.TextureUnit);
                 }
-                if (parentObject.textureHeight != null)
+                if (textureHeight != null)
                 {
-                    GL.Uniform1(uniformLocations["textureSamplerHeight"], parentObject.textureHeight.TextureUnit);
+                    GL.Uniform1(uniformLocations["textureSamplerHeight"], textureHeight.TextureUnit);
                 }
-                if (parentObject.textureAO != null)
+                if (textureAO != null)
                 {
-                    GL.Uniform1(uniformLocations["textureSamplerAO"], parentObject.textureAO.TextureUnit);
+                    GL.Uniform1(uniformLocations["textureSamplerAO"], textureAO.TextureUnit);
                 }
-                if (parentObject.textureRough != null)
+                if (textureRough != null)
                 {
-                    GL.Uniform1(uniformLocations["textureSamplerRough"], parentObject.textureRough.TextureUnit);
+                    GL.Uniform1(uniformLocations["textureSamplerRough"], textureRough.TextureUnit);
                 }
-                if (parentObject.textureMetal != null)
+                if (textureMetal != null)
                 {
-                    GL.Uniform1(uniformLocations["textureSamplerMetal"], parentObject.textureMetal.TextureUnit);
+                    GL.Uniform1(uniformLocations["textureSamplerMetal"], textureMetal.TextureUnit);
                 }
             }
 
-            GL.Uniform1(uniformLocations["useTexture"], parentObject.texture != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useNormal"], parentObject.textureNormal != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useHeight"], parentObject.textureHeight != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useAO"], parentObject.textureAO != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useRough"], parentObject.textureRough != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useTexture"], texture != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useNormal"], textureNormal != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useHeight"], textureHeight != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useAO"], textureAO != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useRough"], textureRough != null ? 1 : 0);
+            GL.Uniform1(uniformLocations["useMetal"], textureMetal != null ? 1 : 0);
         }
 
         protected void SendAnimationUniforms(int meshId, double delta, Shader sh)
@@ -349,37 +349,37 @@ namespace Engine3D
             GL.Uniform3(uniformAnimLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformAnimLocations["useBillboarding"], useBillboarding);
             GL.Uniform1(uniformAnimLocations["useShading"], useShading ? 1 : 0);
-            if (parentObject.texture != null)
+            if (texture != null)
             {
-                GL.Uniform1(uniformAnimLocations["textureSampler"], parentObject.texture.TextureUnit);
-                if (parentObject.textureNormal != null)
+                GL.Uniform1(uniformAnimLocations["textureSampler"], texture.TextureUnit);
+                if (textureNormal != null)
                 {
-                    GL.Uniform1(uniformAnimLocations["textureSamplerNormal"], parentObject.textureNormal.TextureUnit);
+                    GL.Uniform1(uniformAnimLocations["textureSamplerNormal"], textureNormal.TextureUnit);
                 }
-                if (parentObject.textureHeight != null)
+                if (textureHeight != null)
                 {
-                    GL.Uniform1(uniformAnimLocations["textureSamplerHeight"], parentObject.textureHeight.TextureUnit);
+                    GL.Uniform1(uniformAnimLocations["textureSamplerHeight"], textureHeight.TextureUnit);
                 }
-                if (parentObject.textureAO != null)
+                if (textureAO != null)
                 {
-                    GL.Uniform1(uniformAnimLocations["textureSamplerAO"], parentObject.textureAO.TextureUnit);
+                    GL.Uniform1(uniformAnimLocations["textureSamplerAO"], textureAO.TextureUnit);
                 }
-                if (parentObject.textureRough != null)
+                if (textureRough != null)
                 {
-                    GL.Uniform1(uniformAnimLocations["textureSamplerRough"], parentObject.textureRough.TextureUnit);
+                    GL.Uniform1(uniformAnimLocations["textureSamplerRough"], textureRough.TextureUnit);
                 }
-                if (parentObject.textureMetal != null)
+                if (textureMetal != null)
                 {
-                    GL.Uniform1(uniformAnimLocations["textureSamplerMetal"], parentObject.textureMetal.TextureUnit);
+                    GL.Uniform1(uniformAnimLocations["textureSamplerMetal"], textureMetal.TextureUnit);
                 }
             }
 
-            GL.Uniform1(uniformAnimLocations["useTexture"], parentObject.texture != null ? 1 : 0);
-            GL.Uniform1(uniformAnimLocations["useNormal"], parentObject.textureNormal != null ? 1 : 0);
-            GL.Uniform1(uniformAnimLocations["useHeight"], parentObject.textureHeight != null ? 1 : 0);
-            GL.Uniform1(uniformAnimLocations["useAO"], parentObject.textureAO != null ? 1 : 0);
-            GL.Uniform1(uniformAnimLocations["useRough"], parentObject.textureRough != null ? 1 : 0);
-            GL.Uniform1(uniformAnimLocations["useMetal"], parentObject.textureMetal != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useTexture"], texture != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useNormal"], textureNormal != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useHeight"], textureHeight != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useAO"], textureAO != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useRough"], textureRough != null ? 1 : 0);
+            GL.Uniform1(uniformAnimLocations["useMetal"], textureMetal != null ? 1 : 0);
             GL.Uniform1(uniformAnimLocations["useAnimation"], 1);
 
             if (animation != null)
@@ -510,19 +510,19 @@ namespace Engine3D
                 {
                     if (gameRunning == GameState.Stopped && mesh.visibleIndices.Count > 0)
                     {
-                        if (parentObject.texture != null)
+                        if (texture != null)
                         {
-                            parentObject.texture.Bind();
-                            if (parentObject.textureNormal != null)
-                                parentObject.textureNormal.Bind();
-                            if (parentObject.textureHeight != null)
-                                parentObject.textureHeight.Bind();
-                            if (parentObject.textureAO != null)
-                                parentObject.textureAO.Bind();
-                            if (parentObject.textureRough != null)
-                                parentObject.textureRough.Bind();
-                            if (parentObject.textureMetal != null)
-                                parentObject.textureMetal.Bind();
+                            texture.Bind();
+                            if (textureNormal != null)
+                                textureNormal.Bind();
+                            if (textureHeight != null)
+                                textureHeight.Bind();
+                            if (textureAO != null)
+                                textureAO.Bind();
+                            if (textureRough != null)
+                                textureRough.Bind();
+                            if (textureMetal != null)
+                                textureMetal.Bind();
                         }
 
                         ibo_.Buffer(mesh.visibleIndices);
@@ -571,19 +571,19 @@ namespace Engine3D
                 #endregion
 
 
-                if (parentObject.texture != null)
+                if (texture != null)
                 {
-                    parentObject.texture.Bind();
-                    if (parentObject.textureNormal != null)
-                        parentObject.textureNormal.Bind();
-                    if (parentObject.textureHeight != null)
-                        parentObject.textureHeight.Bind();
-                    if (parentObject.textureAO != null)
-                        parentObject.textureAO.Bind();
-                    if (parentObject.textureRough != null)
-                        parentObject.textureRough.Bind();
-                    if (parentObject.textureMetal != null)
-                        parentObject.textureMetal.Bind();
+                    texture.Bind();
+                    if (textureNormal != null)
+                        textureNormal.Bind();
+                    if (textureHeight != null)
+                        textureHeight.Bind();
+                    if (textureAO != null)
+                        textureAO.Bind();
+                    if (textureRough != null)
+                        textureRough.Bind();
+                    if (textureMetal != null)
+                        textureMetal.Bind();
                 }
 
                 ibo_.Buffer(mesh.visibleIndices);
@@ -610,19 +610,19 @@ namespace Engine3D
                 {
                     if (gameRunning == GameState.Stopped && mesh.visibleIndices.Count > 0)
                     {
-                        if (parentObject.texture != null)
+                        if (texture != null)
                         {
-                            parentObject.texture.Bind();
-                            if (parentObject.textureNormal != null)
-                                parentObject.textureNormal.Bind();
-                            if (parentObject.textureHeight != null)
-                                parentObject.textureHeight.Bind();
-                            if (parentObject.textureAO != null)
-                                parentObject.textureAO.Bind();
-                            if (parentObject.textureRough != null)
-                                parentObject.textureRough.Bind();
-                            if (parentObject.textureMetal != null)
-                                parentObject.textureMetal.Bind();
+                            texture.Bind();
+                            if (textureNormal != null)
+                                textureNormal.Bind();
+                            if (textureHeight != null)
+                                textureHeight.Bind();
+                            if (textureAO != null)
+                                textureAO.Bind();
+                            if (textureRough != null)
+                                textureRough.Bind();
+                            if (textureMetal != null)
+                                textureMetal.Bind();
                         }
 
                         ibo_.Buffer(mesh.visibleIndices);
@@ -671,19 +671,19 @@ namespace Engine3D
                 #endregion
 
 
-                if (parentObject.texture != null)
+                if (texture != null)
                 {
-                    parentObject.texture.Bind();
-                    if (parentObject.textureNormal != null)
-                        parentObject.textureNormal.Bind();
-                    if (parentObject.textureHeight != null)
-                        parentObject.textureHeight.Bind();
-                    if (parentObject.textureAO != null)
-                        parentObject.textureAO.Bind();
-                    if (parentObject.textureRough != null)
-                        parentObject.textureRough.Bind();
-                    if (parentObject.textureMetal != null)
-                        parentObject.textureMetal.Bind();
+                    texture.Bind();
+                    if (textureNormal != null)
+                        textureNormal.Bind();
+                    if (textureHeight != null)
+                        textureHeight.Bind();
+                    if (textureAO != null)
+                        textureAO.Bind();
+                    if (textureRough != null)
+                        textureRough.Bind();
+                    if (textureMetal != null)
+                        textureMetal.Bind();
                 }
 
                 ibo_.Buffer(mesh.visibleIndices);
@@ -787,19 +787,19 @@ namespace Engine3D
 
         //    SendUniforms();
 
-        //    if (parentObject.texture != null)
+        //    if (texture != null)
         //    {
-        //        parentObject.texture.Bind();
-        //        if (parentObject.textureNormal != null)
-        //            parentObject.textureNormal.Bind();
-        //        if (parentObject.textureHeight != null)
-        //            parentObject.textureHeight.Bind();
-        //        if (parentObject.textureAO != null)
-        //            parentObject.textureAO.Bind();
-        //        if (parentObject.textureRough != null)
-        //            parentObject.textureRough.Bind();
-        //        if (parentObject.textureMetal != null)
-        //            parentObject.textureMetal.Bind();
+        //        texture.Bind();
+        //        if (textureNormal != null)
+        //            textureNormal.Bind();
+        //        if (textureHeight != null)
+        //            textureHeight.Bind();
+        //        if (textureAO != null)
+        //            textureAO.Bind();
+        //        if (textureRough != null)
+        //            textureRough.Bind();
+        //        if (textureMetal != null)
+        //            textureMetal.Bind();
         //    }
 
         //    return vertices;

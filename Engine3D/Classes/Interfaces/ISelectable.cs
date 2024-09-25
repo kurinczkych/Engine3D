@@ -10,6 +10,6 @@ namespace Engine3D
     public interface ISelectable
     {
         public bool isSelected { get; set; }
-        public Vector3 Position { get; set; }
+        public Transformation transformation { get; set; }
     }
 }

@@ -10,6 +10,7 @@ using OpenTK.Graphics.OpenGL4;
 using System.Runtime.CompilerServices;
 using System.IO;
 using MagicPhysX;
+using Assimp.Unmanaged;
 
 namespace Engine3D
 {
@@ -25,6 +26,35 @@ namespace Engine3D
 
     public class Texture
     {
+        public string textureName
+        {
+            get
+            {
+                return Path.GetFileName(TexturePath);
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "")
+                {
+                    throw new NotImplementedException();
+                    //Engine.textureManager.DeleteTexture(this, mesh, "");
+                    //texture = null;
+                }
+                else
+                {
+                    Engine.textureManager.DeleteTexture(this);
+                    Texture? t = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if(t != null)
+                    {
+                        Copy(t);
+                    }
+                    else
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                }
+            }
+        }
+
         public TextureMinFilter tminf;
         public TextureMagFilter tmagf;
 
@@ -144,6 +174,21 @@ namespace Engine3D
                 Engine.consoleManager.AddLog("Texture: " + filePath + "was not found!", LogType.Warning);
                 return false;
             }
+        }
+
+        public void Copy(Texture t)
+        {
+            tminf = t.tminf;
+            tmagf = t.tmagf;
+
+            TextureName = t.TextureName;
+            TexturePath = t.TexturePath;
+            TextureId = t.TextureId;
+            TextureUnit = t.TextureUnit;
+
+            isBinded = t.isBinded;
+
+            flipY = t.flipY;
         }
 
         public void Bind() 

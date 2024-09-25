@@ -10,12 +10,13 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using static OpenTK.Graphics.OpenGL.GL;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Engine3D
 {
 
-    public abstract class BaseMesh
+    public unsafe abstract class BaseMesh : IComponent
     {
         public int vbo;
         public int vaoId;
@@ -24,6 +25,7 @@ namespace Engine3D
 
         public string modelName;
         public string modelPath;
+
 
         private bool _recalculate = false;
         public bool recalculate
@@ -34,11 +36,270 @@ namespace Engine3D
         protected bool recalculateOnlyPos;
         protected bool recalculateOnlyPosAndNormal;
 
-        public int useBillboarding = 0;
+        protected int useBillboarding_ = 0;
+        public int useBillboarding
+        {
+            get
+            {
+                return useBillboarding_;
+            }
+            set
+            {
+                Type meshType = GetType();
+                if (meshType != typeof(Mesh) && meshType != typeof(InstancedMesh))
+                    throw new Exception("Billboarding can only be used on type 'Mesh' and 'InstancedMesh'!");
+
+                useBillboarding = value;
+            }
+        }
 
         public ModelData model = new ModelData();
 
         public Object parentObject;
+
+        #region Texture
+        public Texture? texture;
+        public Texture? textureNormal;
+        public Texture? textureHeight;
+        public Texture? textureAO;
+        public Texture? textureRough;
+        public Texture? textureMetal;
+
+        private string _textureName;
+        public string textureName
+        {
+            get
+            {
+                if (texture != null)
+                    return Path.GetFileName(texture.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && texture != null)
+                {
+                    Engine.textureManager.DeleteTexture(texture, this, "");
+                    texture = null;
+                }
+                else if (texture != null)
+                {
+                    Engine.textureManager.DeleteTexture(texture, this, "");
+                    texture = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || texture == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                }
+                else
+                {
+                    texture = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || texture == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                    else
+                        AddUniformLocation("textureSampler");
+                }
+            }
+        }
+        private string _textureNormalName;
+        public string textureNormalName
+        {
+            get
+            {
+                if (textureNormal != null)
+                    return Path.GetFileName(textureNormal.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureNormal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureNormal, this, "Normal");
+                    textureNormal = null;
+                }
+                else if (textureNormal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureNormal, this, "Normal");
+                    textureNormal = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureNormal == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                }
+                else
+                {
+                    textureNormal = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureNormal == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                    else
+                        AddUniformLocation("textureSamplerNormal");
+                }
+            }
+        }
+        private string _textureHeightName;
+        public string textureHeightName
+        {
+            get
+            {
+                if (textureHeight != null)
+                    return Path.GetFileName(textureHeight.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureHeight != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureHeight, this, "Height");
+                    textureHeight = null;
+                }
+                else if (textureHeight != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureHeight, this, "Height");
+                    textureHeight = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureHeight == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                }
+                else
+                {
+                    textureHeight = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureHeight == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                    else
+                        AddUniformLocation("textureSamplerHeight");
+                }
+            }
+        }
+        private string _textureAOName;
+        public string textureAOName
+        {
+            get
+            {
+                if (textureAO != null)
+                    return Path.GetFileName(textureAO.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureAO != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureAO, this, "AO");
+                    textureAO = null;
+                }
+                else if (textureAO != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureAO, this, "AO");
+                    textureAO = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureAO == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                }
+                else
+                {
+                    textureAO = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureAO == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                    else
+                        AddUniformLocation("textureSamplerAO");
+                }
+            }
+        }
+        private string _textureRoughName;
+        public string textureRoughName
+        {
+            get
+            {
+                if (textureRough != null)
+                    return Path.GetFileName(textureRough.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureRough != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureRough, this, "Rough");
+                    textureRough = null;
+                }
+                else if (textureRough != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureRough, this, "Rough");
+                    textureRough = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureRough == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                }
+                else
+                {
+                    textureRough = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureRough == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                    else
+                        AddUniformLocation("textureSamplerRough");
+                }
+            }
+        }
+        private string _textureMetalName;
+        public string textureMetalName
+        {
+            get
+            {
+                if (textureMetal != null)
+                    return Path.GetFileName(textureMetal.TexturePath);
+
+                return "";
+            }
+            set
+            {
+                string texturePath = value;
+                if (texturePath == "" && textureMetal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureMetal, this, "Metal");
+                    textureMetal = null;
+                }
+                else if (textureMetal != null)
+                {
+                    Engine.textureManager.DeleteTexture(textureMetal, this, "Metal");
+                    textureMetal = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureMetal == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                }
+                else
+                {
+                    textureMetal = Engine.textureManager.AddTexture(texturePath, out bool success);
+                    if (!success || textureMetal == null)
+                    {
+                        Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
+                    }
+                    else
+                        AddUniformLocation("textureSamplerMetal");
+                }
+            }
+        }
+        #endregion
 
         public bool useShading = true;
 
@@ -70,6 +331,30 @@ namespace Engine3D
             //threadSize = 16;
         }
 
+        public bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)
+        {
+            if (numVertices == 0 || numIndices == 0 || numIndices % 3 != 0)
+                return false;
+
+            for (int i = 0; i < numIndices; ++i)
+            {
+                if (indices[i] >= numVertices)
+                    return false;
+            }
+
+            // Additional checks (e.g., degenerate triangles, manifoldness, etc.) would go here.
+
+            return true;
+        }
+
+        public void SetInstancedData(List<InstancedMeshData> data)
+        {
+            if (GetType() != typeof(InstancedMesh))
+                throw new Exception("Cannot set instanced mesh data for '" + GetType().ToString() + "'!");
+
+            ((InstancedMesh)this).instancedData = data;
+        }
+
         public void AddUniformLocation(string name)
         {
             if(!uniformLocations.ContainsKey(name) )
@@ -91,13 +376,13 @@ namespace Engine3D
                     throw new Exception("Which matrix bool[] must be a length of 3");
 
                 if (which[2])
-                    scaleMatrix = Matrix4.CreateScale(parentObject.Scale);
+                    scaleMatrix = Matrix4.CreateScale(parentObject.transformation.Scale);
 
                 if (which[1])
-                    rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.Rotation);
+                    rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.transformation.Rotation);
 
                 if (which[0])
-                    translationMatrix = Matrix4.CreateTranslation(parentObject.Position);
+                    translationMatrix = Matrix4.CreateTranslation(parentObject.transformation.Position);
 
                 if (which[0] || which[1] || which[2])
                 {
@@ -128,7 +413,7 @@ namespace Engine3D
             }
         }
 
-        public void Delete()
+        public void Delete(ref TextureManager textureManager)
         {
             foreach (MeshData mesh in model.meshes)
             {
@@ -137,6 +422,37 @@ namespace Engine3D
             }
             if (uniformLocations != null)
                 uniformLocations.Clear();
+
+            if (texture != null)
+            {
+                textureManager.DeleteTexture(textureName);
+                texture = null;
+            }
+            if (textureNormal != null)
+            {
+                textureManager.DeleteTexture(textureNormalName);
+                textureNormal = null;
+            }
+            if (textureHeight != null)
+            {
+                textureManager.DeleteTexture(textureHeightName);
+                textureHeight = null;
+            }
+            if (textureAO != null)
+            {
+                textureManager.DeleteTexture(textureAOName);
+                textureAO = null;
+            }
+            if (textureRough != null)
+            {
+                textureManager.DeleteTexture(textureRoughName);
+                textureRough = null;
+            }
+            if (textureMetal != null)
+            {
+                textureManager.DeleteTexture(textureMetalName);
+                textureMetal = null;
+            }
         }
 
         protected abstract void SendUniforms();
@@ -501,6 +817,310 @@ namespace Engine3D
                 model = md;
             }
         }
+
+        #region SimpleMeshes
+        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Vec2d[] t, Color4 c)
+        {
+            list.Add(new Vertex(v[0], t[0]) { c = c });
+            list.Add(new Vertex(v[1], t[1]) { c = c });
+            list.Add(new Vertex(v[2], t[2]) { c = c });
+        }
+        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Color4 c)
+        {
+            list.Add(new Vertex(v[0]) { c = c });
+            list.Add(new Vertex(v[1]) { c = c });
+            list.Add(new Vertex(v[2]) { c = c });
+        }
+
+        public static ModelData GetUnitCube(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+        {
+            Color4 c = new Color4(r, g, b, a);
+
+            MeshData meshData = new MeshData();
+
+            float halfSize = 0.5f;
+
+            // Define cube vertices
+            Vector3 p1 = new Vector3(-halfSize, -halfSize, -halfSize);
+            Vector3 p2 = new Vector3(halfSize, -halfSize, -halfSize);
+            Vector3 p3 = new Vector3(halfSize, halfSize, -halfSize);
+            Vector3 p4 = new Vector3(-halfSize, halfSize, -halfSize);
+            Vector3 p5 = new Vector3(-halfSize, -halfSize, halfSize);
+            Vector3 p6 = new Vector3(halfSize, -halfSize, halfSize);
+            Vector3 p7 = new Vector3(halfSize, halfSize, halfSize);
+            Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
+
+            Vec2d t1 = new Vec2d(0, 0);
+            Vec2d t2 = new Vec2d(1, 0);
+            Vec2d t3 = new Vec2d(1, 1);
+            Vec2d t4 = new Vec2d(0, 1);
+
+            List<Vertex> list = new List<Vertex>();
+
+            AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }, c);
+            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
+            AddToVertexList(ref list, new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }, c);
+            AddToVertexList(ref list, new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }, c);
+            AddToVertexList(ref list, new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }, c);
+            AddToVertexList(ref list, new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }, c);
+
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.uniqueVertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            meshData.CalculateGroupedIndices();
+
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
+        }
+
+        public static ModelData GetUnitFace(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+        {
+            Color4 c = new Color4(r, g, b, a);
+
+            MeshData meshData = new MeshData();
+
+            float halfSize = 0.5f;
+
+            // Define cube vertices (only what's needed for the front face)
+            Vector3 p5 = new Vector3(-halfSize, -halfSize, halfSize);
+            Vector3 p6 = new Vector3(halfSize, -halfSize, halfSize);
+            Vector3 p7 = new Vector3(halfSize, halfSize, halfSize);
+            Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
+
+            Vec2d t1 = new Vec2d(0, 0);
+            Vec2d t2 = new Vec2d(1, 0);
+            Vec2d t3 = new Vec2d(1, 1);
+            Vec2d t4 = new Vec2d(0, 1);
+
+            List<Vertex> list = new List<Vertex>();
+
+            // Front face
+            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
+
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.uniqueVertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            meshData.CalculateGroupedIndices();
+
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
+        }
+
+        public static ModelData GetUnitSphere(float radius = 1, int resolution = 10,
+                                                                                  float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+        {
+            Color4 c = new Color4(r, g, b, a);
+
+            MeshData meshData = new MeshData();
+
+            // Validate inputs
+            if (radius <= 0 || resolution < 3)
+                throw new ArgumentException("Invalid radius or resolution.");
+
+            List<Vertex> list = new List<Vertex>();
+            for (int i = 0; i < resolution; i++)
+            {
+                for (int j = 0; j < resolution; j++)
+                {
+                    float u1 = i / (float)resolution * MathF.PI * 2;
+                    float u2 = (i + 1) / (float)resolution * MathF.PI * 2;
+                    float v1 = j / (float)resolution * MathF.PI;
+                    float v2 = (j + 1) / (float)resolution * MathF.PI;
+
+                    Vector3 p1 = new Vector3(
+                        radius * MathF.Sin(v1) * MathF.Cos(u1),
+                        radius * MathF.Cos(v1),
+                        radius * MathF.Sin(v1) * MathF.Sin(u1));
+
+                    Vector3 p2 = new Vector3(
+                        radius * MathF.Sin(v1) * MathF.Cos(u2),
+                        radius * MathF.Cos(v1),
+                        radius * MathF.Sin(v1) * MathF.Sin(u2));
+
+                    Vector3 p3 = new Vector3(
+                        radius * MathF.Sin(v2) * MathF.Cos(u1),
+                        radius * MathF.Cos(v2),
+                        radius * MathF.Sin(v2) * MathF.Sin(u1));
+
+                    Vector3 p4 = new Vector3(
+                        radius * MathF.Sin(v2) * MathF.Cos(u2),
+                        radius * MathF.Cos(v2),
+                        radius * MathF.Sin(v2) * MathF.Sin(u2));
+
+                    AddToVertexList(ref list, new Vector3[] { p1, p2, p3 }, c);
+                    AddToVertexList(ref list, new Vector3[] { p2, p4, p3 }, c);
+                }
+            }
+
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.uniqueVertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            meshData.CalculateGroupedIndices();
+
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
+        }
+
+        public static ModelData GetUnitCapsule(float radius = 0.5f, float halfHeight = 0.5f, int resolution = 10,
+                                                                                   float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+        {
+            Color4 c = new Color4(r, g, b, a);
+
+            MeshData meshData = new MeshData();
+
+            // Validate inputs
+            if (radius <= 0 || resolution < 3)
+                throw new ArgumentException("Invalid radius or resolution.");
+
+            List<Vertex> list = new List<Vertex>();
+            // Generate the top and bottom hemispheres
+            for (int i = 0; i < resolution; i++)
+            {
+                for (int j = 0; j < resolution / 2; j++) // Only half the resolution for hemispheres
+                {
+                    float u1 = i / (float)resolution * MathF.PI * 2;
+                    float u2 = (i + 1) / (float)resolution * MathF.PI * 2;
+                    float v1 = j / (float)resolution * MathF.PI;
+                    float v2 = (j + 1) / (float)resolution * MathF.PI;
+
+                    Vector3 p1 = new Vector3(
+                        halfHeight + radius * MathF.Cos(v1),
+                        radius * MathF.Sin(v1) * MathF.Cos(u1),
+                        radius * MathF.Sin(v1) * MathF.Sin(u1));
+
+                    Vector3 p2 = new Vector3(
+                        halfHeight + radius * MathF.Cos(v1),
+                        radius * MathF.Sin(v1) * MathF.Cos(u2),
+                        radius * MathF.Sin(v1) * MathF.Sin(u2));
+
+                    Vector3 p3 = new Vector3(
+                        halfHeight + radius * MathF.Cos(v2),
+                        radius * MathF.Sin(v2) * MathF.Cos(u1),
+                        radius * MathF.Sin(v2) * MathF.Sin(u1));
+
+                    Vector3 p4 = new Vector3(
+                        halfHeight + radius * MathF.Cos(v2),
+                        radius * MathF.Sin(v2) * MathF.Cos(u2),
+                        radius * MathF.Sin(v2) * MathF.Sin(u2));
+
+                    AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, c);
+                    AddToVertexList(ref list, new Vector3[] { p2, p3, p4 }, c);
+
+                    // Back hemisphere (invert the x-coordinates)
+                    Vector3 p1b = new Vector3(-p1.X, p1.Y, p1.Z);
+                    Vector3 p2b = new Vector3(-p2.X, p2.Y, p2.Z);
+                    Vector3 p3b = new Vector3(-p3.X, p3.Y, p3.Z);
+                    Vector3 p4b = new Vector3(-p4.X, p4.Y, p4.Z);
+
+                    AddToVertexList(ref list, new Vector3[] { p1b, p2b, p3b }, c);
+                    AddToVertexList(ref list, new Vector3[] { p2b, p4b, p3b }, c);
+                }
+            }
+
+            // Generate the cylindrical segment
+            for (int i = 0; i < resolution; i++)
+            {
+                float u1 = i / (float)resolution * MathF.PI * 2;
+                float u2 = (i + 1) / (float)resolution * MathF.PI * 2;
+
+                // Creating vertices for the cylinder
+                Vector3 p1 = new Vector3(halfHeight, radius * MathF.Cos(u1), radius * MathF.Sin(u1));
+                Vector3 p2 = new Vector3(halfHeight, radius * MathF.Cos(u2), radius * MathF.Sin(u2));
+                Vector3 p3 = new Vector3(-halfHeight, p1.Y, p1.Z);
+                Vector3 p4 = new Vector3(-halfHeight, p2.Y, p2.Z);
+
+                AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, c);
+                AddToVertexList(ref list, new Vector3[] { p2, p3, p4 }, c);
+            }
+
+            Dictionary<int, uint> hash = new Dictionary<int, uint>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int vh = list[i].GetHashCode();
+                if (!hash.ContainsKey(vh))
+                {
+                    meshData.uniqueVertices.Add(list[i]);
+                    meshData.visibleVerticesData.AddRange(list[i].GetData());
+                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
+                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
+                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
+                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
+                    meshData.Bounds.Enclose(list[i]);
+                }
+                else
+                {
+                    meshData.indices.Add(hash[vh]);
+                }
+            }
+
+            meshData.CalculateGroupedIndices();
+
+            ModelData model = new ModelData();
+            model.meshes.Add(meshData);
+            return model;
+        }
+        #endregion
 
     }
 }

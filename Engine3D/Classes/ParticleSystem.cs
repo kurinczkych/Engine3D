@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#pragma warning disable CS8602
+
 namespace Engine3D
 {
     public class Particle
@@ -80,24 +82,8 @@ namespace Engine3D
         }
     }
 
-    public class ParticleSystem : ISelectable
+    public class ParticleSystem : Object, ISelectable
     {
-        public string name = "";
-
-        public bool isSelected { get; set; }
-
-        public Vector3 Position
-        {
-            get
-            {
-                return meshObject.Position;
-            }
-            set
-            {
-                meshObject.Position = value;
-            }
-        }
-
         public float duration = 5;
         public bool looping = true;
         public bool useGravity = false;
@@ -141,16 +127,18 @@ namespace Engine3D
         public Color4 endColor = Color4.White;
         public bool randomColor = false;
 
-        private Object meshObject;
+        private BaseMesh? parentMesh;
 
         private List<Particle> particles = new List<Particle>();
 
-        public ParticleSystem(Object meshObject)
+        public ParticleSystem(int id) : base(ObjectType.ParticleEmitter, id)
         {
-            if (meshObject.GetMesh().GetType() != typeof(InstancedMesh))
-                throw new Exception("The particle system's object mesh only can be InstancedMesh");
+            parentMesh = Mesh;
+            if(parentMesh is null)
+                throw new Exception("To create a particle system, the object must has an InstancedMesh!");
 
-            this.meshObject = meshObject;
+            if (parentMesh.GetType() != typeof(InstancedMesh))
+                throw new Exception("The particle system's object mesh only can be InstancedMesh");
         }
 
         private void UpdateParticleAndRemove(ref List<Particle> toRemove, Particle p, float delta)
@@ -240,14 +228,14 @@ namespace Engine3D
             particles.Add(p);
         }
 
-        public Object GetObject()
+        public BaseMesh GetParentMesh()
         {
             List<InstancedMeshData> data = particles.Select(x => x.meshData).ToList();
             //data.Sort((x,y) => x)
 
-            meshObject.SetInstancedData(data);
+            parentMesh.SetInstancedData(data);
 
-            return meshObject;
+            return parentMesh;
         }
 
     }

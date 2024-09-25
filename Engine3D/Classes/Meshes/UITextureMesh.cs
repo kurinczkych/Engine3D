@@ -20,7 +20,6 @@ namespace Engine3D
         private Vector2 windowSize;
 
         private List<float> vertices = new List<float>();
-        private string? textureName;
 
         private Vector3 position;
         public Vector2 Position
@@ -47,13 +46,15 @@ namespace Engine3D
 
         public UITextureMesh(VAO vao, VBO vbo, int shaderProgramId, string texturePath, Vector2 position, Vector2 size, Vector2 windowSize) : base(vao.id, vbo.id, shaderProgramId)
         {
+            throw new NotImplementedException();
+
             this.windowSize = windowSize;
             Position = new Vector2(position.X, position.Y);
             Size = new Vector3(size.X, size.Y, 0);
             rotation = Vector3.Zero;
 
             bool success = false;
-            parentObject.texture = Engine.textureManager.AddTexture(texturePath, out success);
+            texture = Engine.textureManager.AddTexture(texturePath, out success);
             if(!success)
                 Engine.consoleManager.AddLog("Texture: " + texturePath + "was not found!", LogType.Warning);
 
@@ -75,7 +76,7 @@ namespace Engine3D
         protected override void SendUniforms()
         {
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
-            GL.Uniform1(uniformLocations["textureSampler"], parentObject.texture.TextureUnit);
+            GL.Uniform1(uniformLocations["textureSampler"], texture.TextureUnit);
         }
 
         //private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
@@ -103,9 +104,9 @@ namespace Engine3D
             {
                 SendUniforms();
 
-                if (parentObject.texture != null)
+                if (texture != null)
                 {
-                    parentObject.texture.Bind();
+                    texture.Bind();
                 }
 
                 return vertices;
@@ -133,7 +134,7 @@ namespace Engine3D
             //}
 
             SendUniforms();
-            parentObject.texture.Bind();
+            texture.Bind();
 
             return vertices;
         }

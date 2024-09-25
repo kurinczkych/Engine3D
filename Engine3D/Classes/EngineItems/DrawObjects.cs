@@ -18,6 +18,12 @@ namespace Engine3D
             Type? currentMeshType = null;
             foreach (Object o in objects)
             {
+                BaseMesh? baseMesh = o.Mesh;
+                if (baseMesh == null)
+                {
+                    throw new Exception("Can't draw the object, it doesn't have a mesh!");
+                }
+
                 ObjectType objectType = o.GetObjectType();
                 if (objectType == ObjectType.Cube ||
                    objectType == ObjectType.Sphere ||
@@ -25,10 +31,10 @@ namespace Engine3D
                    objectType == ObjectType.TriangleMesh ||
                    objectType == ObjectType.TriangleMeshWithCollider)
                 {
-                    if (o.GetMesh().GetType() == typeof(Mesh))
-                    {
-                        Mesh mesh = (Mesh)o.GetMesh();
 
+                    if (baseMesh.GetType() == typeof(Mesh))
+                    {
+                        Mesh mesh = (Mesh)baseMesh;
                         if (editorData.gameRunning == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
                         {
                             //List<triangle> notOccludedTris = new List<triangle>();
@@ -90,9 +96,9 @@ namespace Engine3D
                             }
                         }
                     }
-                    else if (o.GetMesh().GetType() == typeof(InstancedMesh))
+                    else if (baseMesh.GetType() == typeof(InstancedMesh))
                     {
-                        InstancedMesh mesh = (InstancedMesh)o.GetMesh();
+                        InstancedMesh mesh = (InstancedMesh)baseMesh;
                         if (currentMeshType == null || currentMeshType != mesh.GetType())
                         {
                             instancedShaderProgram.Use();
@@ -135,9 +141,9 @@ namespace Engine3D
                         }
                     }
                 }
-                else if (objectType == ObjectType.Wireframe)
+                else if (objectType == ObjectType.Wireframe && baseMesh is WireframeMesh)
                 {
-                    WireframeMesh mesh = (WireframeMesh)o.GetMesh();
+                    WireframeMesh mesh = (WireframeMesh)baseMesh;
 
                     if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(WireframeMesh) : currentMeshType, typeof(WireframeMesh), null))
                         vertices = new List<float>();
@@ -150,9 +156,9 @@ namespace Engine3D
                     vertices.AddRange(mesh.Draw(editorData.gameRunning));
                     currentMeshType = typeof(WireframeMesh);
                 }
-                else if (objectType == ObjectType.UIMesh)
+                else if (objectType == ObjectType.UIMesh && baseMesh is UITextureMesh)
                 {
-                    UITextureMesh mesh = (UITextureMesh)o.GetMesh();
+                    UITextureMesh mesh = (UITextureMesh)baseMesh;
 
                     //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
                     //    vertices = new List<float>();
@@ -170,9 +176,9 @@ namespace Engine3D
                     GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
                     vertices.Clear();
                 }
-                else if (objectType == ObjectType.TextMesh)
+                else if (objectType == ObjectType.TextMesh && baseMesh is TextMesh)
                 {
-                    TextMesh mesh = (TextMesh)o.GetMesh();
+                    TextMesh mesh = (TextMesh)baseMesh;
 
                     if (currentMeshType == null || currentMeshType != mesh.GetType())
                     {

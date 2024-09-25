@@ -76,17 +76,17 @@ namespace Engine3D
                 {
                     Vector3 newPos = position + (camera.front * 2);
                     scaleFactor = (cameraPos - newPos).Length / gizmoScale;
-                    if (newPos != moverGizmo.Position)
+                    if (newPos != moverGizmo.transformation.Position)
                     {
-                        moverGizmo.Position = newPos;
+                        moverGizmo.transformation.Position = newPos;
                         toUpdate[0] = true;
                     }
                 }
                 else
                 {
-                    if (position != moverGizmo.Position)
+                    if (position != moverGizmo.transformation.Position)
                     {
-                        moverGizmo.Position = position;
+                        moverGizmo.transformation.Position = position;
                         toUpdate[0] = true;
                     }
                 }
@@ -95,25 +95,31 @@ namespace Engine3D
                     scaleFactor = 1 / gizmoScale;
 
 
-                if (moverGizmo.Scale.X != scaleFactor)
+                if (moverGizmo.transformation.Scale.X != scaleFactor)
                 {
-                    moverGizmo.Scale = new Vector3(scaleFactor);
+                    moverGizmo.transformation.Scale = new Vector3(scaleFactor);
                     toUpdate[2] = true;
                 }
 
-                if(AbsoluteMoving && moverGizmo.Rotation != Quaternion.Identity)
+                if(AbsoluteMoving && moverGizmo.transformation.Rotation != Quaternion.Identity)
                 {
-                    moverGizmo.Rotation = Quaternion.Identity;
+                    moverGizmo.transformation.Rotation = Quaternion.Identity;
                     toUpdate[1] = true;
                 }
-                else if(!AbsoluteMoving && moverGizmo.Rotation != rotation)
+                else if(!AbsoluteMoving && moverGizmo.transformation.Rotation != rotation)
                 {
-                    moverGizmo.Rotation = rotation;
+                    moverGizmo.transformation.Rotation = rotation;
                     toUpdate[1] = true;
                 }
 
-                moverGizmo.GetMesh().RecalculateModelMatrix(toUpdate);
-                moverGizmo.GetMesh().AllIndicesVisible();
+                BaseMesh? mesh = moverGizmo.Mesh;
+                if (mesh == null)
+                {
+                    throw new Exception("Can't draw the gizmo, because the object doesn't have a mesh!");
+                }
+
+                mesh.RecalculateModelMatrix(toUpdate);
+                mesh.AllIndicesVisible();
             }
             lastGizmoType = gizmoType;
         }
@@ -123,7 +129,7 @@ namespace Engine3D
             float moverGizmoSize = 3;
             float otherAxisScale = 0.5f;
 
-            ModelData modelX = Object.GetUnitCube(1, 0, 0, 1);
+            ModelData modelX = BaseMesh.GetUnitCube(1, 0, 0, 1);
             Object moverGizmoX = new Object(ObjectType.Cube, 1);
             Matrix4 xMat = Matrix4.CreateScale(new Vector3(moverGizmoSize, otherAxisScale, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(2, 0, 0));
             modelX.meshes[0].TransformMeshData(xMat);
@@ -133,7 +139,7 @@ namespace Engine3D
             xMesh.AllIndicesVisible();
             moverGizmos.Add(moverGizmoX);
 
-            ModelData modelY = Object.GetUnitCube(0, 1, 0, 1);
+            ModelData modelY = BaseMesh.GetUnitCube(0, 1, 0, 1);
             Object moverGizmoY = new Object(ObjectType.Cube, 2);
             Matrix4 yMat = Matrix4.CreateScale(new Vector3(otherAxisScale, moverGizmoSize, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(0, 2, 0));
             modelY.meshes[0].TransformMeshData(yMat);
@@ -143,7 +149,7 @@ namespace Engine3D
             yMesh.AllIndicesVisible();
             moverGizmos.Add(moverGizmoY);
 
-            ModelData modelZ = Object.GetUnitCube(0, 0, 1, 1);
+            ModelData modelZ = BaseMesh.GetUnitCube(0, 0, 1, 1);
             Object moverGizmoZ = new Object(ObjectType.Cube, 3);
             Matrix4 zMat = Matrix4.CreateScale(new Vector3(otherAxisScale, otherAxisScale, moverGizmoSize)) * Matrix4.CreateTranslation(new Vector3(0, 0, 2));
             modelZ.meshes[0].TransformMeshData(zMat);

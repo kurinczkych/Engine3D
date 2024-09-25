@@ -20,22 +20,28 @@ namespace Engine3D
                     GL.Clear(ClearBufferMask.DepthBufferBit);
                     shaderProgram.Use();
 
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.meshType == typeof(InstancedMesh))
+                    BaseMesh? mesh = o.Mesh;
+                    if(mesh == null)
+                    {
+                        throw new Exception("Can't draw the gizmo, because the object doesn't have a mesh!");
+                    }
+
+                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && mesh.GetType() == typeof(InstancedMesh))
                     {
                         //editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
                         //                                         o.Rotation);
 
-                        editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
-                                                                 o.Rotation * ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Rotation);
+                        editorData.gizmoManager.UpdateMoverGizmo(o.transformation.Position + ((InstancedMesh)mesh).instancedData[editorData.instIndex].Position,
+                                                                 o.transformation.Rotation * ((InstancedMesh)mesh).instancedData[editorData.instIndex].Rotation);
                         // TODO
                     }
                     else
-                        editorData.gizmoManager.UpdateMoverGizmo(o.Position, o.Rotation);
+                        editorData.gizmoManager.UpdateMoverGizmo(o.transformation.Position, o.transformation.Rotation);
 
 
                     foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
                     {
-                        ((Mesh)moverGizmo.GetMesh()).Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
+                        ((Mesh)mesh).Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
                     }
                 }
             }

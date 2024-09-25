@@ -10,27 +10,12 @@ using System.Threading.Tasks;
 namespace Engine3D
 {
 
-    public class PointLight : ISelectable
+    public class PointLight : IComponent
     {
         public string name = "";
 
         public bool isSelected { get; set; }
         public int positionLoc;
-
-        private Vector3 _position;
-        public Vector3 Position
-        {
-            set
-            {
-                //_position = value;
-                //if(mesh != null)
-                //    mesh.Position = value;
-            }
-            get
-            {
-                return _position;
-            }
-        }
 
         public int colorLoc;
         public Color4 color;
@@ -56,11 +41,11 @@ namespace Engine3D
         public int specularLoc;
         public Vector3 specular;
 
-        public Mesh mesh;
+        public Object parentObject;
 
-        public PointLight(Vector3 pos, Color4 color, int vaoId, int shaderProgramId, ref Camera camera, VAO meshVao, VBO meshVbo, int meshShaderProgramId, int i, ref Object parentObject)
+        public PointLight(Color4 color, int vaoId, int shaderProgramId, ref Camera camera, VAO meshVao, VBO meshVbo, int meshShaderProgramId, int i, ref Object parentObject)
         {
-            Position = pos;
+            this.parentObject = parentObject;
             this.color = color;
 
             ambient = new Vector3(color.R * ambientS, color.G * ambientS, color.B * ambientS);
@@ -84,8 +69,6 @@ namespace Engine3D
             constantLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].constant");
             linearLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].linear");
             quadraticLoc = GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].quadratic");
-
-            mesh = GetMesh(this, meshVao, meshVbo, meshShaderProgramId, ref camera, ref parentObject);
         }
 
         public static PointLight[] GetPointLights(ref List<PointLight> lights)
@@ -96,15 +79,6 @@ namespace Engine3D
                 pl[i] = lights[i];
             }
             return pl;
-        }
-
-        public static Mesh GetMesh(PointLight pointLight, VAO vao, VBO vbo, int shaderProgramId, ref Camera camera, ref Object parentObject)
-        {
-            //Mesh mesh = new Mesh(vao, vbo, shaderProgramId, "sphereSmall.obj", ref camera, pointLight.color, ref parentObject);
-            //mesh.Position = pointLight.Position;
-            //mesh.Scale = new Vector3(0.5f, 0.5f, 0.5f);
-
-            return null;
         }
 
         public static void SendToGPU(ref List<PointLight> pointLights, int shaderProgramId, GameState gameRunning)
@@ -120,7 +94,7 @@ namespace Engine3D
             for (int i = 0; i < pointLights.Count; i++)
             {
                 Vector3 c = new Vector3(pointLights[i].color.R, pointLights[i].color.G, pointLights[i].color.B);
-                GL.Uniform3(pointLights[i].positionLoc, pointLights[i].Position);
+                GL.Uniform3(pointLights[i].positionLoc, pointLights[i].parentObject.transformation.Position);
                 GL.Uniform3(pointLights[i].colorLoc, c);
 
                 GL.Uniform3(pointLights[i].ambientLoc, pointLights[i].ambient);
