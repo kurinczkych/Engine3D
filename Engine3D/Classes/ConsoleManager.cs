@@ -31,12 +31,21 @@ namespace Engine3D
         }
     }
 
+    public enum ShowConsoleType
+    {
+        None,
+        Error,
+        WarningAndError,
+        All
+    }
+
     public class ConsoleManager
     {
         public bool ConsoleUpdated = false;
         public List<Log> Logs = new List<Log>();
         public Dictionary<LogType, System.Numerics.Vector4> LogColors = new Dictionary<LogType, System.Numerics.Vector4>();
         public bool justAdded = false;
+        public ShowConsoleType showConsoleType = ShowConsoleType.WarningAndError;
 
         public ConsoleManager() 
         {
@@ -50,6 +59,7 @@ namespace Engine3D
         public void AddLog(string log, LogType logType = LogType.Message)
         {
             Logs.Add(new Log(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " - " + log, logType));
+            justAdded = true;
         }
 
     }

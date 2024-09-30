@@ -6,9 +6,10 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
+out vec3 fragPos;
+
 void main()
 {
-//    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(inPosition, 1.0);
-    gl_Position = vec4(inPosition, 1.0) * modelMatrix * viewMatrix * projectionMatrix; //from default.vert
-//    gl_Position = vec4(inPosition, 1.0);
+    fragPos = vec3(vec4(inPosition, 1.0) * modelMatrix);
+    gl_Position = vec4(inPosition, 1.0) * modelMatrix * viewMatrix * projectionMatrix;
 }

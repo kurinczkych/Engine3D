@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Engine3D
 {
 
-    public class PointLight : IComponent
+    public class PointLight : Object
     {
         public string name = "";
 
@@ -41,11 +41,10 @@ namespace Engine3D
         public int specularLoc;
         public Vector3 specular;
 
-        public Object parentObject;
-
-        public PointLight(Color4 color, int vaoId, int shaderProgramId, ref Camera camera, VAO meshVao, VBO meshVbo, int meshShaderProgramId, int i, ref Object parentObject)
+        public PointLight(Color4 color, int shaderProgramId, int i) : base(ObjectType.PointLight)
         {
-            this.parentObject = parentObject;
+            name = "Point Light";
+
             this.color = color;
 
             ambient = new Vector3(color.R * ambientS, color.G * ambientS, color.B * ambientS);
@@ -81,20 +80,20 @@ namespace Engine3D
             return pl;
         }
 
-        public static void SendToGPU(ref List<PointLight> pointLights, int shaderProgramId, GameState gameRunning)
+        public static void SendToGPU(List<PointLight> pointLights, int shaderProgramId, GameState gameRunning)
         {
             if (gameRunning == GameState.Stopped)
             {
-                GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), 0);
+                GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfPointLights"), 0);
                 return;
             }
 
-            GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), pointLights.Count);
+            GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfPointLights"), pointLights.Count);
 
             for (int i = 0; i < pointLights.Count; i++)
             {
                 Vector3 c = new Vector3(pointLights[i].color.R, pointLights[i].color.G, pointLights[i].color.B);
-                GL.Uniform3(pointLights[i].positionLoc, pointLights[i].parentObject.transformation.Position);
+                GL.Uniform3(pointLights[i].positionLoc, pointLights[i].transformation.Position);
                 GL.Uniform3(pointLights[i].colorLoc, c);
 
                 GL.Uniform3(pointLights[i].ambientLoc, pointLights[i].ambient);
@@ -104,33 +103,7 @@ namespace Engine3D
                 GL.Uniform1(pointLights[i].specularPowLoc, pointLights[i].specularPow);
                 GL.Uniform1(pointLights[i].constantLoc, pointLights[i].constant);
                 GL.Uniform1(pointLights[i].linearLoc, pointLights[i].linear);
-
-                //GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].quadratic"), pointLights[i].quadratic);
-                //GL.Uniform3(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].position"), pointLights[i].position);
-                //GL.Uniform3(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].color"), c);
-
-                //GL.Uniform3(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].ambient"), pointLights[i].ambient);
-                //GL.Uniform3(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].diffuse"), pointLights[i].diffuse);
-                //GL.Uniform3(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].specular"), pointLights[i].specular);
-
-                //GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].specularPow"), pointLights[i].specularPow);
-                //GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].constant"), pointLights[i].constant);
-                //GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].linear"), pointLights[i].linear);
-                //GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "pointLights[" + i + "].quadratic"), pointLights[i].quadratic);
             }
-        }
-
-        public static Matrix4 GetDirLightSpaceMatrix()
-        {
-            float near = 1.0f;
-            float far = 7.5f;
-            Matrix4 lightProjection = Matrix4.CreateOrthographic(-10.0f, 10.0f, near, far);
-            Matrix4 lightView = Matrix4.LookAt(new Vector3(0.0f, 10.0f, 0.0f),
-                                               new Vector3(0.0f, -1.0f, 0.0f),
-                                               new Vector3(0.0f, 1.0f, 0.0f));
-
-            Matrix4 lightSpaceMatrix = lightProjection * lightView;
-            return lightSpaceMatrix;
         }
     }
 }

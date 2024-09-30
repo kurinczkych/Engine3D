@@ -17,6 +17,7 @@ struct PointLight {
 
 struct DirLight {
     vec3 direction;
+    vec3 color;
   
     vec3 ambient;
     vec3 diffuse;
@@ -35,7 +36,10 @@ uniform vec3 cameraPosition;
 
 #define MAX_LIGHTS 64
 uniform PointLight pointLights[MAX_LIGHTS];
-uniform int actualNumOfLights;
+uniform int actualNumOfPointLights;
+
+uniform DirLight dirLights[MAX_LIGHTS];
+uniform int actualNumOfDirLights;
 
 out vec4 FragColor;
 uniform sampler2D textureSampler;
@@ -103,7 +107,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, f
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
-    return (ambient + diffuse + specular);
+    return (ambient + diffuse + specular) * light.color;
 } 
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, float metalness)
@@ -146,7 +150,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, float metalness)
         specular = specular * k_s;
     }
 
-    return (ambient + diffuse + specular);
+    return (ambient + diffuse + specular) * light.color;
 }  
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
@@ -187,23 +191,15 @@ void main()
         normalFromMap = normalize(gsTBN * sampledNormal);
     }
 
-    DirLight dirLight;
-    dirLight.direction = vec3(0,-1,0);
-    //dirLight.direction = normalize(vec3(0.0, -1.0, -1.0));
-    dirLight.ambient = vec3(0.1,0.1,0.1);
-    dirLight.diffuse = vec3(1.0,1.0,1.0);
-    dirLight.specular = vec3(1.0,1.0,1.0);
-    dirLight.specularPow = 2;
-
-    vec3 result = vec3(1,1,1);
-
+    vec3 result = vec3(0);
     if(useShading == 1)
     {
-        // phase 1: Directional lighting
-        result = CalcDirLight(dirLight, normalFromMap, viewDir, metalness);
+        // phase 1: Directional lightings
+        for(int i = 0; i < actualNumOfDirLights; i++)
+            result += CalcDirLight(dirLights[i], normalFromMap, viewDir, metalness);
 
         // phase 2: Point lights
-        for(int i = 0; i < actualNumOfLights; i++)
+        for(int i = 0; i < actualNumOfPointLights; i++)
             result += CalcPointLight(pointLights[i], normalFromMap, gsFragPos, viewDir, metalness);
     }
 

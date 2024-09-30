@@ -30,8 +30,9 @@ namespace Engine3D
         UIMesh,
         Plane,
         AudioEmitter,
-        LightSource,
-        ParticleEmitter
+        ParticleEmitter,
+        PointLight,
+        DirectionalLight
     }
 
     public enum ColliderType

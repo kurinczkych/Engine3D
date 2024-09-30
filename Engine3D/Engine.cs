@@ -159,7 +159,36 @@ namespace Engine3D
         private List<uint> indices = new List<uint>();
         private List<float> verticesUnique = new List<float>();
 
-        private List<PointLight> pointLights;
+        private List<PointLight>? pointLights_;
+        private List<PointLight> pointLights
+        {
+            get 
+            { 
+                if(pointLights_ == null)
+                    pointLights_ = objects.Where(x => x is PointLight).Select(x => (PointLight)x).ToList();
+                return pointLights_; 
+            }
+            set
+            {
+                pointLights_ = null;
+            }
+        }
+        private List<DirectionalLight>? dirLights_;
+        private List<DirectionalLight> dirLights
+        {
+            get
+            {
+                if (dirLights_ == null)
+                    dirLights_ = objects.Where(x => x is DirectionalLight).Select(x => (DirectionalLight)x).ToList();
+                return dirLights_;
+            }
+            set
+            {
+                dirLights_ = null;
+            }
+        }
+
+
         private List<ParticleSystem> particleSystems;
         private Physx physx;
 
@@ -201,42 +230,45 @@ namespace Engine3D
             pendingQueries = new Dictionary<int, Tuple<int, BVHNode>>();
         }
 
+        private void AddObjectAndCalculate(Object o)
+        {
+            editorData.objects.Add(o);
+            _meshObjects.Add(o);
+            o.transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
+            o.Mesh.RecalculateModelMatrix(new bool[] { true, false, false });
+        }
+
         public void AddObject(ObjectType type)
         {
             if (type == ObjectType.Cube)
             {
                 Object o = new Object(type);
                 o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref character.camera, ref o));
-                editorData.objects.Add(o);
-                _meshObjects.Add(o);
+                AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Sphere)
             {
                 Object o = new Object(type);
                 o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", BaseMesh.GetUnitSphere(), windowSize, ref character.camera, ref o));
-                editorData.objects.Add(o);
-                _meshObjects.Add(o);
+                AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Capsule)
             {
                 Object o = new Object(type);
                 o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", BaseMesh.GetUnitCapsule(), windowSize, ref character.camera, ref o));
-                editorData.objects.Add(o);
-                _meshObjects.Add(o);
+                AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Plane)
             {
                 Object o = new Object(type);
                 o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", BaseMesh.GetUnitFace(), windowSize, ref character.camera, ref o));
-                editorData.objects.Add(o);
-                _meshObjects.Add(o);
+                AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.TriangleMesh)
             {
                 Object o = new Object(type);
                 o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref character.camera, ref o));
-                editorData.objects.Add(o);
-                _meshObjects.Add(o);
+                AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.ParticleEmitter)
             {
@@ -248,9 +280,17 @@ namespace Engine3D
             {
 
             }
-            else if (type == ObjectType.LightSource)
+            else if (type == ObjectType.PointLight)
             {
+                shaderProgram.Use();
+                objects.Add(new PointLight(Color4.White, shaderProgram.id, pointLights.Count));
+                objects[objects.Count-1].transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
 
+            }
+            else if (type == ObjectType.DirectionalLight)
+            {
+                shaderProgram.Use();
+                objects.Add(new DirectionalLight(shaderProgram.id, 0, new Vector3(0, -1, 0)));
             }
             editorData.recalculateObjects = true;
         }
@@ -259,8 +299,7 @@ namespace Engine3D
         {
             Object o = new Object(ObjectType.TriangleMesh);
             o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref character.camera, ref o));
-            editorData.objects.Add(o);
-            _meshObjects.Add(o);
+            AddObjectAndCalculate(o);
             editorData.recalculateObjects = true;
         }
 
@@ -301,59 +340,38 @@ namespace Engine3D
 
         private void RenderInfiniteFloor()
         {
+            GL.Disable(EnableCap.CullFace);
             infiniteFloorShader.Use();
 
-            // Set uniforms (camera position, grid scale, etc.)
             Vector3 cameraPos = character.camera.GetPosition();
-            float gridScale = 10.0f;
-            float gridFadeDistance = 50.0f;
-            Vector3 gridColor = new Vector3(1.0f, 1.0f, 1.0f);
-            Vector3 backgroundColor = new Vector3(0.0f, 0.0f, 0.0f);
 
             Matrix4 projectionMatrix = character.camera.projectionMatrix;
             Matrix4 viewMatrix = character.camera.viewMatrix;
-
-            Matrix4 modelMatrix = Matrix4.Identity;
-
-            Matrix4 scaleMatrix = Matrix4.CreateScale(1);
-
+            Matrix4 scaleMatrix = Matrix4.CreateScale(10000,1,10000);
             Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(new OpenTK.Mathematics.Quaternion(0, 0, 0));
+            Matrix4 translationMatrix = Matrix4.CreateTranslation(0, 0, 0); 
 
-            Matrix4 translationMatrix = Matrix4.CreateTranslation(0, 60, 0); //TODO: This should be negative, to move the floor down, but then the top of the
-                                                                             //      floor is not visible
-
-            modelMatrix = scaleMatrix* rotationMatrix * translationMatrix;
+            Matrix4 modelMatrix = scaleMatrix* rotationMatrix * translationMatrix;
 
             GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "modelMatrix"), true, ref modelMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "viewMatrix"), true, ref viewMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "projectionMatrix"), true, ref projectionMatrix);
             GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "cameraPos"), ref cameraPos);
-            GL.Uniform1(GL.GetUniformLocation(infiniteFloorShader.id, "gridScale"), gridScale);
-            GL.Uniform1(GL.GetUniformLocation(infiniteFloorShader.id, "gridFadeDistance"), gridFadeDistance);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "gridColor"), ref gridColor);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "backgroundColor"), ref backgroundColor);
 
             infiniteFloorVao.Bind();
             List<float> gridVertices = new List<float>
             {
                 // Position data (X, Y, Z)
-                -100.0f, 0.0f, -100.0f,  // Bottom-left
-                 100.0f, 0.0f, -100.0f,  // Bottom-right
-                 100.0f, 0.0f,  100.0f,  // Top-right
-                -100.0f, 0.0f,  100.0f   // Top-left
+                -1.0f, 0.0f, -1.0f,  // Bottom-left
+                 1.0f, 0.0f, -1.0f,  // Bottom-right
+                 1.0f, 0.0f,  1.0f,  // Top-right
+                -1.0f, 0.0f,  1.0f   // Top-left
             };
-            //List<float> gridVertices = new List<float>
-            //{
-            //    // Position data (X, Y, Z)
-            //    -1.0f,  1.0f, 0.0f, // Top-left
-            //    -1.0f, -1.0f, 0.0f, // Bottom-left
-            //        1.0f, -1.0f, 0.0f, // Bottom-right
-            //        1.0f,  1.0f, 0.0f  // Top-right
-            //};
             infiniteFloorVbo.Buffer(gridVertices);
             GL.DrawArrays(OpenTK.Graphics.OpenGL4.PrimitiveType.TriangleFan, 0, 4);
 
             infiniteFloorVao.Unbind();
+            GL.Enable(EnableCap.CullFace);
         }
 
         protected override void OnRenderFrame(FrameEventArgs args)
@@ -379,14 +397,14 @@ namespace Engine3D
 
             ObjectAndAxisPicking();
 
-
             GL.ClearColor(Color4.Cyan);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
             RenderInfiniteFloor();
 
             shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
+            PointLight.SendToGPU(pointLights, shaderProgram.id, editorData.gameRunning);
+            DirectionalLight.SendToGPU(dirLights, shaderProgram.id);
 
             DrawObjects(args.Time);
 
@@ -660,7 +678,7 @@ namespace Engine3D
 
             onlyPosShaderProgram.Use();
 
-            Vector3 characterPos = new Vector3(-5, -5, 0);
+            Vector3 characterPos = new Vector3(-5, 95, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
             //character.camera.SetYaw(358);
             //character.camera.SetPitch(-4.23f);
@@ -668,10 +686,14 @@ namespace Engine3D
             editorData.gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref camera);
 
             //Point Lights
-            //pointLights.Add(new PointLight(new Vector3(0, 5000, 0), Color4.White, meshVao.id, shaderProgram.id, ref frustum, ref camera, noTexVao, noTexVbo, noTextureShaderProgram.id, pointLights.Count));
+            //objects.Add(new PointLight(Color4.White, shaderProgram.id, pointLights.Count));
+            //pointLights[0].transformation.Position = new Vector3(0, 110, 0);
 
             shaderProgram.Use();
-            PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
+            PointLight.SendToGPU(pointLights, shaderProgram.id, editorData.gameRunning);
+
+            objects.Add(new DirectionalLight(shaderProgram.id, 0, new Vector3(0, -1, 0)));
+            DirectionalLight.SendToGPU(dirLights, shaderProgram.id);
 
             // Projection matrix and mesh loading
 

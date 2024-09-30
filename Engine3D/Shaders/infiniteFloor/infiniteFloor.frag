@@ -1,30 +1,44 @@
 #version 430 core
 
 out vec4 fragColor;
+in vec3 fragPos;
 
 uniform vec3 cameraPos; // Camera world position
-uniform float gridScale = 10.0; // Grid scale
-uniform float lineThickness = 0.01; // Thickness of the grid lines
-uniform vec3 gridColor = vec3(1.0); // Color of the grid lines
-uniform vec3 backgroundColor = vec3(0.0); // Background color
-uniform float gridFadeDistance = 50.0; // Distance where grid starts to fade
 
-float gridPattern(float coord) {
-    float line = abs(fract(coord) - 0.5);
-    return smoothstep(lineThickness, 0.0, line);
-}
+void main()
+{
+    float gridSpacing = 50.0;
+    float lineWidth = 1.0;
+    float maxDistanceColor = 1000.0;
+    float maxDistanceLine = 100.0;
 
-void main() {
-    vec2 gridUV = cameraPos.xz / gridScale;
-    float lineX = gridPattern(gridUV.x);
-    float lineY = gridPattern(gridUV.y);
-    float grid = max(lineX, lineY);
+    float distance = length(cameraPos - fragPos);
 
-    float distanceFromCamera = length(cameraPos);
-    float fadeFactor = clamp(1.0 - (distanceFromCamera / gridFadeDistance), 0.0, 1.0);
+    // Dynamically increase line width based on the distance from the camera
+    float adjustedLineWidth = lineWidth + (distance / maxDistanceLine) * lineWidth;
     
-    vec3 finalColor = mix(backgroundColor, gridColor, grid * fadeFactor);
-    fragColor = vec4(finalColor, 1.0);
+    // Ensure that the line width doesn't get too large at far distances
+    adjustedLineWidth = clamp(adjustedLineWidth, lineWidth, lineWidth * 10.0);
 
-//    fragColor = vec4(1.0, 0.0, 0.0, 1.0); // Pure red color with full opacity
+    // Use the X and Z coordinates from FragPos for a floor grid pattern
+    float modX = mod(fragPos.x, gridSpacing);
+    float modZ = mod(fragPos.z, gridSpacing);
+
+    // Check if the fragment is close to a grid line on either axis
+    if (modX < adjustedLineWidth || modZ < adjustedLineWidth)
+    {
+        vec3 closeColor = vec3(0.6, 1.0, 1.0); // White at close distance
+        vec3 farColor = vec3(0.0, 1.0, 1.0);  // Cyan at far distance
+
+        // Calculate the blending factor for the color transition based on distance
+        float colorFactor = clamp(distance / maxDistanceColor, 0.0, 1.0);
+        vec3 gridColor = mix(closeColor, farColor, colorFactor);
+
+        fragColor = vec4(gridColor, 1.0);
+
+    }
+    else
+    {
+        discard;
+    }
 }

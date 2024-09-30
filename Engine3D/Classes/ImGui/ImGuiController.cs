@@ -17,6 +17,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using static System.Net.Mime.MediaTypeNames;
 using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
 
@@ -194,6 +195,11 @@ namespace Engine3D
 
         List<Object> remainingObjects = new List<Object>();
         List<BaseMesh?> meshes = new List<BaseMesh?>();
+        List<PointLight> pointLights = new List<PointLight>();
+        List<DirectionalLight> directionalLights = new List<DirectionalLight>();
+
+        private string[] showConsoleTypeList = new string[0];
+        private int showConsoleTypeListIndex = 2;
 
         private bool showAddComponentWindow = false;
         private string searchQueryAddComponent = "";
@@ -210,6 +216,8 @@ namespace Engine3D
             currentTextureAssetFolder = editorData.assetManager.assets.folders[FileType.Textures.ToString()];
             currentModelAssetFolder = editorData.assetManager.assets.folders[FileType.Models.ToString()];
             currentAudioAssetFolder = editorData.assetManager.assets.folders[FileType.Audio.ToString()];
+
+            showConsoleTypeList = Enum.GetNames(typeof(ShowConsoleType));
 
             #region GetComponents
             var types = Assembly.GetExecutingAssembly().GetTypes();
@@ -324,33 +332,47 @@ namespace Engine3D
         public void CalculateObjectList()
         {
             meshes.Clear();
+            pointLights.Clear();
+            directionalLights.Clear();
             remainingObjects.Clear();
             List<Object> allObjects = new List<Object>(editorData.objects);
-            Dictionary<string, int> meshNames = new Dictionary<string, int>();
+            Dictionary<string, int> names = new Dictionary<string, int>();
 
             List<int> toRemoveMeshes = new List<int>();
             for(int i = 0; i < allObjects.Count; i++)
             {
+                string name = allObjects[i].name == "" ? "Object " + i.ToString() : allObjects[i].name;
                 if (allObjects[i].Mesh != null)
                 {
                     meshes.Add(allObjects[i].Mesh);
-                    string name = allObjects[i].name == "" ? "Object " + i.ToString() : allObjects[i].name;
 
                     if (allObjects[i].Mesh is InstancedMesh)
                         name += " (Instanced)";
 
-                    if (meshNames.ContainsKey(name))
-                        meshNames[name] += 1;
-                    else
-                        meshNames[name] = 0;
-
-                    if (meshNames[name] == 0)
-                        allObjects[i].displayName = name;
-                    else
-                        allObjects[i].displayName = name + " (" + meshNames[name] + ")";
-
                     toRemoveMeshes.Insert(0,i);
                 }
+                if (allObjects[i] is PointLight)
+                {
+                    pointLights.Add((PointLight)allObjects[i]);
+
+                    toRemoveMeshes.Insert(0, i);
+                }
+                if (allObjects[i] is DirectionalLight)
+                {
+                    directionalLights.Add((DirectionalLight)allObjects[i]);
+
+                    toRemoveMeshes.Insert(0, i);
+                }
+
+                if (names.ContainsKey(name))
+                    names[name] += 1;
+                else
+                    names[name] = 0;
+
+                if (names[name] == 0)
+                    allObjects[i].displayName = name;
+                else
+                    allObjects[i].displayName = name + " (" + names[name] + ")";
             }
 
             foreach (var i in toRemoveMeshes)
@@ -850,10 +872,20 @@ namespace Engine3D
                                 engine.AddObject(ObjectType.AudioEmitter);
                                 shouldOpenTreeNodeMeshes = true;
                             }
-                            if (ImGui.MenuItem("Light source"))
+                            if (ImGui.BeginMenu("Lighting"))
                             {
-                                engine.AddObject(ObjectType.LightSource);
-                                shouldOpenTreeNodeMeshes = true;
+                                if (ImGui.MenuItem("Point Light"))
+                                {
+                                    engine.AddObject(ObjectType.PointLight);
+                                    shouldOpenTreeNodeMeshes = true;
+                                }
+                                if (ImGui.MenuItem("Directional Light"))
+                                {
+                                    engine.AddObject(ObjectType.DirectionalLight);
+                                    shouldOpenTreeNodeMeshes = true;
+                                }
+
+                                ImGui.EndMenu();
                             }
 
                             ImGui.EndPopup();
@@ -927,6 +959,67 @@ namespace Engine3D
                                             if (ImGui.MenuItem("Delete"))
                                             {
                                                 engine.RemoveObject(meshes[i].parentObject);
+                                            }
+
+                                            ImGui.EndPopup();
+                                        }
+                                        style.WindowPadding = windowPadding;
+                                        style.PopupRounding = popupRounding;
+                                    }
+                                }
+
+                                ImGui.TreePop();
+                            }
+
+                            if((pointLights.Count > 0 || directionalLights.Count > 0) && ImGui.TreeNode("Lighting"))
+                            {
+                                ImGui.Separator();
+                                for (int i = 0; i < pointLights.Count; i++)
+                                {
+                                    if (ImGui.Selectable(pointLights[i].displayName))
+                                    {
+                                        SelectItem(pointLights[i], editorData);
+                                    }
+                                    if (ImGui.IsItemHovered())
+                                        anyObjectHovered = pointLights[i].id;
+
+                                    if (isObjectHovered != -1 && isObjectHovered == pointLights[i].id)
+                                    {
+                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
+                                        style.PopupRounding = 2f;
+                                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
+                                        {
+                                            anyObjectHovered = pointLights[i].id;
+                                            if (ImGui.MenuItem("Delete"))
+                                            {
+                                                engine.RemoveObject(pointLights[i]);
+                                            }
+
+                                            ImGui.EndPopup();
+                                        }
+                                        style.WindowPadding = windowPadding;
+                                        style.PopupRounding = popupRounding;
+                                    }
+                                }
+                                for (int i = 0; i < directionalLights.Count; i++)
+                                {
+                                    if (ImGui.Selectable(directionalLights[i].displayName))
+                                    {
+                                        SelectItem(directionalLights[i], editorData);
+                                    }
+                                    if (ImGui.IsItemHovered())
+                                        anyObjectHovered = directionalLights[i].id;
+
+                                    if (isObjectHovered != -1 && isObjectHovered == directionalLights[i].id)
+                                    {
+                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
+                                        style.PopupRounding = 2f;
+                                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
+                                        {
+                                            anyObjectHovered = directionalLights[i].id;
+                                            if (ImGui.MenuItem("Delete"))
+                                            {
+                                                engine.RemoveObject(directionalLights[i]);
                                             }
 
                                             ImGui.EndPopup();
@@ -1450,19 +1543,6 @@ namespace Engine3D
                                         ImGui.SetNextItemOpen(true, ImGuiCond.Once);
                                         if (ImGui.TreeNode("Mesh"))
                                         {
-                                            //ImGui.SameLine();
-                                            //var origDeleteX = RightAlignCursor(70);
-                                            //ImGui.PushStyleColor(ImGuiCol.Button, style.Colors[(int)ImGuiCol.FrameBg]);
-                                            //ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 2f);
-                                            //if(ImGui.Button("Delete", new System.Numerics.Vector2(70, 20)))
-                                            //{
-                                            //    toRemoveComp.Add(c);
-                                            //}
-                                            //ImGui.PopStyleVar();
-                                            //ImGui.PopStyleColor();
-                                            //ImGui.SetCursorPosX(origDeleteX);
-                                            //ImGui.Dummy(new System.Numerics.Vector2(0, 0));
-
                                             #region Mesh
                                             if (baseMesh.GetType() == typeof(Mesh))
                                             {
@@ -2505,6 +2585,7 @@ namespace Engine3D
 
                         ImGui.EndTabItem();
                     }
+
                     if (ImGui.BeginTabItem("Console"))
                     {
                         if (currentBottomPanelTab != "Console")
@@ -2520,10 +2601,37 @@ namespace Engine3D
                         ImGui.PopFont();
                         ImGui.SetScrollHereY(1.0f);
 
+                        ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - gameWindow.bottomPanelSize - 4);
+                        ImGui.Separator();
+                        ImGui.SetNextItemWidth(200);
+                        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 0);
+                        if (ImGui.BeginCombo("##showConsoleTypeDropdown", showConsoleTypeList[showConsoleTypeListIndex]))
+                        {
+                            for (int i = 0; i < showConsoleTypeList.Length; i++)
+                            {
+                                bool isSelected = (i == showConsoleTypeListIndex);
+
+                                if (ImGui.Selectable(showConsoleTypeList[i], isSelected))
+                                {
+                                    showConsoleTypeListIndex = i;
+                                    Engine.consoleManager.showConsoleType = (ShowConsoleType)Enum.Parse(typeof(ShowConsoleType), showConsoleTypeList[showConsoleTypeListIndex]);
+                                }
+
+                                if (isSelected)
+                                {
+                                    ImGui.SetItemDefaultFocus();
+                                }
+                            }
+
+                            ImGui.EndCombo();
+                        }
+                        ImGui.PopStyleVar();
+
                         ImGui.Dummy(new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 20));
 
                         ImGui.EndTabItem();
                     }
+
                     if (ImGui.BeginTabItem("Asset store"))
                     {
                         if (editorData.assetStoreManager.IsThereInternetConnection)
@@ -2651,6 +2759,14 @@ namespace Engine3D
                         }
 
                         ImGui.EndTabItem();
+                    }
+
+                    if (Engine.consoleManager.justAdded)
+                    {
+                        ImGui.SetTabItemClosed("Project");
+                        ImGui.SetTabItemClosed("Asset store");
+
+                        Engine.consoleManager.justAdded = false;
                     }
 
                     ImGui.EndTabBar();

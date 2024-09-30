@@ -136,5 +136,23 @@ namespace Engine3D
                 throw new Exception("Shader not found!");
             }
         }
+
+        public static List<string> GetUniformNames(int shaderProgramId)
+        {
+            GL.GetProgram(shaderProgramId, GetProgramParameterName.ActiveUniforms, out int numberOfUniforms);
+            GL.GetProgram(shaderProgramId, GetProgramParameterName.ActiveUniformMaxLength, out int maxNameLength);
+
+            StringBuilder uniformNameBuffer = new StringBuilder(maxNameLength);
+
+            // Loop over each uniform
+            List<string> names = new List<string>();
+            for (int i = 0; i < numberOfUniforms; i++)
+            {
+                GL.GetActiveUniform(shaderProgramId, i, maxNameLength, out int length, out int size, out ActiveUniformType type, out string uniformName);
+                names.Add(uniformName);
+            }
+
+            return names;
+        }
     }
 }
