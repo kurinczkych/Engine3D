@@ -12,8 +12,6 @@ namespace Engine3D
     {
         private void DrawObjects(double delta)
         {
-            GL.ClearColor(Color4.Cyan);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
             vertices.Clear();
             Type? currentMeshType = null;
             foreach (Object o in objects)

@@ -34,6 +34,8 @@
     <None Remove="Shaders\Default\Default.vert" />
     <None Remove="Shaders\Default\DefaultForGeom.vert" />
     <None Remove="Shaders\Default\DefaultWithBone.vert" />
+    <None Remove="Shaders\infiniteFloor\infiniteFloor.frag" />
+    <None Remove="Shaders\infiniteFloor\infiniteFloor.vert" />
     <None Remove="Shaders\Instanced\Instanced.frag" />
     <None Remove="Shaders\Instanced\Instanced.vert" />
     <None Remove="Shaders\onlyPos\onlyPos.frag" />
@@ -103,6 +105,8 @@
     <EmbeddedResource Include="Shaders\Default\Default.geom" />
     <EmbeddedResource Include="Shaders\Default\Default.vert" />
     <EmbeddedResource Include="Shaders\Default\DefaultForGeom.vert" />
+    <EmbeddedResource Include="Shaders\infiniteFloor\infiniteFloor.frag" />
+    <EmbeddedResource Include="Shaders\infiniteFloor\infiniteFloor.vert" />
     <EmbeddedResource Include="Shaders\Instanced\Instanced.frag" />
     <EmbeddedResource Include="Shaders\Instanced\Instanced.vert" />
     <EmbeddedResource Include="Shaders\onlyPos\onlyPos.frag" />

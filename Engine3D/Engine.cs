@@ -91,6 +91,9 @@ namespace Engine3D
         private VAO aabbVao;
         private VBO aabbVbo;
 
+        private VAO infiniteFloorVao;
+        private VBO infiniteFloorVbo;
+
         private Shader cullingProgram;
         private Shader outlineShader;
         private Shader outlineInstancedShader;
@@ -102,6 +105,7 @@ namespace Engine3D
         private Shader posTexShader;
         private Shader onlyPosShaderProgram;
         private Shader aabbShaderProgram;
+        private Shader infiniteFloorShader;
         #endregion
 
         #region Program variables
@@ -236,9 +240,9 @@ namespace Engine3D
             }
             else if (type == ObjectType.ParticleEmitter)
             {
-                ParticleSystem o = new ParticleSystem();
-                o.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref character.camera, ref o));
-                editorData.objects.Add(o);
+                //ParticleSystem o = new ParticleSystem();
+                //o.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref character.camera, ref o));
+                //editorData.objects.Add(o);
             }
             else if (type == ObjectType.AudioEmitter)
             {
@@ -295,6 +299,63 @@ namespace Engine3D
             objects.Sort();
         }
 
+        private void RenderInfiniteFloor()
+        {
+            infiniteFloorShader.Use();
+
+            // Set uniforms (camera position, grid scale, etc.)
+            Vector3 cameraPos = character.camera.GetPosition();
+            float gridScale = 10.0f;
+            float gridFadeDistance = 50.0f;
+            Vector3 gridColor = new Vector3(1.0f, 1.0f, 1.0f);
+            Vector3 backgroundColor = new Vector3(0.0f, 0.0f, 0.0f);
+
+            Matrix4 projectionMatrix = character.camera.projectionMatrix;
+            Matrix4 viewMatrix = character.camera.viewMatrix;
+
+            Matrix4 modelMatrix = Matrix4.Identity;
+
+            Matrix4 scaleMatrix = Matrix4.CreateScale(1);
+
+            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(new OpenTK.Mathematics.Quaternion(0, 0, 0));
+
+            Matrix4 translationMatrix = Matrix4.CreateTranslation(0, 60, 0); //TODO: This should be negative, to move the floor down, but then the top of the
+                                                                             //      floor is not visible
+
+            modelMatrix = scaleMatrix* rotationMatrix * translationMatrix;
+
+            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "modelMatrix"), true, ref modelMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "viewMatrix"), true, ref viewMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "projectionMatrix"), true, ref projectionMatrix);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "cameraPos"), ref cameraPos);
+            GL.Uniform1(GL.GetUniformLocation(infiniteFloorShader.id, "gridScale"), gridScale);
+            GL.Uniform1(GL.GetUniformLocation(infiniteFloorShader.id, "gridFadeDistance"), gridFadeDistance);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "gridColor"), ref gridColor);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "backgroundColor"), ref backgroundColor);
+
+            infiniteFloorVao.Bind();
+            List<float> gridVertices = new List<float>
+            {
+                // Position data (X, Y, Z)
+                -100.0f, 0.0f, -100.0f,  // Bottom-left
+                 100.0f, 0.0f, -100.0f,  // Bottom-right
+                 100.0f, 0.0f,  100.0f,  // Top-right
+                -100.0f, 0.0f,  100.0f   // Top-left
+            };
+            //List<float> gridVertices = new List<float>
+            //{
+            //    // Position data (X, Y, Z)
+            //    -1.0f,  1.0f, 0.0f, // Top-left
+            //    -1.0f, -1.0f, 0.0f, // Bottom-left
+            //        1.0f, -1.0f, 0.0f, // Bottom-right
+            //        1.0f,  1.0f, 0.0f  // Top-right
+            //};
+            infiniteFloorVbo.Buffer(gridVertices);
+            GL.DrawArrays(OpenTK.Graphics.OpenGL4.PrimitiveType.TriangleFan, 0, 4);
+
+            infiniteFloorVao.Unbind();
+        }
+
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             imGuiController.Update(this, (float)args.Time);
@@ -317,6 +378,12 @@ namespace Engine3D
             OcclusionCuller();
 
             ObjectAndAxisPicking();
+
+
+            GL.ClearColor(Color4.Cyan);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
+            RenderInfiniteFloor();
 
             shaderProgram.Use();
             PointLight.SendToGPU(ref pointLights, shaderProgram.id, editorData.gameRunning);
@@ -551,6 +618,10 @@ namespace Engine3D
             aabbVao = new VAO(3);
             aabbVao.LinkToVAO(0, 3, aabbVbo);
 
+            infiniteFloorVbo = new VBO();
+            infiniteFloorVao = new VAO(3);
+            infiniteFloorVao.LinkToVAO(0, 3, infiniteFloorVbo);
+
             #endregion
 
             #region Shader Init
@@ -567,6 +638,7 @@ namespace Engine3D
             posTexShader = new Shader(new List<string>() { "postex.vert", "postex.frag" });
             onlyPosShaderProgram = new Shader(new List<string>() { "onlyPos.vert", "onlyPos.frag" });
             aabbShaderProgram = new Shader(new List<string>() { "aabb.vert", "aabb.frag" });
+            infiniteFloorShader = new Shader(new List<string>() { "infiniteFloor.vert", "infiniteFloor.frag" });
             #endregion
 
             pickingTexture = new PickingTexture(windowSize);

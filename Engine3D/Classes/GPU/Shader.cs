@@ -37,11 +37,28 @@ namespace Engine3D
                 shaderIds.Add(shader);
             }
 
+
             for (int i = 0; i < shaderIds.Count(); i++)
                 GL.AttachShader(id, shaderIds[i]);
 
             GL.LinkProgram(id);
+
+            //if (shaderNames[0].Contains("infinite"))
+            //    ;
+
+            //int linkStatus;
+            //GL.GetProgram(id, GetProgramParameterName.LinkStatus, out linkStatus);
+            //if (linkStatus == 0)
+            //{
+            //    // Program linking failed, get the info log for details
+            //    string programInfoLog = GL.GetProgramInfoLog(id);
+            //    Console.WriteLine("Shader program linking failed: " + programInfoLog);
+            //}
+            //;
+
             Use();
+
+            
         }
 
         public void Use()
