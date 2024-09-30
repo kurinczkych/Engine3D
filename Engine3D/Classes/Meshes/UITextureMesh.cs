@@ -76,7 +76,10 @@ namespace Engine3D
         protected override void SendUniforms()
         {
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
-            GL.Uniform1(uniformLocations["textureSampler"], texture.TextureUnit);
+            if(texture != null)
+                GL.Uniform1(uniformLocations["textureSampler"], texture.TextureUnit);
+            else
+                GL.Uniform1(uniformLocations["textureSampler"], -1);
         }
 
         //private List<float> ConvertToNDC(triangle tri, int index, ref Matrix4 transformMatrix)
@@ -134,7 +137,9 @@ namespace Engine3D
             //}
 
             SendUniforms();
-            texture.Bind();
+
+            if(texture != null)
+                texture.Bind();
 
             return vertices;
         }

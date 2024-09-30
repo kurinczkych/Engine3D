@@ -18,28 +18,28 @@ namespace Engine3D
                     objectMovingAxis = Axis.X;
                     if (editorData.gizmoManager.AbsoluteMoving)
                     {
-                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.meshType == typeof(InstancedMesh))
+                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.Mesh is InstancedMesh instMesh)
                         {
-                            Vector3 instPos = ((InstancedMesh)selectedO.GetMesh()).instancedData[editorData.instIndex].Position;
-                            objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.Position.Z + instPos.Z);
+                            Vector3 instPos = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position;
+                            objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.transformation.Position.Z + instPos.Z);
                         }
                         else
-                            objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.Position.Z);
+                            objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.transformation.Position.Z);
                     }
                     else
                     {
-                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.meshType == typeof(InstancedMesh))
+                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.Mesh is InstancedMesh instMesh)
                         {
-                            Vector3 instPos = ((InstancedMesh)selectedO.GetMesh()).instancedData[editorData.instIndex].Position;
-                            Quaternion instRot = ((InstancedMesh)selectedO.GetMesh()).instancedData[editorData.instIndex].Rotation;
+                            Vector3 instPos = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position;
+                            Quaternion instRot = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Rotation;
 
-                            objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.Rotation * instRot),
-                                              selectedO.Position + instPos);
+                            objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.transformation.Rotation * instRot),
+                                              selectedO.transformation.Position + instPos);
                         }
                         else
                         {
-                            objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.Rotation),
-                                              selectedO.Position);
+                            objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.transformation.Rotation),
+                                              selectedO.transformation.Position);
                         }
                     }
 
@@ -53,7 +53,7 @@ namespace Engine3D
                             pos.Y = 0;
                         else
                         {
-                            Vector3 searchDir = Vector3.Transform(new Vector3(1, 0, 0), selectedO.Rotation);
+                            Vector3 searchDir = Vector3.Transform(new Vector3(1, 0, 0), selectedO.transformation.Rotation);
                             if (searchDir.X == 0)
                                 searchDir.X = 0.01f;
                             float slopeY = searchDir.Y / searchDir.X;
@@ -73,12 +73,12 @@ namespace Engine3D
                     objectMovingAxis = Axis.Y;
                     if (editorData.gizmoManager.AbsoluteMoving)
                     {
-                        objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.Position.Z);
+                        objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.transformation.Position.Z);
                     }
                     else
                     {
-                        objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.Rotation),
-                                          selectedO.Position);
+                        objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.transformation.Rotation),
+                                          selectedO.transformation.Position);
                     }
 
                     Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
@@ -91,7 +91,7 @@ namespace Engine3D
                             pos.X = 0;
                         else
                         {
-                            Vector3 searchDir = Vector3.Transform(new Vector3(0, 1, 0), selectedO.Rotation);
+                            Vector3 searchDir = Vector3.Transform(new Vector3(0, 1, 0), selectedO.transformation.Rotation);
                             if (searchDir.Y == 0)
                                 searchDir.Y = 0.01f;
                             float slopeX = searchDir.X / searchDir.Y;
@@ -112,12 +112,12 @@ namespace Engine3D
                     objectMovingAxis = Axis.Z;
                     if (editorData.gizmoManager.AbsoluteMoving)
                     {
-                        objectMovingPlane = new Plane(new Vector3(1, 0, 0), selectedO.Position.X);
+                        objectMovingPlane = new Plane(new Vector3(1, 0, 0), selectedO.transformation.Position.X);
                     }
                     else
                     {
-                        objectMovingPlane = new Plane(Vector3.Transform(new Vector3(1, 0, 0), selectedO.Rotation),
-                                          selectedO.Position);
+                        objectMovingPlane = new Plane(Vector3.Transform(new Vector3(1, 0, 0), selectedO.transformation.Rotation),
+                                          selectedO.transformation.Position);
                     }
 
                     Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
@@ -130,7 +130,7 @@ namespace Engine3D
                             pos.Y = 0;
                         else
                         {
-                            Vector3 searchDir = Vector3.Transform(new Vector3(0, 0, 1), selectedO.Rotation);
+                            Vector3 searchDir = Vector3.Transform(new Vector3(0, 0, 1), selectedO.transformation.Rotation);
                             if (searchDir.Z == 0)
                                 searchDir.Z = 0.01f;
                             float slopeY = searchDir.Y / searchDir.Z;

@@ -36,23 +36,27 @@ namespace Engine3D
                         pickingShader.Use();
                         foreach (Object o in _meshObjects)
                         {
-                            Mesh mesh = (Mesh)o.GetMesh();
+                            BaseMesh? mesh = o.Mesh;
+                            if(mesh == null)
+                                continue;
 
                             int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
-                            mesh.DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
+                            ((Mesh)mesh).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
                         }
 
                         pickingInstancedShader.Use();
                         foreach (Object o in _instObjects)
                         {
-                            InstancedMesh mesh = (InstancedMesh)o.GetMesh();
+                            BaseMesh? mesh = o.Mesh;
+                            if (mesh == null)
+                                continue;
 
                             int objectIdLoc = GL.GetUniformLocation(pickingInstancedShader.id, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
-                             mesh.DrawOnlyPosAndNormal(editorData.gameRunning, pickingInstancedShader, instancedOnlyPosAndNormalVao, 
+                            ((InstancedMesh)mesh).DrawOnlyPosAndNormal(editorData.gameRunning, pickingInstancedShader, instancedOnlyPosAndNormalVao, 
                                                        onlyPosAndNormalVbo, instancedOnlyPosAndNormalVbo, onlyPosAndNormalIbo);
                         }
 
@@ -77,7 +81,11 @@ namespace Engine3D
                                 GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
                                 GL.Uniform1(drawIdLoc, (uint)0);
 
-                                ((Mesh)moverGizmo.GetMesh()).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
+                                BaseMesh? moverMesh = moverGizmo.Mesh;
+                                if (moverMesh == null)
+                                    continue;
+
+                                ((Mesh)moverMesh).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
                             }
 
                             pickingTexture.DisableWriting();
@@ -94,7 +102,11 @@ namespace Engine3D
                             if (pixel.objectId != 0 && objects.Count > 0)
                             {
                                 Object selectedObject = objects.Where(x => x.id == pixel.objectId).First();
-                                int instIndex = editorData.gizmoManager.PerInstanceMove && selectedObject.meshType == typeof(InstancedMesh) ? pixel.instId : -1;
+                                BaseMesh? selectedMesh = selectedObject.Mesh;
+                                if (selectedMesh == null)
+                                    return;
+
+                                int instIndex = editorData.gizmoManager.PerInstanceMove && selectedMesh.GetType() == typeof(InstancedMesh) ? pixel.instId : -1;
 
                                 imGuiController.SelectItem(selectedObject, editorData, instIndex);
                                 imGuiController.shouldOpenTreeNodeMeshes = true;

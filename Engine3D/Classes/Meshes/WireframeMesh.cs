@@ -39,7 +39,6 @@ namespace Engine3D
 
         public WireframeMesh(VAO vao, VBO vbo, int shaderProgramId, ref Camera camera) : base(vao.id, vbo.id, shaderProgramId)
         {
-            throw new NotImplementedException();
             this.camera = camera;
 
             Vao = vao;

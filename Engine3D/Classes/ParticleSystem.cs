@@ -127,18 +127,16 @@ namespace Engine3D
         public Color4 endColor = Color4.White;
         public bool randomColor = false;
 
-        private BaseMesh? parentMesh;
-
         private List<Particle> particles = new List<Particle>();
 
-        public ParticleSystem(int id) : base(ObjectType.ParticleEmitter, id)
+        public ParticleSystem(int id = -1) : base(ObjectType.ParticleEmitter, id)
         {
-            parentMesh = Mesh;
-            if(parentMesh is null)
-                throw new Exception("To create a particle system, the object must has an InstancedMesh!");
+            //parentMesh = Mesh;
+            //if(parentMesh is null)
+            //    throw new Exception("To create a particle system, the object must has an InstancedMesh!");
 
-            if (parentMesh.GetType() != typeof(InstancedMesh))
-                throw new Exception("The particle system's object mesh only can be InstancedMesh");
+            //if (parentMesh.GetType() != typeof(InstancedMesh))
+            //    throw new Exception("The particle system's object mesh only can be InstancedMesh");
         }
 
         private void UpdateParticleAndRemove(ref List<Particle> toRemove, Particle p, float delta)
@@ -233,9 +231,9 @@ namespace Engine3D
             List<InstancedMeshData> data = particles.Select(x => x.meshData).ToList();
             //data.Sort((x,y) => x)
 
-            parentMesh.SetInstancedData(data);
+            Mesh.SetInstancedData(data);
 
-            return parentMesh;
+            return Mesh;
         }
 
     }

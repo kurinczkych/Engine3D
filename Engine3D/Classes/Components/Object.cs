@@ -45,8 +45,30 @@ namespace Engine3D
 
     public class Transformation
     {
-        public Vector3 Position { get; set; }
-        public Quaternion Rotation { get; set; }
+        public Vector3 LastPosition;
+        private Vector3 position_;
+        public Vector3 Position
+        {
+            get { return position_; }
+            set
+            {
+                LastPosition = position_;
+                position_ = value;
+            }
+        }
+
+        public Quaternion LastRotation;
+        private Quaternion rotation_;
+        public Quaternion Rotation
+        {
+            get { return rotation_; }
+            set
+            {
+                LastRotation = rotation_;
+                rotation_ = value;
+            }
+        }
+
         public Vector3 Scale = Vector3.One;
 
         public Transformation(Vector3 position, Quaternion rotation, Vector3 scale)
@@ -75,6 +97,7 @@ namespace Engine3D
     {
         public int id;
         public string name = "";
+        public string displayName = "";
 
         public List<IComponent> components = new List<IComponent>();
 
@@ -82,34 +105,6 @@ namespace Engine3D
         public bool isEnabled = true;
         public List<Object>? moverGizmos;
         public AABB Bounds;
-
-        //public string meshName
-        //{
-        //    get
-        //    {
-        //        if (mesh != null)
-        //            return mesh.modelName;
-
-        //        return "";
-        //    }
-        //    set
-        //    {
-        //        string relativePath = AssetManager.GetRelativeModelsFolder(value);
-        //        mesh.modelPath = relativePath;
-        //        mesh.modelName = Path.GetFileName(mesh.modelPath);
-        //        mesh.ProcessObj(mesh.modelPath);
-
-        //        if (mesh.model.meshes.Count > 0 && mesh.model.meshes[0].uniqueVertices.Count > 0 && !mesh.model.meshes[0].uniqueVertices[0].gotNormal)
-        //        {
-        //            mesh.ComputeVertexNormalsSpherical();
-        //        }
-        //        else if (mesh.model.meshes.Count > 0 && mesh.model.meshes[0].uniqueVertices.Count > 0 && mesh.model.meshes[0].uniqueVertices[0].gotNormal)
-        //            mesh.ComputeVertexNormals();
-
-        //        mesh.ComputeTangents();
-        //        mesh.recalculate = true;
-        //    }
-        //}
 
         public bool useBVH = false;
 
@@ -245,10 +240,25 @@ namespace Engine3D
                 else if(c is Physics cPhysics)
                 {
                     cPhysics.RemoveCollider();
-                    throw new NotImplementedException();
                 }
                 components.RemoveAt(i);
             }
+        }
+
+        public void DeleteComponent(IComponent component, ref TextureManager textureManager)
+        {
+            if (component is BaseMesh cMesh)
+            {
+                cMesh.Delete(ref textureManager);
+                mesh_ = null;
+            }
+            else if (component is Physics cPhysics)
+            {
+                cPhysics.RemoveCollider();
+                //throw new NotImplementedException();
+                physics_ = null;
+            }
+            components.Remove(component);
         }
 
         public ObjectType GetObjectType()

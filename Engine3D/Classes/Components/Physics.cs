@@ -99,6 +99,11 @@ namespace Engine3D
             }
         }
 
+        public Physics(ref Physx physx)
+        {
+            this.physx = physx;
+        }
+
         public void SetGravity(bool doesAffect)
         {
             if (dynamicColliderPtr == IntPtr.Zero)
@@ -171,7 +176,7 @@ namespace Engine3D
             }
         }
 
-        public void AddTriangleMeshCollider(BaseMesh mesh, Transformation trans, bool removeCollider = false)
+        public void AddTriangleMeshCollider(Transformation trans, BaseMesh mesh, bool removeCollider = false)
         {
             List<Vector3> allVerts = new List<Vector3>();
             List<int> indices = new List<int>();
@@ -521,7 +526,7 @@ namespace Engine3D
                 isStatic = false;
 
             if (colliderType == ColliderType.TriangleMesh)
-                AddTriangleMeshCollider(mesh, trans, true);
+                AddTriangleMeshCollider(trans, mesh, true);
             if (colliderType == ColliderType.Cube)
                 AddCubeCollider(trans, isStatic, true);
             if (colliderType == ColliderType.Sphere)

@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -38,7 +39,6 @@ namespace Engine3D
 
         private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
-        private Stopwatch stopwatch;
 
         public const int fpsLength = 5;
 
@@ -113,8 +113,7 @@ namespace Engine3D
     {
         #region Data
         public List<Object> objects;
-        public List<ParticleSystem> particleSystems;
-        public List<PointLight> pointLights;
+        public bool recalculateObjects = true;
 
         public FPS fps = new FPS();
 
@@ -123,6 +122,7 @@ namespace Engine3D
 
         public AssetStoreManager assetStoreManager;
         public AssetManager assetManager;
+        public TextureManager textureManager;
 
         public int currentAssetTexture = 0;
         public List<Asset> AssetTextures;
@@ -132,7 +132,9 @@ namespace Engine3D
         public GameWindowProperty gameWindow;
 
         public Vector2 gizmoWindowPos = Vector2.Zero;
-        public Vector2 gizmoWindowSize = Vector2.Zero; 
+        public Vector2 gizmoWindowSize = Vector2.Zero;
+
+        public Physx physx;
         #endregion
 
         #region Properties 
@@ -190,12 +192,38 @@ namespace Engine3D
         private AssetFolder currentModelAssetFolder;
         private AssetFolder currentAudioAssetFolder;
 
+        List<Object> remainingObjects = new List<Object>();
+        List<BaseMesh?> meshes = new List<BaseMesh?>();
+
+        private bool showAddComponentWindow = false;
+        private string searchQueryAddComponent = "";
+        private List<ComponentType> availableComponents = new List<ComponentType>();
+        private List<ComponentType> filteredComponents = new List<ComponentType>();
+        private HashSet<string> exludedComponents = new HashSet<string>
+        {
+            "BaseMesh"
+        };
+
         public ImGuiController(int width, int height, ref EditorData editorData) : base(width, height)
         {
             this.editorData = editorData;
             currentTextureAssetFolder = editorData.assetManager.assets.folders[FileType.Textures.ToString()];
             currentModelAssetFolder = editorData.assetManager.assets.folders[FileType.Models.ToString()];
             currentAudioAssetFolder = editorData.assetManager.assets.folders[FileType.Audio.ToString()];
+
+            #region GetComponents
+            var types = Assembly.GetExecutingAssembly().GetTypes();
+
+            foreach (var type in types)
+            {
+                if (type.IsClass && typeof(IComponent).IsAssignableFrom(type) && !exludedComponents.Contains(type.Name))
+                {
+                    availableComponents.Add(new ComponentType(type.Name, type.BaseType.Name, type));
+                }
+            }
+
+            filteredComponents = new List<ComponentType>(availableComponents);
+            #endregion
 
             #region Input boxes
             _inputBuffers.Add("##name", new byte[100]);
@@ -293,6 +321,95 @@ namespace Engine3D
         }
         #endregion
 
+        public void CalculateObjectList()
+        {
+            meshes.Clear();
+            remainingObjects.Clear();
+            List<Object> allObjects = new List<Object>(editorData.objects);
+            Dictionary<string, int> meshNames = new Dictionary<string, int>();
+
+            List<int> toRemoveMeshes = new List<int>();
+            for(int i = 0; i < allObjects.Count; i++)
+            {
+                if (allObjects[i].Mesh != null)
+                {
+                    meshes.Add(allObjects[i].Mesh);
+                    string name = allObjects[i].name == "" ? "Object " + i.ToString() : allObjects[i].name;
+
+                    if (allObjects[i].Mesh is InstancedMesh)
+                        name += " (Instanced)";
+
+                    if (meshNames.ContainsKey(name))
+                        meshNames[name] += 1;
+                    else
+                        meshNames[name] = 0;
+
+                    if (meshNames[name] == 0)
+                        allObjects[i].displayName = name;
+                    else
+                        allObjects[i].displayName = name + " (" + meshNames[name] + ")";
+
+                    toRemoveMeshes.Insert(0,i);
+                }
+            }
+
+            foreach (var i in toRemoveMeshes)
+                allObjects.RemoveAt(i);
+
+
+            remainingObjects.AddRange(allObjects);
+        }
+
+        #region Helpers
+        private void CenteredText(string text)
+        {
+            var originalXPos = ImGui.GetCursorPosX();
+            var windowSize = ImGui.GetWindowSize();
+            var textSize = ImGui.CalcTextSize(text);
+            float centeredXPos = (windowSize.X - textSize.X) / 2.0f;
+
+            ImGui.SetCursorPosX(centeredXPos);
+            ImGui.Text(text);
+
+            ImGui.SetCursorPosX(originalXPos);
+        }
+
+        private void RightAlignedText(string text)
+        {
+            var originalXPos = ImGui.GetCursorPosX();
+            float windowWidth = ImGui.GetWindowWidth();
+            float textWidth = ImGui.CalcTextSize(text).X;
+            float centeredXPos = windowWidth - textWidth - ImGui.GetStyle().WindowPadding.X;
+
+            ImGui.SetCursorPosX(centeredXPos);
+            ImGui.Text(text);
+
+            ImGui.SetCursorPosX(originalXPos);
+        }
+
+
+        private float CenterCursor(float sizeXOfComp)
+        {
+            var originalXPos = ImGui.GetCursorPosX();
+            var windowSize = ImGui.GetWindowSize();
+            float centeredXPos = (windowSize.X - sizeXOfComp) / 2.0f;
+
+            ImGui.SetCursorPosX(centeredXPos);
+
+            return originalXPos;
+        }
+        private float RightAlignCursor(float sizeXOfComp)
+        {
+            var originalXPos = ImGui.GetCursorPosX();
+            float windowWidth = ImGui.GetWindowWidth();
+            float centeredXPos = windowWidth - sizeXOfComp - ImGui.GetStyle().WindowPadding.X;
+
+            ImGui.SetCursorPosX(centeredXPos);
+
+            return originalXPos;
+        }
+        #endregion
+
         public void SelectItem(object? selectedObject, EditorData editorData, int instIndex = -1)
         {
             if (editorData.selectedItem != null)
@@ -343,6 +460,11 @@ namespace Engine3D
                                  KeyboardState keyboardState, MouseState mouseState, Engine engine)
         {
             GameWindowProperty gameWindow = editorData.gameWindow;
+            if(editorData.recalculateObjects)
+            {
+                CalculateObjectList();
+                editorData.recalculateObjects = false;
+            }
 
             var io = ImGui.GetIO();
             int anyObjectHovered = -1;
@@ -665,9 +787,6 @@ namespace Engine3D
             #endregion
 
             #region Left panel
-            List<Object> meshes = editorData.objects.Where(x => x.Mesh != null && (x.Mesh.GetType() == typeof(InstancedMesh) || x.Mesh.GetType() == typeof(InstancedMesh))).ToList();
-            List<ParticleSystem> particleSystems = editorData.particleSystems;
-            List<PointLight> pointLights = editorData.pointLights;
 
             if(keyboardState.IsKeyReleased(Keys.Delete) && editorData.selectedItem != null && editorData.selectedItem is Object objectDelete)
             {
@@ -742,39 +861,40 @@ namespace Engine3D
                         style.WindowPadding = windowPadding;
                         style.PopupRounding = popupRounding;
 
-                        if (meshes.Count > 0)
+                        if (editorData.objects.Count > 0)
                         {
+
                             if (shouldOpenTreeNodeMeshes)
                             {
                                 ImGui.SetNextItemOpen(true, ImGuiCond.Once); // Open the tree node once.
                                 shouldOpenTreeNodeMeshes = false; // Reset the flag so it doesn't open again automatically.
                             }
-                            if (ImGui.TreeNode("Meshes"))
-                            {
-                                for (int i = 0; i < meshes.Count; i++)
-                                {
-                                    string name = meshes[i].name == "" ? "Object " + i.ToString() : meshes[i].name;
 
-                                    if (meshes[i].Mesh.GetType() == typeof(InstancedMesh))
-                                        name += " (Instanced)";
+                            if(remainingObjects.Count > 0 && ImGui.TreeNode("Objects"))
+                            {
+                                ImGui.Separator();
+                                for (int i = 0; i < remainingObjects.Count; i++)
+                                {
+                                    Object ro = remainingObjects[i];
+                                    string name = ro.name == "" ? "Object " + i.ToString() : ro.name;
 
                                     if (ImGui.Selectable(name))
                                     {
-                                        SelectItem(meshes[i], editorData);
+                                        SelectItem(ro, editorData);
                                     }
                                     if (ImGui.IsItemHovered())
-                                        anyObjectHovered = meshes[i].id;
+                                        anyObjectHovered = ro.id;
 
-                                    if (isObjectHovered != -1 && isObjectHovered == meshes[i].id)
+                                    if (isObjectHovered != -1 && isObjectHovered == ro.id)
                                     {
                                         style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
                                         style.PopupRounding = 2f;
                                         if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
                                         {
-                                            anyObjectHovered = meshes[i].id;
+                                            anyObjectHovered = ro.id;
                                             if (ImGui.MenuItem("Delete"))
                                             {
-                                                engine.RemoveObject(meshes[i]);
+                                                engine.RemoveObject(ro);
                                             }
 
                                             ImGui.EndPopup();
@@ -783,38 +903,36 @@ namespace Engine3D
                                         style.PopupRounding = popupRounding;
                                     }
                                 }
-
-                                ImGui.TreePop();
                             }
-                        }
 
-                        if (particleSystems.Count > 0)
-                        {
-                            if (ImGui.TreeNode("Particle systems"))
+                            if (meshes.Count > 0 && ImGui.TreeNode("Meshes"))
                             {
-                                for (int i = 0; i < particleSystems.Count; i++)
+                                ImGui.Separator();
+                                for (int i = 0; i < meshes.Count; i++)
                                 {
-                                    string name = particleSystems[i].name == "" ? "Particle system " + i.ToString() : particleSystems[i].name;
-                                    if (ImGui.Selectable(name))
+                                    if (ImGui.Selectable(meshes[i].parentObject.displayName))
                                     {
-                                        SelectItem(particleSystems[i], editorData);
+                                        SelectItem(meshes[i].parentObject, editorData);
                                     }
-                                }
+                                    if (ImGui.IsItemHovered())
+                                        anyObjectHovered = meshes[i].parentObject.id;
 
-                                ImGui.TreePop();
-                            }
-                        }
-
-                        if (editorData.pointLights.Count > 0)
-                        {
-                            if (ImGui.TreeNode("Point lights"))
-                            {
-                                for (int i = 0; i < pointLights.Count; i++)
-                                {
-                                    string name = pointLights[i].name == "" ? "Point light " + i.ToString() : pointLights[i].name;
-                                    if (ImGui.Selectable(name))
+                                    if (isObjectHovered != -1 && isObjectHovered == meshes[i].parentObject.id)
                                     {
-                                        SelectItem(pointLights[i], editorData);
+                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
+                                        style.PopupRounding = 2f;
+                                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
+                                        {
+                                            anyObjectHovered = meshes[i].parentObject.id;
+                                            if (ImGui.MenuItem("Delete"))
+                                            {
+                                                engine.RemoveObject(meshes[i].parentObject);
+                                            }
+
+                                            ImGui.EndPopup();
+                                        }
+                                        style.WindowPadding = windowPadding;
+                                        style.PopupRounding = popupRounding;
                                     }
                                 }
 
@@ -902,523 +1020,681 @@ namespace Engine3D
                         {
                             if(editorData.selectedItem is Object o)
                             {
-                                BaseMesh? baseMesh = o.Mesh;
-                                if (baseMesh != null)
+                                if (ImGui.Checkbox("##isMeshEnabled", ref o.isEnabled))
                                 {
-                                    if (ImGui.Checkbox("##isMeshEnabled", ref o.isEnabled))
-                                    {
-                                        baseMesh.recalculate = true;
-                                    }
+                                    if(o.Mesh is BaseMesh enabledMesh)
+                                        enabledMesh.recalculate = true;
+                                }
+                                ImGui.SameLine();
 
-                                    ImGui.SameLine();
+                                Encoding.UTF8.GetBytes(o.name, 0, o.name.Length, _inputBuffers["##name"], 0);
+                                if (ImGui.InputText("##name", _inputBuffers["##name"], (uint)_inputBuffers["##name"].Length))
+                                {
+                                    o.name = GetStringFromBuffer("##name");
+                                }
 
-                                    Encoding.UTF8.GetBytes(o.name, 0, o.name.Length, _inputBuffers["##name"], 0);
-                                    if (ImGui.InputText("##name", _inputBuffers["##name"], (uint)_inputBuffers["##name"].Length))
-                                    {
-                                        o.name = GetStringFromBuffer("##name");
-                                        baseMesh.recalculate = true;
-                                        baseMesh.RecalculateModelMatrix(new bool[] { true, true, true });
-
-                                        if(o.Physics is Physics p)
-                                            p.UpdatePhysxPositionAndRotation(o.transformation);
-                                    }
-
-                                    ImGui.SetNextItemOpen(true, ImGuiCond.Once);
-                                    if (ImGui.TreeNode("Transform"))
-                                    {
-                                        bool commit = false;
-                                        ImGui.PushItemWidth(50);
-
-                                        ImGui.Separator();
-
-                                        #region Position
-                                        ImGui.Text("Position");
-
-                                        ImGui.Text("X");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(o.transformation.Position.X.ToString(), 0, o.transformation.Position.X.ToString().Length, _inputBuffers["##positionX"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##positionX", _inputBuffers["##positionX"], (uint)_inputBuffers["##positionX"].Length))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##positionX");
-                                            float value = o.transformation.Position.X;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                o.transformation.Position = new Vector3(value, o.transformation.Position.Y, o.transformation.Position.Z);
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        ImGui.SameLine();
-
-                                        ImGui.Text("Y");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(o.transformation.Position.Y.ToString(), 0, o.transformation.Position.Y.ToString().Length, _inputBuffers["##positionY"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##positionY", _inputBuffers["##positionY"], (uint)_inputBuffers["##positionY"].Length))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##positionY");
-                                            float value = o.transformation.Position.Y;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                o.transformation.Position = new Vector3(o.transformation.Position.X, value, o.transformation.Position.Z);
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        ImGui.SameLine();
-
-                                        ImGui.Text("Z");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(o.transformation.Position.Z.ToString(), 0, o.transformation.Position.Z.ToString().Length, _inputBuffers["##positionZ"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##positionZ", _inputBuffers["##positionZ"], (uint)_inputBuffers["##positionZ"].Length) && !justSelectedItem)
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##positionZ");
-                                            float value = o.transformation.Position.Z;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                o.transformation.Position = new Vector3(o.transformation.Position.X, o.transformation.Position.Y, value);
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        #endregion
-
-                                        ImGui.Separator();
-
-                                        #region Rotation
-                                        ImGui.Text("Rotation");
-
-                                        Vector3 rotation = Helper.EulerFromQuaternion(o.transformation.Rotation);
-
-                                        ImGui.Text("X");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(rotation.X.ToString(), 0, rotation.X.ToString().Length, _inputBuffers["##rotationX"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##rotationX", _inputBuffers["##rotationX"], (uint)_inputBuffers["##rotationX"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##rotationX");
-                                            float value = rotation.X;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                rotation.X = value;
-                                                o.transformation.Rotation = Helper.QuaternionFromEuler(rotation);
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        ImGui.SameLine();
-
-                                        ImGui.Text("Y");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(rotation.Y.ToString(), 0, rotation.Y.ToString().Length, _inputBuffers["##rotationY"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##rotationY", _inputBuffers["##rotationY"], (uint)_inputBuffers["##rotationY"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##rotationY");
-                                            float value = rotation.Y;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                rotation.Y = value;
-                                                o.transformation.Rotation = Helper.QuaternionFromEuler(rotation);
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        ImGui.SameLine();
-
-                                        ImGui.Text("Z");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(rotation.Z.ToString(), 0, rotation.Z.ToString().Length, _inputBuffers["##rotationZ"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##rotationZ", _inputBuffers["##rotationZ"], (uint)_inputBuffers["##rotationZ"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##rotationZ");
-                                            float value = rotation.Z;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                rotation.Z = value;
-                                                o.transformation.Rotation = Helper.QuaternionFromEuler(rotation);
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        #endregion
-
-                                        ImGui.Separator();
-
-                                        #region Scale
-                                        ImGui.Text("Scale");
-
-                                        ImGui.Text("X");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(o.transformation.Scale.X.ToString(), 0, o.transformation.Scale.X.ToString().Length, _inputBuffers["##scaleX"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##scaleX", _inputBuffers["##scaleX"], (uint)_inputBuffers["##scaleX"].Length))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##scaleX");
-                                            float value = o.transformation.Scale.X;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                o.transformation.Scale.X = value;
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        ImGui.SameLine();
-
-                                        ImGui.Text("Y");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(o.transformation.Scale.Y.ToString(), 0, o.transformation.Scale.Y.ToString().Length, _inputBuffers["##scaleY"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##scaleY", _inputBuffers["##scaleY"], (uint)_inputBuffers["##scaleY"].Length))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##scaleY");
-                                            float value = o.transformation.Scale.Y;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                o.transformation.Scale.Y = value;
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        ImGui.SameLine();
-
-                                        ImGui.Text("Z");
-                                        ImGui.SameLine();
-                                        Encoding.UTF8.GetBytes(o.transformation.Scale.Z.ToString(), 0, o.transformation.Scale.Z.ToString().Length, _inputBuffers["##scaleZ"], 0);
-                                        commit = false;
-                                        if (ImGui.InputText("##scaleZ", _inputBuffers["##scaleZ"], (uint)_inputBuffers["##scaleZ"].Length))
-                                        {
-                                            commit = true;
-                                        }
-                                        if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
-                                            commit = true;
-
-                                        if (commit)
-                                        {
-                                            string valueStr = GetStringFromBuffer("##scaleZ");
-                                            float value = o.transformation.Scale.Z;
-                                            if (float.TryParse(valueStr, out value))
-                                            {
-                                                o.transformation.Scale.Z = value;
-                                                baseMesh.recalculate = true;
-                                                baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
-                                                if (o.Physics is Physics p)
-                                                    p.UpdatePhysxPositionAndRotation(o.transformation);
-                                            }
-                                        }
-                                        #endregion
-
-                                        ImGui.Separator();
-
-                                        ImGui.PopItemWidth();
-
-                                        ImGui.TreePop();
-                                    }
-
-                                    ImGui.SetNextItemOpen(true, ImGuiCond.Once);
-                                    if (ImGui.TreeNode("Render"))
-                                    {
-                                        ImGui.Separator();
-
-                                        ImGui.Text("Mesh");
-
-                                        #region Mesh
-
-                                        if (baseMesh.GetType() == typeof(Mesh))
-                                        {
-                                            if (ImGui.Checkbox("##useBVH", ref o.useBVH))
-                                            {
-                                                if (o.useBVH)
-                                                {
-                                                    o.BuildBVH();
-                                                }
-                                                else
-                                                {
-                                                    baseMesh.BVHStruct = null;
-                                                }
-                                            }
-                                            ImGui.SameLine();
-                                            ImGui.Text("Use BVH for rendering");
-                                        }
-
-                                        ImGui.Checkbox("##useShading", ref baseMesh.useShading);
-                                        ImGui.SameLine();
-                                        ImGui.Text("Use shading");
-
-                                        ImGui.Separator();
-
-                                        Encoding.UTF8.GetBytes(baseMesh.modelPath, 0, baseMesh.modelPath.ToString().Length, _inputBuffers["##meshPath"], 0);
-                                        ImGui.InputText("##meshPath", _inputBuffers["##meshPath"], (uint)_inputBuffers["##meshPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
-                                        {
-                                            ;
-                                            baseMesh.modelPath = "";
-                                            _inputBuffers["##meshPath"][0] = 0;
-                                        }
-
-                                        if (ImGui.BeginDragDropTarget())
-                                        {
-                                            ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("MESH_NAME");
-                                            unsafe
-                                            {
-                                                if (payload.NativePtr != null)
-                                                {
-                                                    byte[] pathBytes = new byte[payload.DataSize];
-                                                    System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                    baseMesh.modelPath = GetStringFromByte(pathBytes);
-                                                    CopyDataToBuffer("##meshPath", Encoding.UTF8.GetBytes(baseMesh.modelPath));
-                                                }
-                                            }
-                                            ImGui.EndDragDropTarget();
-                                        }
-                                        #endregion
-
-                                        ImGui.Separator();
-
-                                        #region Textures
-                                        ImGui.Text("Texture");
-                                        Encoding.UTF8.GetBytes(baseMesh.textureName, 0, baseMesh.textureName.ToString().Length, _inputBuffers["##texturePath"], 0);
-                                        ImGui.InputText("##texturePath", _inputBuffers["##texturePath"], (uint)_inputBuffers["##texturePath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                        if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureName != "")
-                                        {
-                                            baseMesh.textureName = "";
-                                            ClearBuffer("##texturePath");
-                                        }
-
-                                        if (ImGui.BeginDragDropTarget())
-                                        {
-                                            ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
-                                            unsafe
-                                            {
-                                                if (payload.NativePtr != null)
-                                                {
-                                                    byte[] pathBytes = new byte[payload.DataSize];
-                                                    System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                    baseMesh.textureName = GetStringFromByte(pathBytes);
-                                                    CopyDataToBuffer("##texturePath", Encoding.UTF8.GetBytes(baseMesh.textureName));
-                                                }
-                                            }
-                                            ImGui.EndDragDropTarget();
-                                        }
-
-                                        if (ImGui.TreeNode("Custom textures"))
-                                        {
-                                            ImGui.Text("Normal Texture");
-                                            Encoding.UTF8.GetBytes(baseMesh.textureNormalName, 0, baseMesh.textureNormalName.ToString().Length, _inputBuffers["##textureNormalPath"], 0);
-                                            ImGui.InputText("##textureNormalPath", _inputBuffers["##textureNormalPath"], (uint)_inputBuffers["##textureNormalPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureNormalName != "")
-                                            {
-                                                baseMesh.textureNormalName = "";
-                                                ClearBuffer("##textureNormalPath");
-                                            }
-
-                                            if (ImGui.BeginDragDropTarget())
-                                            {
-                                                ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
-                                                unsafe
-                                                {
-                                                    if (payload.NativePtr != null)
-                                                    {
-                                                        byte[] pathBytes = new byte[payload.DataSize];
-                                                        System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                        baseMesh.textureNormalName = GetStringFromByte(pathBytes);
-                                                        CopyDataToBuffer("##textureNormalPath", Encoding.UTF8.GetBytes(baseMesh.textureNormalName));
-                                                    }
-                                                }
-                                                ImGui.EndDragDropTarget();
-                                            }
-                                            ImGui.Text("Height Texture");
-                                            Encoding.UTF8.GetBytes(baseMesh.textureHeightName, 0, baseMesh.textureHeightName.ToString().Length, _inputBuffers["##textureHeightPath"], 0);
-                                            ImGui.InputText("##textureHeightPath", _inputBuffers["##textureHeightPath"], (uint)_inputBuffers["##textureHeightPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureHeightName != "")
-                                            {
-                                                baseMesh.textureHeightName = "";
-                                                ClearBuffer("##textureHeightPath");
-                                            }
-
-                                            if (ImGui.BeginDragDropTarget())
-                                            {
-                                                ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
-                                                unsafe
-                                                {
-                                                    if (payload.NativePtr != null)
-                                                    {
-                                                        byte[] pathBytes = new byte[payload.DataSize];
-                                                        System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                        baseMesh.textureHeightName = GetStringFromByte(pathBytes);
-                                                        CopyDataToBuffer("##textureHeightPath", Encoding.UTF8.GetBytes(baseMesh.textureHeightName));
-                                                    }
-                                                }
-                                                ImGui.EndDragDropTarget();
-                                            }
-                                            ImGui.Text("AO Texture");
-                                            Encoding.UTF8.GetBytes(baseMesh.textureAOName, 0, baseMesh.textureAOName.ToString().Length, _inputBuffers["##textureAOPath"], 0);
-                                            ImGui.InputText("##textureAOPath", _inputBuffers["##textureAOPath"], (uint)_inputBuffers["##textureAOPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureAOName != "")
-                                            {
-                                                baseMesh.textureAOName = "";
-                                                ClearBuffer("##textureAOPath");
-                                            }
-
-                                            if (ImGui.BeginDragDropTarget())
-                                            {
-                                                ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
-                                                unsafe
-                                                {
-                                                    if (payload.NativePtr != null)
-                                                    {
-                                                        byte[] pathBytes = new byte[payload.DataSize];
-                                                        System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                        baseMesh.textureAOName = GetStringFromByte(pathBytes);
-                                                        CopyDataToBuffer("##textureAOPath", Encoding.UTF8.GetBytes(baseMesh.textureAOName));
-                                                    }
-                                                }
-                                                ImGui.EndDragDropTarget();
-                                            }
-                                            ImGui.Text("Rough Texture");
-                                            Encoding.UTF8.GetBytes(baseMesh.textureRoughName, 0, baseMesh.textureRoughName.ToString().Length, _inputBuffers["##textureRoughPath"], 0);
-                                            ImGui.InputText("##textureRoughPath", _inputBuffers["##textureRoughPath"], (uint)_inputBuffers["##textureRoughPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureName != "")
-                                            {
-                                                baseMesh.textureRoughName = "";
-                                                ClearBuffer("##textureRoughPath");
-                                            }
-
-                                            if (ImGui.BeginDragDropTarget())
-                                            {
-                                                ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
-                                                unsafe
-                                                {
-                                                    if (payload.NativePtr != null)
-                                                    {
-                                                        byte[] pathBytes = new byte[payload.DataSize];
-                                                        System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                        baseMesh.textureRoughName = GetStringFromByte(pathBytes);
-                                                        CopyDataToBuffer("##textureRoughPath", Encoding.UTF8.GetBytes(baseMesh.textureRoughName));
-                                                    }
-                                                }
-                                                ImGui.EndDragDropTarget();
-                                            }
-                                            ImGui.Text("Metal Texture");
-                                            Encoding.UTF8.GetBytes(baseMesh.textureMetalName, 0, baseMesh.textureMetalName.ToString().Length, _inputBuffers["##textureMetalPath"], 0);
-                                            ImGui.InputText("##textureMetalPath", _inputBuffers["##textureMetalPath"], (uint)_inputBuffers["##textureMetalPath"].Length, ImGuiInputTextFlags.ReadOnly);
-                                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureMetalName != "")
-                                            {
-                                                baseMesh.textureMetalName = "";
-                                                ClearBuffer("##textureMetalPath");
-                                            }
-
-                                            if (ImGui.BeginDragDropTarget())
-                                            {
-                                                ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
-                                                unsafe
-                                                {
-                                                    if (payload.NativePtr != null)
-                                                    {
-                                                        byte[] pathBytes = new byte[payload.DataSize];
-                                                        System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
-                                                        baseMesh.textureMetalName = GetStringFromByte(pathBytes);
-                                                        CopyDataToBuffer("##textureMetalPath", Encoding.UTF8.GetBytes(baseMesh.textureMetalName));
-                                                    }
-                                                }
-                                                ImGui.EndDragDropTarget();
-                                            }
-
-                                            ImGui.TreePop();
-                                        }
-                                        #endregion
-
-                                        ImGui.TreePop();
-                                    }
+                                ImGui.SetNextItemOpen(true, ImGuiCond.Once);
+                                if (ImGui.TreeNode("Transform"))
+                                {
+                                    BaseMesh? baseMesh = o.Mesh;
+                                    bool commit = false;
+                                    bool reset = false;
+                                    ImGui.PushItemWidth(50);
 
                                     ImGui.Separator();
 
-                                    if (baseMesh.GetType() == typeof(Mesh))
+                                    #region Position
+                                    ImGui.Text("Position");
+
+                                    ImGui.Text("X");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.transformation.Position.X.ToString(), 0, o.transformation.Position.X.ToString().Length, _inputBuffers["##positionX"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##positionX", _inputBuffers["##positionX"], (uint)_inputBuffers["##positionX"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##positionX");
+                                        float value = o.transformation.Position.X;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                o.transformation.Position = new Vector3(value, o.transformation.Position.Y, o.transformation.Position.Z);
+                                            else
+                                            {
+                                                ClearBuffer("##positionX");
+                                                o.transformation.Position = new Vector3(0, o.transformation.Position.Y, o.transformation.Position.Z);
+                                            }
+
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Y");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.transformation.Position.Y.ToString(), 0, o.transformation.Position.Y.ToString().Length, _inputBuffers["##positionY"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##positionY", _inputBuffers["##positionY"], (uint)_inputBuffers["##positionY"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##positionY");
+                                        float value = o.transformation.Position.Y;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                o.transformation.Position = new Vector3(o.transformation.Position.X, value, o.transformation.Position.Z);   
+                                            else
+                                            {
+                                                ClearBuffer("##positionY");
+                                                o.transformation.Position = new Vector3(o.transformation.Position.X, 0, o.transformation.Position.Z);   
+                                            }
+
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Z");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.transformation.Position.Z.ToString(), 0, o.transformation.Position.Z.ToString().Length, _inputBuffers["##positionZ"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##positionZ", _inputBuffers["##positionZ"], (uint)_inputBuffers["##positionZ"].Length) && !justSelectedItem)
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##positionZ");
+                                        float value = o.transformation.Position.Z;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                o.transformation.Position = new Vector3(o.transformation.Position.X, o.transformation.Position.Y, value);
+                                            else
+                                            {
+                                                ClearBuffer("##positionZ");
+                                                o.transformation.Position = new Vector3(o.transformation.Position.X, o.transformation.Position.Y, 0);
+                                            }
+
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    #endregion
+
+                                    ImGui.Separator();
+
+                                    #region Rotation
+                                    ImGui.Text("Rotation");
+
+                                    Vector3 rotation = Helper.EulerFromQuaternion(o.transformation.Rotation);
+
+                                    ImGui.Text("X");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(rotation.X.ToString(), 0, rotation.X.ToString().Length, _inputBuffers["##rotationX"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##rotationX", _inputBuffers["##rotationX"], (uint)_inputBuffers["##rotationX"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##rotationX");
+                                        float value = rotation.X;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                rotation.X = value;
+                                            else
+                                            {
+                                                ClearBuffer("##rotationX");
+                                                rotation.X = 0;
+                                            }
+                                            o.transformation.Rotation = Helper.QuaternionFromEuler(rotation);
+
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Y");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(rotation.Y.ToString(), 0, rotation.Y.ToString().Length, _inputBuffers["##rotationY"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##rotationY", _inputBuffers["##rotationY"], (uint)_inputBuffers["##rotationY"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##rotationY");
+                                        float value = rotation.Y;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                rotation.Y = value;
+                                            else
+                                            {
+                                                ClearBuffer("##rotationY");
+                                                rotation.Y = 0;
+                                            }
+                                            o.transformation.Rotation = Helper.QuaternionFromEuler(rotation);
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Z");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(rotation.Z.ToString(), 0, rotation.Z.ToString().Length, _inputBuffers["##rotationZ"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##rotationZ", _inputBuffers["##rotationZ"], (uint)_inputBuffers["##rotationZ"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##rotationZ");
+                                        float value = rotation.Z;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                rotation.Z = value;
+                                            else
+                                            {
+                                                ClearBuffer("##rotationZ");
+                                                rotation.Z = 0;
+                                            }
+                                            o.transformation.Rotation = Helper.QuaternionFromEuler(rotation);
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    #endregion
+
+                                    ImGui.Separator();
+
+                                    #region Scale
+                                    ImGui.Text("Scale");
+
+                                    ImGui.Text("X");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.transformation.Scale.X.ToString(), 0, o.transformation.Scale.X.ToString().Length, _inputBuffers["##scaleX"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##scaleX", _inputBuffers["##scaleX"], (uint)_inputBuffers["##scaleX"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##scaleX");
+                                        float value = o.transformation.Scale.X;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                o.transformation.Scale.X = value;
+                                            else
+                                            {
+                                                ClearBuffer("##scaleX");
+                                                o.transformation.Scale.X = 1;
+                                            }
+
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Y");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.transformation.Scale.Y.ToString(), 0, o.transformation.Scale.Y.ToString().Length, _inputBuffers["##scaleY"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##scaleY", _inputBuffers["##scaleY"], (uint)_inputBuffers["##scaleY"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##scaleY");
+                                        float value = o.transformation.Scale.Y;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                o.transformation.Scale.Y = value;
+                                            else
+                                            {
+                                                ClearBuffer("##scaleY");
+                                                o.transformation.Scale.Y = 1;
+                                            }
+
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    ImGui.SameLine();
+
+                                    ImGui.Text("Z");
+                                    ImGui.SameLine();
+                                    Encoding.UTF8.GetBytes(o.transformation.Scale.Z.ToString(), 0, o.transformation.Scale.Z.ToString().Length, _inputBuffers["##scaleZ"], 0);
+                                    commit = false;
+                                    if (ImGui.InputText("##scaleZ", _inputBuffers["##scaleZ"], (uint)_inputBuffers["##scaleZ"].Length))
+                                    {
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                    {
+                                        reset = true;
+                                        commit = true;
+                                    }
+                                    if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                                        commit = true;
+
+                                    if (commit)
+                                    {
+                                        string valueStr = GetStringFromBuffer("##scaleZ");
+                                        float value = o.transformation.Scale.Z;
+                                        if (float.TryParse(valueStr, out value))
+                                        {
+                                            if (!reset)
+                                                o.transformation.Scale.Z = value;
+                                            else
+                                            {
+                                                ClearBuffer("##scaleZ");
+                                                o.transformation.Scale.Z = 1;
+                                            }
+                                            
+                                            if (baseMesh != null)
+                                            {
+                                                baseMesh.recalculate = true;
+                                                baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
+                                            }
+                                            if (o.Physics is Physics p)
+                                                p.UpdatePhysxPositionAndRotation(o.transformation);
+                                        }
+                                    }
+                                    #endregion
+
+                                    ImGui.Separator();
+
+                                    ImGui.PopItemWidth();
+
+                                    ImGui.TreePop();
+                                }
+
+                                //-----------------------------------------------------------
+
+                                ImGui.PushFont(default20);
+                                CenteredText("Components");
+                                ImGui.PopFont();
+
+                                List<IComponent> toRemoveComp = new List<IComponent>();
+                                foreach (IComponent c in o.components)
+                                {
+                                    if(c is BaseMesh baseMesh)
+                                    {
+                                        ImGui.Separator();
+                                        ImGui.SetNextItemOpen(true, ImGuiCond.Once);
+                                        if (ImGui.TreeNode("Mesh"))
+                                        {
+                                            //ImGui.SameLine();
+                                            //var origDeleteX = RightAlignCursor(70);
+                                            //ImGui.PushStyleColor(ImGuiCol.Button, style.Colors[(int)ImGuiCol.FrameBg]);
+                                            //ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 2f);
+                                            //if(ImGui.Button("Delete", new System.Numerics.Vector2(70, 20)))
+                                            //{
+                                            //    toRemoveComp.Add(c);
+                                            //}
+                                            //ImGui.PopStyleVar();
+                                            //ImGui.PopStyleColor();
+                                            //ImGui.SetCursorPosX(origDeleteX);
+                                            //ImGui.Dummy(new System.Numerics.Vector2(0, 0));
+
+                                            #region Mesh
+                                            if (baseMesh.GetType() == typeof(Mesh))
+                                            {
+                                                if (ImGui.Checkbox("##useBVH", ref o.useBVH))
+                                                {
+                                                    if (o.useBVH)
+                                                    {
+                                                        o.BuildBVH();
+                                                    }
+                                                    else
+                                                    {
+                                                        baseMesh.BVHStruct = null;
+                                                    }
+                                                }
+                                                ImGui.SameLine();
+                                                ImGui.Text("Use BVH for rendering");
+                                            }
+
+                                            ImGui.Checkbox("##useShading", ref baseMesh.useShading);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Use shading");
+
+                                            ImGui.Separator();
+
+                                            Encoding.UTF8.GetBytes(baseMesh.modelName, 0, baseMesh.modelName.ToString().Length, _inputBuffers["##meshPath"], 0);
+                                            ImGui.InputText("##meshPath", _inputBuffers["##meshPath"], (uint)_inputBuffers["##meshPath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                                            {
+                                                baseMesh.modelName = "";
+                                                _inputBuffers["##meshPath"][0] = 0;
+                                            }
+
+                                            if (ImGui.BeginDragDropTarget())
+                                            {
+                                                ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("MESH_NAME");
+                                                unsafe
+                                                {
+                                                    if (payload.NativePtr != null)
+                                                    {
+                                                        byte[] pathBytes = new byte[payload.DataSize];
+                                                        System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                        baseMesh.modelPath = GetStringFromByte(pathBytes);
+                                                        CopyDataToBuffer("##meshPath", Encoding.UTF8.GetBytes(baseMesh.modelPath));
+                                                    }
+                                                }
+                                                ImGui.EndDragDropTarget();
+                                            }
+                                            #endregion
+
+                                            ImGui.Separator();
+
+                                            #region Textures
+                                            ImGui.Text("Texture");
+                                            Encoding.UTF8.GetBytes(baseMesh.textureName, 0, baseMesh.textureName.ToString().Length, _inputBuffers["##texturePath"], 0);
+                                            ImGui.InputText("##texturePath", _inputBuffers["##texturePath"], (uint)_inputBuffers["##texturePath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                            if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureName != "")
+                                            {
+                                                baseMesh.textureName = "";
+                                                ClearBuffer("##texturePath");
+                                            }
+
+                                            if (ImGui.BeginDragDropTarget())
+                                            {
+                                                ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
+                                                unsafe
+                                                {
+                                                    if (payload.NativePtr != null)
+                                                    {
+                                                        byte[] pathBytes = new byte[payload.DataSize];
+                                                        System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                        baseMesh.textureName = GetStringFromByte(pathBytes);
+                                                        CopyDataToBuffer("##texturePath", Encoding.UTF8.GetBytes(baseMesh.textureName));
+                                                    }
+                                                }
+                                                ImGui.EndDragDropTarget();
+                                            }
+
+                                            if (ImGui.TreeNode("Custom textures"))
+                                            {
+                                                ImGui.Text("Normal Texture");
+                                                Encoding.UTF8.GetBytes(baseMesh.textureNormalName, 0, baseMesh.textureNormalName.ToString().Length, _inputBuffers["##textureNormalPath"], 0);
+                                                ImGui.InputText("##textureNormalPath", _inputBuffers["##textureNormalPath"], (uint)_inputBuffers["##textureNormalPath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                                if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureNormalName != "")
+                                                {
+                                                    baseMesh.textureNormalName = "";
+                                                    ClearBuffer("##textureNormalPath");
+                                                }
+
+                                                if (ImGui.BeginDragDropTarget())
+                                                {
+                                                    ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
+                                                    unsafe
+                                                    {
+                                                        if (payload.NativePtr != null)
+                                                        {
+                                                            byte[] pathBytes = new byte[payload.DataSize];
+                                                            System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                            baseMesh.textureNormalName = GetStringFromByte(pathBytes);
+                                                            CopyDataToBuffer("##textureNormalPath", Encoding.UTF8.GetBytes(baseMesh.textureNormalName));
+                                                        }
+                                                    }
+                                                    ImGui.EndDragDropTarget();
+                                                }
+                                                ImGui.Text("Height Texture");
+                                                Encoding.UTF8.GetBytes(baseMesh.textureHeightName, 0, baseMesh.textureHeightName.ToString().Length, _inputBuffers["##textureHeightPath"], 0);
+                                                ImGui.InputText("##textureHeightPath", _inputBuffers["##textureHeightPath"], (uint)_inputBuffers["##textureHeightPath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                                if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureHeightName != "")
+                                                {
+                                                    baseMesh.textureHeightName = "";
+                                                    ClearBuffer("##textureHeightPath");
+                                                }
+
+                                                if (ImGui.BeginDragDropTarget())
+                                                {
+                                                    ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
+                                                    unsafe
+                                                    {
+                                                        if (payload.NativePtr != null)
+                                                        {
+                                                            byte[] pathBytes = new byte[payload.DataSize];
+                                                            System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                            baseMesh.textureHeightName = GetStringFromByte(pathBytes);
+                                                            CopyDataToBuffer("##textureHeightPath", Encoding.UTF8.GetBytes(baseMesh.textureHeightName));
+                                                        }
+                                                    }
+                                                    ImGui.EndDragDropTarget();
+                                                }
+                                                ImGui.Text("AO Texture");
+                                                Encoding.UTF8.GetBytes(baseMesh.textureAOName, 0, baseMesh.textureAOName.ToString().Length, _inputBuffers["##textureAOPath"], 0);
+                                                ImGui.InputText("##textureAOPath", _inputBuffers["##textureAOPath"], (uint)_inputBuffers["##textureAOPath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                                if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureAOName != "")
+                                                {
+                                                    baseMesh.textureAOName = "";
+                                                    ClearBuffer("##textureAOPath");
+                                                }
+
+                                                if (ImGui.BeginDragDropTarget())
+                                                {
+                                                    ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
+                                                    unsafe
+                                                    {
+                                                        if (payload.NativePtr != null)
+                                                        {
+                                                            byte[] pathBytes = new byte[payload.DataSize];
+                                                            System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                            baseMesh.textureAOName = GetStringFromByte(pathBytes);
+                                                            CopyDataToBuffer("##textureAOPath", Encoding.UTF8.GetBytes(baseMesh.textureAOName));
+                                                        }
+                                                    }
+                                                    ImGui.EndDragDropTarget();
+                                                }
+                                                ImGui.Text("Rough Texture");
+                                                Encoding.UTF8.GetBytes(baseMesh.textureRoughName, 0, baseMesh.textureRoughName.ToString().Length, _inputBuffers["##textureRoughPath"], 0);
+                                                ImGui.InputText("##textureRoughPath", _inputBuffers["##textureRoughPath"], (uint)_inputBuffers["##textureRoughPath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                                if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureName != "")
+                                                {
+                                                    baseMesh.textureRoughName = "";
+                                                    ClearBuffer("##textureRoughPath");
+                                                }
+
+                                                if (ImGui.BeginDragDropTarget())
+                                                {
+                                                    ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
+                                                    unsafe
+                                                    {
+                                                        if (payload.NativePtr != null)
+                                                        {
+                                                            byte[] pathBytes = new byte[payload.DataSize];
+                                                            System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                            baseMesh.textureRoughName = GetStringFromByte(pathBytes);
+                                                            CopyDataToBuffer("##textureRoughPath", Encoding.UTF8.GetBytes(baseMesh.textureRoughName));
+                                                        }
+                                                    }
+                                                    ImGui.EndDragDropTarget();
+                                                }
+                                                ImGui.Text("Metal Texture");
+                                                Encoding.UTF8.GetBytes(baseMesh.textureMetalName, 0, baseMesh.textureMetalName.ToString().Length, _inputBuffers["##textureMetalPath"], 0);
+                                                ImGui.InputText("##textureMetalPath", _inputBuffers["##textureMetalPath"], (uint)_inputBuffers["##textureMetalPath"].Length, ImGuiInputTextFlags.ReadOnly);
+                                                if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && baseMesh.textureMetalName != "")
+                                                {
+                                                    baseMesh.textureMetalName = "";
+                                                    ClearBuffer("##textureMetalPath");
+                                                }
+
+                                                if (ImGui.BeginDragDropTarget())
+                                                {
+                                                    ImGuiPayloadPtr payload = ImGui.AcceptDragDropPayload("TEXTURE_NAME");
+                                                    unsafe
+                                                    {
+                                                        if (payload.NativePtr != null)
+                                                        {
+                                                            byte[] pathBytes = new byte[payload.DataSize];
+                                                            System.Runtime.InteropServices.Marshal.Copy(payload.Data, pathBytes, 0, payload.DataSize);
+                                                            baseMesh.textureMetalName = GetStringFromByte(pathBytes);
+                                                            CopyDataToBuffer("##textureMetalPath", Encoding.UTF8.GetBytes(baseMesh.textureMetalName));
+                                                        }
+                                                    }
+                                                    ImGui.EndDragDropTarget();
+                                                }
+
+                                                ImGui.TreePop();
+                                            }
+                                            #endregion
+
+                                            ImGui.TreePop();
+                                        }
+                                    }
+
+                                    if(c is Physics physics)
                                     {
                                         ImGui.SetNextItemOpen(true, ImGuiCond.Once);
                                         if (ImGui.TreeNode("Physics"))
                                         {
+                                            ImGui.SameLine();
+                                            var origDeleteX = RightAlignCursor(70);
+                                            ImGui.PushStyleColor(ImGuiCol.Button, style.Colors[(int)ImGuiCol.FrameBg]);
+                                            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 2f);
+                                            if (ImGui.Button("Delete", new System.Numerics.Vector2(70, 20)))
+                                            {
+                                                toRemoveComp.Add(c);
+                                            }
+                                            ImGui.PopStyleVar();
+                                            ImGui.PopStyleColor();
+                                            ImGui.SetCursorPosX(origDeleteX);
+                                            ImGui.Dummy(new System.Numerics.Vector2(0, 0));
+
                                             #region Physx
                                             ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 5.0f);
                                             var buttonColor = style.Colors[(int)ImGuiCol.Button];
                                             style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
 
-                                            if (o.Physics is Physics p)
+                                            if (o.Physics is Physics p && p.HasCollider)
                                             {
                                                 System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 40);
                                                 if (ImGui.Button("Remove\n" + p.colliderStaticType + " " + p.colliderType + " Collider", buttonSize))
@@ -1428,51 +1704,55 @@ namespace Engine3D
                                             }
                                             else
                                             {
+                                                BaseMesh? baseMeshPhysics = o.Mesh;
+
                                                 System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 20);
                                                 string[] options = { "Static", "Dynamic" };
                                                 for (int i = 0; i < options.Length; i++)
                                                 {
-                                                    if (ImGui.RadioButton(options[i], o.selectedColliderOption == i))
+                                                    if (ImGui.RadioButton(options[i], physics.selectedColliderOption == i))
                                                     {
-                                                        o.selectedColliderOption = i;
+                                                        physics.selectedColliderOption = i;
                                                     }
 
                                                     if (i != options.Length - 1)
                                                         ImGui.SameLine();
                                                 }
 
-                                                if (o.selectedColliderOption == 0)
+                                                if (physics.selectedColliderOption == 0)
                                                 {
                                                     if (ImGui.Button("Add Triangle Mesh Collider", buttonSize))
                                                     {
-                                                        o.AddTriangleMeshCollider();
+                                                        if (baseMeshPhysics == null)
+                                                            throw new Exception("For a triangle mesh collider the object must have a mesh!");
+                                                        physics.AddTriangleMeshCollider(o.transformation, baseMeshPhysics);
                                                     }
                                                     if (ImGui.Button("Add Cube Collider", buttonSize))
                                                     {
-                                                        o.AddCubeCollider(true);
+                                                        physics.AddCubeCollider(o.transformation, true);
                                                     }
                                                     if (ImGui.Button("Add Sphere Collider", buttonSize))
                                                     {
-                                                        o.AddSphereCollider(true);
+                                                        physics.AddSphereCollider(o.transformation, true);
                                                     }
                                                     if (ImGui.Button("Add Capsule Collider", buttonSize))
                                                     {
-                                                        o.AddCapsuleCollider(true);
+                                                        physics.AddCapsuleCollider(o.transformation, true);
                                                     }
                                                 }
-                                                else if (o.selectedColliderOption == 1)
+                                                else if (physics.selectedColliderOption == 1)
                                                 {
                                                     if (ImGui.Button("Add Cube Collider", buttonSize))
                                                     {
-                                                        o.AddCubeCollider(false);
+                                                        physics.AddCubeCollider(o.transformation, false);
                                                     }
                                                     if (ImGui.Button("Add Sphere Collider", buttonSize))
                                                     {
-                                                        o.AddSphereCollider(false);
+                                                        physics.AddSphereCollider(o.transformation, false);
                                                     }
                                                     if (ImGui.Button("Add Capsule Collider", buttonSize))
                                                     {
-                                                        o.AddCapsuleCollider(false);
+                                                        physics.AddCapsuleCollider(o.transformation, false);
                                                     }
                                                 }
                                             }
@@ -1484,8 +1764,109 @@ namespace Engine3D
                                         }
                                     }
 
-                                    ImGui.Dummy(new System.Numerics.Vector2(0, 50));
+                                    ImGui.Separator();
                                 }
+
+                                foreach(IComponent c in toRemoveComp)
+                                {
+                                    o.DeleteComponent(c, ref editorData.textureManager);
+                                    editorData.recalculateObjects = true;
+                                }
+
+                                #region Add Component
+                                float addCompOrig = CenterCursor(100);
+                                if (ImGui.Button("Add Component", new System.Numerics.Vector2(100,20)))
+                                {
+                                    showAddComponentWindow = true;
+                                    var buttonPos = ImGui.GetItemRectMin();
+                                    var buttonSize = ImGui.GetItemRectSize();
+                                    ImGui.SetNextWindowPos(new System.Numerics.Vector2(seperatorSize + _windowWidth * (1 - gameWindow.rightPanelPercent), buttonPos.Y + buttonSize.Y));
+                                    ImGui.SetNextWindowSize(new System.Numerics.Vector2((_windowWidth * gameWindow.rightPanelPercent - seperatorSize)-20, 
+                                                                                        200));
+                                }
+                                ImGui.SetCursorPosX(addCompOrig);
+
+                                if (showAddComponentWindow)
+                                {
+                                    System.Numerics.Vector2 componentWindowPos = ImGui.GetWindowPos();
+                                    System.Numerics.Vector2 componentWindowSize = ImGui.GetWindowSize();
+                                    if(ImGui.Begin("Component Selection", ref showAddComponentWindow, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize))
+                                    {
+                                        componentWindowPos = ImGui.GetWindowPos();
+                                        componentWindowSize = ImGui.GetWindowSize();
+
+                                        ImGui.BeginChild("ComponentList", new System.Numerics.Vector2(0, 150), true);
+                                        ImGui.InputText("Search", ref searchQueryAddComponent, 256);
+
+                                        HashSet<string> alreadyGotBase = new HashSet<string>();
+                                        foreach (IComponent c in o.components)
+                                        {
+                                            var cType = c.GetType();
+                                            if (cType.BaseType.Name == "BaseMesh")
+                                            {
+                                                alreadyGotBase.Add("BaseMesh");
+                                            }
+                                        }
+                                        HashSet<string> alreadyGotClass = new HashSet<string>();
+                                        foreach (IComponent c in o.components)
+                                        {
+                                            var cType = c.GetType();
+                                            alreadyGotClass.Add(cType.Name);
+                                        }
+
+                                        filteredComponents = availableComponents
+                                            .Where(component => component.name.ToLower().Contains(searchQueryAddComponent.ToLower()) &&
+                                                                !alreadyGotBase.Contains(component.baseClass) &&
+                                                                !alreadyGotClass.Contains(component.name))
+                                            .ToList();
+
+                                        foreach (var component in filteredComponents)
+                                        {
+                                            if (ImGui.Button(component.name))
+                                            {
+                                                if(component.name == "Physics")
+                                                {
+                                                    if (o.Mesh == null)
+                                                    {
+                                                        Engine.consoleManager.AddLog("Can't add physics to an object that doesn't have a mesh!", LogType.Warning);
+                                                        showAddComponentWindow = false;
+                                                        break;
+                                                    }
+
+                                                    object[] args = new object[]
+                                                    {
+                                                        editorData.physx
+                                                    };
+                                                    object? comp = Activator.CreateInstance(component.type, args);
+                                                    if (comp == null)
+                                                        continue;
+
+                                                    o.components.Add((IComponent)comp);
+                                                }
+
+
+                                                showAddComponentWindow = false;
+                                            }
+                                        }
+                                        ImGui.EndChild();
+
+                                        
+
+                                        ImGui.End();
+                                    }
+
+                                    System.Numerics.Vector2 mousePos = ImGui.GetMousePos();
+                                    bool isMouseOutsideWindow = mousePos.X < componentWindowPos.X || mousePos.X > componentWindowPos.X + componentWindowSize.X ||
+                                                                mousePos.Y < componentWindowPos.Y || mousePos.Y > componentWindowPos.Y + componentWindowSize.Y;
+
+                                    if (ImGui.IsMouseClicked(0) && isMouseOutsideWindow)
+                                    {
+                                        showAddComponentWindow = false;
+                                    }
+                                }
+                                #endregion
+
+                                ImGui.Dummy(new System.Numerics.Vector2(0, 50));
                             }
                         }
 

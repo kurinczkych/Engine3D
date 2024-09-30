@@ -21,7 +21,8 @@ namespace Engine3D
                 BaseMesh? baseMesh = o.Mesh;
                 if (baseMesh == null)
                 {
-                    throw new Exception("Can't draw the object, it doesn't have a mesh!");
+                    //throw new Exception("Can't draw the object, it doesn't have a mesh!");
+                    continue;
                 }
 
                 ObjectType objectType = o.GetObjectType();

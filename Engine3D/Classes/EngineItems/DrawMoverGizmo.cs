@@ -21,19 +21,22 @@ namespace Engine3D
                     shaderProgram.Use();
 
                     BaseMesh? mesh = o.Mesh;
-                    if(mesh == null)
-                    {
-                        throw new Exception("Can't draw the gizmo, because the object doesn't have a mesh!");
-                    }
 
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && mesh.GetType() == typeof(InstancedMesh))
+                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1)
                     {
-                        //editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
-                        //                                         o.Rotation);
+                        if(mesh == null)
+                            throw new Exception("Can't draw the gizmo, because the object doesn't have a mesh!");
 
-                        editorData.gizmoManager.UpdateMoverGizmo(o.transformation.Position + ((InstancedMesh)mesh).instancedData[editorData.instIndex].Position,
-                                                                 o.transformation.Rotation * ((InstancedMesh)mesh).instancedData[editorData.instIndex].Rotation);
-                        // TODO
+                        if (mesh.GetType() == typeof(InstancedMesh))
+
+                        {
+                            //editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
+                            //                                         o.Rotation);
+
+                            editorData.gizmoManager.UpdateMoverGizmo(o.transformation.Position + ((InstancedMesh)mesh).instancedData[editorData.instIndex].Position,
+                                                                     o.transformation.Rotation * ((InstancedMesh)mesh).instancedData[editorData.instIndex].Rotation);
+                            // TODO
+                        }
                     }
                     else
                         editorData.gizmoManager.UpdateMoverGizmo(o.transformation.Position, o.transformation.Rotation);
@@ -41,7 +44,11 @@ namespace Engine3D
 
                     foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
                     {
-                        ((Mesh)mesh).Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
+                        BaseMesh? moverMesh = moverGizmo.Mesh;
+                        if (moverMesh == null)
+                            continue;
+
+                        ((Mesh)moverMesh).Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
                     }
                 }
             }

@@ -23,9 +23,29 @@ namespace Engine3D
         public int vboId;
         public int shaderProgramId;
 
-        public string modelName;
-        public string modelPath;
+        protected string modelName_;
+        public string modelName
+        {
+            get { return modelName_; }
+            set
+            {
+                string relativePath = AssetManager.GetRelativeModelsFolder(value);
+                modelPath = relativePath;
+                modelName_ = Path.GetFileName(modelPath);
+                ProcessObj(modelPath);
 
+                if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
+                {
+                    ComputeVertexNormalsSpherical();
+                }
+                else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
+                    ComputeVertexNormals();
+
+                ComputeTangents();
+                recalculate = true;
+            }
+        }
+        public string modelPath;
 
         private bool _recalculate = false;
         public bool recalculate

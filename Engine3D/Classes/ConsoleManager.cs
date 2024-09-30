@@ -36,6 +36,7 @@ namespace Engine3D
         public bool ConsoleUpdated = false;
         public List<Log> Logs = new List<Log>();
         public Dictionary<LogType, System.Numerics.Vector4> LogColors = new Dictionary<LogType, System.Numerics.Vector4>();
+        public bool justAdded = false;
 
         public ConsoleManager() 
         {

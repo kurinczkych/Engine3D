@@ -93,7 +93,7 @@ namespace Engine3D
             this.camera = camera;
 
             modelPath = relativeModelPath;
-            modelName = Path.GetFileName(relativeModelPath);
+            modelName_ = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
             if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
@@ -126,7 +126,7 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            this.modelName = modelName;
+            this.modelName_ = modelName;
             this.model = model;
 
             if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
@@ -154,7 +154,7 @@ namespace Engine3D
             this.windowSize = windowSize;
             this.camera = camera;
 
-            this.modelName = modelName;
+            this.modelName_ = modelName;
             this.model = model;
 
             if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)

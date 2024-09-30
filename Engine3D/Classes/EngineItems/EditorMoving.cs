@@ -51,7 +51,8 @@ namespace Engine3D
                     ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
                     Parallel.ForEach(objects, parallelOptions, obj =>
                     {
-                        obj.GetMesh().recalculate = true;
+                        if(obj.Mesh != null) 
+                            obj.Mesh.recalculate = true;
                     });
                 }
             }

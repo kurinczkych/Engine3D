@@ -26,7 +26,10 @@ namespace Engine3D
         {
             Stream? s = Stream.Null;
 
-            string folderName = Path.GetDirectoryName(fullpath);
+            string? folderName = Path.GetDirectoryName(fullpath);
+            if (folderName == null)
+                return s;
+
             string fileName = Path.GetFileName(fullpath);
 
             if (!Directory.Exists(folderName))
@@ -232,7 +235,7 @@ namespace Engine3D
                 {
                     File.Delete(assetPath);
 
-                    string dir = Path.GetDirectoryName(assetPath);
+                    string? dir = Path.GetDirectoryName(assetPath);
                     if (dir != null && dir != "")
                         fileFolderCount[dir]--;
                 }

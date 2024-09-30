@@ -8,6 +8,8 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Diagnostics;
+using MagicPhysX;
+using Assimp;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -186,6 +188,7 @@ namespace Engine3D
 
             assetManager = new AssetManager(ref textureManager);
             editorData.assetManager = assetManager;
+            editorData.textureManager = textureManager;
 
             objects = new List<Object>();
             _meshObjects = new List<Object>();
@@ -198,45 +201,44 @@ namespace Engine3D
         {
             if (type == ObjectType.Cube)
             {
-                Object o = new Object(type, ref physx);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", Object.GetUnitCube(), windowSize, ref character.camera, ref o));
+                Object o = new Object(type);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
                 _meshObjects.Add(o);
             }
             else if (type == ObjectType.Sphere)
             {
-                Object o = new Object(type, ref physx);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", Object.GetUnitSphere(), windowSize, ref character.camera, ref o));
+                Object o = new Object(type);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", BaseMesh.GetUnitSphere(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
                 _meshObjects.Add(o);
             }
             else if (type == ObjectType.Capsule)
             {
-                Object o = new Object(type, ref physx);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", Object.GetUnitCapsule(), windowSize, ref character.camera, ref o));
+                Object o = new Object(type);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", BaseMesh.GetUnitCapsule(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
                 _meshObjects.Add(o);
             }
             else if (type == ObjectType.Plane)
             {
-                Object o = new Object(type, ref physx);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", Object.GetUnitFace(), windowSize, ref character.camera, ref o));
+                Object o = new Object(type);
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", BaseMesh.GetUnitFace(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
                 _meshObjects.Add(o);
             }
             else if (type == ObjectType.TriangleMesh)
             {
-                Object o = new Object(type, ref physx);
+                Object o = new Object(type);
                 o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
                 _meshObjects.Add(o);
             }
             else if (type == ObjectType.ParticleEmitter)
             {
-                Object o = new Object(type, ref physx);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "particle_emitter", Object.GetUnitSphere(radius:1), windowSize, ref character.camera, ref o));
+                ParticleSystem o = new ParticleSystem();
+                o.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref character.camera, ref o));
                 editorData.objects.Add(o);
-                _meshObjects.Add(o);
             }
             else if (type == ObjectType.AudioEmitter)
             {
@@ -246,41 +248,50 @@ namespace Engine3D
             {
 
             }
+            editorData.recalculateObjects = true;
         }
 
         public void AddMeshObject(string meshName)
         {
-            Object o = new Object(ObjectType.TriangleMesh, ref physx);
+            Object o = new Object(ObjectType.TriangleMesh);
             o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref character.camera, ref o));
             editorData.objects.Add(o);
             _meshObjects.Add(o);
+            editorData.recalculateObjects = true;
         }
 
         public void RemoveObject(Object o)
         {
-            if (o.hasMesh)
+            if (o.Mesh is BaseMesh mesh)
             {
-                if (o.meshType == typeof(Mesh))
+                if (mesh.GetType() == typeof(Mesh))
                     _meshObjects.Remove(o);
-                else if (o.meshType == typeof(InstancedMesh))
-                    _instObjects.Remove(o);
+                else if (mesh.GetType() == typeof(InstancedMesh))
+                    _instObjects.Remove(o); 
+
+                textureManager.DeleteTexture(mesh.textureName);
             }
 
-            textureManager.DeleteTexture(o.textureName);
             imGuiController.SelectItem(null, editorData);
             o.Delete(ref textureManager);
             objects.Remove(o);
+            editorData.recalculateObjects = true;
         }
 
 
         private void AddText(Object obj, string tag)
         {
-            if (obj.GetObjectType() != ObjectType.TextMesh && obj.GetMesh().GetType() != typeof(TextMesh))
+            BaseMesh? textMesh = obj.Mesh;
+            if(textMesh == null)
+                throw new Exception("Can only add Text, if the object has a TextMesh");
+
+
+            if (obj.GetObjectType() != ObjectType.TextMesh && textMesh.GetType() != typeof(TextMesh))
                 throw new Exception("Can only add Text, if its ObjectType.TextMesh");
 
             haveText = true;
             objects.Add(obj);
-            texts.Add(tag, (TextMesh)obj.GetMesh());
+            texts.Add(tag, (TextMesh)textMesh);
             objects.Sort();
         }
 
@@ -373,12 +384,39 @@ namespace Engine3D
 
             character.AfterUpdate(MouseState, args, editorData.gameRunning);
 
-            if (editorData.fps.totalTime > 0)
+            if (editorData.fps.totalTime > 0 && editorData.gameRunning == GameState.Running)
             {
                 physx.Simulate((float)args.Time);
                 foreach (Object o in objects)
                 {
-                    o.CollisionResponse();
+                    if (o.Physics is Physics p)
+                    {
+                        var trans = p.CollisionResponse();
+                        if (trans != null)
+                        {
+                            BaseMesh? pmesh = o.Mesh;
+                            if (pmesh == null)
+                                continue;
+
+                            bool[] which = new bool[3] { false, false, false };
+
+                            o.transformation.Position = trans.Item1;
+                            if (o.transformation.Position != o.transformation.LastPosition)
+                            {
+                                pmesh.recalculate = true;
+                                which[0] = true;
+                            }
+
+                            o.transformation.Rotation = trans.Item2;
+                            if(o.transformation.Rotation != o.transformation.LastRotation)
+                            {
+                                pmesh.recalculate = true;
+                                which[1] = true;
+                            }
+
+                            pmesh.RecalculateModelMatrix(which);
+                        }
+                    }
                 }
             }
         }
@@ -417,8 +455,6 @@ namespace Engine3D
             textureManager.AddTexture("ui_absolute.png", out bool successAbsolute, flipY: false);
             if (!successAbsolute) { throw new Exception("ui_absolute.png was not found in the embedded resources!"); }
             editorData.objects = objects;
-            editorData.particleSystems = particleSystems;
-            editorData.pointLights = pointLights;
             FileManager.GetAllAssets(ref assetManager);
             editorData.assetStoreManager = new AssetStoreManager(ref assetManager);
             fileDetectorStopWatch.Start();
@@ -537,6 +573,7 @@ namespace Engine3D
 
             // Create Physx context
             physx = new Physx(true);
+            editorData.physx = physx;
 
             // Create Sound Manager
             soundManager = new SoundManager();
@@ -578,7 +615,7 @@ namespace Engine3D
             //objects.Add(o2);
             //_meshObjects.Add(o2);
 
-            Object o2 = new Object(ObjectType.Cube, ref physx);
+            //Object o2 = new Object(ObjectType.Cube);
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "rotating.fbx", windowSize, ref camera, ref o2));
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "rotatingSingle.fbx", windowSize, ref camera, ref o2));
             //o2.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "bob.fbx", windowSize, ref camera, ref o2)); o2.Rotation = Quaternion.FromEulerAngles(MathHelper.DegreesToRadians(270), 0, MathHelper.DegreesToRadians(270)); o2.Position = new Vector3(0, -3, 0); o2.GetMesh().RecalculateModelMatrix(new bool[3] { true, true, false });
@@ -745,7 +782,10 @@ namespace Engine3D
 
             foreach(Object obj in objects)
             {
-                BaseMesh mesh = obj.GetMesh();
+                BaseMesh? mesh = obj.Mesh;
+                if (mesh == null)
+                    continue;
+
                 GL.DeleteBuffer(mesh.vbo);               
             }
 

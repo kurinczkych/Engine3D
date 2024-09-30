@@ -6,6 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#pragma warning disable CS8600
+#pragma warning disable CS8602
+
 namespace Engine3D
 {
     public partial class Engine    
@@ -13,10 +16,14 @@ namespace Engine3D
         private void GizmoObjectManipulating()
         {
             bool[] which = new bool[3] { false, false, false };
+
+            if (editorData.selectedItem == null)
+                throw new NotImplementedException();
+
             if (editorData.gizmoManager.gizmoType == GizmoType.Move) // Moving
             {
                 if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && editorData.selectedItem is Object insto &&
-                    insto.meshType == typeof(InstancedMesh))
+                    insto.Mesh is InstancedMesh instMesh)
                 {
                     if (objectMovingAxis == Axis.X && objectMovingPlane != null)
                     {
@@ -32,7 +39,7 @@ namespace Engine3D
                             }
                             else
                             {
-                                Vector3 searchDir = Vector3.Transform(new Vector3(1, 0, 0), insto.Rotation);
+                                Vector3 searchDir = Vector3.Transform(new Vector3(1, 0, 0), insto.transformation.Rotation);
                                 if (searchDir.X == 0)
                                     searchDir.X = 0.01f;
                                 float slopeY = searchDir.Y / searchDir.X;
@@ -45,8 +52,8 @@ namespace Engine3D
                                 pos.Z = slopeZ * pos.X + zIntercept;
                             }
 
-                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
-                                ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
+                            ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position =
+                                ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
                             objectMovingOrig = pos;
                         }
                     }
@@ -64,7 +71,7 @@ namespace Engine3D
                             }
                             else
                             {
-                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 1, 0), insto.Rotation);
+                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 1, 0), insto.transformation.Rotation);
                                 if (searchDir.Y == 0)
                                     searchDir.Y = 0.01f;
                                 float slopeX = searchDir.X / searchDir.Y;
@@ -76,8 +83,8 @@ namespace Engine3D
                                 pos.X = slopeX * pos.Y + xIntercept;
                                 pos.Z = slopeZ * pos.Y + zIntercept;
                             }
-                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
-                                ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
+                            ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position =
+                                ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
                             objectMovingOrig = pos;
                         }
                     }
@@ -96,7 +103,7 @@ namespace Engine3D
                             }
                             else
                             {
-                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 0, 1), insto.Rotation);
+                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 0, 1), insto.transformation.Rotation);
                                 if (searchDir.Z == 0)
                                     searchDir.Z = 0.01f;
                                 float slopeY = searchDir.Y / searchDir.Z;
@@ -109,8 +116,8 @@ namespace Engine3D
                                 pos.X = slopeX * pos.Z + xIntercept;
                             }
 
-                            ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position =
-                                ((InstancedMesh)insto.GetMesh()).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
+                            ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position =
+                                ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position + (pos - objectMovingOrig);
                             objectMovingOrig = pos;
                         }
                     }
@@ -131,7 +138,7 @@ namespace Engine3D
                             }
                             else
                             {
-                                Vector3 searchDir = Vector3.Transform(new Vector3(1, 0, 0), o.Rotation);
+                                Vector3 searchDir = Vector3.Transform(new Vector3(1, 0, 0), o.transformation.Rotation);
                                 if (searchDir.X == 0)
                                     searchDir.X = 0.01f;
                                 float slopeY = searchDir.Y / searchDir.X;
@@ -144,7 +151,8 @@ namespace Engine3D
                                 pos.Z = slopeZ * pos.X + zIntercept;
                             }
 
-                            ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position + (pos - objectMovingOrig);
+                            ((ISelectable)editorData.selectedItem).transformation.Position = 
+                                    ((ISelectable)editorData.selectedItem).transformation.Position + (pos - objectMovingOrig);
                             objectMovingOrig = pos;
                         }
                     }
@@ -162,7 +170,7 @@ namespace Engine3D
                             }
                             else
                             {
-                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 1, 0), o.Rotation);
+                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 1, 0), o.transformation.Rotation);
                                 if (searchDir.Y == 0)
                                     searchDir.Y = 0.01f;
                                 float slopeX = searchDir.X / searchDir.Y;
@@ -174,7 +182,8 @@ namespace Engine3D
                                 pos.X = slopeX * pos.Y + xIntercept;
                                 pos.Z = slopeZ * pos.Y + zIntercept;
                             }
-                            ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position + (pos - objectMovingOrig);
+                            ((ISelectable)editorData.selectedItem).transformation.Position = 
+                                    ((ISelectable)editorData.selectedItem).transformation.Position + (pos - objectMovingOrig);
                             objectMovingOrig = pos;
                         }
                     }
@@ -193,7 +202,7 @@ namespace Engine3D
                             }
                             else
                             {
-                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 0, 1), o.Rotation);
+                                Vector3 searchDir = Vector3.Transform(new Vector3(0, 0, 1), o.transformation.Rotation);
                                 if (searchDir.Z == 0)
                                     searchDir.Z = 0.01f;
                                 float slopeY = searchDir.Y / searchDir.Z;
@@ -206,7 +215,8 @@ namespace Engine3D
                                 pos.X = slopeX * pos.Z + xIntercept;
                             }
 
-                            ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position + (pos - objectMovingOrig);
+                            ((ISelectable)editorData.selectedItem).transformation.Position = 
+                                    ((ISelectable)editorData.selectedItem).transformation.Position + (pos - objectMovingOrig);
                             objectMovingOrig = pos;
                         }
                     }
@@ -215,15 +225,18 @@ namespace Engine3D
                 {
                     if (objectMovingAxis == Axis.X)
                     {
-                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(deltaX / 10, 0, 0);
+                        ((ISelectable)editorData.selectedItem).transformation.Position = 
+                                ((ISelectable)editorData.selectedItem).transformation.Position - new Vector3(deltaX / 10, 0, 0);
                     }
                     else if (objectMovingAxis == Axis.Y)
                     {
-                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position - new Vector3(0, deltaY / 10, 0);
+                        ((ISelectable)editorData.selectedItem).transformation.Position = 
+                                ((ISelectable)editorData.selectedItem).transformation.Position - new Vector3(0, deltaY / 10, 0);
                     }
                     else if (objectMovingAxis == Axis.Z)
                     {
-                        ((ISelectable)editorData.selectedItem).Position = ((ISelectable)editorData.selectedItem).Position + new Vector3(0, 0, deltaX / 10);
+                        ((ISelectable)editorData.selectedItem).transformation.Position = 
+                                ((ISelectable)editorData.selectedItem).transformation.Position + new Vector3(0, 0, deltaX / 10);
                     }
                 }
 
@@ -231,41 +244,41 @@ namespace Engine3D
             }
             else if (editorData.gizmoManager.gizmoType == GizmoType.Rotate) // Rotating
             {
-                if (editorData.selectedItem is Object o && (o.meshType == typeof(Mesh) || o.meshType == typeof(InstancedMesh)))
+                if (editorData.selectedItem is Object o)
                 {
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.meshType == typeof(InstancedMesh))
+                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.Mesh is InstancedMesh instMesh)
                     {
-                        Vector3 rot = Helper.EulerFromQuaternion(((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Rotation);
+                        Vector3 rot = Helper.EulerFromQuaternion(instMesh.instancedData[editorData.instIndex].Rotation);
                         if (objectMovingAxis == Axis.X)
                         {
-                            ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Rotation =
+                            instMesh.instancedData[editorData.instIndex].Rotation =
                                 Helper.QuaternionFromEuler(rot - new Vector3(deltaX / 10, 0, 0));
                         }
                         else if (objectMovingAxis == Axis.Y)
                         {
-                            ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Rotation =
+                            instMesh.instancedData[editorData.instIndex].Rotation =
                                 Helper.QuaternionFromEuler(rot - new Vector3(0, deltaY / 10, 0));
                         }
                         else if (objectMovingAxis == Axis.Z)
                         {
-                            ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Rotation =
+                            instMesh.instancedData[editorData.instIndex].Rotation =
                                 Helper.QuaternionFromEuler(rot + new Vector3(0, 0, deltaX / 10));
                         }
                     }
-                    else if (o.meshType == typeof(Mesh) || o.meshType == typeof(InstancedMesh))
+                    else
                     {
-                        Vector3 rot = Helper.EulerFromQuaternion(o.Rotation);
+                        Vector3 rot = Helper.EulerFromQuaternion(o.transformation.Rotation);
                         if (objectMovingAxis == Axis.X)
                         {
-                            o.Rotation = Helper.QuaternionFromEuler(rot - new Vector3(deltaX / 10, 0, 0));
+                            o.transformation.Rotation = Helper.QuaternionFromEuler(rot - new Vector3(deltaX / 10, 0, 0));
                         }
                         else if (objectMovingAxis == Axis.Y)
                         {
-                            o.Rotation = Helper.QuaternionFromEuler(rot - new Vector3(0, deltaY / 10, 0));
+                            o.transformation.Rotation = Helper.QuaternionFromEuler(rot - new Vector3(0, deltaY / 10, 0));
                         }
                         else if (objectMovingAxis == Axis.Z)
                         {
-                            o.Rotation = Helper.QuaternionFromEuler(rot + new Vector3(0, 0, deltaX / 10));
+                            o.transformation.Rotation = Helper.QuaternionFromEuler(rot + new Vector3(0, 0, deltaX / 10));
                         }
                     }
 
@@ -274,40 +287,40 @@ namespace Engine3D
             }
             else if (editorData.gizmoManager.gizmoType == GizmoType.Scale) // Scaling
             {
-                if (editorData.selectedItem is Object o && (o.meshType == typeof(Mesh) || o.meshType == typeof(InstancedMesh)))
+                if (editorData.selectedItem is Object o)
                 {
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.meshType == typeof(InstancedMesh))
+                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.Mesh is InstancedMesh instMesh)
                     {
                         if (objectMovingAxis == Axis.X)
                         {
-                            ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Scale = 
-                                ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Scale - new Vector3(deltaX / 10, 0, 0);
+                            instMesh.instancedData[editorData.instIndex].Scale =
+                                instMesh.instancedData[editorData.instIndex].Scale - new Vector3(deltaX / 10, 0, 0);
                         }
                         else if (objectMovingAxis == Axis.Y)
                         {
-                            ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Scale = 
-                                ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Scale - new Vector3(0, deltaY / 10, 0);
+                            instMesh.instancedData[editorData.instIndex].Scale = 
+                                instMesh.instancedData[editorData.instIndex].Scale - new Vector3(0, deltaY / 10, 0);
                         }
                         else if (objectMovingAxis == Axis.Z)
                         {
-                            ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Scale = 
-                                ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Scale + new Vector3(0, 0, deltaX / 10);
+                            instMesh.instancedData[editorData.instIndex].Scale = 
+                                instMesh.instancedData[editorData.instIndex].Scale + new Vector3(0, 0, deltaX / 10);
                         }
                     }
-                    else if (o.meshType == typeof(Mesh) || o.meshType == typeof(InstancedMesh))
+                    else
                     {
                         // TODO 
                         if (objectMovingAxis == Axis.X)
                         {
-                            o.Scale = o.Scale - new Vector3(deltaX / 10, 0, 0);
+                            o.transformation.Scale = o.transformation.Scale - new Vector3(deltaX / 10, 0, 0);
                         }
                         else if (objectMovingAxis == Axis.Y)
                         {
-                            o.Scale = o.Scale - new Vector3(0, deltaY / 10, 0);
+                            o.transformation.Scale = o.transformation.Scale - new Vector3(0, deltaY / 10, 0);
                         }
                         else if (objectMovingAxis == Axis.Z)
                         {
-                            o.Scale = o.Scale + new Vector3(0, 0, deltaX / 10);
+                            o.transformation.Scale = o.transformation.Scale + new Vector3(0, 0, deltaX / 10);
                         }
                     }
 
@@ -317,9 +330,14 @@ namespace Engine3D
 
             if (editorData.selectedItem is Object toCalcO)
             {
-                toCalcO.GetMesh().recalculate = true;
-                toCalcO.GetMesh().RecalculateModelMatrix(which);
-                toCalcO.UpdatePhysxPositionAndRotation();
+                if (toCalcO.Mesh != null)
+                {
+                    toCalcO.Mesh.recalculate = true;
+                    toCalcO.Mesh.RecalculateModelMatrix(which);
+                }
+
+                if(toCalcO.Physics is Physics physics)
+                    physics.UpdatePhysxPositionAndRotation(toCalcO.transformation);
             }
 
         }

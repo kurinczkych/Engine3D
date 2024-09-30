@@ -192,17 +192,14 @@ namespace Engine3D
 
         private List<Bone> BoneListResize(List<Bone> list, int addCount)
         {
-            List<Bone> a = new List<Bone>();
-            int listCount = list==null?0:list.Count;
-            for (int i = 0; i < listCount; i++)
-            {
-                a.Add(list[i]);
-            }
+            List<Bone> newList = new List<Bone>(list);
+
             for (int i = 0; i < addCount; i++)
             {
-                a.Add(new Bone());
+                newList.Add(new Bone());
             }
-            return a;
+
+            return newList;
         }
 
         public int GetNumberOfBones()

@@ -131,6 +131,7 @@ namespace Engine3D
 
             ModelData modelX = BaseMesh.GetUnitCube(1, 0, 0, 1);
             Object moverGizmoX = new Object(ObjectType.Cube, 1);
+            moverGizmoX.name = "xMover";
             Matrix4 xMat = Matrix4.CreateScale(new Vector3(moverGizmoSize, otherAxisScale, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(2, 0, 0));
             modelX.meshes[0].TransformMeshData(xMat);
             Mesh xMesh = new Mesh(vao, vbo, shader.id, "xMesh", modelX, camera.screenSize, ref camera, ref moverGizmoX);
@@ -141,6 +142,7 @@ namespace Engine3D
 
             ModelData modelY = BaseMesh.GetUnitCube(0, 1, 0, 1);
             Object moverGizmoY = new Object(ObjectType.Cube, 2);
+            moverGizmoY.name = "yMover";
             Matrix4 yMat = Matrix4.CreateScale(new Vector3(otherAxisScale, moverGizmoSize, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(0, 2, 0));
             modelY.meshes[0].TransformMeshData(yMat);
             Mesh yMesh = new Mesh(vao, vbo, shader.id, "yMesh", modelY, camera.screenSize, ref camera, ref moverGizmoY);
@@ -151,6 +153,7 @@ namespace Engine3D
 
             ModelData modelZ = BaseMesh.GetUnitCube(0, 0, 1, 1);
             Object moverGizmoZ = new Object(ObjectType.Cube, 3);
+            moverGizmoZ.name = "zMover";
             Matrix4 zMat = Matrix4.CreateScale(new Vector3(otherAxisScale, otherAxisScale, moverGizmoSize)) * Matrix4.CreateTranslation(new Vector3(0, 0, 2));
             modelZ.meshes[0].TransformMeshData(zMat);
             Mesh zMesh = new Mesh(vao, vbo, shader.id, "zMesh", modelZ, camera.screenSize, ref camera, ref moverGizmoZ);
