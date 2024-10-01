@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using Newtonsoft.Json;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -37,7 +38,10 @@ namespace Engine3D
 
         private Vector2 windowSize;
 
-        Matrix4 viewMatrix, projectionMatrix;
+        [JsonConverter(typeof(Matrix4Converter))]
+        Matrix4 viewMatrix;
+        [JsonConverter(typeof(Matrix4Converter))]
+        Matrix4 projectionMatrix;
 
         private InstancedVAO Vao;
         private VBO Vbo;

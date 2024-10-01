@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Formats.Asn1.AsnWriter;
+using Newtonsoft.Json;
 
 #pragma warning disable CS8600
 #pragma warning disable CA1416
@@ -27,7 +28,10 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
 
-        Matrix4 viewMatrix, projectionMatrix;
+        [JsonConverter(typeof(Matrix4Converter))]
+        Matrix4 viewMatrix;
+        [JsonConverter(typeof(Matrix4Converter))]
+        Matrix4 projectionMatrix;
 
         public List<Line> lines;
 

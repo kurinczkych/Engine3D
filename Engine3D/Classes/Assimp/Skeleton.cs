@@ -1,5 +1,6 @@
 ﻿using Assimp;
 using Assimp.Unmanaged;
+using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
@@ -18,6 +19,7 @@ namespace Engine3D
         public Bone RootBone;
         public Dictionary<string, BoneInfo> BoneMapping = new Dictionary<string, BoneInfo>();
         public int NumOfBones = -1;
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 InverseGlobal = Matrix4.Identity;
 
         public Skeleton()

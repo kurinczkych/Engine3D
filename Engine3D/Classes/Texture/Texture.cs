@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.IO;
 using MagicPhysX;
 using Assimp.Unmanaged;
+using System.Text.Json.Serialization;
 
 namespace Engine3D
 {
@@ -26,6 +27,7 @@ namespace Engine3D
 
     public class Texture
     {
+        [JsonIgnore]
         public string textureName
         {
             get

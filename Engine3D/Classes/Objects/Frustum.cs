@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,31 @@ namespace Engine3D
 {
     public class Frustum
     {
+
+        public Plane[] planes;
+
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 nearCenter;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 farCenter;
+
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 ntl;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 ntr;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 nbl;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 nbr;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 ftl;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 ftr;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 fbl;
+        [JsonConverter(typeof(Vector3Converter))]
+        public Vector3 fbr;
+
         public Frustum()
         {
             planes = new Plane[6];
@@ -125,19 +151,5 @@ namespace Engine3D
 
             return triangles;
         }
-
-        public Plane[] planes;
-
-        public Vector3 nearCenter;
-        public Vector3 farCenter;
-
-        public Vector3 ntl;
-        public Vector3 ntr;
-        public Vector3 nbl;
-        public Vector3 nbr;
-        public Vector3 ftl;
-        public Vector3 ftr;
-        public Vector3 fbl;
-        public Vector3 fbr;
     }
 }

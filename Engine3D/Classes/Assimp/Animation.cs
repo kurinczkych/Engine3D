@@ -1,4 +1,5 @@
 ﻿using MagicPhysX;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -11,9 +12,13 @@ namespace Engine3D
     public class BoneAnimation
     {
         public string Name;
+        [JsonConverter(typeof(Vector3Converter))]
         public Dictionary<int,Vector3> Positions = new Dictionary<int, Vector3>();
+        [JsonConverter(typeof(QuaternionConverter))]
         public Dictionary<int,Quaternion> Rotations = new Dictionary<int, Quaternion>();
+        [JsonConverter(typeof(Vector3Converter))]
         public Dictionary<int,Vector3> Scalings = new Dictionary<int, Vector3>();
+        [JsonConverter(typeof(Matrix4Converter))]
         public Dictionary<int,Matrix4> Transformations = new Dictionary<int,Matrix4>();
 
         public Matrix4 GetInterpolatedTransform(int startTime, int endTime, int currentTime)

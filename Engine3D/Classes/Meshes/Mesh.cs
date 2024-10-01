@@ -19,6 +19,7 @@ using Cyotek.Drawing.BitmapFont;
 using System.Runtime.CompilerServices;
 using OpenTK.Windowing.Common;
 using Node = Assimp.Node;
+using Newtonsoft.Json;
 
 #pragma warning disable CS8600
 #pragma warning disable CS8604
@@ -33,11 +34,15 @@ namespace Engine3D
         public static int floatAnimCount = 24;
 
         public bool drawNormals = false;
-        public WireframeMesh normalMesh;
+        //public WireframeMesh normalMesh;
 
         private Vector2 windowSize;
 
-        private Matrix4 viewMatrix, projectionMatrix;
+        [JsonConverter(typeof(Matrix4Converter))]
+        private Matrix4 viewMatrix;
+        [JsonConverter(typeof(Matrix4Converter))]
+        private Matrix4 projectionMatrix;
+        [JsonConverter(typeof(Vector3Converter))]
         private Vector3 cameraPos;
 
         public AnimationClip? animation;

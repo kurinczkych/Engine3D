@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,12 +10,17 @@ namespace Engine3D
 {
     public struct Vertex
     {
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 p;
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 n;
+        [JsonConverter(typeof(Color4Converter))]
         public Color4 c;
         public Vec2d t;
         public int pi;
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 tan;
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 bitan;
         public List<int> boneIDs = new List<int>();
         public List<float> boneWeights = new List<float>();

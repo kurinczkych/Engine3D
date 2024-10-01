@@ -1,5 +1,6 @@
 ﻿using FontStashSharp;
 using MagicPhysX;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -11,13 +12,19 @@ namespace Engine3D
 {
     public class AABB
     {
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Min;
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Max;
 
+        [JsonIgnore]
         public float Width { get { return Max.X - Min.X; } }
+        [JsonIgnore]
         public float Height { get { return Max.Y - Min.Y; } }
+        [JsonIgnore]
         public float Depth { get { return Max.Z - Min.Z; } }
 
+        [JsonIgnore]
         public Vector3 Center
         {
             get

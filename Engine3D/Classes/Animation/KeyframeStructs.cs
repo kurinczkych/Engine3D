@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace Engine3D
 
     public struct TranslationKeyFrame
     {
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Translation;
 
         private double time;

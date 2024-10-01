@@ -651,7 +651,12 @@ namespace Engine3D
                     {
                         if(ImGui.MenuItem("Open", "Ctrl+O"))
                         {
-
+                            string filePath = "";
+                            engine.LoadProject(filePath);
+                        }
+                        if(ImGui.MenuItem("Save", "Ctrl+S"))
+                        {
+                            engine.SaveProject();
                         }
                         ImGui.EndMenu();
                     }

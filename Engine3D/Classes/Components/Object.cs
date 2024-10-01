@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Metadata.Ecma335;
 using OpenTK.Graphics.OpenGL;
 using System.Data;
+using Newtonsoft.Json;
 
 #pragma warning disable CS8767
 
@@ -45,8 +46,11 @@ namespace Engine3D
 
     public class Transformation
     {
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 LastPosition;
+        [JsonConverter(typeof(Vector3Converter))]
         private Vector3 position_;
+        [JsonIgnore]
         public Vector3 Position
         {
             get { return position_; }
@@ -57,8 +61,11 @@ namespace Engine3D
             }
         }
 
+        [JsonConverter(typeof(QuaternionConverter))]
         public Quaternion LastRotation;
+        [JsonConverter(typeof(QuaternionConverter))]
         private Quaternion rotation_;
+        [JsonIgnore]
         public Quaternion Rotation
         {
             get { return rotation_; }
@@ -69,6 +76,7 @@ namespace Engine3D
             }
         }
 
+        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Scale = Vector3.One;
 
         public Transformation(Vector3 position, Quaternion rotation, Vector3 scale)
@@ -112,7 +120,9 @@ namespace Engine3D
 
         private ObjectType type;
 
+        [JsonIgnore]
         private BaseMesh? mesh_;
+        [JsonIgnore]
         public BaseMesh? Mesh
         {
             get 
@@ -127,7 +137,9 @@ namespace Engine3D
             }
         }
 
+        [JsonIgnore]
         private Physics? physics_;
+        [JsonIgnore]
         public Physics? Physics
         {
             get
@@ -142,12 +154,16 @@ namespace Engine3D
             }
         }
 
+        [JsonIgnore]
         public BSP BSPStruct { get; private set; }
+        [JsonIgnore]
         public Octree Octree { get; private set; }
+        [JsonIgnore]
         public GridStructure GridStructure { get; private set; }
 
         public Transformation transformation { get; set; }
 
+        [JsonIgnore]
         public string PStr
         {
             get { return Math.Round(transformation.Position.X, 2).ToString() + "," + 

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using static OpenTK.Graphics.OpenGL.GL;
 
@@ -12,7 +13,9 @@ namespace Engine3D
     public class MeshData
     {
         public List<Vec2d> uvs = new List<Vec2d>();
+        [JsonConverter(typeof(Vector3ListConverter))]
         public List<Vector3> normals = new List<Vector3>();
+        [JsonConverter(typeof(Vector3ListConverter))]
         public List<Vector3> allVerts = new List<Vector3>();
 
         public List<Vertex> uniqueVertices = new List<Vertex>();

@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,7 @@ namespace Engine3D
     {
         public List<MeshData> meshes = new List<MeshData>();
         public Skeleton skeleton;
+        [JsonConverter(typeof(Matrix4ListConverter))]
         public List<Matrix4> boneMatrices = new List<Matrix4>();
         public int boneCount = 0;
 

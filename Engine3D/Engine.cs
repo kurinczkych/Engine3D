@@ -229,6 +229,22 @@ namespace Engine3D
             SetBackgroundColor(true);
         }
 
+        public void SaveProject()
+        {
+            ProjectManager.Project p = new ProjectManager.Project();
+            p.objectID = objectID;
+            p.objects = objects;
+            p._meshObjects = _meshObjects;
+            p._instObjects = _instObjects;
+            ProjectManager.Save("save.sav", p);
+            //ProjectManager.SaveObj("save.sav", objects[0]);
+        }
+
+        public void LoadProject(string filePath)
+        {
+
+        }
+
         private void AddObjectAndCalculate(Object o)
         {
             editorData.objects.Add(o);

@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ namespace Engine3D
 {
     public class BoneInfo
     {
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 Offset = Matrix4.Identity;
         public int Index;
     }
@@ -20,11 +22,18 @@ namespace Engine3D
         public string Name;
         public int BoneIndex = -1;
 
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 BoneOffset = Matrix4.Identity;
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 Transform = Matrix4.Identity;
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 GlobalTransform = Matrix4.Identity;
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 FinalTransform = Matrix4.Identity;
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 LocalTransform = Matrix4.Identity;
+
+        [JsonIgnore]
         public Matrix4 ParentTransform
         {
             get

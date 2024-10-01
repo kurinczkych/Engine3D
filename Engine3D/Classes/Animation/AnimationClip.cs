@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ namespace Engine3D
         private double LocalTimer = 0.0f;
         private float BlendUpdateRatio = 1.0f;
 
+        [JsonConverter(typeof(Matrix4Converter))]
         public Dictionary<string, Matrix4> AnimationMatrices = new Dictionary<string, Matrix4>();
 
         public AnimationClip() { }

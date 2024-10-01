@@ -2,6 +2,7 @@
 using Engine3D.Classes;
 using FontStashSharp;
 using MagicPhysX;
+using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
@@ -24,6 +25,7 @@ namespace Engine3D
         public int shaderProgramId;
 
         protected string modelName_;
+        [JsonIgnore]
         public string modelName
         {
             get { return modelName_; }
@@ -47,13 +49,16 @@ namespace Engine3D
         }
         public string modelPath;
 
+        [JsonIgnore]
         private bool _recalculate = false;
         public bool recalculate
         {
             get { return _recalculate; }
             set { _recalculate = value; recalculateOnlyPos = true; recalculateOnlyPosAndNormal = true; }
         }
+        [JsonIgnore]
         protected bool recalculateOnlyPos;
+        [JsonIgnore]
         protected bool recalculateOnlyPosAndNormal;
 
         protected int useBillboarding_ = 0;
@@ -75,6 +80,7 @@ namespace Engine3D
 
         public ModelData model = new ModelData();
 
+        [JsonIgnore]
         public Object parentObject;
 
         #region Texture
@@ -86,6 +92,7 @@ namespace Engine3D
         public Texture? textureMetal;
 
         private string _textureName;
+        [JsonIgnore]
         public string textureName
         {
             get
@@ -125,6 +132,7 @@ namespace Engine3D
             }
         }
         private string _textureNormalName;
+        [JsonIgnore]
         public string textureNormalName
         {
             get
@@ -164,6 +172,7 @@ namespace Engine3D
             }
         }
         private string _textureHeightName;
+        [JsonIgnore]
         public string textureHeightName
         {
             get
@@ -203,6 +212,7 @@ namespace Engine3D
             }
         }
         private string _textureAOName;
+        [JsonIgnore]
         public string textureAOName
         {
             get
@@ -242,6 +252,7 @@ namespace Engine3D
             }
         }
         private string _textureRoughName;
+        [JsonIgnore]
         public string textureRoughName
         {
             get
@@ -281,6 +292,7 @@ namespace Engine3D
             }
         }
         private string _textureMetalName;
+        [JsonIgnore]
         public string textureMetalName
         {
             get
@@ -323,16 +335,20 @@ namespace Engine3D
 
         public bool useShading = true;
 
-        protected Camera camera;
+        public Camera camera;
 
         public Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
         public Dictionary<string, int> uniformAnimLocations = new Dictionary<string, int>();
-
+        
         public BVH? BVHStruct;
 
+        [JsonConverter(typeof(Matrix4Converter))]
         protected Matrix4 scaleMatrix = Matrix4.Identity;
+        [JsonConverter(typeof(Matrix4Converter))]
         protected Matrix4 rotationMatrix = Matrix4.Identity;
+        [JsonConverter(typeof(Matrix4Converter))]
         protected Matrix4 translationMatrix = Matrix4.Identity;
+        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 modelMatrix = Matrix4.Identity;
 
         //protected int threadSize;
