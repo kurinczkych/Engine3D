@@ -839,6 +839,12 @@ namespace Engine3D
         }
 
         #region SimpleMeshes
+        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Vector3[] n, Vec2d[] t, Color4 c)
+        {
+            list.Add(new Vertex(v[0], n[0], t[0]) { c = c });
+            list.Add(new Vertex(v[1], n[1], t[1]) { c = c });
+            list.Add(new Vertex(v[2], n[2], t[2]) { c = c });
+        }
         private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Vec2d[] t, Color4 c)
         {
             list.Add(new Vertex(v[0], t[0]) { c = c });
@@ -875,20 +881,50 @@ namespace Engine3D
             Vec2d t3 = new Vec2d(1, 1);
             Vec2d t4 = new Vec2d(0, 1);
 
+            Vector3 normalBack = new Vector3(0, 0, -1);  // Back face (-Z)
+            Vector3 normalFront = new Vector3(0, 0, 1);  // Front face (+Z)
+            Vector3 normalLeft = new Vector3(-1, 0, 0);  // Left face (-X)
+            Vector3 normalRight = new Vector3(1, 0, 0);  // Right face (+X)
+            Vector3 normalTop = new Vector3(0, 1, 0);    // Top face (+Y)
+            Vector3 normalBottom = new Vector3(0, -1, 0); // Bottom face (-Y)
+
             List<Vertex> list = new List<Vertex>();
 
-            AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }, c);
-            AddToVertexList(ref list, new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }, c);
-            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
-            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
-            AddToVertexList(ref list, new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }, c);
-            AddToVertexList(ref list, new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }, c);
-            AddToVertexList(ref list, new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }, c);
-            AddToVertexList(ref list, new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }, c);
-            AddToVertexList(ref list, new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }, c);
-            AddToVertexList(ref list, new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }, c);
-            AddToVertexList(ref list, new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }, c);
-            AddToVertexList(ref list, new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }, c);
+            AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, new Vector3[] { normalBack, normalBack, normalBack }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p3, p1, p4 }, new Vector3[] { normalBack, normalBack, normalBack }, new Vec2d[] { t3, t1, t4 }, c);
+
+            // Front face (+Z)
+            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vector3[] { normalFront, normalFront, normalFront }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vector3[] { normalFront, normalFront, normalFront }, new Vec2d[] { t3, t4, t1 }, c);
+
+            // Left face (-X)
+            AddToVertexList(ref list, new Vector3[] { p1, p8, p4 }, new Vector3[] { normalLeft, normalLeft, normalLeft }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p8, p1, p5 }, new Vector3[] { normalLeft, normalLeft, normalLeft }, new Vec2d[] { t3, t1, t4 }, c);
+
+            // Right face (+X)
+            AddToVertexList(ref list, new Vector3[] { p2, p3, p7 }, new Vector3[] { normalRight, normalRight, normalRight }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p6, p2 }, new Vector3[] { normalRight, normalRight, normalRight }, new Vec2d[] { t3, t4, t1 }, c);
+
+            // Top face (+Y)
+            AddToVertexList(ref list, new Vector3[] { p4, p7, p3 }, new Vector3[] { normalTop, normalTop, normalTop }, new Vec2d[] { t1, t3, t2 }, c);
+            AddToVertexList(ref list, new Vector3[] { p7, p4, p8 }, new Vector3[] { normalTop, normalTop, normalTop }, new Vec2d[] { t3, t1, t4 }, c);
+
+            // Bottom face (-Y)
+            AddToVertexList(ref list, new Vector3[] { p1, p2, p6 }, new Vector3[] { normalBottom, normalBottom, normalBottom }, new Vec2d[] { t1, t2, t3 }, c);
+            AddToVertexList(ref list, new Vector3[] { p6, p5, p1 }, new Vector3[] { normalBottom, normalBottom, normalBottom }, new Vec2d[] { t3, t4, t1 }, c);
+
+            //AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }, c);
+            //AddToVertexList(ref list, new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }, c);
 
             Dictionary<int, uint> hash = new Dictionary<int, uint>();
             for (int i = 0; i < list.Count; i++)

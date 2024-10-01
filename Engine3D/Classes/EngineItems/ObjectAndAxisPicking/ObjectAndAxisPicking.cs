@@ -101,7 +101,15 @@ namespace Engine3D
                         {
                             if (pixel.objectId != 0 && objects.Count > 0)
                             {
-                                Object selectedObject = objects.Where(x => x.id == pixel.objectId).First();
+                                var objs = objects.Where(x => x.id == pixel.objectId);
+
+                                if (objs == null || objs.Count() == 0)
+                                {
+                                    imGuiController.SelectItem(null, editorData);
+                                    return;
+                                }
+
+                                Object selectedObject = objs.First();
                                 BaseMesh? selectedMesh = selectedObject.Mesh;
                                 if (selectedMesh == null)
                                     return;

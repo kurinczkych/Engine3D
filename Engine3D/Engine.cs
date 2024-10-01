@@ -10,6 +10,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Diagnostics;
 using MagicPhysX;
 using Assimp;
+using System.Drawing;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -99,7 +100,7 @@ namespace Engine3D
         private Shader outlineInstancedShader;
         private Shader pickingShader;
         private Shader pickingInstancedShader;
-        private Shader shaderProgram;
+        public Shader shaderProgram;
         private Shader shaderAnimProgram;
         private Shader instancedShaderProgram;
         private Shader posTexShader;
@@ -158,43 +159,40 @@ namespace Engine3D
         private List<float> vertices = new List<float>();
         private List<uint> indices = new List<uint>();
         private List<float> verticesUnique = new List<float>();
+        private List<ParticleSystem> particleSystems;
 
-        private List<PointLight>? pointLights_;
-        private List<PointLight> pointLights
-        {
-            get 
-            { 
-                if(pointLights_ == null)
-                    pointLights_ = objects.Where(x => x is PointLight).Select(x => (PointLight)x).ToList();
-                return pointLights_; 
-            }
-            set
-            {
-                pointLights_ = null;
-            }
-        }
-        private List<DirectionalLight>? dirLights_;
-        private List<DirectionalLight> dirLights
+        private List<Light>? lights_;
+        public List<Light> lights
         {
             get
             {
-                if (dirLights_ == null)
-                    dirLights_ = objects.Where(x => x is DirectionalLight).Select(x => (DirectionalLight)x).ToList();
-                return dirLights_;
+                if(lights_ == null)
+                {
+                    lights_ = new List<Light>();
+                    lights_ = objects
+                        .SelectMany(o => o.components.OfType<Light>())
+                        .ToList();
+
+                    if (lights_.Count > 0)
+                        SetBackgroundColor(true);
+                    else
+                        SetBackgroundColor(false);
+                }
+                return lights_??new List<Light>();
             }
             set
             {
-                dirLights_ = null;
+                lights_ = null;
             }
         }
-
-
-        private List<ParticleSystem> particleSystems;
         private Physx physx;
 
         private bool useOcclusionCulling = false;
         private QueryPool queryPool;
         private Dictionary<int, Tuple<int, BVHNode>> pendingQueries;
+
+        private Color4 backgroundColor = Color4.Black;
+        private Color4 gridColor = Color4.White;
         #endregion
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, new NativeWindowSettings() { StencilBits = 8, DepthBits = 32 })
@@ -213,7 +211,6 @@ namespace Engine3D
 
             shaderProgram = new Shader();
             posTexShader = new Shader();
-            pointLights = new List<PointLight>();
             particleSystems = new List<ParticleSystem>();
             texts = new Dictionary<string, TextMesh>();
             textureManager = new TextureManager();
@@ -228,6 +225,8 @@ namespace Engine3D
             _instObjects = new List<Object>();
             queryPool = new QueryPool(1000);
             pendingQueries = new Dictionary<int, Tuple<int, BVHNode>>();
+
+            SetBackgroundColor(true);
         }
 
         private void AddObjectAndCalculate(Object o)
@@ -236,6 +235,23 @@ namespace Engine3D
             _meshObjects.Add(o);
             o.transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
             o.Mesh.RecalculateModelMatrix(new bool[] { true, false, false });
+        }
+
+        private void SetBackgroundColor(bool light)
+        {
+            float t = 0.4f;
+            if (light)
+            {
+                backgroundColor = Color4.Cyan;
+                t = 0.6f;
+            }
+            else
+                backgroundColor = new Color4(0.118f, 0.118f, 0.118f, 1.0f);
+
+            float r = backgroundColor.R + (Color4.White.R - backgroundColor.R) * t;
+            float g = backgroundColor.G + (Color4.White.G - backgroundColor.G) * t;
+            float b = backgroundColor.B + (Color4.White.B - backgroundColor.B) * t;
+            gridColor = new Color4(r, g, b, 1.0f);
         }
 
         public void AddObject(ObjectType type)
@@ -280,18 +296,6 @@ namespace Engine3D
             {
 
             }
-            else if (type == ObjectType.PointLight)
-            {
-                shaderProgram.Use();
-                objects.Add(new PointLight(Color4.White, shaderProgram.id, pointLights.Count));
-                objects[objects.Count-1].transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
-
-            }
-            else if (type == ObjectType.DirectionalLight)
-            {
-                shaderProgram.Use();
-                objects.Add(new DirectionalLight(shaderProgram.id, 0, new Vector3(0, -1, 0)));
-            }
             editorData.recalculateObjects = true;
         }
 
@@ -300,6 +304,16 @@ namespace Engine3D
             Object o = new Object(ObjectType.TriangleMesh);
             o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref character.camera, ref o));
             AddObjectAndCalculate(o);
+            editorData.recalculateObjects = true;
+        }
+
+        public void AddLight(Light.LightType lightType)
+        {
+            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
+            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0, lightType));
+            objects[objects.Count - 1].transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
+
+            lights = null;
             editorData.recalculateObjects = true;
         }
 
@@ -315,6 +329,7 @@ namespace Engine3D
                 textureManager.DeleteTexture(mesh.textureName);
             }
 
+            lights = null;
             imGuiController.SelectItem(null, editorData);
             o.Delete(ref textureManager);
             objects.Remove(o);
@@ -357,6 +372,8 @@ namespace Engine3D
             GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "viewMatrix"), true, ref viewMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "projectionMatrix"), true, ref projectionMatrix);
             GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "cameraPos"), ref cameraPos);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "bgColor"), backgroundColor.R, backgroundColor.G, backgroundColor.B);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "lineColor"), gridColor.R, gridColor.G, gridColor.B);
 
             infiniteFloorVao.Bind();
             List<float> gridVertices = new List<float>
@@ -397,14 +414,13 @@ namespace Engine3D
 
             ObjectAndAxisPicking();
 
-            GL.ClearColor(Color4.Cyan);
+            GL.ClearColor(backgroundColor);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
             RenderInfiniteFloor();
 
             shaderProgram.Use();
-            PointLight.SendToGPU(pointLights, shaderProgram.id, editorData.gameRunning);
-            DirectionalLight.SendToGPU(dirLights, shaderProgram.id);
+            Light.SendToGPU(lights, shaderProgram.id);
 
             DrawObjects(args.Time);
 
@@ -678,7 +694,7 @@ namespace Engine3D
 
             onlyPosShaderProgram.Use();
 
-            Vector3 characterPos = new Vector3(-5, 95, 0);
+            Vector3 characterPos = new Vector3(-5, 10, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref camera), ref physx, characterPos, camera);
             //character.camera.SetYaw(358);
             //character.camera.SetPitch(-4.23f);
@@ -690,10 +706,10 @@ namespace Engine3D
             //pointLights[0].transformation.Position = new Vector3(0, 110, 0);
 
             shaderProgram.Use();
-            PointLight.SendToGPU(pointLights, shaderProgram.id, editorData.gameRunning);
-
-            objects.Add(new DirectionalLight(shaderProgram.id, 0, new Vector3(0, -1, 0)));
-            DirectionalLight.SendToGPU(dirLights, shaderProgram.id);
+            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
+            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0));
+            objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
+            Light.SendToGPU(lights, shaderProgram.id);
 
             // Projection matrix and mesh loading
 

@@ -1,6 +1,8 @@
 #version 330 core
 
-struct PointLight {    
+struct Light 
+{
+    vec3 direction;
     vec3 position;
     vec3 color;
     
@@ -10,20 +12,11 @@ struct PointLight {
 
     vec3 ambient;
     vec3 diffuse;
-
-    float specularPow;
     vec3 specular;
+    float specularPow;
+
+    int lightType;
 };
-
-struct DirLight {
-    vec3 direction;
-    vec3 color;
-  
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    float specularPow;
-};  
 
 in vec3 gsFragPos;
 in vec3 gsFragNormal;
@@ -35,11 +28,8 @@ in vec3 gsTangentViewDir;
 uniform vec3 cameraPosition;
 
 #define MAX_LIGHTS 64
-uniform PointLight pointLights[MAX_LIGHTS];
-uniform int actualNumOfPointLights;
-
-uniform DirLight dirLights[MAX_LIGHTS];
-uniform int actualNumOfDirLights;
+uniform Light lights[MAX_LIGHTS];
+uniform int actualNumOfLights;
 
 out vec4 FragColor;
 uniform sampler2D textureSampler;
@@ -61,7 +51,7 @@ uniform int useShading;
 const float heightScale = 0.1;
 const float metallnessVar = 0.04;
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, float metalness)
+vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float metalness)
 {
     vec3 lightDir = normalize(light.position - fragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -110,7 +100,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, f
     return (ambient + diffuse + specular) * light.color;
 } 
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, float metalness)
+vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -191,16 +181,22 @@ void main()
         normalFromMap = normalize(gsTBN * sampledNormal);
     }
 
-    vec3 result = vec3(0);
+    vec3 result = vec3(1);
     if(useShading == 1)
     {
-        // phase 1: Directional lightings
-        for(int i = 0; i < actualNumOfDirLights; i++)
-            result += CalcDirLight(dirLights[i], normalFromMap, viewDir, metalness);
+        result = vec3(0);
 
-        // phase 2: Point lights
-        for(int i = 0; i < actualNumOfPointLights; i++)
-            result += CalcPointLight(pointLights[i], normalFromMap, gsFragPos, viewDir, metalness);
+        for(int i = 0; i < actualNumOfLights; i++)
+        {
+            if(lights[i].lightType == 0)
+            {
+                result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
+            }
+            else if(lights[i].lightType == 1)
+            {
+                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
+            }
+        }
     }
 
     FragColor = vec4(result, 1.0) * gsFragColor;
@@ -212,8 +208,5 @@ void main()
             FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * gsFragColor;
         }
     }
-
-
-//    FragColor = fragColor;
 }
 

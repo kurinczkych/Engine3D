@@ -19,6 +19,7 @@ namespace Engine3D
 {
     public enum ObjectType
     {
+        Empty,
         Cube,
         Sphere,
         Capsule,
@@ -30,9 +31,7 @@ namespace Engine3D
         UIMesh,
         Plane,
         AudioEmitter,
-        ParticleEmitter,
-        PointLight,
-        DirectionalLight
+        ParticleEmitter
     }
 
     public enum ColliderType
@@ -256,8 +255,11 @@ namespace Engine3D
             else if (component is Physics cPhysics)
             {
                 cPhysics.RemoveCollider();
-                //throw new NotImplementedException();
                 physics_ = null;
+            }
+            else if(component is Light cLight)
+            {
+                
             }
             components.Remove(component);
         }

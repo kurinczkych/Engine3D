@@ -3,11 +3,13 @@
 out vec4 fragColor;
 in vec3 fragPos;
 
-uniform vec3 cameraPos; // Camera world position
+uniform vec3 cameraPos;
+uniform vec3 bgColor;
+uniform vec3 lineColor;
 
 void main()
 {
-    float gridSpacing = 50.0;
+    float gridSpacing = 25.0;
     float lineWidth = 1.0;
     float maxDistanceColor = 1000.0;
     float maxDistanceLine = 100.0;
@@ -27,12 +29,9 @@ void main()
     // Check if the fragment is close to a grid line on either axis
     if (modX < adjustedLineWidth || modZ < adjustedLineWidth)
     {
-        vec3 closeColor = vec3(0.6, 1.0, 1.0); // White at close distance
-        vec3 farColor = vec3(0.0, 1.0, 1.0);  // Cyan at far distance
-
         // Calculate the blending factor for the color transition based on distance
         float colorFactor = clamp(distance / maxDistanceColor, 0.0, 1.0);
-        vec3 gridColor = mix(closeColor, farColor, colorFactor);
+        vec3 gridColor = mix(lineColor, bgColor, colorFactor);
 
         fragColor = vec4(gridColor, 1.0);
 

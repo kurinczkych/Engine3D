@@ -1,5 +1,6 @@
 ﻿using Assimp;
 using ImGuiNET;
+using Newtonsoft.Json.Linq;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common.Input;
@@ -16,8 +17,10 @@ using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using static Engine3D.Light;
 using static System.Net.Mime.MediaTypeNames;
 using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
 
@@ -185,7 +188,7 @@ namespace Engine3D
         private float seperatorSize = 5;
         private System.Numerics.Vector4 baseBGColor = new System.Numerics.Vector4(0.352f, 0.352f, 0.352f, 1.0f);
         private System.Numerics.Vector4 seperatorColor = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
-        public bool shouldOpenTreeNodeMeshes = false;
+        public bool shouldOpenTreeNodeMeshes = true;
         private int isObjectHovered = -1;
         private bool justSelectedItem = false;
 
@@ -193,10 +196,10 @@ namespace Engine3D
         private AssetFolder currentModelAssetFolder;
         private AssetFolder currentAudioAssetFolder;
 
-        List<Object> remainingObjects = new List<Object>();
-        List<BaseMesh?> meshes = new List<BaseMesh?>();
-        List<PointLight> pointLights = new List<PointLight>();
-        List<DirectionalLight> directionalLights = new List<DirectionalLight>();
+        List<Object> objects = new List<Object>();
+
+        private bool colorPickerOpen = false;
+        private bool advancedLightSetting = false;
 
         private string[] showConsoleTypeList = new string[0];
         private int showConsoleTypeListIndex = 2;
@@ -331,37 +334,17 @@ namespace Engine3D
 
         public void CalculateObjectList()
         {
-            meshes.Clear();
-            pointLights.Clear();
-            directionalLights.Clear();
-            remainingObjects.Clear();
-            List<Object> allObjects = new List<Object>(editorData.objects);
+            objects.Clear();
+            objects = new List<Object>(editorData.objects);
             Dictionary<string, int> names = new Dictionary<string, int>();
 
-            List<int> toRemoveMeshes = new List<int>();
-            for(int i = 0; i < allObjects.Count; i++)
+            for(int i = 0; i < objects.Count; i++)
             {
-                string name = allObjects[i].name == "" ? "Object " + i.ToString() : allObjects[i].name;
-                if (allObjects[i].Mesh != null)
+                string name = objects[i].name == "" ? "Object " + i.ToString() : objects[i].name;
+                if (objects[i].Mesh != null)
                 {
-                    meshes.Add(allObjects[i].Mesh);
-
-                    if (allObjects[i].Mesh is InstancedMesh)
+                    if (objects[i].Mesh is InstancedMesh)
                         name += " (Instanced)";
-
-                    toRemoveMeshes.Insert(0,i);
-                }
-                if (allObjects[i] is PointLight)
-                {
-                    pointLights.Add((PointLight)allObjects[i]);
-
-                    toRemoveMeshes.Insert(0, i);
-                }
-                if (allObjects[i] is DirectionalLight)
-                {
-                    directionalLights.Add((DirectionalLight)allObjects[i]);
-
-                    toRemoveMeshes.Insert(0, i);
                 }
 
                 if (names.ContainsKey(name))
@@ -370,19 +353,163 @@ namespace Engine3D
                     names[name] = 0;
 
                 if (names[name] == 0)
-                    allObjects[i].displayName = name;
+                    objects[i].displayName = name;
                 else
-                    allObjects[i].displayName = name + " (" + names[name] + ")";
+                    objects[i].displayName = name + " (" + names[name] + ")";
             }
-
-            foreach (var i in toRemoveMeshes)
-                allObjects.RemoveAt(i);
-
-
-            remainingObjects.AddRange(allObjects);
         }
 
         #region Helpers
+
+        private Vector3 InputFloat3(string title, string[] names, float[] v3, ref KeyboardState keyboardState, bool hideNames = false)
+        {
+            if (names.Length != 3)
+                throw new Exception("InputFloat3 names length must be 3!");
+
+            float[] vec = new float[]{ v3[0], v3[1], v3[2] };
+
+            if(!hideNames)
+                ImGui.Text(title);
+
+            for(int i = 0; i < names.Length; i++)
+            {
+                string bufferName = "##" + title + names[i];
+                if (!_inputBuffers.ContainsKey(bufferName))
+                    _inputBuffers.Add(bufferName, new byte[100]);
+
+                if (!hideNames)
+                {
+                    ImGui.Text(names[i]);
+                    ImGui.SameLine();
+                }
+                Encoding.UTF8.GetBytes(v3[i].ToString(), 0, v3[i].ToString().Length, _inputBuffers[bufferName], 0);
+                bool commit = false;
+                bool reset = false;
+                ImGui.SetNextItemWidth(50);
+                if (ImGui.InputText(bufferName, _inputBuffers[bufferName], (uint)_inputBuffers[bufferName].Length))
+                {
+                    commit = true;
+                }
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                {
+                    reset = true;
+                    commit = true;
+                }
+                if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                    commit = true;
+
+                if (commit)
+                {
+                    string valueStr = GetStringFromBuffer(bufferName);
+                    float value = -1;
+                    if (float.TryParse(valueStr, out value))
+                    {
+                        if (!reset)
+                            vec[i] = value;
+                        else
+                        {
+                            ClearBuffer(bufferName);
+                            vec[i] = 0;
+                        }
+                    }
+                }
+
+                if(i != names.Length-1)
+                    ImGui.SameLine();
+            }
+
+            return new Vector3(vec[0], vec[1], vec[2]);
+        }
+
+        private float InputFloat1(string title, string[] names, float[] v1, ref KeyboardState keyboardState)
+        {
+            if (names.Length != 1)
+                throw new Exception("InputFloat1 names length must be 1!");
+
+            float[] vec = new float[]{ v1[0] };
+
+            ImGui.Text(title);
+
+            for(int i = 0; i < names.Length; i++)
+            {
+                string bufferName = "##" + title + names[i];
+                if (!_inputBuffers.ContainsKey(bufferName))
+                    _inputBuffers.Add(bufferName, new byte[100]);
+
+                ImGui.Text(names[i]);
+                ImGui.SameLine();
+                Encoding.UTF8.GetBytes(v1[i].ToString(), 0, v1[i].ToString().Length, _inputBuffers[bufferName], 0);
+                bool commit = false;
+                bool reset = false;
+                ImGui.SetNextItemWidth(50);
+                if (ImGui.InputText(bufferName, _inputBuffers[bufferName], (uint)_inputBuffers[bufferName].Length))
+                {
+                    commit = true;
+                }
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                {
+                    reset = true;
+                    commit = true;
+                }
+                if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                    commit = true;
+
+                if (commit)
+                {
+                    string valueStr = GetStringFromBuffer(bufferName);
+                    float value = -1;
+                    if (float.TryParse(valueStr, out value))
+                    {
+                        if (!reset)
+                            vec[i] = value;
+                        else
+                        {
+                            ClearBuffer(bufferName);
+                            vec[i] = 0;
+                        }
+                    }
+                }
+
+                if(i != names.Length-1)
+                    ImGui.SameLine();
+            }
+
+            return vec[0];
+        }
+
+        private void ColorPicker(string title, ref Color4 color, float colorPickerRange = 25)
+        {
+            System.Numerics.Vector3 colorv3 = new System.Numerics.Vector3(color.R, color.G, color.B);
+            if (colorPickerOpen)
+            {
+                if (ImGui.ColorPicker3(title, ref colorv3))
+                {
+                    color = new Color4(colorv3.X, colorv3.Y, colorv3.Z, 1.0f);
+                }
+                System.Numerics.Vector2 pickerMax = ImGui.GetItemRectMax();
+                System.Numerics.Vector2 pickerMin = ImGui.GetItemRectMin();
+
+                System.Numerics.Vector2 mousePos = ImGui.GetMousePos();
+
+                bool isOutside =
+                    mousePos.X < pickerMin.X - colorPickerRange || mousePos.X > pickerMax.X + colorPickerRange ||
+                    mousePos.Y < pickerMin.Y - colorPickerRange || mousePos.Y > pickerMax.Y + colorPickerRange;
+
+                if (isOutside)
+                {
+                    colorPickerOpen = false;
+                }
+            }
+            else
+            {
+                ImGui.Text(title);
+                ImGui.SameLine();
+                if (ImGui.ColorButton(title, new System.Numerics.Vector4(color.R, color.G, color.B, 1.0f)))
+                {
+                    colorPickerOpen = true;
+                }
+            }
+        }
         private void CenteredText(string text)
         {
             var originalXPos = ImGui.GetCursorPosX();
@@ -442,8 +569,6 @@ namespace Engine3D
                 }
                 else if (editorData.selectedItem is ParticleSystem p)
                     p.isSelected = false;
-                else if (editorData.selectedItem is PointLight pl)
-                    pl.isSelected = false;
             }
 
             ClearBuffers();
@@ -876,12 +1001,12 @@ namespace Engine3D
                             {
                                 if (ImGui.MenuItem("Point Light"))
                                 {
-                                    engine.AddObject(ObjectType.PointLight);
+                                    engine.AddLight(Light.LightType.PointLight);
                                     shouldOpenTreeNodeMeshes = true;
                                 }
                                 if (ImGui.MenuItem("Directional Light"))
                                 {
-                                    engine.AddObject(ObjectType.DirectionalLight);
+                                    engine.AddLight(Light.LightType.DirectionalLight);
                                     shouldOpenTreeNodeMeshes = true;
                                 }
 
@@ -902,15 +1027,14 @@ namespace Engine3D
                                 shouldOpenTreeNodeMeshes = false; // Reset the flag so it doesn't open again automatically.
                             }
 
-                            if(remainingObjects.Count > 0 && ImGui.TreeNode("Objects"))
+                            if(objects.Count > 0 && ImGui.TreeNode("Objects"))
                             {
                                 ImGui.Separator();
-                                for (int i = 0; i < remainingObjects.Count; i++)
+                                for (int i = 0; i < objects.Count; i++)
                                 {
-                                    Object ro = remainingObjects[i];
-                                    string name = ro.name == "" ? "Object " + i.ToString() : ro.name;
+                                    Object ro = objects[i];
 
-                                    if (ImGui.Selectable(name))
+                                    if (ImGui.Selectable(ro.displayName))
                                     {
                                         SelectItem(ro, editorData);
                                     }
@@ -935,101 +1059,6 @@ namespace Engine3D
                                         style.PopupRounding = popupRounding;
                                     }
                                 }
-                            }
-
-                            if (meshes.Count > 0 && ImGui.TreeNode("Meshes"))
-                            {
-                                ImGui.Separator();
-                                for (int i = 0; i < meshes.Count; i++)
-                                {
-                                    if (ImGui.Selectable(meshes[i].parentObject.displayName))
-                                    {
-                                        SelectItem(meshes[i].parentObject, editorData);
-                                    }
-                                    if (ImGui.IsItemHovered())
-                                        anyObjectHovered = meshes[i].parentObject.id;
-
-                                    if (isObjectHovered != -1 && isObjectHovered == meshes[i].parentObject.id)
-                                    {
-                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
-                                        style.PopupRounding = 2f;
-                                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
-                                        {
-                                            anyObjectHovered = meshes[i].parentObject.id;
-                                            if (ImGui.MenuItem("Delete"))
-                                            {
-                                                engine.RemoveObject(meshes[i].parentObject);
-                                            }
-
-                                            ImGui.EndPopup();
-                                        }
-                                        style.WindowPadding = windowPadding;
-                                        style.PopupRounding = popupRounding;
-                                    }
-                                }
-
-                                ImGui.TreePop();
-                            }
-
-                            if((pointLights.Count > 0 || directionalLights.Count > 0) && ImGui.TreeNode("Lighting"))
-                            {
-                                ImGui.Separator();
-                                for (int i = 0; i < pointLights.Count; i++)
-                                {
-                                    if (ImGui.Selectable(pointLights[i].displayName))
-                                    {
-                                        SelectItem(pointLights[i], editorData);
-                                    }
-                                    if (ImGui.IsItemHovered())
-                                        anyObjectHovered = pointLights[i].id;
-
-                                    if (isObjectHovered != -1 && isObjectHovered == pointLights[i].id)
-                                    {
-                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
-                                        style.PopupRounding = 2f;
-                                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
-                                        {
-                                            anyObjectHovered = pointLights[i].id;
-                                            if (ImGui.MenuItem("Delete"))
-                                            {
-                                                engine.RemoveObject(pointLights[i]);
-                                            }
-
-                                            ImGui.EndPopup();
-                                        }
-                                        style.WindowPadding = windowPadding;
-                                        style.PopupRounding = popupRounding;
-                                    }
-                                }
-                                for (int i = 0; i < directionalLights.Count; i++)
-                                {
-                                    if (ImGui.Selectable(directionalLights[i].displayName))
-                                    {
-                                        SelectItem(directionalLights[i], editorData);
-                                    }
-                                    if (ImGui.IsItemHovered())
-                                        anyObjectHovered = directionalLights[i].id;
-
-                                    if (isObjectHovered != -1 && isObjectHovered == directionalLights[i].id)
-                                    {
-                                        style.WindowPadding = new System.Numerics.Vector2(style.WindowPadding.X, style.WindowPadding.X);
-                                        style.PopupRounding = 2f;
-                                        if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
-                                        {
-                                            anyObjectHovered = directionalLights[i].id;
-                                            if (ImGui.MenuItem("Delete"))
-                                            {
-                                                engine.RemoveObject(directionalLights[i]);
-                                            }
-
-                                            ImGui.EndPopup();
-                                        }
-                                        style.WindowPadding = windowPadding;
-                                        style.PopupRounding = popupRounding;
-                                    }
-                                }
-
-                                ImGui.TreePop();
                             }
                         }
 
@@ -1844,6 +1873,130 @@ namespace Engine3D
                                         }
                                     }
 
+                                    if(c is Light light)
+                                    {
+                                        ImGui.SetNextItemOpen(true, ImGuiCond.Once);
+                                        if (ImGui.TreeNode("Light"))
+                                        {
+                                            ImGui.SameLine();
+                                            var origDeleteX = RightAlignCursor(70);
+                                            ImGui.PushStyleColor(ImGuiCol.Button, style.Colors[(int)ImGuiCol.FrameBg]);
+                                            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 2f);
+                                            if (ImGui.Button("Delete", new System.Numerics.Vector2(70, 20)))
+                                            {
+                                                toRemoveComp.Add(c);
+                                                engine.lights = null;
+                                            }
+                                            ImGui.PopStyleVar();
+                                            ImGui.PopStyleColor();
+                                            ImGui.SetCursorPosX(origDeleteX);
+                                            ImGui.Dummy(new System.Numerics.Vector2(0, 0));
+
+                                            LightType lightType = light.GetLightType();
+                                            ImGui.Text("Type");
+                                            ImGui.SameLine();
+                                            ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 0.0f);
+                                            if(ImGui.BeginCombo("##lightType", lightType.ToString()))
+                                            {
+                                                ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                                                foreach(LightType newLightType in Enum.GetValues(typeof(LightType)))
+                                                {
+                                                    if (ImGui.Selectable(newLightType.ToString()))
+                                                    {
+                                                        light.SetLightType(newLightType);
+                                                    }
+                                                }
+                                                ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+
+                                                ImGui.EndCombo();
+                                            }
+
+                                            if(lightType == LightType.DirectionalLight)
+                                            {
+                                                Color4 color = light.GetColorC4();
+                                                ColorPicker("Color", ref color);
+                                                light.SetColor(color);
+
+                                                float[] ambientVec = new float[] { light.ambient.X, light.ambient.Y, light.ambient.Z };
+                                                Vector3 ambient = InputFloat3("Ambient", new string[] { "X", "Y", "Z" }, ambientVec, ref keyboardState);
+                                                if(light.ambient != ambient)
+                                                    light.ambient = ambient;
+
+                                                float[] diffuseVec = new float[] { light.diffuse.X, light.diffuse.Y, light.diffuse.Z };
+                                                Vector3 diffuse = InputFloat3("Diffuse", new string[] { "X", "Y", "Z" }, diffuseVec, ref keyboardState);
+                                                if(light.diffuse != diffuse)
+                                                    light.diffuse = diffuse;
+
+                                                float[] specularVec = new float[] { light.specular.X, light.specular.Y, light.specular.Z };
+                                                Vector3 specular = InputFloat3("Specular", new string[] { "X", "Y", "Z" }, specularVec, ref keyboardState);
+                                                if(light.specular != specular)
+                                                    light.specular = specular;
+
+                                                float[] specularPowVec = new float[] { light.specularPow };
+                                                float specularPow = InputFloat1("SpecularPow", new string[] { "X"}, specularPowVec, ref keyboardState);
+                                                if(light.specularPow != specularPow)
+                                                    light.specularPow = specularPow;
+                                            }
+                                            else if(lightType == LightType.PointLight)
+                                            {
+                                                Color4 color = light.GetColorC4();
+                                                ColorPicker("Color", ref color);
+                                                light.SetColor(color);
+
+                                                float[] ambientVec = new float[] { light.ambient.X, light.ambient.Y, light.ambient.Z };
+                                                Vector3 ambient = InputFloat3("Ambient", new string[] { "X", "Y", "Z" }, ambientVec, ref keyboardState);
+                                                if (light.ambient != ambient)
+                                                    light.ambient = ambient;
+
+                                                float[] diffuseVec = new float[] { light.diffuse.X, light.diffuse.Y, light.diffuse.Z };
+                                                Vector3 diffuse = InputFloat3("Diffuse", new string[] { "X", "Y", "Z" }, diffuseVec, ref keyboardState);
+                                                if (light.diffuse != diffuse)
+                                                    light.diffuse = diffuse;
+
+                                                float[] specularVec = new float[] { light.specular.X, light.specular.Y, light.specular.Z };
+                                                Vector3 specular = InputFloat3("Specular", new string[] { "X", "Y", "Z" }, specularVec, ref keyboardState);
+                                                if (light.specular != specular)
+                                                    light.specular = specular;
+
+                                                float[] specularPowVec = new float[] { light.specularPow };
+                                                float specularPow = InputFloat1("SpecularPow", new string[] { "X" }, specularPowVec, ref keyboardState);
+                                                if (light.specularPow != specularPow)
+                                                    light.specularPow = specularPow;
+
+
+                                                ImGui.Checkbox("Advanced", ref advancedLightSetting);
+
+                                                if (!advancedLightSetting)
+                                                {
+                                                    float[] rangeVec = new float[] { light.range };
+                                                    float range = InputFloat1("Range", new string[] { "" }, specularPowVec, ref keyboardState);
+                                                    if (light.range != range)
+                                                    {
+                                                        light.range = range;
+                                                        float[] att = Light.RangeToAttenuation(range);
+                                                        light.constant = att[0];
+                                                        light.linear = att[1];
+                                                        light.quadratic = att[2];
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    ImGui.Text("Constant Linear Quadratic");
+                                                    float[] pointVec = new float[] { light.constant, light.linear, light.quadratic };
+                                                    Vector3 point = InputFloat3("Point", new string[] { "Constant", "Linear", "Quadratic" }, pointVec, ref keyboardState, true);
+                                                    if (light.constant != point[0])
+                                                        light.constant = point[0];
+                                                    if (light.linear != point[1])
+                                                        light.linear = point[1];
+                                                    if (light.quadratic != point[2])
+                                                        light.quadratic = point[2];
+                                                }
+                                            }
+
+                                            ImGui.PopStyleVar();
+                                        }
+                                    }
+
                                     ImGui.Separator();
                                 }
 
@@ -1922,6 +2075,11 @@ namespace Engine3D
                                                         continue;
 
                                                     o.components.Add((IComponent)comp);
+                                                }
+                                                if(component.name == "Light")
+                                                {
+                                                    o.components.Add(new Light(objects[objects.Count - 1], engine.shaderProgram.id, 0, LightType.DirectionalLight));
+                                                    engine.lights = null;
                                                 }
 
 
@@ -2607,6 +2765,7 @@ namespace Engine3D
                         ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 0);
                         if (ImGui.BeginCombo("##showConsoleTypeDropdown", showConsoleTypeList[showConsoleTypeListIndex]))
                         {
+                            ImGui.Dummy(new System.Numerics.Vector2(0, 5));
                             for (int i = 0; i < showConsoleTypeList.Length; i++)
                             {
                                 bool isSelected = (i == showConsoleTypeListIndex);
@@ -2622,6 +2781,7 @@ namespace Engine3D
                                     ImGui.SetItemDefaultFocus();
                                 }
                             }
+                            ImGui.Dummy(new System.Numerics.Vector2(0, 5));
 
                             ImGui.EndCombo();
                         }
