@@ -43,12 +43,6 @@ namespace Engine3D
 
     public partial class Engine : GameWindow
     {
-        public class SavedStart
-        {
-            public List<Object> objects;
-            public Dictionary<string, TextMesh> texts;
-            Character character;
-        }
 
         #region OPENGL
         public static GLState GLState = new GLState();
@@ -77,8 +71,8 @@ namespace Engine3D
         private VBO meshAnimVbo;
         private IBO meshAnimIbo;
 
-        private InstancedVAO instancedMeshVao;
-        private VBO instancedMeshVbo;
+        public InstancedVAO instancedMeshVao;
+        public VBO instancedMeshVbo;
 
         private VAO textVao;
         private VBO textVbo;
@@ -102,7 +96,7 @@ namespace Engine3D
         private Shader pickingInstancedShader;
         public Shader shaderProgram;
         private Shader shaderAnimProgram;
-        private Shader instancedShaderProgram;
+        public Shader instancedShaderProgram;
         private Shader posTexShader;
         private Shader onlyPosShaderProgram;
         private Shader aabbShaderProgram;
@@ -115,7 +109,7 @@ namespace Engine3D
         private bool firstRun = true;
 
         private Vector2 origWindowSize;
-        private Vector2 windowSize;
+        public Vector2 windowSize;
         private Vector2 gameWindowMousePos;
 
         private SoundManager soundManager;
@@ -155,11 +149,10 @@ namespace Engine3D
         private List<Object> _meshObjects;
         private List<Object> _instObjects;
 
-        private Character character;
+        public Character character;
         private List<float> vertices = new List<float>();
         private List<uint> indices = new List<uint>();
         private List<float> verticesUnique = new List<float>();
-        private List<ParticleSystem> particleSystems;
 
         private List<Light>? lights_;
         public List<Light> lights
@@ -185,6 +178,27 @@ namespace Engine3D
                 lights_ = null;
             }
         }
+
+        private List<ParticleSystem>? particleSystems_;
+        public List<ParticleSystem> particleSystems
+        {
+            get
+            {
+                if (particleSystems_ == null)
+                {
+                    particleSystems_ = new List<ParticleSystem>();
+                    particleSystems_ = objects
+                        .SelectMany(o => o.components.OfType<ParticleSystem>())
+                        .ToList();
+                }
+                return particleSystems_ ?? new List<ParticleSystem>();
+            }
+            set
+            {
+                particleSystems_ = null;
+            }
+        }
+
         private Physx physx;
 
         private bool useOcclusionCulling = false;
@@ -211,7 +225,6 @@ namespace Engine3D
 
             shaderProgram = new Shader();
             posTexShader = new Shader();
-            particleSystems = new List<ParticleSystem>();
             texts = new Dictionary<string, TextMesh>();
             textureManager = new TextureManager();
             fileDetectorStopWatch = new Stopwatch();
@@ -229,14 +242,6 @@ namespace Engine3D
             SetBackgroundColor(true);
         }
 
-        private void AddObjectAndCalculate(Object o)
-        {
-            editorData.objects.Add(o);
-            _meshObjects.Add(o);
-            o.transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
-            o.Mesh.RecalculateModelMatrix(new bool[] { true, false, false });
-        }
-
         private void SetBackgroundColor(bool light)
         {
             float t = 0.4f;
@@ -252,6 +257,14 @@ namespace Engine3D
             float g = backgroundColor.G + (Color4.White.G - backgroundColor.G) * t;
             float b = backgroundColor.B + (Color4.White.B - backgroundColor.B) * t;
             gridColor = new Color4(r, g, b, 1.0f);
+        }
+
+        private void AddObjectAndCalculate(Object o)
+        {
+            editorData.objects.Add(o);
+            _meshObjects.Add(o);
+            o.transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
+            o.Mesh.RecalculateModelMatrix(new bool[] { true, false, false });
         }
 
         public void AddObject(ObjectType type)
@@ -286,15 +299,11 @@ namespace Engine3D
                 o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref character.camera, ref o));
                 AddObjectAndCalculate(o);
             }
-            else if (type == ObjectType.ParticleEmitter)
+            else if (type == ObjectType.Empty)
             {
-                //ParticleSystem o = new ParticleSystem();
-                //o.AddMesh(new InstancedMesh(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref character.camera, ref o));
-                //editorData.objects.Add(o);
-            }
-            else if (type == ObjectType.AudioEmitter)
-            {
-
+                Object o = new Object(type);
+                editorData.objects.Add(o);
+                o.transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
             }
             editorData.recalculateObjects = true;
         }
@@ -330,6 +339,7 @@ namespace Engine3D
             }
 
             lights = null;
+            particleSystems = null;
             imGuiController.SelectItem(null, editorData);
             o.Delete(ref textureManager);
             objects.Remove(o);

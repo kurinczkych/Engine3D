@@ -82,7 +82,7 @@ namespace Engine3D
         }
     }
 
-    public class ParticleSystem : Object, ISelectable
+    public class ParticleSystem : IComponent
     {
         public float duration = 5;
         public bool looping = true;
@@ -100,7 +100,7 @@ namespace Engine3D
 
         public Vector3 startPos = Vector3.Zero;
         public bool randomStartPos = false;
-        public AABB xStartPos = new AABB();
+        public AABB xStartPos = new AABB(new Vector3(-2, -2, -2), new Vector3(2, 2, 2));
 
         public Vector3 startDir = Vector3.UnitY;
         public bool randomDir = false;
@@ -116,8 +116,8 @@ namespace Engine3D
         public Vector3 startScale = Vector3.One;
         public Vector3 endScale = Vector3.One;
         public bool randomScale = false;
-        public AABB xStartScale = new AABB();
-        public AABB xEndScale = new AABB();
+        public AABB xStartScale = new AABB(new Vector3(1, 1, 1), new Vector3(1, 1, 1));
+        public AABB xEndScale = new AABB(new Vector3(0, 0, 0), new Vector3(0, 0, 0));
 
         public Quaternion startRotation = Quaternion.Identity;
         public Quaternion endRotation = Quaternion.Identity;
@@ -129,14 +129,11 @@ namespace Engine3D
 
         private List<Particle> particles = new List<Particle>();
 
-        public ParticleSystem(int id = -1) : base(ObjectType.ParticleEmitter, id)
-        {
-            //parentMesh = Mesh;
-            //if(parentMesh is null)
-            //    throw new Exception("To create a particle system, the object must has an InstancedMesh!");
+        private InstancedMesh mesh;
 
-            //if (parentMesh.GetType() != typeof(InstancedMesh))
-            //    throw new Exception("The particle system's object mesh only can be InstancedMesh");
+        public ParticleSystem(InstancedVAO instancedMeshVao, VBO instancedMeshVbo, int shaderProgramId, Vector2 windowSize, ref Camera camera, ref Object parentObject)
+        {
+            mesh = new InstancedMesh(instancedMeshVao, instancedMeshVbo, shaderProgramId, "cube", BaseMesh.GetUnitCube(), windowSize, ref camera, ref parentObject);
         }
 
         private void UpdateParticleAndRemove(ref List<Particle> toRemove, Particle p, float delta)
@@ -231,9 +228,9 @@ namespace Engine3D
             List<InstancedMeshData> data = particles.Select(x => x.meshData).ToList();
             //data.Sort((x,y) => x)
 
-            Mesh.SetInstancedData(data);
+            mesh.SetInstancedData(data);
 
-            return Mesh;
+            return mesh;
         }
 
     }

@@ -198,7 +198,7 @@ namespace Engine3D
 
         List<Object> objects = new List<Object>();
 
-        private bool colorPickerOpen = false;
+        private Dictionary<string,bool> colorPickerOpen = new Dictionary<string, bool>();
         private bool advancedLightSetting = false;
 
         private string[] showConsoleTypeList = new string[0];
@@ -212,6 +212,9 @@ namespace Engine3D
         {
             "BaseMesh"
         };
+
+        public System.Numerics.Vector2? particlesWindowPos = null;
+        public System.Numerics.Vector2 particlesWindowSize = new System.Numerics.Vector2(150, 150);
 
         public ImGuiController(int width, int height, ref EditorData editorData) : base(width, height)
         {
@@ -359,6 +362,16 @@ namespace Engine3D
             }
         }
 
+        public bool CursorInImGuiWindow(Vector2 cursor)
+        {
+            System.Numerics.Vector2 pos = particlesWindowPos ?? new System.Numerics.Vector2();
+            bool isInHorizontalBounds = cursor.X >= pos.X && cursor.X <= (pos.X + particlesWindowSize.X);
+
+            bool isInVerticalBounds = cursor.Y >= pos.Y && cursor.Y <= (pos.Y + particlesWindowSize.Y);
+
+            return isInHorizontalBounds && isInVerticalBounds;
+        }
+
         #region Helpers
 
         private Vector3 InputFloat3(string title, string[] names, float[] v3, ref KeyboardState keyboardState, bool hideNames = false)
@@ -368,8 +381,11 @@ namespace Engine3D
 
             float[] vec = new float[]{ v3[0], v3[1], v3[2] };
 
-            if(!hideNames)
-                ImGui.Text(title);
+            if (!hideNames)
+            {
+                if(title != "")
+                    ImGui.Text(title);
+            }
 
             for(int i = 0; i < names.Length; i++)
             {
@@ -421,14 +437,81 @@ namespace Engine3D
             return new Vector3(vec[0], vec[1], vec[2]);
         }
 
-        private float InputFloat1(string title, string[] names, float[] v1, ref KeyboardState keyboardState)
+        private float[] InputFloat2(string title, string[] names, float[] v2, ref KeyboardState keyboardState, bool hideNames = false)
+        {
+            if (names.Length != 2)
+                throw new Exception("InputFloat3 names length must be 3!");
+
+            float[] vec = new float[]{ v2[0], v2[1] };
+
+            if (!hideNames)
+            {
+                if (title != "")
+                    ImGui.Text(title);
+            }
+
+            for(int i = 0; i < names.Length; i++)
+            {
+                string bufferName = "##" + title + names[i];
+                if (!_inputBuffers.ContainsKey(bufferName))
+                    _inputBuffers.Add(bufferName, new byte[100]);
+
+                if (!hideNames)
+                {
+                    ImGui.Text(names[i]);
+                    ImGui.SameLine();
+                }
+                Encoding.UTF8.GetBytes(v2[i].ToString(), 0, v2[i].ToString().Length, _inputBuffers[bufferName], 0);
+                bool commit = false;
+                bool reset = false;
+                ImGui.SetNextItemWidth(50);
+                if (ImGui.InputText(bufferName, _inputBuffers[bufferName], (uint)_inputBuffers[bufferName].Length))
+                {
+                    commit = true;
+                }
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                {
+                    reset = true;
+                    commit = true;
+                }
+                if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                    commit = true;
+
+                if (commit)
+                {
+                    string valueStr = GetStringFromBuffer(bufferName);
+                    float value = -1;
+                    if (float.TryParse(valueStr, out value))
+                    {
+                        if (!reset)
+                            vec[i] = value;
+                        else
+                        {
+                            ClearBuffer(bufferName);
+                            vec[i] = 0;
+                        }
+                    }
+                }
+
+                if(i != names.Length-1)
+                    ImGui.SameLine();
+            }
+
+            return vec;
+        }
+
+        private float InputFloat1(string title, string[] names, float[] v1, ref KeyboardState keyboardState, bool titleSameLine = false)
         {
             if (names.Length != 1)
                 throw new Exception("InputFloat1 names length must be 1!");
 
             float[] vec = new float[]{ v1[0] };
 
-            ImGui.Text(title);
+            if (title != "")
+                ImGui.Text(title);
+
+            if(titleSameLine)
+                ImGui.SameLine();
 
             for(int i = 0; i < names.Length; i++)
             {
@@ -479,8 +562,11 @@ namespace Engine3D
 
         private void ColorPicker(string title, ref Color4 color, float colorPickerRange = 25)
         {
+            if (!colorPickerOpen.ContainsKey(title))
+                colorPickerOpen.Add(title, false);
+
             System.Numerics.Vector3 colorv3 = new System.Numerics.Vector3(color.R, color.G, color.B);
-            if (colorPickerOpen)
+            if (colorPickerOpen[title])
             {
                 if (ImGui.ColorPicker3(title, ref colorv3))
                 {
@@ -497,7 +583,7 @@ namespace Engine3D
 
                 if (isOutside)
                 {
-                    colorPickerOpen = false;
+                    colorPickerOpen[title] = false;
                 }
             }
             else
@@ -506,7 +592,7 @@ namespace Engine3D
                 ImGui.SameLine();
                 if (ImGui.ColorButton(title, new System.Numerics.Vector4(color.R, color.G, color.B, 1.0f)))
                 {
-                    colorPickerOpen = true;
+                    colorPickerOpen[title] = true;
                 }
             }
         }
@@ -567,8 +653,6 @@ namespace Engine3D
                 {
                     o.isSelected = false;
                 }
-                else if (editorData.selectedItem is ParticleSystem p)
-                    p.isSelected = false;
             }
 
             ClearBuffers();
@@ -957,6 +1041,11 @@ namespace Engine3D
                         style.PopupRounding = 2f;
                         if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
                         {
+                            if (ImGui.MenuItem("Empty Object"))
+                            {
+                                engine.AddObject(ObjectType.Empty);
+                                shouldOpenTreeNodeMeshes = true;
+                            }
                             if (ImGui.BeginMenu("3D Object"))
                             {
                                 if (ImGui.MenuItem("Cube"))
@@ -1997,6 +2086,233 @@ namespace Engine3D
                                         }
                                     }
 
+                                    if (c is ParticleSystem ps)
+                                    {
+                                        ImGui.SetNextItemOpen(true, ImGuiCond.Once);
+                                        if (ImGui.TreeNode("Particle System"))
+                                        {
+                                            ImGui.SameLine();
+                                            var origDeleteX = RightAlignCursor(70);
+                                            ImGui.PushStyleColor(ImGuiCol.Button, style.Colors[(int)ImGuiCol.FrameBg]);
+                                            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 2f);
+                                            if (ImGui.Button("Delete", new System.Numerics.Vector2(70, 20)))
+                                            {
+                                                toRemoveComp.Add(c);
+                                            }
+                                            ImGui.PopStyleVar();
+                                            ImGui.PopStyleColor();
+                                            ImGui.SetCursorPosX(origDeleteX);
+                                            ImGui.Dummy(new System.Numerics.Vector2(0, 0));
+
+                                            #region ParticleSystem
+
+                                            float[] emitTimeSecVec = new float[] { ps.emitTimeSec };
+                                            float emitTimeSec = InputFloat1("Emit Time(sec)", new string[] { "" }, emitTimeSecVec, ref keyboardState);
+                                            if (ps.emitTimeSec != emitTimeSec)
+                                                ps.emitTimeSec = emitTimeSec;
+
+                                            ImGui.Separator();
+                                            ImGui.Checkbox("##randomLifeTime", ref ps.randomLifeTime);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Random lifetime");
+
+                                            if(!ps.randomLifeTime)
+                                            {
+                                                float[] lifetimeVec = new float[] { ps.lifetime };
+                                                float lifetime = InputFloat1("Lifetime(sec)", new string[] { "" }, lifetimeVec, ref keyboardState, titleSameLine:true);
+                                                if (ps.lifetime != lifetime)
+                                                    ps.lifetime = lifetime;
+                                            }
+                                            else
+                                            {
+                                                float[] lifetimeVec = new float[] { ps.xLifeTime, ps.yLifeTime };
+                                                float[] lifetime = InputFloat2("Lifetime(sec)", new string[] { "From", "To" }, lifetimeVec, ref keyboardState);
+                                                if (ps.xLifeTime != lifetime[0])
+                                                    ps.xLifeTime = lifetime[0];
+                                                if (ps.yLifeTime != lifetime[1])
+                                                    ps.yLifeTime = lifetime[1];
+                                            }
+
+                                            ImGui.Separator();
+                                            ImGui.Checkbox("##randomStartPos", ref ps.randomStartPos);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Random starting position");
+
+                                            if (!ps.randomStartPos)
+                                            {
+                                                float[] startPosVec = new float[] { ps.startPos.X, ps.startPos.Y, ps.startPos.Z };
+                                                Vector3 startPos = InputFloat3("Starting position", new string[] { "X", "Y", "Z" }, startPosVec, ref keyboardState);
+                                                if (ps.startPos != startPos)
+                                                    ps.startPos = startPos;
+                                            }
+                                            else
+                                            {
+                                                float[] startPosMinVec = new float[] { ps.xStartPos.Min.X, ps.xStartPos.Min.Y, ps.xStartPos.Min.Z };
+                                                Vector3 startPosMin = InputFloat3("Starting min 3D corner", new string[] { "X", "Y", "Z" }, startPosMinVec, ref keyboardState);
+                                                if (ps.xStartPos.Min != startPosMin)
+                                                    ps.xStartPos.Min = startPosMin;
+
+                                                float[] startPosMaxVec = new float[] { ps.xStartPos.Max.X, ps.xStartPos.Max.Y, ps.xStartPos.Max.Z };
+                                                Vector3 startPosMax = InputFloat3("Starting max 3D corner", new string[] { "X", "Y", "Z" }, startPosMaxVec, ref keyboardState);
+                                                if (ps.xStartPos.Max != startPosMax)
+                                                    ps.xStartPos.Max = startPosMax;
+                                            }
+
+                                            ImGui.Separator();
+                                            ImGui.Checkbox("##randomStartDir", ref ps.randomDir);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Random starting direction");
+
+                                            if (!ps.randomDir)
+                                            {
+                                                float[] startDirVec = new float[] { ps.startDir.X, ps.startDir.Y, ps.startDir.Z };
+                                                Vector3 startDir = InputFloat3("Starting direction", new string[] { "X", "Y", "Z" }, startDirVec, ref keyboardState);
+                                                if (ps.startDir != startDir)
+                                                    ps.startDir = startDir;
+                                            }
+
+                                            ImGui.Separator();
+                                            ImGui.Checkbox("##randomSpeed", ref ps.randomSpeed);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Random speed");
+
+                                            if (!ps.randomSpeed)
+                                            {
+                                                float[] speedVec = new float[] { ps.startSpeed, ps.endSpeed };
+                                                float[] speed = InputFloat2("", new string[] { "Start", "End" }, speedVec, ref keyboardState);
+                                                if (ps.startSpeed != speed[0])
+                                                    ps.startSpeed = speed[0];
+                                                if (ps.endSpeed != speed[1])
+                                                    ps.endSpeed = speed[1];
+                                            }
+                                            else
+                                            {
+                                                float[] speedStartVec = new float[] { ps.xStartSpeed, ps.yStartSpeed };
+                                                float[] speedStart = InputFloat2("Start speed", new string[] { "From", "To" }, speedStartVec, ref keyboardState);
+                                                if (ps.xStartSpeed != speedStart[0])
+                                                    ps.xStartSpeed = speedStart[0];
+                                                if (ps.yStartSpeed != speedStart[1])
+                                                    ps.yStartSpeed = speedStart[1];
+                                                
+                                                float[] speedEndVec = new float[] { ps.xEndSpeed, ps.yEndSpeed };
+                                                float[] speedEnd = InputFloat2("End speed", new string[] { "From", "To" }, speedEndVec, ref keyboardState);
+                                                if (ps.xEndSpeed != speedEnd[0])
+                                                    ps.xEndSpeed = speedEnd[0];
+                                                if (ps.yEndSpeed != speedEnd[1])
+                                                    ps.yEndSpeed = speedEnd[1];
+                                            }
+
+                                            ImGui.Separator();
+                                            ImGui.Checkbox("##randomScale", ref ps.randomScale);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Random scale");
+
+                                            if(!ps.randomScale)
+                                            {
+                                                float[] startScaleVec = new float[] { ps.startScale.X, ps.startScale.Y, ps.startScale.Z };
+                                                Vector3 startScale = InputFloat3("Starting scale", new string[] { "X", "Y", "Z" }, startScaleVec, ref keyboardState);
+                                                if (ps.startScale != startScale)
+                                                    ps.startScale = startScale;
+
+                                                float[] endScaleVec = new float[] { ps.endScale.X, ps.endScale.Y, ps.endScale.Z };
+                                                Vector3 endScale = InputFloat3("Ending scale", new string[] { "X", "Y", "Z" }, endScaleVec, ref keyboardState);
+                                                if (ps.endScale != endScale)
+                                                    ps.endScale = endScale;
+                                            }
+                                            else
+                                            {
+                                                float[] startXScaleMinVec = new float[] { ps.xStartScale.Min.X, ps.xStartScale.Min.Y, ps.xStartScale.Min.Z };
+                                                Vector3 startXScaleMin = InputFloat3("Starting scale min 3D corner", new string[] { "X", "Y", "Z" }, startXScaleMinVec, ref keyboardState);
+                                                if (ps.xStartScale.Min != startXScaleMin)
+                                                    ps.xStartScale.Min = startXScaleMin;
+
+                                                float[] startXScaleMaxVec = new float[] { ps.xStartScale.Max.X, ps.xStartScale.Max.Y, ps.xStartScale.Max.Z };
+                                                Vector3 startPosMax = InputFloat3("Starting scale max 3D corner", new string[] { "X", "Y", "Z" }, startXScaleMaxVec, ref keyboardState);
+                                                if (ps.xStartScale.Max != startPosMax)
+                                                    ps.xStartScale.Max = startPosMax;
+
+                                                float[] endXScaleMinVec = new float[] { ps.xEndScale.Min.X, ps.xStartScale.Min.Y, ps.xStartScale.Min.Z };
+                                                Vector3 endXScaleMin = InputFloat3("Ending scale min 3D corner", new string[] { "X", "Y", "Z" }, endXScaleMinVec, ref keyboardState);
+                                                if (ps.xStartScale.Min != endXScaleMin)
+                                                    ps.xStartScale.Min = endXScaleMin;
+
+                                                float[] endXScaleMaxVec = new float[] { ps.xStartScale.Max.X, ps.xStartScale.Max.Y, ps.xStartScale.Max.Z };
+                                                Vector3 endPosMax = InputFloat3("Ending scale max 3D corner", new string[] { "X", "Y", "Z" }, endXScaleMaxVec, ref keyboardState);
+                                                if (ps.xStartScale.Max != endPosMax)
+                                                    ps.xStartScale.Max = endPosMax;
+                                            }
+
+                                            ImGui.Separator();
+                                            ImGui.Checkbox("##randomColor", ref ps.randomColor);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Random color");
+
+                                            if(!ps.randomColor)
+                                            {
+                                                Color4 startColor = ps.startColor;
+                                                ColorPicker("Start color", ref startColor);
+                                                ps.startColor = startColor;
+
+                                                Color4 endColor = ps.endColor;
+                                                ColorPicker("Ending color", ref endColor);
+                                                ps.endColor = endColor;
+                                            }
+
+                                            //Helper.QuaternionFromEuler
+                                            ImGui.Separator();
+                                            ImGui.Checkbox("##randomRotation", ref ps.randomRotation);
+                                            ImGui.SameLine();
+                                            ImGui.Text("Random rotation");
+
+                                            if(!ps.randomRotation)
+                                            {
+                                                Vector3 startRotPS = Helper.EulerFromQuaternion(ps.startRotation);
+                                                float[] startRotVec = new float[] { startRotPS.X, startRotPS.Y, startRotPS.Z };
+                                                Vector3 startRot = InputFloat3("Starting rotation", new string[] { "X", "Y", "Z" }, startRotVec, ref keyboardState);
+                                                OpenTK.Mathematics.Quaternion quatStartRot = Helper.QuaternionFromEuler(startRot);
+                                                if (ps.startRotation != quatStartRot)
+                                                    ps.startRotation = quatStartRot;
+
+                                                Vector3 endRotPS = Helper.EulerFromQuaternion(ps.endRotation);
+                                                float[] endRotVec = new float[] { endRotPS.X, endRotPS.Y, endRotPS.Z };
+                                                Vector3 endRot = InputFloat3("Ending rotation", new string[] { "X", "Y", "Z" }, endRotVec, ref keyboardState);
+                                                OpenTK.Mathematics.Quaternion quatEndRot = Helper.QuaternionFromEuler(endRot);
+                                                if (ps.startRotation != quatEndRot)
+                                                    ps.startRotation = quatEndRot;
+                                            }
+
+                                            ImGui.Dummy(new System.Numerics.Vector2(0, 25));
+
+                                            #endregion
+
+                                            ImGui.TreePop();
+                                        }
+
+                                        #region ParticleSystem Update Window
+                                        ImGui.SetNextWindowSize(particlesWindowSize);
+
+                                        if(particlesWindowPos == null)
+                                        {
+                                            particlesWindowPos = new System.Numerics.Vector2(_windowWidth * (1 - gameWindow.rightPanelPercent) - particlesWindowSize.X,
+                                                                 _windowHeight * (1 - gameWindow.bottomPanelPercent) - gameWindow.bottomPanelSize - particlesWindowSize.Y);
+                                        }
+
+                                        ImGui.SetNextWindowPos(particlesWindowPos??new System.Numerics.Vector2());
+                                        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0);
+                                        ImGui.PushStyleColor(ImGuiCol.TitleBg, style.Colors[(int)ImGuiCol.WindowBg]);
+                                        ImGui.PushStyleColor(ImGuiCol.TitleBgActive, style.Colors[(int)ImGuiCol.WindowBg]);
+                                        ImGui.PushStyleColor(ImGuiCol.TitleBgCollapsed, style.Colors[(int)ImGuiCol.WindowBg]);
+                                        if (ImGui.Begin("Particles", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove))
+                                        {
+                                            
+
+                                            ImGui.End();
+                                        }
+                                        ImGui.PopStyleColor();
+                                        ImGui.PopStyleVar();
+                                        #endregion
+                                    }
+
                                     ImGui.Separator();
                                 }
 
@@ -2080,6 +2396,12 @@ namespace Engine3D
                                                 {
                                                     o.components.Add(new Light(objects[objects.Count - 1], engine.shaderProgram.id, 0, LightType.DirectionalLight));
                                                     engine.lights = null;
+                                                }
+                                                if(component.name == "ParticleSystem")
+                                                {
+                                                    o.components.Add(new ParticleSystem(engine.instancedMeshVao, engine.instancedMeshVbo, engine.instancedShaderProgram.id,
+                                                                                        engine.windowSize, ref engine.character.camera, ref o));
+                                                    engine.particleSystems = null;
                                                 }
 
 

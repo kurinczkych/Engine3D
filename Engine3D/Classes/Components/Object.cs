@@ -142,6 +142,21 @@ namespace Engine3D
             }
         }
 
+        private ParticleSystem? particleSystem_;
+        public ParticleSystem? ParticleSystem
+        {
+            get
+            {
+                if (particleSystem_ == null)
+                {
+                    particleSystem_ = components.OfType<ParticleSystem>().FirstOrDefault();
+                    return particleSystem_;
+                }
+                else
+                    return particleSystem_;
+            }
+        }
+
         public BSP BSPStruct { get; private set; }
         public Octree Octree { get; private set; }
         public GridStructure GridStructure { get; private set; }

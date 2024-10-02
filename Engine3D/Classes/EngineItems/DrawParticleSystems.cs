@@ -12,7 +12,7 @@ namespace Engine3D
         private void DrawParticleSystems()
         {
 
-            //GL.BlendFunc(BlendingFactor.SrcColor, BlendingFactor.OneMinusSrcColor);
+            ////GL.BlendFunc(BlendingFactor.SrcColor, BlendingFactor.OneMinusSrcColor);
             foreach (ParticleSystem ps in particleSystems)
             {
                 BaseMesh mesh = ps.GetParentMesh();
@@ -22,7 +22,7 @@ namespace Engine3D
 
                 instMesh.Draw(editorData.gameRunning, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo);
             }
-            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            ////GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         }
     }
 }

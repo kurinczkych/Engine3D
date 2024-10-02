@@ -27,7 +27,7 @@ namespace Engine3D
                         objectMovingAxis = null;
                         objectMovingPlane = null;
                     }
-                    else if (IsMouseInGameWindow(MouseState) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
+                    else if (IsMouseInGameWindow(MouseState) && !imGuiController.CursorInImGuiWindow(new Vector2(MouseState.X, MouseState.Y)) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
                     {
                         #region Object selection Drawing
                         pickingTexture.EnableWriting();

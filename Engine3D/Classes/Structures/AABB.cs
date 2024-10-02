@@ -11,8 +11,8 @@ namespace Engine3D
 {
     public class AABB
     {
-        public Vector3 Min;
-        public Vector3 Max;
+        public Vector3 Min = new Vector3();
+        public Vector3 Max = new Vector3();
 
         public float Width { get { return Max.X - Min.X; } }
         public float Height { get { return Max.Y - Min.Y; } }
