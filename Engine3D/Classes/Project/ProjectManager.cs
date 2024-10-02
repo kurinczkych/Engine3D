@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using OpenTK.Mathematics;
+using static Engine3D.ProjectManager;
 
 namespace Engine3D
 {
@@ -14,13 +15,13 @@ namespace Engine3D
     {
         public class Project
         {
-            [JsonProperty("object_id")]
             public int objectID = 1;
-            [JsonProperty("objects")]
             public List<Object> objects;
-            [JsonProperty("_meshObjects")]
+            public Character character;
+
+            [JsonIgnore]
             public List<Object> _meshObjects;
-            [JsonProperty("_instObjects")]
+            [JsonIgnore]
             public List<Object> _instObjects;
             //[JsonProperty("character")]
             //public Character character;
@@ -80,80 +81,107 @@ namespace Engine3D
 
         public static void SaveObj(string filePath, object obj)
         {
-            string json = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(filePath, json);
-        }
-
-        public static void Save(string filePath, Project project)
-        {
-            //CheckMatrix4ConvertersInNamespace("Engine3D");
-            JsonSerializerSettings settings = new JsonSerializerSettings();
-            settings.Formatting = Formatting.Indented;
-            settings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-
-            using (StreamWriter file = File.CreateText("large_project.json"))
+            using (StreamWriter file = File.CreateText(filePath))
             using (JsonTextWriter writer = new JsonTextWriter(file))
             {
                 JsonSerializer serializer = new JsonSerializer
                 {
-                    // Optional: Configure formatting and other settings
+                    ContractResolver = new AllPropertiesContractResolver(),
                     Formatting = Formatting.Indented,
-                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    TypeNameHandling = TypeNameHandling.Auto
+                };
+                serializer.Converters.Add(new Vector2Converter());
+                serializer.Converters.Add(new Vector3Converter());
+                serializer.Converters.Add(new QuaternionConverter());
+                serializer.Converters.Add(new Matrix4Converter());
+                serializer.Converters.Add(new Color4Converter());
+
+                serializer.Serialize(writer, obj);
+            }
+        }
+
+        public static void Save(string filePath, Project project)
+        {
+            using (FileStream fileStream = new FileStream(filePath, FileMode.Create))
+            using (GZipStream gzipStream = new GZipStream(fileStream, CompressionMode.Compress))
+            using (StreamWriter streamWriter = new StreamWriter(gzipStream))
+            using (JsonTextWriter jsonWriter = new JsonTextWriter(streamWriter))
+            {
+                JsonSerializer serializer = new JsonSerializer
+                {
+                    ContractResolver = new AllPropertiesContractResolver(),
+                    Formatting = Formatting.Indented,
+                    TypeNameHandling = TypeNameHandling.Auto
                 };
 
-                // Serialize the object directly to the file stream
-                serializer.Serialize(writer, project);
+                serializer.Converters.Add(new Vector2Converter());
+                serializer.Converters.Add(new Vector3Converter());
+                serializer.Converters.Add(new QuaternionConverter());
+                serializer.Converters.Add(new Matrix4Converter());
+                serializer.Converters.Add(new Color4Converter());
+                //serializer.Converters.Add(new ComponentConverter());
+
+                serializer.Serialize(jsonWriter, project);
             }
-
-            //string json = JsonConvert.SerializeObject(project, settings);
-            //byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
-
-            //byte[] compressedData = Compress(jsonBytes);
-
-            //File.WriteAllBytes("save.bin", compressedData);
-            //File.WriteAllText("save.sav", json);
         }
 
         public static Project? Load(string filePath)
         {
-            if (File.Exists(filePath))
+            if (!File.Exists(filePath))
             {
-                byte[] compressedData = File.ReadAllBytes(filePath);
-                byte[] decompressedData = Decompress(compressedData);
-                string decompressedJson = Encoding.UTF8.GetString(decompressedData);
-                Project? project = JsonConvert.DeserializeObject<Project>(decompressedJson);
-
-                return project;
-            }
-            else
+                Engine.consoleManager.AddLog("File not found: " + filePath, LogType.Error);
                 return null;
-        }
-
-        public static byte[] Compress(byte[] data)
-        {
-            using (MemoryStream compressedStream = new MemoryStream())
-            {
-                using (GZipStream gzip = new GZipStream(compressedStream, CompressionMode.Compress))
-                {
-                    gzip.Write(data, 0, data.Length);
-                }
-                return compressedStream.ToArray();
             }
-        }
 
-        // Method to decompress data using GZip
-        public static byte[] Decompress(byte[] data)
-        {
-            using (MemoryStream compressedStream = new MemoryStream(data))
+            try
             {
-                using (GZipStream gzip = new GZipStream(compressedStream, CompressionMode.Decompress))
+                using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
+                using (GZipStream gzipStream = new GZipStream(fileStream, CompressionMode.Decompress))
+                using (StreamReader streamReader = new StreamReader(gzipStream))
+                using (JsonTextReader jsonReader = new JsonTextReader(streamReader))
                 {
-                    using (MemoryStream resultStream = new MemoryStream())
+                    JsonSerializer serializer = new JsonSerializer
                     {
-                        gzip.CopyTo(resultStream);
-                        return resultStream.ToArray();
+                        ContractResolver = new AllPropertiesContractResolver(),
+                        Formatting = Formatting.Indented,
+                        TypeNameHandling = TypeNameHandling.Auto
+                    };
+
+                    serializer.Converters.Add(new Vector2Converter());
+                    serializer.Converters.Add(new Vector3Converter());
+                    serializer.Converters.Add(new QuaternionConverter());
+                    serializer.Converters.Add(new Matrix4Converter());
+                    serializer.Converters.Add(new Color4Converter());
+                    //serializer.Converters.Add(new ComponentConverter());
+
+                    Project? project = serializer.Deserialize<Project>(jsonReader);
+
+                    if (project != null)
+                    {
+                        project._meshObjects = new List<Object>();
+                        project._instObjects = new List<Object>();
+                        foreach(var obj in project.objects)
+                        {
+                            if(obj.Mesh != null)
+                            {
+                                obj.Mesh.parentObject = obj;
+                                obj.Mesh.RecalculateModelMatrix(new bool[] { true, true, true });
+                                obj.Mesh.recalculate = true;
+                                if (obj.Mesh is Mesh m)
+                                    project._meshObjects.Add(obj);
+                                else if(obj.Mesh is InstancedMesh im)
+                                    project._instObjects.Add(obj);  
+                            }
+                        }
                     }
+
+                    return project;
                 }
+            }
+            catch (Exception ex)
+            {
+                Engine.consoleManager.AddLog("An error occurred while loading the project: " + ex.Message, LogType.Error);
+                return null;
             }
         }
     }

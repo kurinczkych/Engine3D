@@ -12,9 +12,7 @@ namespace Engine3D
 {
     public class AABB
     {
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Min;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Max;
 
         [JsonIgnore]

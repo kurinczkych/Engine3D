@@ -18,18 +18,14 @@ namespace Engine3D
             DirectionalLight = 1
         }
 
-        [JsonProperty("name")]
         public string name = "Light";
-        [JsonProperty("shaderProgramId")]
         private int shaderProgramId;
-        [JsonProperty("id")]
         private int id;
 
         #region LightVars
         [JsonIgnore]
         public int colorLoc;
 
-        [JsonConverter(typeof(Color4Converter))]
         private Color4 color;
 
         [JsonIgnore]
@@ -37,40 +33,32 @@ namespace Engine3D
 
         [JsonIgnore]
         public int constantLoc;
-        [JsonProperty("constant")]
         public float constant;
 
         [JsonIgnore]
         public int linearLoc;
-        [JsonProperty("linear")]
         public float linear;
 
         [JsonIgnore]
         public int quadraticLoc;
-        [JsonProperty("quadratic")]
         public float quadratic;
 
         [JsonIgnore]
         public int ambientLoc;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 ambient;
 
         [JsonIgnore]
         public int diffuseLoc;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 diffuse;
 
         [JsonIgnore]
         public int specularPowLoc;
-        [JsonProperty("specularPow")]
         public float specularPow = 64f;
         [JsonIgnore]
         public int specularLoc;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 specular;
         #endregion
 
-        [JsonProperty("lightType")]
         private LightType lightType = LightType.DirectionalLight;
 
         [JsonIgnore]
@@ -78,6 +66,11 @@ namespace Engine3D
 
         [JsonIgnore]
         private Dictionary<string, int> uniforms;
+
+        public Light()
+        {
+            
+        }
 
         public Light(Object parentObject, int shaderProgramId, int id)
         {

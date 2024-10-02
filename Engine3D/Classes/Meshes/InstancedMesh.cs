@@ -38,9 +38,7 @@ namespace Engine3D
 
         private Vector2 windowSize;
 
-        [JsonConverter(typeof(Matrix4Converter))]
         Matrix4 viewMatrix;
-        [JsonConverter(typeof(Matrix4Converter))]
         Matrix4 projectionMatrix;
 
         private InstancedVAO Vao;

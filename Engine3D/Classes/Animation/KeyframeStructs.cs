@@ -11,7 +11,6 @@ namespace Engine3D
 
     public struct TranslationKeyFrame
     {
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Translation;
 
         private double time;

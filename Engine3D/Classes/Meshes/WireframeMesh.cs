@@ -28,9 +28,7 @@ namespace Engine3D
 
         private List<float> vertices = new List<float>();
 
-        [JsonConverter(typeof(Matrix4Converter))]
         Matrix4 viewMatrix;
-        [JsonConverter(typeof(Matrix4Converter))]
         Matrix4 projectionMatrix;
 
         public List<Line> lines;

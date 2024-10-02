@@ -19,7 +19,6 @@ namespace Engine3D
         public Bone RootBone;
         public Dictionary<string, BoneInfo> BoneMapping = new Dictionary<string, BoneInfo>();
         public int NumOfBones = -1;
-        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 InverseGlobal = Matrix4.Identity;
 
         public Skeleton()

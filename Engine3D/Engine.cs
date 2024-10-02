@@ -234,15 +234,24 @@ namespace Engine3D
             ProjectManager.Project p = new ProjectManager.Project();
             p.objectID = objectID;
             p.objects = objects;
-            p._meshObjects = _meshObjects;
-            p._instObjects = _instObjects;
+            p.character = character;
             ProjectManager.Save("save.sav", p);
-            //ProjectManager.SaveObj("save.sav", objects[0]);
+            //ProjectManager.SaveObj("save.sav", objects[0].Mesh.model.meshes[0]);
         }
 
         public void LoadProject(string filePath)
         {
-
+            ProjectManager.Project? p = ProjectManager.Load("save.sav");
+            if (p != null)
+            {
+                objectID = p.objectID;
+                objects = p.objects;
+                editorData.objects = objects;
+                character = p.character;
+                _meshObjects = p._meshObjects;
+                _instObjects = p._instObjects;
+                editorData.recalculateObjects = true;
+            }
         }
 
         private void AddObjectAndCalculate(Object o)

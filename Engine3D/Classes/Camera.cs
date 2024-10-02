@@ -15,27 +15,19 @@ namespace Engine3D
 {
     public class Camera
     {
-        [JsonConverter(typeof(Vector2Converter))]
         public Vector2 screenSize { get; private set; }
-        [JsonConverter(typeof(Vector2Converter))]
         public Vector2 gameScreenSize { get; private set; }
-        [JsonConverter(typeof(Vector2Converter))]
         public Vector2 gameScreenPos { get; private set; }
         public float near;
         public float far;
         public float fov;
         public float aspectRatio;
 
-        [JsonConverter(typeof(Vector3Converter))]
         private Vector3 position;
 
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 up { get; private set; } = Vector3.UnitY;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 front { get; private set; } = -Vector3.UnitZ;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 frontClamped { get; private set; } = -Vector3.UnitZ;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 right { get; private set; } = Vector3.UnitX;
 
         private float yaw;
@@ -43,13 +35,9 @@ namespace Engine3D
         private float pitch = 0f;
 
 
-        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 viewMatrix;
-        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 projectionMatrix;
-        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 projectionMatrixBigger;
-        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 projectionMatrixOrtho;
         public Frustum frustum;
 

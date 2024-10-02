@@ -26,7 +26,6 @@ namespace Engine3D
     public class Plane
     {
         // unit vector
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 normal = new Vector3(0.0f, 0.0f, 0.0f);
 
         // distance from origin to the nearest point in the plane

@@ -24,6 +24,7 @@ namespace Engine3D
         public int vboId;
         public int shaderProgramId;
 
+        [JsonProperty("modelName_")]
         protected string modelName_;
         [JsonIgnore]
         public string modelName
@@ -62,6 +63,7 @@ namespace Engine3D
         protected bool recalculateOnlyPosAndNormal;
 
         protected int useBillboarding_ = 0;
+        [JsonIgnore]
         public int useBillboarding
         {
             get
@@ -342,13 +344,9 @@ namespace Engine3D
         
         public BVH? BVHStruct;
 
-        [JsonConverter(typeof(Matrix4Converter))]
         protected Matrix4 scaleMatrix = Matrix4.Identity;
-        [JsonConverter(typeof(Matrix4Converter))]
         protected Matrix4 rotationMatrix = Matrix4.Identity;
-        [JsonConverter(typeof(Matrix4Converter))]
         protected Matrix4 translationMatrix = Matrix4.Identity;
-        [JsonConverter(typeof(Matrix4Converter))]
         public Matrix4 modelMatrix = Matrix4.Identity;
 
         //protected int threadSize;
@@ -365,6 +363,11 @@ namespace Engine3D
 
             //threadSize = (int)(Environment.ProcessorCount * (80 / 100.0));
             //threadSize = 16;
+        }
+
+        protected BaseMesh()
+        {
+            
         }
 
         public bool isValidMesh(PxVec3* vertices, int numVertices, int* indices, int numIndices)

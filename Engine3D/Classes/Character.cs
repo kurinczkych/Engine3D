@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Engine3D
 {
@@ -40,9 +41,11 @@ namespace Engine3D
         private float DynamicFriction = 0.5f;
         private float Restitution = 0.1f;
 
+        [JsonIgnore]
         private IntPtr capsuleControllerDescPtr;
         public PxCapsuleControllerDesc* GetCapsuleControllerDesc() { return (PxCapsuleControllerDesc*)capsuleControllerDescPtr.ToPointer(); }
 
+        [JsonIgnore]
         private IntPtr capsuleControllerPtr;
         public PxController* GetCapsuleController() { return (PxController*)capsuleControllerPtr.ToPointer(); }
 
@@ -58,26 +61,34 @@ namespace Engine3D
         public Vector3 Position;
         private Vector3 OrigPosition;
 
+        [JsonIgnore]
         public string PStr
         {
             get { return Math.Round(Position.X, 2).ToString() + "," + Math.Round(Position.Y, 2).ToString() + "," + Math.Round(Position.Z, 2).ToString(); }
         }
 
+        [JsonIgnore]
         public string VStr
         {
             get { return Math.Round(Velocity.X, 2).ToString() + "," + Math.Round(Velocity.Y, 2).ToString() + "," + Math.Round(Velocity.Z, 2).ToString(); }
         }
 
+        [JsonIgnore]
         public string LStr
         {
             get { return "Yaw: " + Math.Round(camera.GetYaw(), 2).ToString() + ", Pitch: " + Math.Round(camera.GetPitch(), 2).ToString(); }
         }
 
         private Physx physx;
+        [JsonIgnore]
         public WireframeMesh mesh;
 
         public Camera camera;
 
+        public Character()
+        {
+            
+        }
 
         public Character(WireframeMesh mesh, ref Physx physx, Vector3 position, Camera camera)
         {

@@ -46,9 +46,7 @@ namespace Engine3D
 
     public class Transformation
     {
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 LastPosition;
-        [JsonConverter(typeof(Vector3Converter))]
         private Vector3 position_;
         [JsonIgnore]
         public Vector3 Position
@@ -61,9 +59,7 @@ namespace Engine3D
             }
         }
 
-        [JsonConverter(typeof(QuaternionConverter))]
         public Quaternion LastRotation;
-        [JsonConverter(typeof(QuaternionConverter))]
         private Quaternion rotation_;
         [JsonIgnore]
         public Quaternion Rotation
@@ -76,7 +72,6 @@ namespace Engine3D
             }
         }
 
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 Scale = Vector3.One;
 
         public Transformation(Vector3 position, Quaternion rotation, Vector3 scale)
@@ -118,6 +113,7 @@ namespace Engine3D
 
         //---------------------------------------------------------------
 
+        [JsonProperty("type")]
         private ObjectType type;
 
         [JsonIgnore]

@@ -1,13 +1,42 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Engine3D
 {
+    public class AllPropertiesContractResolver : DefaultContractResolver
+    {
+        protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+        {
+            var props = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                            .Select(p => base.CreateProperty(p, memberSerialization))
+                            .ToList();
+
+            // Serialize fields too, if desired
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                             .Select(f => base.CreateProperty(f, memberSerialization))
+                             .ToList();
+
+            props.AddRange(fields);
+
+            // Ensure that all properties are writable, even if they are non-public
+            foreach (var prop in props)
+            {
+                prop.Writable = true;
+                prop.Readable = true;
+            }
+
+            return props;
+        }
+    }
+
     public class QuaternionConverter : JsonConverter<Quaternion>
     {
         public override void WriteJson(JsonWriter writer, Quaternion value, JsonSerializer serializer)
@@ -205,27 +234,36 @@ namespace Engine3D
             return new OpenTK.Mathematics.Vector4(x, y, z, w);
         }
     }
+
+    public struct Vector3Simplified
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Z { get; set; }
+
+        public Vector3Simplified(Vector3 vector)
+        {
+            X = vector.X;
+            Y = vector.Y;
+            Z = vector.Z;
+        }
+
+        public Vector3 ToOpenTKVector3()
+        {
+            return new Vector3(X, Y, Z);
+        }
+    }
+
     public class Vector3ListConverter : JsonConverter<List<Vector3>>
     {
         public override void WriteJson(JsonWriter writer, List<Vector3> value, JsonSerializer serializer)
         {
-            // Start the JSON array
             writer.WriteStartArray();
-
-            // Serialize each Vector3 in the list
             foreach (var vector in value)
             {
-                writer.WriteStartObject();
-                writer.WritePropertyName("X");
-                writer.WriteValue(vector.X);
-                writer.WritePropertyName("Y");
-                writer.WriteValue(vector.Y);
-                writer.WritePropertyName("Z");
-                writer.WriteValue(vector.Z);
-                writer.WriteEndObject();
+                var simplified = new Vector3Simplified(vector);
+                serializer.Serialize(writer, simplified);
             }
-
-            // End the JSON array
             writer.WriteEndArray();
         }
 
@@ -233,43 +271,12 @@ namespace Engine3D
         {
             var vectors = new List<Vector3>();
 
-            // Ensure we are reading an array
             if (reader.TokenType == JsonToken.StartArray)
             {
-                while (reader.Read())
+                while (reader.Read() && reader.TokenType != JsonToken.EndArray)
                 {
-                    if (reader.TokenType == JsonToken.EndArray)
-                        break;
-
-                    if (reader.TokenType == JsonToken.StartObject)
-                    {
-                        float x = 0, y = 0, z = 0;
-
-                        while (reader.Read() && reader.TokenType != JsonToken.EndObject)
-                        {
-                            if (reader.TokenType == JsonToken.PropertyName)
-                            {
-                                string propertyName = (string)reader.Value;
-                                reader.Read();
-
-                                switch (propertyName)
-                                {
-                                    case "X":
-                                        x = (float)Convert.ToDouble(reader.Value);
-                                        break;
-                                    case "Y":
-                                        y = (float)Convert.ToDouble(reader.Value);
-                                        break;
-                                    case "Z":
-                                        z = (float)Convert.ToDouble(reader.Value);
-                                        break;
-                                }
-                            }
-                        }
-
-                        // Create a new Vector3 and add it to the list
-                        vectors.Add(new Vector3(x, y, z));
-                    }
+                    var simplified = serializer.Deserialize<Vector3Simplified>(reader);
+                    vectors.Add(simplified.ToOpenTKVector3());
                 }
             }
 

@@ -38,11 +38,8 @@ namespace Engine3D
 
         private Vector2 windowSize;
 
-        [JsonConverter(typeof(Matrix4Converter))]
         private Matrix4 viewMatrix;
-        [JsonConverter(typeof(Matrix4Converter))]
         private Matrix4 projectionMatrix;
-        [JsonConverter(typeof(Vector3Converter))]
         private Vector3 cameraPos;
 
         public AnimationClip? animation;
@@ -173,6 +170,11 @@ namespace Engine3D
 
             GetUniformLocations();
             SendUniforms();
+        }
+
+        public Mesh() : base() 
+        {
+            
         }
 
         private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index)

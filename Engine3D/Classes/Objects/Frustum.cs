@@ -13,26 +13,16 @@ namespace Engine3D
 
         public Plane[] planes;
 
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 nearCenter;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 farCenter;
 
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 ntl;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 ntr;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 nbl;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 nbr;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 ftl;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 ftr;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 fbl;
-        [JsonConverter(typeof(Vector3Converter))]
         public Vector3 fbr;
 
         public Frustum()
