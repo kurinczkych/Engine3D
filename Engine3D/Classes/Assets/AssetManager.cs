@@ -47,6 +47,10 @@ namespace Engine3D
         public string Remove(Asset asset)
         {
             List<string> dirs = GetDirectories(asset);
+            if(dirs.Count == 0)
+            {
+                return "Temp";
+            }
             
             RemoveRec(dirs, asset);
 
@@ -57,6 +61,9 @@ namespace Engine3D
 
         private void RemoveRec(List<string> dirs, Asset asset)
         {
+            if (dirs.Count == 0)
+                return;
+
             if (dirs.Count == 1)
             {
                 AssetFolder a = GetAssetFolder(dirs[0]);
