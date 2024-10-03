@@ -30,8 +30,7 @@ namespace Engine3D
         TextMesh,
         UIMesh,
         Plane,
-        AudioEmitter,
-        ParticleEmitter
+        AudioEmitter
     }
 
     public enum ColliderType

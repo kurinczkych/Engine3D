@@ -130,14 +130,20 @@ namespace Engine3D
         private List<Particle> particles = new List<Particle>();
 
         private InstancedMesh mesh;
+        private Object parentObject;
 
         public ParticleSystem(InstancedVAO instancedMeshVao, VBO instancedMeshVbo, int shaderProgramId, Vector2 windowSize, ref Camera camera, ref Object parentObject)
         {
             mesh = new InstancedMesh(instancedMeshVao, instancedMeshVbo, shaderProgramId, "cube", BaseMesh.GetUnitCube(), windowSize, ref camera, ref parentObject);
+
+            this.parentObject = parentObject;
         }
 
         private void UpdateParticleAndRemove(ref List<Particle> toRemove, Particle p, float delta)
         {
+            if (p == null)
+                return;
+
             bool remove = p.Update(delta);
             if (remove)
             {
@@ -146,6 +152,16 @@ namespace Engine3D
                     toRemove.Add(p);
                 }
             }
+        }
+
+        public void RemoveAllParticles()
+        {
+            particles.Clear();
+        }
+
+        public int GetParticleCount()
+        {
+            return particles.Count;
         }
 
         public void Update(float delta)
@@ -165,10 +181,15 @@ namespace Engine3D
                 UpdateParticleAndRemove(ref toRemove, particle, delta);
             });
 
-            for (int i = 0; i < toRemove.Count(); i++)
+            Parallel.ForEach(toRemove, parallelOptions, r =>
             {
-                particles.Remove(toRemove[i]);
-            }
+                particles.Remove(r);
+            });
+            //for (int i = 0; i < toRemove.Count(); i++)
+            //{
+            //    particles.Remove(toRemove[i]);
+            //}
+
             toRemove.Clear();
         }
 
@@ -177,6 +198,7 @@ namespace Engine3D
             Vector3 pos = startPos;
             if(randomStartPos)
                 pos = Helper.GetRandomVectorInAABB(xStartPos);
+            pos = parentObject.transformation.Position + pos;
 
             Vector3 dir = startDir;
             if (randomDir)
@@ -225,7 +247,7 @@ namespace Engine3D
 
         public BaseMesh GetParentMesh()
         {
-            List<InstancedMeshData> data = particles.Select(x => x.meshData).ToList();
+            List<InstancedMeshData> data = particles.Where(x => x != null).Select(x => x.meshData).ToList();
             //data.Sort((x,y) => x)
 
             mesh.SetInstancedData(data);

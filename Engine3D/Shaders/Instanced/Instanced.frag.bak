@@ -1,8 +1,6 @@
 #version 330 core
 
-struct Light 
-{
-    vec3 direction;
+struct PointLight {    
     vec3 position;
     vec3 color;
     
@@ -12,11 +10,19 @@ struct Light
 
     vec3 ambient;
     vec3 diffuse;
+
+    float specularPow;
+    vec3 specular;
+};
+
+struct DirLight {
+    vec3 direction;
+  
+    vec3 ambient;
+    vec3 diffuse;
     vec3 specular;
     float specularPow;
-
-    int lightType;
-};
+};  
 
 in vec3 gsFragPos;
 in vec3 gsFragNormal;
@@ -28,7 +34,7 @@ in vec3 gsTangentViewDir;
 uniform vec3 cameraPosition;
 
 #define MAX_LIGHTS 64
-uniform Light lights[MAX_LIGHTS];
+uniform PointLight pointLights[MAX_LIGHTS];
 uniform int actualNumOfLights;
 
 out vec4 FragColor;
@@ -51,7 +57,7 @@ uniform int useShading;
 const float heightScale = 0.1;
 const float metallnessVar = 0.04;
 
-vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float metalness)
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, float metalness)
 {
     vec3 lightDir = normalize(light.position - fragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -97,10 +103,10 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float 
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
-    return (ambient + diffuse + specular) * light.color;
+    return (ambient + diffuse + specular);
 } 
 
-vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, float metalness)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -140,7 +146,7 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
         specular = specular * k_s;
     }
 
-    return (ambient + diffuse + specular) * light.color;
+    return (ambient + diffuse + specular);
 }  
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
@@ -181,22 +187,24 @@ void main()
         normalFromMap = normalize(gsTBN * sampledNormal);
     }
 
-    vec3 result = vec3(1);
+    DirLight dirLight;
+    dirLight.direction = vec3(0,-1,0);
+    //dirLight.direction = normalize(vec3(0.0, -1.0, -1.0));
+    dirLight.ambient = vec3(0.1,0.1,0.1);
+    dirLight.diffuse = vec3(1.0,1.0,1.0);
+    dirLight.specular = vec3(1.0,1.0,1.0);
+    dirLight.specularPow = 2;
+
+    vec3 result = vec3(1,1,1);
+
     if(useShading == 1)
     {
-        result = vec3(0);
+        // phase 1: Directional lighting
+        result = CalcDirLight(dirLight, normalFromMap, viewDir, metalness);
 
+        // phase 2: Point lights
         for(int i = 0; i < actualNumOfLights; i++)
-        {
-            if(lights[i].lightType == 0)
-            {
-                result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
-            }
-            else if(lights[i].lightType == 1)
-            {
-                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
-            }
-        }
+            result += CalcPointLight(pointLights[i], normalFromMap, gsFragPos, viewDir, metalness);
     }
 
     FragColor = vec4(result, 1.0) * gsFragColor;
@@ -208,5 +216,8 @@ void main()
             FragColor = texture(textureSampler, parallaxTexCoords) * vec4(result, 1.0) * gsFragColor;
         }
     }
+
+
+//    FragColor = fragColor;
 }
 

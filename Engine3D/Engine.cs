@@ -11,6 +11,7 @@ using System.Diagnostics;
 using MagicPhysX;
 using Assimp;
 using System.Drawing;
+using System.ComponentModel.DataAnnotations;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -179,7 +180,7 @@ namespace Engine3D
             }
         }
 
-        private List<ParticleSystem>? particleSystems_;
+        private List<ParticleSystem>? particleSystems_ = null;
         public List<ParticleSystem> particleSystems
         {
             get
@@ -326,6 +327,17 @@ namespace Engine3D
             editorData.recalculateObjects = true;
         }
 
+        public void AddParticleSystem()
+        {
+            Object o = new Object(ObjectType.Empty) { name = "ParticleSystem" };
+            o.transformation.Position = character.camera.GetPosition() + character.camera.front * 5;
+            o.components.Add(new ParticleSystem(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, windowSize, ref character.camera, ref o));
+            objects.Add(o);
+
+            particleSystems = null;
+            editorData.recalculateObjects = true;
+        }
+
         public void RemoveObject(Object o)
         {
             if (o.Mesh is BaseMesh mesh)
@@ -434,13 +446,15 @@ namespace Engine3D
 
             DrawObjects(args.Time);
 
-            DrawParticleSystems();
-
             DrawMoverGizmo();
 
             //DrawCameraRay();
 
             TextUpdating();
+
+            instancedShaderProgram.Use();
+            Light.SendToGPU(lights, instancedShaderProgram.id);
+            DrawParticleSystems();
 
             #region Fullscreen scissoring
             if (!editorData.isGameFullscreen)
@@ -481,16 +495,27 @@ namespace Engine3D
                 character.CalculateVelocity(KeyboardState, MouseState, args);
                 character.UpdatePosition(KeyboardState, MouseState, args);
 
-                foreach (ParticleSystem ps in particleSystems)
-                {
-                    ps.Update((float)args.Time);
-                }
-
                 soundManager.SetListener(character.camera.GetPosition());
             }
             else
             {
                 EditorMoving(args);
+            }
+
+            if(editorData.resetParticles)
+            {
+                foreach (ParticleSystem ps in particleSystems)
+                {
+                    ps.RemoveAllParticles();
+                }
+                editorData.resetParticles = false;
+            }
+            if(editorData.gameRunning == GameState.Running || editorData.runParticles) 
+            {
+                foreach (ParticleSystem ps in particleSystems)
+                {
+                    ps.Update((float)args.Time);
+                }
             }
 
             character.AfterUpdate(MouseState, args, editorData.gameRunning);

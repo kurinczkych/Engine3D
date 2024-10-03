@@ -139,6 +139,9 @@ namespace Engine3D
         public Vector2 gizmoWindowSize = Vector2.Zero;
 
         public Physx physx;
+
+        public bool runParticles = false;
+        public bool resetParticles = false;
         #endregion
 
         #region Properties 
@@ -1076,9 +1079,9 @@ namespace Engine3D
 
                                 ImGui.EndMenu();
                             }
-                            if (ImGui.MenuItem("Particle emitter"))
+                            if (ImGui.MenuItem("Particle system"))
                             {
-                                engine.AddObject(ObjectType.ParticleEmitter);
+                                engine.AddParticleSystem();
                                 shouldOpenTreeNodeMeshes = true;
                             }
                             if (ImGui.MenuItem("Audio emitter"))
@@ -1981,6 +1984,7 @@ namespace Engine3D
                                             ImGui.SetCursorPosX(origDeleteX);
                                             ImGui.Dummy(new System.Numerics.Vector2(0, 0));
 
+                                            #region Light
                                             LightType lightType = light.GetLightType();
                                             ImGui.Text("Type");
                                             ImGui.SameLine();
@@ -2083,6 +2087,9 @@ namespace Engine3D
                                             }
 
                                             ImGui.PopStyleVar();
+                                            #endregion
+
+                                            ImGui.TreePop();
                                         }
                                     }
 
@@ -2304,7 +2311,35 @@ namespace Engine3D
                                         ImGui.PushStyleColor(ImGuiCol.TitleBgCollapsed, style.Colors[(int)ImGuiCol.WindowBg]);
                                         if (ImGui.Begin("Particles", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove))
                                         {
-                                            
+                                            ImGui.Separator();
+                                            var button = style.Colors[(int)ImGuiCol.Button];
+                                            style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+
+                                            if (!editorData.runParticles)
+                                            {
+                                                ImGui.SetCursorPosX((ImGui.GetWindowSize().X / 2.0f) - 10);
+                                                if (ImGui.ImageButton("##runParticlesStart", (IntPtr)Engine.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                                                {
+                                                    editorData.runParticles = true;
+                                                }
+                                            }
+                                            else
+                                            { 
+                                                ImGui.SetCursorPosX((ImGui.GetWindowSize().X / 2.0f) - 30);
+                                                if (ImGui.ImageButton("##runParticlesEnd", (IntPtr)Engine.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                                                {
+                                                    editorData.runParticles = false;
+                                                    editorData.resetParticles = true;
+                                                }
+                                                ImGui.SameLine();
+                                                if (ImGui.ImageButton("##runParticlesPause", (IntPtr)Engine.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                                                {
+                                                    editorData.runParticles = false;
+                                                }
+                                            }
+                                            style.Colors[(int)ImGuiCol.Button] = button;
+
+                                            ImGui.Text("Particles: " + ps.GetParticleCount());
 
                                             ImGui.End();
                                         }
@@ -2401,6 +2436,7 @@ namespace Engine3D
                                                 {
                                                     o.components.Add(new ParticleSystem(engine.instancedMeshVao, engine.instancedMeshVbo, engine.instancedShaderProgram.id,
                                                                                         engine.windowSize, ref engine.character.camera, ref o));
+
                                                     engine.particleSystems = null;
                                                 }
 
