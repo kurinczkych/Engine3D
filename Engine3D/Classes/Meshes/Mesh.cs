@@ -37,7 +37,7 @@ namespace Engine3D
 
         private Vector2 windowSize;
 
-        private Matrix4 viewMatrix, projectionMatrix;
+        private Matrix4 viewMatrix, projectionMatrix, orthoProjectionMatrix;
         private Vector3 cameraPos;
 
         public AnimationClip? animation;
@@ -205,6 +205,7 @@ namespace Engine3D
             uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
             uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
+            uniformLocations.Add("orthoProjectionMatrix", GL.GetUniformLocation(shaderProgramId, "orthoProjectionMatrix"));
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
             uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
@@ -295,6 +296,7 @@ namespace Engine3D
         protected override void SendUniforms()
         {
             projectionMatrix = camera.projectionMatrix;
+            orthoProjectionMatrix = camera.projectionMatrixOrtho;
             viewMatrix = camera.viewMatrix;
 
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);

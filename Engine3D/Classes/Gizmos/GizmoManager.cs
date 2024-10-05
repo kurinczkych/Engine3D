@@ -25,7 +25,7 @@ namespace Engine3D
         private Shader shader;
         private Camera camera;
 
-        private float gizmoScale = 10;
+        private float gizmoScale = 25;
 
         public GizmoType gizmoType = GizmoType.Move;
         public GizmoType lastGizmoType = GizmoType.Move;
@@ -68,14 +68,20 @@ namespace Engine3D
             bool[] toUpdate = new bool[3] { false, false, false };
             Vector3 cameraPos = camera.GetPosition();
 
-            float scaleFactor = (cameraPos - position).Length / gizmoScale;
+            Vector3 directionToGizmo = position - cameraPos;
+            float angle = Vector3.Dot(directionToGizmo.Normalized(), camera.front);
+            float scaleFactor = directionToGizmo.Length / ((float)Math.Cos(angle) * gizmoScale);
+            //float scaleFactor = (cameraPos - position).Length / gizmoScale;
 
             foreach (Object moverGizmo in moverGizmos)
             {
                 if (scaleFactor < 0.1)
                 {
                     Vector3 newPos = position + (camera.front * 2);
-                    scaleFactor = (cameraPos - newPos).Length / gizmoScale;
+                    directionToGizmo = newPos - cameraPos;
+                    angle = Vector3.Dot(directionToGizmo.Normalized(), camera.front);
+                    scaleFactor = directionToGizmo.Length / ((float)Math.Cos(angle) * gizmoScale);
+                    //scaleFactor = (cameraPos - newPos).Length / gizmoScale;
                     if (newPos != moverGizmo.transformation.Position)
                     {
                         moverGizmo.transformation.Position = newPos;
@@ -97,6 +103,10 @@ namespace Engine3D
 
                 if (moverGizmo.transformation.Scale.X != scaleFactor)
                 {
+                    //moverGizmo.transformation.Scale = new Vector3(scaleFactor);
+                    //toUpdate[2] = true;
+
+                    moverGizmo.transformation.Scale = new Vector3(0.5004f);
                     moverGizmo.transformation.Scale = new Vector3(scaleFactor);
                     toUpdate[2] = true;
                 }

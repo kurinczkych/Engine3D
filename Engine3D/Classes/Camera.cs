@@ -46,8 +46,8 @@ namespace Engine3D
 
             near = 0.1f;
             far = 1000.0f;
-            fov = 90.0f;
-            aspectRatio = screenSize.X / screenSize.Y;
+            fov = 60.0f;
+            aspectRatio = gameScreenSize.X / gameScreenSize.Y;
 
             viewMatrix = GetViewMatrix();
             projectionMatrix = GetProjectionMatrix();
@@ -105,7 +105,7 @@ namespace Engine3D
             gameScreenSize = gameSize;
             gameScreenPos = gamePos;
 
-            aspectRatio = screenSize.X / screenSize.Y;
+            aspectRatio = gameScreenSize.X / gameScreenSize.Y;
 
             viewMatrix = GetViewMatrix();
             projectionMatrix = GetProjectionMatrix();
@@ -131,7 +131,7 @@ namespace Engine3D
 
         public Matrix4 GetProjectionMatrixOrtho()
         {
-            return Matrix4.CreateOrthographic(screenSize.X, screenSize.Y, near, far);
+            return Matrix4.CreateOrthographic(gameScreenSize.X, gameScreenSize.Y, near, far);
         }
 
         public Vector3 GetCameraRay(Vector2 screenPoint)

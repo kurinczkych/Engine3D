@@ -18,6 +18,7 @@ uniform vec2 windowSize;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform mat4 orthoProjectionMatrix;
 
 uniform int useNormal;
 uniform int useHeight;
@@ -28,6 +29,7 @@ void main()
 	vec4 position = vec4(inPosition,1.0);
 
 	gl_Position = position * modelMatrix * viewMatrix * projectionMatrix;
+
 	vec4 fragPos4 = position * modelMatrix;
 
 	if(useBillboarding == 1)
