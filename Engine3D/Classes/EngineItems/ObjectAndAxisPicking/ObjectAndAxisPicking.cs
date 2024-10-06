@@ -36,7 +36,7 @@ namespace Engine3D
                         pickingShader.Use();
                         foreach (Object o in _meshObjects)
                         {
-                            BaseMesh? mesh = o.Mesh;
+                            BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                             if(mesh == null)
                                 continue;
 
@@ -49,7 +49,7 @@ namespace Engine3D
                         pickingInstancedShader.Use();
                         foreach (Object o in _instObjects)
                         {
-                            BaseMesh? mesh = o.Mesh;
+                            BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                             if (mesh == null)
                                 continue;
 
@@ -81,7 +81,7 @@ namespace Engine3D
                                 GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
                                 GL.Uniform1(drawIdLoc, (uint)0);
 
-                                BaseMesh? moverMesh = moverGizmo.Mesh;
+                                BaseMesh? moverMesh = (BaseMesh?)moverGizmo.GetComponent<BaseMesh>();
                                 if (moverMesh == null)
                                     continue;
 
@@ -110,7 +110,7 @@ namespace Engine3D
                                 }
 
                                 Object selectedObject = objs.First();
-                                BaseMesh? selectedMesh = selectedObject.Mesh;
+                                BaseMesh? selectedMesh = (BaseMesh?)selectedObject.GetComponent<BaseMesh>();
                                 if (selectedMesh == null)
                                     return;
 

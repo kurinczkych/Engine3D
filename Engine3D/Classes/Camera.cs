@@ -12,7 +12,7 @@ using static System.Net.WebRequestMethods;
 
 namespace Engine3D
 {
-    public class Camera
+    public class Camera : IComponent
     {
         public Vector2 screenSize { get; private set; }
         public Vector2 gameScreenSize { get; private set; }
@@ -22,15 +22,12 @@ namespace Engine3D
         public float fov;
         public float aspectRatio;
 
-        private Vector3 position;
-
         public Vector3 up { get; private set; } = Vector3.UnitY;
         public Vector3 front { get; private set; } = -Vector3.UnitZ;
         public Vector3 frontClamped { get; private set; } = -Vector3.UnitZ;
         public Vector3 right { get; private set; } = Vector3.UnitX;
 
         private float yaw;
-        //private float pitch = -90.0f;
         private float pitch = 0f;
 
         public Matrix4 viewMatrix;
@@ -39,32 +36,31 @@ namespace Engine3D
         public Matrix4 projectionMatrixOrtho;
         public Frustum frustum;
 
-        public Camera(Vector2 screenSize)
+        public Object parentObject;
+
+        public Camera(Vector2 screenSize, Object parentObject)
         {
             this.screenSize = screenSize;
-            position = new Vector3();
+            this.parentObject = parentObject;
 
             near = 0.1f;
             far = 1000.0f;
             fov = 60.0f;
             aspectRatio = gameScreenSize.X / gameScreenSize.Y;
 
-            viewMatrix = GetViewMatrix();
-            projectionMatrix = GetProjectionMatrix();
-            projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
-            projectionMatrixOrtho = GetProjectionMatrixOrtho();
+            UpdateAll();
         }
 
         #region Setters and getters
         public Vector3 GetPosition()
         {
-            return position;
+            return parentObject.transformation.Position;
         }
         public void SetPosition(Vector3 position)
         {
-            if (this.position != position)
+            if (this.parentObject.transformation.Position != position)
             {
-                this.position = position;
+                this.parentObject.transformation.Position = position;
                 UpdateVectors();
             }
         }
@@ -114,9 +110,18 @@ namespace Engine3D
         }
         #endregion
 
+        public void UpdateAll()
+        {
+            viewMatrix = GetViewMatrix();
+            projectionMatrix = GetProjectionMatrix();
+            projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
+            projectionMatrixOrtho = GetProjectionMatrixOrtho();
+            UpdateVectors();
+        }
+
         public Matrix4 GetViewMatrix()
         {
-            return Matrix4.LookAt(position, position + front, up);
+            return Matrix4.LookAt(parentObject.transformation.Position, parentObject.transformation.Position + front, up);
         }
 
         public Matrix4 GetProjectionMatrix()
@@ -126,7 +131,10 @@ namespace Engine3D
 
         public Matrix4 GetProjectionMatrixBigger(float fovMult = 1.1f)
         {
-            return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov * fovMult), aspectRatio, near, far);
+            float fovBig = fov * fovMult;
+            if (fovBig > 179)
+                fovBig = 179;
+            return Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fovBig), aspectRatio, near, far);
         }
 
         public Matrix4 GetProjectionMatrixOrtho()
@@ -167,7 +175,7 @@ namespace Engine3D
             float dist = float.PositiveInfinity;
             foreach (var vertex in tri.v)
             {
-                float ddist = (position - vertex.p).Length;
+                float ddist = (parentObject.transformation.Position - vertex.p).Length;
                 if (ddist < dist)
                     dist = ddist;
             }
@@ -178,7 +186,7 @@ namespace Engine3D
 
         public bool IsPointClose(Vector3 p)
         {
-            float dist = (position - p).Length;
+            float dist = (parentObject.transformation.Position - p).Length;
 
             return dist < 15.0f;
 
@@ -191,7 +199,7 @@ namespace Engine3D
             {
                 foreach (var vertex in triangle.v)
                 {
-                    float ddist = (position - vertex.p).Length;
+                    float ddist = (parentObject.transformation.Position - vertex.p).Length;
                     if (ddist < dist)
                         dist = ddist;
                 }
@@ -207,7 +215,7 @@ namespace Engine3D
             float dist = float.PositiveInfinity;
             foreach (var corner in corners)
             {
-                float ddist = (position - corner).Length;
+                float ddist = (parentObject.transformation.Position - corner).Length;
                 if(ddist < dist) 
                     dist = ddist;
             }
@@ -218,8 +226,8 @@ namespace Engine3D
 
         public bool IsLineClose(Line line)
         {
-            float dist1 = (position - line.Start).Length;
-            float dist2 = (position - line.End).Length;
+            float dist1 = (parentObject.transformation.Position - line.Start).Length;
+            float dist2 = (parentObject.transformation.Position - line.End).Length;
             float dist = float.PositiveInfinity;
             if (dist1 < dist) dist = dist1;
             if (dist2 < dist) dist = dist2;
@@ -287,13 +295,13 @@ namespace Engine3D
             foreach (var triangle in groundTriangles)
             {
                 // Check if character is above this triangle.
-                if (triangle.IsPointInTriangle(position, out float distanceToTriangle))
+                if (triangle.IsPointInTriangle(parentObject.transformation.Position, out float distanceToTriangle))
                 {
                     // Compute the triangle's normal.
                     Vector3 normal = Vector3.Cross(triangle.v[1].p - triangle.v[0].p, triangle.v[2].p - triangle.v[0].p).Normalized();
 
                     // Adjust the character's position based on the triangle's normal and the computed distance.
-                    position -= normal * (distanceToTriangle - offsetHeight);
+                    parentObject.transformation.Position -= normal * (distanceToTriangle - offsetHeight);
 
                     break; // Exit once the correct triangle is found.
                 }

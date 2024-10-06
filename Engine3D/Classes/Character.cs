@@ -73,13 +73,12 @@ namespace Engine3D
             get { return "Yaw: " + Math.Round(camera.GetYaw(), 2).ToString() + ", Pitch: " + Math.Round(camera.GetPitch(), 2).ToString(); }
         }
 
+        private Camera camera;
         private Physx physx;
         public WireframeMesh mesh;
 
-        public Camera camera;
 
-
-        public Character(WireframeMesh mesh, ref Physx physx, Vector3 position, Camera camera)
+        public Character(WireframeMesh mesh, ref Physx physx, Vector3 position, ref Camera camera)
         {
             this.mesh = mesh;
             this.physx = physx;

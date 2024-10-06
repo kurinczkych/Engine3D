@@ -20,7 +20,7 @@ namespace Engine3D
                     GL.Clear(ClearBufferMask.DepthBufferBit);
                     shaderProgram.Use();
 
-                    BaseMesh? mesh = o.Mesh;
+                    BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
 
                     if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1)
                     {
@@ -44,7 +44,7 @@ namespace Engine3D
 
                     foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
                     {
-                        BaseMesh? moverMesh = moverGizmo.Mesh;
+                        BaseMesh? moverMesh = (BaseMesh?)moverGizmo.GetComponent<BaseMesh>();
                         if (moverMesh == null)
                             continue;
 

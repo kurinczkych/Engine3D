@@ -23,12 +23,12 @@ namespace Engine3D
             if (editorData.gizmoManager.gizmoType == GizmoType.Move) // Moving
             {
                 if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && editorData.selectedItem is Object insto &&
-                    insto.Mesh is InstancedMesh instMesh)
+                    insto.GetComponent<BaseMesh>() is InstancedMesh instMesh)
                 {
                     if (objectMovingAxis == Axis.X && objectMovingPlane != null)
                     {
-                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                        Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                         if (_pos != null)
                         {
@@ -59,8 +59,8 @@ namespace Engine3D
                     }
                     else if (objectMovingAxis == Axis.Y && objectMovingPlane != null)
                     {
-                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                        Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                         if (_pos != null)
                         {
@@ -90,8 +90,8 @@ namespace Engine3D
                     }
                     else if (objectMovingAxis == Axis.Z && objectMovingPlane != null)
                     {
-                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                        Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                         if (_pos != null)
                         {
@@ -126,8 +126,8 @@ namespace Engine3D
                 {
                     if (objectMovingAxis == Axis.X && objectMovingPlane != null)
                     {
-                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                        Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                         if (_pos != null)
                         {
@@ -158,8 +158,8 @@ namespace Engine3D
                     }
                     else if (objectMovingAxis == Axis.Y && objectMovingPlane != null)
                     {
-                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                        Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                         if (_pos != null)
                         {
@@ -189,8 +189,8 @@ namespace Engine3D
                     }
                     else if (objectMovingAxis == Axis.Z && objectMovingPlane != null)
                     {
-                        Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                        Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                        Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                         if (_pos != null)
                         {
@@ -246,7 +246,7 @@ namespace Engine3D
             {
                 if (editorData.selectedItem is Object o)
                 {
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.Mesh is InstancedMesh instMesh)
+                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.GetComponent<BaseMesh>() is InstancedMesh instMesh)
                     {
                         Vector3 rot = Helper.EulerFromQuaternion(instMesh.instancedData[editorData.instIndex].Rotation);
                         if (objectMovingAxis == Axis.X)
@@ -289,7 +289,7 @@ namespace Engine3D
             {
                 if (editorData.selectedItem is Object o)
                 {
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.Mesh is InstancedMesh instMesh)
+                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1 && o.GetComponent<BaseMesh>() is InstancedMesh instMesh)
                     {
                         if (objectMovingAxis == Axis.X)
                         {
@@ -330,13 +330,13 @@ namespace Engine3D
 
             if (editorData.selectedItem is Object toCalcO)
             {
-                if (toCalcO.Mesh != null)
+                if (toCalcO.GetComponent<BaseMesh>() != null)
                 {
-                    toCalcO.Mesh.recalculate = true;
-                    toCalcO.Mesh.RecalculateModelMatrix(which);
+                    ((BaseMesh)toCalcO.GetComponent<BaseMesh>()).recalculate = true;
+                    ((BaseMesh)toCalcO.GetComponent<BaseMesh>()).RecalculateModelMatrix(which);
                 }
 
-                if(toCalcO.Physics is Physics physics)
+                if(toCalcO.GetComponent<Physics>() is Physics physics)
                     physics.UpdatePhysxPositionAndRotation(toCalcO.transformation);
             }
 

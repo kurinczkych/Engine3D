@@ -99,6 +99,7 @@ namespace Engine3D
         public string displayName = "";
 
         public List<IComponent> components = new List<IComponent>();
+        private Dictionary<Type, IComponent> componentCache = new Dictionary<Type, IComponent>();
 
         public bool isSelected { get; set; }
         public bool isEnabled = true;
@@ -111,50 +112,50 @@ namespace Engine3D
 
         private ObjectType type;
 
-        private BaseMesh? mesh_;
-        public BaseMesh? Mesh
-        {
-            get 
-            { 
-                if(mesh_ == null)
-                {
-                    mesh_ = components.OfType<BaseMesh>().FirstOrDefault();
-                    return mesh_;
-                }
-                else
-                    return mesh_;
-            }
-        }
+        //private BaseMesh? mesh_;
+        //public BaseMesh? Mesh
+        //{
+        //    get 
+        //    { 
+        //        if(mesh_ == null)
+        //        {
+        //            mesh_ = components.OfType<BaseMesh>().FirstOrDefault();
+        //            return mesh_;
+        //        }
+        //        else
+        //            return mesh_;
+        //    }
+        //}
 
-        private Physics? physics_;
-        public Physics? Physics
-        {
-            get
-            {
-                if (physics_ == null)
-                {
-                    physics_ = components.OfType<Physics>().FirstOrDefault();
-                    return physics_;
-                }
-                else
-                    return physics_;
-            }
-        }
+        //private Physics? physics_;
+        //public Physics? Physics
+        //{
+        //    get
+        //    {
+        //        if (physics_ == null)
+        //        {
+        //            physics_ = components.OfType<Physics>().FirstOrDefault();
+        //            return physics_;
+        //        }
+        //        else
+        //            return physics_;
+        //    }
+        //}
 
-        private ParticleSystem? particleSystem_;
-        public ParticleSystem? ParticleSystem
-        {
-            get
-            {
-                if (particleSystem_ == null)
-                {
-                    particleSystem_ = components.OfType<ParticleSystem>().FirstOrDefault();
-                    return particleSystem_;
-                }
-                else
-                    return particleSystem_;
-            }
-        }
+        //private ParticleSystem? particleSystem_;
+        //public ParticleSystem? ParticleSystem
+        //{
+        //    get
+        //    {
+        //        if (particleSystem_ == null)
+        //        {
+        //            particleSystem_ = components.OfType<ParticleSystem>().FirstOrDefault();
+        //            return particleSystem_;
+        //        }
+        //        else
+        //            return particleSystem_;
+        //    }
+        //}
 
         public BSP BSPStruct { get; private set; }
         public Octree Octree { get; private set; }
@@ -184,6 +185,26 @@ namespace Engine3D
             this.type = type;
 
             transformation = new Transformation(Vector3.Zero, Quaternion.Identity);
+        }
+
+        public IComponent? GetComponent<T>()
+        {
+            Type type = typeof(T);
+            if (componentCache.TryGetValue(type, out var component))
+            {
+                return component;
+            }
+
+            // If not in cache, find it in the list
+            component = components.FirstOrDefault(c => c is T);
+
+            // Cache it for future lookups
+            if (component != null)
+            {
+                componentCache[type] = component;
+            }
+
+            return component;
         }
 
         public void AddMesh(BaseMesh mesh)
@@ -264,12 +285,10 @@ namespace Engine3D
             if (component is BaseMesh cMesh)
             {
                 cMesh.Delete(ref textureManager);
-                mesh_ = null;
             }
             else if (component is Physics cPhysics)
             {
                 cPhysics.RemoveCollider();
-                physics_ = null;
             }
             else if(component is Light cLight)
             {

@@ -16,7 +16,7 @@ namespace Engine3D
             Type? currentMeshType = null;
             foreach (Object o in objects)
             {
-                BaseMesh? baseMesh = o.Mesh;
+                BaseMesh? baseMesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                 if (baseMesh == null)
                 {
                     //throw new Exception("Can't draw the object, it doesn't have a mesh!");

@@ -18,8 +18,8 @@ namespace Engine3D
                 bool moved = false;
                 if (Math.Abs(MouseState.ScrollDelta.Y) > 0)
                 {
-                    character.Position += character.camera.front * MouseState.ScrollDelta.Y * 2;
-                    character.camera.SetPosition(character.Position);
+                    character.Position += mainCamera.front * MouseState.ScrollDelta.Y * 2;
+                    mainCamera.SetPosition(character.Position);
 
                     moved = true;
                 }
@@ -29,8 +29,8 @@ namespace Engine3D
                     {
                         lastPos = new Vector2(MouseState.X, MouseState.Y);
 
-                        character.camera.SetYaw(character.camera.GetYaw() + deltaX * sensitivity * (float)args.Time);
-                        character.camera.SetPitch(character.camera.GetPitch() - deltaY * sensitivity * (float)args.Time);
+                        mainCamera.SetYaw(mainCamera.GetYaw() + deltaX * sensitivity * (float)args.Time);
+                        mainCamera.SetPitch(mainCamera.GetPitch() - deltaY * sensitivity * (float)args.Time);
                         moved = true;
                     }
                 }
@@ -40,8 +40,8 @@ namespace Engine3D
                     {
                         lastPos = new Vector2(MouseState.X, MouseState.Y);
 
-                        character.Position += (character.camera.up * deltaY) - (character.camera.right * deltaX);
-                        character.camera.SetPosition(character.Position);
+                        character.Position += (mainCamera.up * deltaY) - (mainCamera.right * deltaX);
+                        mainCamera.SetPosition(character.Position);
                         moved = true;
                     }
                 }
@@ -51,8 +51,11 @@ namespace Engine3D
                     ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
                     Parallel.ForEach(objects, parallelOptions, obj =>
                     {
-                        if(obj.Mesh != null) 
-                            obj.Mesh.recalculate = true;
+                        BaseMesh? mesh = (BaseMesh?)obj.GetComponent<BaseMesh>();
+                        if (mesh != null)
+                        {
+                            mesh.recalculate = true;
+                        }
                     });
                 }
             }

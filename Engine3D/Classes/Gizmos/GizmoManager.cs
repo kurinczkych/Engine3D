@@ -122,7 +122,7 @@ namespace Engine3D
                     toUpdate[1] = true;
                 }
 
-                BaseMesh? mesh = moverGizmo.Mesh;
+                BaseMesh? mesh = (BaseMesh?)moverGizmo.GetComponent<BaseMesh>();
                 if (mesh == null)
                 {
                     throw new Exception("Can't draw the gizmo, because the object doesn't have a mesh!");

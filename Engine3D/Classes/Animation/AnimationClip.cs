@@ -18,7 +18,7 @@ namespace Engine3D
 
         private Dictionary<string, AnimationPose> BoneMapping = new Dictionary<string, AnimationPose>();
         private double LocalTimer = 0.0f;
-        private float BlendUpdateRatio = 1.0f;
+        //private float BlendUpdateRatio = 1.0f;
 
         public Dictionary<string, Matrix4> AnimationMatrices = new Dictionary<string, Matrix4>();
 
@@ -178,7 +178,7 @@ namespace Engine3D
         public void Reset(double animationSpeed = -1)
         {
             LocalTimer = 0.0f;
-            BlendUpdateRatio = 1.0f;
+            //BlendUpdateRatio = 1.0f;
         }
 
         public double TimeStep(double delta)

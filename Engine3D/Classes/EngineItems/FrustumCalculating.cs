@@ -14,8 +14,9 @@ namespace Engine3D
             {
                 foreach (Object obj in objects)
                 {
-                    if(obj.Mesh != null)
-                        obj.Mesh.CalculateFrustumVisibility();
+                    BaseMesh? mesh = (BaseMesh?)obj.GetComponent<BaseMesh>();
+                    if(mesh != null)
+                        mesh.CalculateFrustumVisibility();
                 }
                 firstRun = false;
             }

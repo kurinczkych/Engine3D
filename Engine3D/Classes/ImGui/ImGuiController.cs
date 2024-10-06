@@ -41,7 +41,7 @@ namespace Engine3D
 
         private Stopwatch maxminStopwatch;
 
-        private bool limitFps = false;
+        //private bool limitFps = false;
         private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
 
         public const int fpsLength = 5;
@@ -347,9 +347,9 @@ namespace Engine3D
             for(int i = 0; i < objects.Count; i++)
             {
                 string name = objects[i].name == "" ? "Object " + i.ToString() : objects[i].name;
-                if (objects[i].Mesh != null)
+                if (objects[i].GetComponent<BaseMesh>() != null)
                 {
-                    if (objects[i].Mesh is InstancedMesh)
+                    if (objects[i].GetComponent<BaseMesh>() is InstancedMesh)
                         name += " (Instanced)";
                 }
 
@@ -676,13 +676,13 @@ namespace Engine3D
 
             if (selectedObject is Object castedO)
             {
-                if (castedO.Mesh is BaseMesh mesh)
+                if (castedO.GetComponent<BaseMesh>() is BaseMesh mesh)
                 {
                     mesh.recalculate = true;
                     mesh.RecalculateModelMatrix(new bool[] { true, true, true });
                 }
 
-                if(castedO.Physics is Physics physics)
+                if(castedO.GetComponent<Physics>() is Physics physics)
                 {
                     physics.UpdatePhysxPositionAndRotation(castedO.transformation);
                 }
@@ -847,7 +847,7 @@ namespace Engine3D
                 bool isInst = false;
                 float yHeight = 174.5f - 34.5f;
 
-                if (editorData.selectedItem is Object o && o.Mesh is BaseMesh bm && bm.GetType() == typeof(InstancedMesh))
+                if (editorData.selectedItem is Object o && o.GetComponent<BaseMesh>() is BaseMesh bm && bm.GetType() == typeof(InstancedMesh))
                 {
                     isInst = true;
                     yHeight = 174.5f;
@@ -1236,7 +1236,7 @@ namespace Engine3D
                             {
                                 if (ImGui.Checkbox("##isMeshEnabled", ref o.isEnabled))
                                 {
-                                    if(o.Mesh is BaseMesh enabledMesh)
+                                    if(o.GetComponent<BaseMesh>() is BaseMesh enabledMesh)
                                         enabledMesh.recalculate = true;
                                 }
                                 ImGui.SameLine();
@@ -1250,7 +1250,7 @@ namespace Engine3D
                                 ImGui.SetNextItemOpen(true, ImGuiCond.Once);
                                 if (ImGui.TreeNode("Transform"))
                                 {
-                                    BaseMesh? baseMesh = o.Mesh;
+                                    BaseMesh? baseMesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                                     bool commit = false;
                                     bool reset = false;
                                     ImGui.PushItemWidth(50);
@@ -1295,7 +1295,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1336,7 +1336,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1377,7 +1377,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { true, false, false });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1426,7 +1426,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1467,7 +1467,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1508,7 +1508,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { false, true, false });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1554,7 +1554,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1595,7 +1595,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1636,7 +1636,7 @@ namespace Engine3D
                                                 baseMesh.recalculate = true;
                                                 baseMesh.RecalculateModelMatrix(new bool[] { false, false, true });
                                             }
-                                            if (o.Physics is Physics p)
+                                            if (o.GetComponent<Physics>() is Physics p)
                                                 p.UpdatePhysxPositionAndRotation(o.transformation);
                                         }
                                     }
@@ -1895,7 +1895,7 @@ namespace Engine3D
                                             var buttonColor = style.Colors[(int)ImGuiCol.Button];
                                             style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
 
-                                            if (o.Physics is Physics p && p.HasCollider)
+                                            if (o.GetComponent<Physics>() is Physics p && p.HasCollider)
                                             {
                                                 System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 40);
                                                 if (ImGui.Button("Remove\n" + p.colliderStaticType + " " + p.colliderType + " Collider", buttonSize))
@@ -1905,7 +1905,7 @@ namespace Engine3D
                                             }
                                             else
                                             {
-                                                BaseMesh? baseMeshPhysics = o.Mesh;
+                                                BaseMesh? baseMeshPhysics = (BaseMesh?)o.GetComponent<BaseMesh>();
 
                                                 System.Numerics.Vector2 buttonSize = new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 20);
                                                 string[] options = { "Static", "Dynamic" };
@@ -1977,7 +1977,7 @@ namespace Engine3D
                                             if (ImGui.Button("Delete", new System.Numerics.Vector2(70, 20)))
                                             {
                                                 toRemoveComp.Add(c);
-                                                engine.lights = null;
+                                                engine.lights = new List<Light>();
                                             }
                                             ImGui.PopStyleVar();
                                             ImGui.PopStyleColor();
@@ -2348,6 +2348,61 @@ namespace Engine3D
                                         #endregion
                                     }
 
+                                    if(c is Camera cam)
+                                    {
+                                        ImGui.SetNextItemOpen(true, ImGuiCond.Once);
+                                        if (ImGui.TreeNode("Camera"))
+                                        {
+
+                                            #region Camera
+                                            bool commit = false;
+
+                                            int fov = (int)engine.mainCamera.fov;
+                                            ImGui.Text("Field of View");
+                                            ImGui.SameLine();
+                                            ImGui.SliderInt("##fieldofview", ref fov, 0, 179);
+                                            if ((int)engine.mainCamera.fov != fov)
+                                            {
+                                                if(fov == 0)
+                                                    engine.mainCamera.fov = 0.0001f;
+                                                else
+                                                    engine.mainCamera.fov = fov;
+
+                                                commit = true;
+                                            }
+
+
+                                            float[] clippingVec = new float[] { cam.near, cam.far };
+                                            float[] clipping = InputFloat2("Clipping planes", new string[] { "Near", "Far" }, clippingVec, ref keyboardState);
+                                            if(cam.near != clipping[0])
+                                            {
+                                                if (clipping[0] <= 0)
+                                                    cam.near = 0.1f;
+                                                else
+                                                    cam.near = clipping[0];
+                                                commit = true;
+                                            }
+                                            if(cam.far != clipping[1])
+                                            {
+                                                if (clipping[1] <= 0)
+                                                    cam.far = 0.1f;
+                                                else
+                                                    cam.far = clipping[1];
+                                                commit = true;
+                                            }
+
+
+                                            if(commit)
+                                            {
+                                                engine.mainCamera.UpdateAll();
+                                            }
+
+                                            #endregion
+
+                                            ImGui.TreePop();
+                                        }
+                                    }
+
                                     ImGui.Separator();
                                 }
 
@@ -2410,7 +2465,7 @@ namespace Engine3D
                                             {
                                                 if(component.name == "Physics")
                                                 {
-                                                    if (o.Mesh == null)
+                                                    if (o.GetComponent<BaseMesh>() == null)
                                                     {
                                                         Engine.consoleManager.AddLog("Can't add physics to an object that doesn't have a mesh!", LogType.Warning);
                                                         showAddComponentWindow = false;
@@ -2430,14 +2485,14 @@ namespace Engine3D
                                                 if(component.name == "Light")
                                                 {
                                                     o.components.Add(new Light(objects[objects.Count - 1], engine.shaderProgram.id, 0, LightType.DirectionalLight));
-                                                    engine.lights = null;
+                                                    engine.lights = new List<Light>();
                                                 }
                                                 if(component.name == "ParticleSystem")
                                                 {
                                                     o.components.Add(new ParticleSystem(engine.instancedMeshVao, engine.instancedMeshVbo, engine.instancedShaderProgram.id,
-                                                                                        engine.windowSize, ref engine.character.camera, ref o));
+                                                                                        engine.windowSize, ref engine.mainCamera, ref o));
 
-                                                    engine.particleSystems = null;
+                                                    engine.particleSystems = new List<ParticleSystem>();
                                                 }
 
 

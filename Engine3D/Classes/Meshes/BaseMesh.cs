@@ -85,7 +85,7 @@ namespace Engine3D
         public Texture? textureRough;
         public Texture? textureMetal;
 
-        private string _textureName;
+        //private string _textureName;
         public string textureName
         {
             get
@@ -124,7 +124,7 @@ namespace Engine3D
                 }
             }
         }
-        private string _textureNormalName;
+        //private string _textureNormalName;
         public string textureNormalName
         {
             get
@@ -163,7 +163,7 @@ namespace Engine3D
                 }
             }
         }
-        private string _textureHeightName;
+        //private string _textureHeightName;
         public string textureHeightName
         {
             get
@@ -202,7 +202,7 @@ namespace Engine3D
                 }
             }
         }
-        private string _textureAOName;
+        //private string _textureAOName;
         public string textureAOName
         {
             get
@@ -241,7 +241,7 @@ namespace Engine3D
                 }
             }
         }
-        private string _textureRoughName;
+        //private string _textureRoughName;
         public string textureRoughName
         {
             get
@@ -280,7 +280,7 @@ namespace Engine3D
                 }
             }
         }
-        private string _textureMetalName;
+        //private string _textureMetalName;
         public string textureMetalName
         {
             get

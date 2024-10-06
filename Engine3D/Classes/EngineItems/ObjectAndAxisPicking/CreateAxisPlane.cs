@@ -18,7 +18,7 @@ namespace Engine3D
                     objectMovingAxis = Axis.X;
                     if (editorData.gizmoManager.AbsoluteMoving)
                     {
-                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.Mesh is InstancedMesh instMesh)
+                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.GetComponent<BaseMesh>() is InstancedMesh instMesh)
                         {
                             Vector3 instPos = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position;
                             objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.transformation.Position.Z + instPos.Z);
@@ -28,7 +28,7 @@ namespace Engine3D
                     }
                     else
                     {
-                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.Mesh is InstancedMesh instMesh)
+                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.GetComponent<BaseMesh>() is InstancedMesh instMesh)
                         {
                             Vector3 instPos = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position;
                             Quaternion instRot = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Rotation;
@@ -43,8 +43,8 @@ namespace Engine3D
                         }
                     }
 
-                    Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                    Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                    Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                    Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                     if (_pos != null)
                     {
@@ -81,8 +81,8 @@ namespace Engine3D
                                           selectedO.transformation.Position);
                     }
 
-                    Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                    Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                    Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                    Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                     if (_pos != null)
                     {
@@ -120,8 +120,8 @@ namespace Engine3D
                                           selectedO.transformation.Position);
                     }
 
-                    Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
-                    Vector3? _pos = objectMovingPlane.RayPlaneIntersection(character.camera.GetPosition(), dir);
+                    Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
+                    Vector3? _pos = objectMovingPlane.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
                     if (_pos != null)
                     {

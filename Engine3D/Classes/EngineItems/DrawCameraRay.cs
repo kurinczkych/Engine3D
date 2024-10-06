@@ -14,10 +14,10 @@ namespace Engine3D
         {
             onlyPosShaderProgram.Use();
 
-            Vector3 dir = character.camera.GetCameraRay(MouseState.Position);
+            Vector3 dir = mainCamera.GetCameraRay(MouseState.Position);
 
-            Vector3 cameraPos = character.camera.GetPosition() + character.camera.front;
-            WireframeMesh wiremesh = new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref character.camera);
+            Vector3 cameraPos = mainCamera.GetPosition() + mainCamera.front;
+            WireframeMesh wiremesh = new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref mainCamera);
             wiremesh.lines = new List<Line>() { new Line(cameraPos, cameraPos + dir * 1000, Color4.Red, Color4.White) };
 
             List<float> vertices = wiremesh.Draw(editorData.gameRunning);
@@ -29,7 +29,7 @@ namespace Engine3D
                 normal = new Vector3(0, 0, 1), // or new Vector3(0, -1, 0)
                 distance = 0 // Distance along Y-axis from origin to plane
             };
-            Vector3? pos_ = planeZAligned.RayPlaneIntersection(character.camera.GetPosition(), dir);
+            Vector3? pos_ = planeZAligned.RayPlaneIntersection(mainCamera.GetPosition(), dir);
 
             if (pos_ != null)
             {
