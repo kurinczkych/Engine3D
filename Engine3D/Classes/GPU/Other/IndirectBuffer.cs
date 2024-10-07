@@ -1,5 +1,4 @@
-﻿using Engine3D.Classes.GPU;
-using OpenTK.Graphics.OpenGL4;
+﻿using OpenTK.Graphics.OpenGL4;
 using System;
 using System.Collections.Generic;
 using System.Linq;

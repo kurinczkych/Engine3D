@@ -46,6 +46,10 @@ namespace Engine3D
     {
 
         #region OPENGL
+        private int framebuffer = -1;
+        private int textureColorBuffer = -1;
+        private int depthRenderbuffer = -1;
+
         public static GLState GLState = new GLState();
 
         //private IndirectBuffer indirectBuffer;
@@ -421,14 +425,14 @@ namespace Engine3D
             imGuiController.Update(this, (float)args.Time);
 
             #region Fullscreen scissoring
-            if (!editorData.isGameFullscreen)
-            {
-                GL.Viewport((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
-                            (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
-                GL.Enable(EnableCap.ScissorTest);
-                GL.Scissor((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
-                           (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
-            }
+            //if (!editorData.isGameFullscreen)
+            //{
+            //    GL.Viewport((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
+            //                (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+            //    GL.Enable(EnableCap.ScissorTest);
+            //    GL.Scissor((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
+            //               (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+            //}
             #endregion
 
             vertices.Clear();
@@ -438,6 +442,10 @@ namespace Engine3D
             OcclusionCuller();
 
             ObjectAndAxisPicking();
+
+            GL.Viewport(0, 0, (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
 
             GL.ClearColor(backgroundColor);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
@@ -459,16 +467,16 @@ namespace Engine3D
             Light.SendToGPU(lights, instancedShaderProgram.id);
             DrawParticleSystems();
 
-            #region Fullscreen scissoring
-            if (!editorData.isGameFullscreen)
-            {
-                GL.Disable(EnableCap.ScissorTest);
-                GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
-            }
-            #endregion
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
 
-            editorData.assetStoreManager.DownloadIfNeeded();
-            assetManager.UpdateIfNeeded();
+            #region Fullscreen scissoring
+            //if (!editorData.isGameFullscreen)
+            //{
+            //    GL.Disable(EnableCap.ScissorTest);
+            //    GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            //}
+            #endregion
 
             Context.SwapBuffers();
 
@@ -478,6 +486,9 @@ namespace Engine3D
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
             base.OnUpdateFrame(args);
+
+            editorData.assetStoreManager.DownloadIfNeeded();
+            assetManager.UpdateIfNeeded();
 
             editorData.fps.Update((float)args.Time);
 
@@ -596,6 +607,8 @@ namespace Engine3D
             editorData.assetStoreManager = new AssetStoreManager(ref assetManager);
             fileDetectorStopWatch.Start();
             #endregion
+
+            InitFramebuffer(editorData.gameWindow.gameWindowSize);
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
@@ -749,6 +762,7 @@ namespace Engine3D
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             Light.SendToGPU(lights, shaderProgram.id);
 
+            #region DebugLines
             // Projection matrix and mesh loading
 
             //objects.Add(new Object(new Mesh(meshVao, meshVbo, shaderProgram.id, "spiro.obj", "High.png", windowSize, ref frustum, ref camera, ref textureCount), ObjectType.TriangleMeshWithCollider, ref physx));
@@ -892,6 +906,7 @@ namespace Engine3D
             //AddText(textObj4, "Noclip");
 
             //uiTexMeshes.Add(new UITextureMesh(uiTexVao, uiTexVbo, posTexShader.id, "bmp_24.bmp", new Vector2(10, 10), new Vector2(100, 100), windowSize, ref textureCount));
+            #endregion
 
             // We have text on screen
             if (haveText)
@@ -962,6 +977,57 @@ namespace Engine3D
             return isInsideHorizontally && isInsideVertically;
         }
 
+        private void InitFramebuffer(Vector2 viewportSize)
+        {
+            framebuffer = GL.GenFramebuffer();
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+
+            // Create a texture to render to
+            textureColorBuffer = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, textureColorBuffer);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)viewportSize.X, (int)viewportSize.Y, 0, PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+
+            // Set texture filtering
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+
+            // Attach the texture to the framebuffer as a color attachment
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, textureColorBuffer, 0);
+
+            // Create a renderbuffer object for depth and stencil (if needed)
+            depthRenderbuffer = GL.GenRenderbuffer();
+            GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthRenderbuffer);
+            GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth24Stencil8, (int)viewportSize.X, (int)viewportSize.Y);
+            GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthStencilAttachment, RenderbufferTarget.Renderbuffer, depthRenderbuffer);
+
+            // Check if framebuffer is complete
+            var status = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+            if (status != FramebufferErrorCode.FramebufferComplete)
+            {
+                throw new Exception($"Framebuffer is incomplete: {status}");
+            }
+
+            // Unbind the framebuffer to avoid accidental rendering to it
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
+
+        public void ResizeFramebuffer(Vector2 newViewPortSize)
+        {
+            if (framebuffer == -1)
+                return;
+
+            GL.BindTexture(TextureTarget.Texture2D, textureColorBuffer);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)newViewPortSize.X, (int)newViewPortSize.Y, 0, PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+
+            GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthRenderbuffer);
+            GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth24Stencil8, (int)newViewPortSize.X, (int)newViewPortSize.Y);
+        }
+
+        public int GetGameViewportTexture()
+        {
+            return textureColorBuffer;
+        }
+
         protected override void OnResize(ResizeEventArgs e)
         {
             Resized(e);
@@ -983,6 +1049,9 @@ namespace Engine3D
 
             if (imGuiController != null)
                 imGuiController.WindowResized(ClientSize.X, ClientSize.Y);
+
+            //ResizeFramebuffer(windowSize);
+            ResizeFramebuffer(editorData.gameWindow.gameWindowSize);
         }
 
         private void ResizedEditorWindow()
@@ -1001,6 +1070,9 @@ namespace Engine3D
 
             if(mainCamera != null)
                 mainCamera.SetScreenSize(windowSize, editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
+
+            //ResizeFramebuffer(windowSize);
+            ResizeFramebuffer(editorData.gameWindow.gameWindowSize);
         }
     }
 }
