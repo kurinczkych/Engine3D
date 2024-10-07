@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Engine3D\Engine3D.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Engine3D">
+      <HintPath>..\..\Editor3D\Editor3D\bin\Debug\net6.0\Engine3D.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
