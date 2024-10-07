@@ -20,7 +20,7 @@ namespace Engine3D
 
                 InstancedMesh instMesh = (InstancedMesh)mesh;
 
-                instMesh.Draw(editorData.gameRunning, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo);
+                instMesh.Draw(gameState, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo);
             }
             ////GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         }

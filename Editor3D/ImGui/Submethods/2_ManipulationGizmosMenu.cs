@@ -34,6 +34,7 @@ namespace Engine3D
 
                 editorData.gizmoWindowSize = new Vector2(22.5f, yHeight);
                 editorData.gizmoWindowPos = new Vector2(gameWindow.gameWindowPos.X + seperatorSize, gameWindow.topPanelSize);
+                engine.SetGizmoWindow(editorData.gizmoWindowSize, editorData.gizmoWindowPos);
 
                 ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gizmoWindowSize.X, editorData.gizmoWindowSize.Y));
                 ImGui.SetNextWindowPos(new System.Numerics.Vector2(editorData.gizmoWindowPos.X, editorData.gizmoWindowPos.Y), ImGuiCond.Always);
@@ -50,16 +51,16 @@ namespace Engine3D
 
                     #region Move gizmo button
                     ImGui.SetCursorPosX(0);
-                    if (editorData.gizmoManager.gizmoType == GizmoType.Move)
+                    if (engineData.gizmoManager.gizmoType == GizmoType.Move)
                     {
                         style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
                     }
-                    if (ImGui.ImageButton("##gizmo1", (IntPtr)Engine.textureManager.textures["ui_gizmo_move.png"].TextureId, imageSize))
+                    if (ImGui.ImageButton("##gizmo1", (IntPtr)engineData.textureManager.textures["ui_gizmo_move.png"].TextureId, imageSize))
                     {
-                        if (editorData.gizmoManager.gizmoType != GizmoType.Move)
-                            editorData.gizmoManager.gizmoType = GizmoType.Move;
+                        if (engineData.gizmoManager.gizmoType != GizmoType.Move)
+                            engineData.gizmoManager.gizmoType = GizmoType.Move;
                     }
-                    if (editorData.gizmoManager.gizmoType == GizmoType.Move)
+                    if (engineData.gizmoManager.gizmoType == GizmoType.Move)
                     {
                         style.Colors[(int)ImGuiCol.Button] = origButton;
                     }
@@ -76,18 +77,18 @@ namespace Engine3D
 
                     #region Local/global move button
                     ImGui.SetCursorPosX(0);
-                    if (editorData.gizmoManager.AbsoluteMoving)
+                    if (engineData.gizmoManager.AbsoluteMoving)
                     {
-                        if (ImGui.ImageButton("##gizmoRelativeMove", (IntPtr)Engine.textureManager.textures["ui_absolute.png"].TextureId, imageSize))
+                        if (ImGui.ImageButton("##gizmoRelativeMove", (IntPtr)engineData.textureManager.textures["ui_absolute.png"].TextureId, imageSize))
                         {
-                            editorData.gizmoManager.AbsoluteMoving = false;
+                            engineData.gizmoManager.AbsoluteMoving = false;
                         }
                     }
                     else
                     {
-                        if (ImGui.ImageButton("##gizmoAbsoluteMove", (IntPtr)Engine.textureManager.textures["ui_relative.png"].TextureId, imageSize))
+                        if (ImGui.ImageButton("##gizmoAbsoluteMove", (IntPtr)engineData.textureManager.textures["ui_relative.png"].TextureId, imageSize))
                         {
-                            editorData.gizmoManager.AbsoluteMoving = true;
+                            engineData.gizmoManager.AbsoluteMoving = true;
                         }
                     }
                     if (ImGui.IsItemHovered())
@@ -95,7 +96,7 @@ namespace Engine3D
                         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(5, 5));
                         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 5);
                         ImGui.BeginTooltip();
-                        if (editorData.gizmoManager.AbsoluteMoving)
+                        if (engineData.gizmoManager.AbsoluteMoving)
                             ImGui.Text("Set to relative moving");
                         else
                             ImGui.Text("Set to absolute moving");
@@ -106,16 +107,16 @@ namespace Engine3D
 
                     #region Rotate gizmo button
                     ImGui.SetCursorPosX(0);
-                    if (editorData.gizmoManager.gizmoType == GizmoType.Rotate)
+                    if (engineData.gizmoManager.gizmoType == GizmoType.Rotate)
                     {
                         style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
                     }
-                    if (ImGui.ImageButton("##gizmo2", (IntPtr)Engine.textureManager.textures["ui_gizmo_rotate.png"].TextureId, imageSize))
+                    if (ImGui.ImageButton("##gizmo2", (IntPtr)engineData.textureManager.textures["ui_gizmo_rotate.png"].TextureId, imageSize))
                     {
-                        if (editorData.gizmoManager.gizmoType != GizmoType.Rotate)
-                            editorData.gizmoManager.gizmoType = GizmoType.Rotate;
+                        if (engineData.gizmoManager.gizmoType != GizmoType.Rotate)
+                            engineData.gizmoManager.gizmoType = GizmoType.Rotate;
                     }
-                    if (editorData.gizmoManager.gizmoType == GizmoType.Rotate)
+                    if (engineData.gizmoManager.gizmoType == GizmoType.Rotate)
                     {
                         style.Colors[(int)ImGuiCol.Button] = origButton;
                     }
@@ -132,16 +133,16 @@ namespace Engine3D
 
                     #region Scale gizmo button
                     ImGui.SetCursorPosX(0);
-                    if (editorData.gizmoManager.gizmoType == GizmoType.Scale)
+                    if (engineData.gizmoManager.gizmoType == GizmoType.Scale)
                     {
                         style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
                     }
-                    if (ImGui.ImageButton("##gizmo3", (IntPtr)Engine.textureManager.textures["ui_gizmo_scale.png"].TextureId, imageSize))
+                    if (ImGui.ImageButton("##gizmo3", (IntPtr)engineData.textureManager.textures["ui_gizmo_scale.png"].TextureId, imageSize))
                     {
-                        if (editorData.gizmoManager.gizmoType != GizmoType.Scale)
-                            editorData.gizmoManager.gizmoType = GizmoType.Scale;
+                        if (engineData.gizmoManager.gizmoType != GizmoType.Scale)
+                            engineData.gizmoManager.gizmoType = GizmoType.Scale;
                     }
-                    if (editorData.gizmoManager.gizmoType == GizmoType.Scale)
+                    if (engineData.gizmoManager.gizmoType == GizmoType.Scale)
                     {
                         style.Colors[(int)ImGuiCol.Button] = origButton;
                     }
@@ -160,15 +161,15 @@ namespace Engine3D
                     if (isInst)
                     {
                         var button2 = style.Colors[(int)ImGuiCol.Button];
-                        if (editorData.gizmoManager.PerInstanceMove)
+                        if (engineData.gizmoManager.PerInstanceMove)
                             style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 0.8f);
 
                         ImGui.SetCursorPosX(0);
-                        if (ImGui.ImageButton("##gizmo4", (IntPtr)Engine.textureManager.textures["ui_missing.png"].TextureId, imageSize))
+                        if (ImGui.ImageButton("##gizmo4", (IntPtr)engineData.textureManager.textures["ui_missing.png"].TextureId, imageSize))
                         {
-                            editorData.gizmoManager.PerInstanceMove = !editorData.gizmoManager.PerInstanceMove;
+                            engineData.gizmoManager.PerInstanceMove = !engineData.gizmoManager.PerInstanceMove;
                         }
-                        if (editorData.gizmoManager.PerInstanceMove)
+                        if (engineData.gizmoManager.PerInstanceMove)
                             style.Colors[(int)ImGuiCol.Button] = button2;
 
                         if (ImGui.IsItemHovered())

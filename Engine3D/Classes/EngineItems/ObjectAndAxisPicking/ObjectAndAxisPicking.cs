@@ -15,16 +15,16 @@ namespace Engine3D
     {
         private void ObjectAndAxisPicking()
         {
-            if (editorData.gameRunning == GameState.Stopped)
+            if (gameState == GameState.Stopped)
             {
-                if(!IsMouseInsideGizmoWindow() || editorData.gizmoWindowPos == Vector2.Zero)
+                if(!IsMouseInsideGizmoWindow() || gizmoWindowPos == Vector2.Zero)
                 {
-                    float scaleX = windowSize.X / editorData.gameWindow.gameWindowSize.X;
-                    float scaleY = windowSize.Y / editorData.gameWindow.gameWindowSize.Y;
-                    float mouseXInFramebuffer = (MouseState.X - (editorData.gameWindow.leftPanelPercent * windowSize.X + 5)) * scaleX;
-                    float mouseYInFramebuffer = (MouseState.Y - (editorData.gameWindow.topPanelSize)) * scaleY;
+                    float scaleX = windowSize.X / gameWindowProperty.gameWindowSize.X;
+                    float scaleY = windowSize.Y / gameWindowProperty.gameWindowSize.Y;
+                    float mouseXInFramebuffer = (MouseState.X - (gameWindowProperty.leftPanelPercent * windowSize.X + 5)) * scaleX;
+                    float mouseYInFramebuffer = (MouseState.Y - (gameWindowProperty.topPanelSize)) * scaleY;
 
-                    if (objectMovingAxis != null && MouseState.IsButtonDown(MouseButton.Left) && editorData.selectedItem != null)
+                    if (objectMovingAxis != null && MouseState.IsButtonDown(MouseButton.Left) && selectedObject != null)
                     {
                         GizmoObjectManipulating();
                     }
@@ -33,7 +33,7 @@ namespace Engine3D
                         objectMovingAxis = null;
                         objectMovingPlane = null;
                     }
-                    else if (IsMouseInGameWindow(MouseState) && !imGuiController.CursorInImGuiWindow(new Vector2(mouseXInFramebuffer, mouseYInFramebuffer)) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
+                    else if (IsMouseInGameWindow(MouseState) /*&& !imGuiController.CursorInImGuiWindow(new Vector2(mouseXInFramebuffer, mouseYInFramebuffer))*/ && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
                     {
                         #region Object selection Drawing
                         pickingTexture.EnableWriting();
@@ -49,7 +49,7 @@ namespace Engine3D
                             int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
-                            ((Mesh)mesh).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
+                            ((Mesh)mesh).DrawOnlyPos(gameState, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
                         }
 
                         pickingInstancedShader.Use();
@@ -62,7 +62,7 @@ namespace Engine3D
                             int objectIdLoc = GL.GetUniformLocation(pickingInstancedShader.id, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
-                            ((InstancedMesh)mesh).DrawOnlyPosAndNormal(editorData.gameRunning, pickingInstancedShader, instancedOnlyPosAndNormalVao, 
+                            ((InstancedMesh)mesh).DrawOnlyPosAndNormal(gameState, pickingInstancedShader, instancedOnlyPosAndNormalVao, 
                                                        onlyPosAndNormalVbo, instancedOnlyPosAndNormalVbo, onlyPosAndNormalIbo);
                         }
 
@@ -74,13 +74,13 @@ namespace Engine3D
 
                         #region Axis picking
                         bool axisClicked = false;
-                        if (editorData.selectedItem != null && editorData.selectedItem is Object selectedO)
+                        if (selectedObject is Object selectedO)
                         {
                             pickingTexture.EnableWriting();
                             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                             pickingShader.Use();
-                            foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
+                            foreach (Object moverGizmo in gizmoManager.moverGizmos)
                             {
                                 int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
                                 int drawIdLoc = GL.GetUniformLocation(pickingShader.id, "drawIndex");
@@ -91,7 +91,7 @@ namespace Engine3D
                                 if (moverMesh == null)
                                     continue;
 
-                                ((Mesh)moverMesh).DrawOnlyPos(editorData.gameRunning, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
+                                ((Mesh)moverMesh).DrawOnlyPos(gameState, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
                             }
 
                             pickingTexture.DisableWriting();
@@ -111,7 +111,8 @@ namespace Engine3D
 
                                 if (objs == null || objs.Count() == 0)
                                 {
-                                    imGuiController.SelectItem(null, editorData);
+                                    if (objectSelected != null)
+                                        objectSelected.Invoke(null, -1);
                                     return;
                                 }
 
@@ -120,14 +121,15 @@ namespace Engine3D
                                 if (selectedMesh == null)
                                     return;
 
-                                int instIndex = editorData.gizmoManager.PerInstanceMove && selectedMesh.GetType() == typeof(InstancedMesh) ? pixel.instId : -1;
+                                int instIndex = gizmoManager.PerInstanceMove && selectedMesh.GetType() == typeof(InstancedMesh) ? pixel.instId : -1;
 
-                                imGuiController.SelectItem(selectedObject, editorData, instIndex);
-                                imGuiController.shouldOpenTreeNodeMeshes = true;
+                                if (objectSelected != null)
+                                    objectSelected.Invoke(selectedObject, instIndex);
                             }
                             else
                             {
-                                imGuiController.SelectItem(null, editorData);
+                                if (objectSelected != null)
+                                    objectSelected.Invoke(null, -1);
                             }
                         }
                         #endregion
@@ -141,10 +143,10 @@ namespace Engine3D
             Vector2 mousePosition = new Vector2(MouseState.X, MouseState.Y);
             float border = 10;
 
-            bool isInside = (mousePosition.X >= (editorData.gizmoWindowPos.X - border)) &&
-                            (mousePosition.Y >= (editorData.gizmoWindowPos.Y - border)) &&
-                            (mousePosition.X <= (editorData.gizmoWindowPos.X + editorData.gizmoWindowSize.X + border)) &&
-                            (mousePosition.Y <= (editorData.gizmoWindowPos.Y + editorData.gizmoWindowSize.Y + border));
+            bool isInside = (mousePosition.X >= (gizmoWindowPos.X - border)) &&
+                            (mousePosition.Y >= (gizmoWindowPos.Y - border)) &&
+                            (mousePosition.X <= (gizmoWindowPos.X + gizmoWindowSize.X + border)) &&
+                            (mousePosition.Y <= (gizmoWindowPos.Y + gizmoWindowSize.Y + border));
 
             return isInside;
         }

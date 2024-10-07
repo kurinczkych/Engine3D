@@ -31,6 +31,7 @@ namespace Engine3D
         public GizmoType lastGizmoType = GizmoType.Move;
         public bool PerInstanceMove = false;
         public bool AbsoluteMoving = true;
+        public int instIndex;
 
         public GizmoManager(VAO vao, VBO vbo, Shader shader, ref Camera camera)
         {

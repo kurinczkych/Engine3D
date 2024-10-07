@@ -16,11 +16,11 @@ namespace Engine3D
                 if (pixel.objectId == 1)
                 {
                     objectMovingAxis = Axis.X;
-                    if (editorData.gizmoManager.AbsoluteMoving)
+                    if (gizmoManager.AbsoluteMoving)
                     {
-                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.GetComponent<BaseMesh>() is InstancedMesh instMesh)
+                        if (gizmoManager.PerInstanceMove && gizmoManager.instIndex == -1 && selectedO.GetComponent<BaseMesh>() is InstancedMesh instMesh)
                         {
-                            Vector3 instPos = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position;
+                            Vector3 instPos = ((InstancedMesh)instMesh).instancedData[gizmoManager.instIndex].Position;
                             objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.transformation.Position.Z + instPos.Z);
                         }
                         else
@@ -28,10 +28,10 @@ namespace Engine3D
                     }
                     else
                     {
-                        if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex == -1 && selectedO.GetComponent<BaseMesh>() is InstancedMesh instMesh)
+                        if (gizmoManager.PerInstanceMove && gizmoManager.instIndex == -1 && selectedO.GetComponent<BaseMesh>() is InstancedMesh instMesh)
                         {
-                            Vector3 instPos = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Position;
-                            Quaternion instRot = ((InstancedMesh)instMesh).instancedData[editorData.instIndex].Rotation;
+                            Vector3 instPos = ((InstancedMesh)instMesh).instancedData[gizmoManager.instIndex].Position;
+                            Quaternion instRot = ((InstancedMesh)instMesh).instancedData[gizmoManager.instIndex].Rotation;
 
                             objectMovingPlane = new Plane(Vector3.Transform(new Vector3(0, 0, 1), selectedO.transformation.Rotation * instRot),
                                               selectedO.transformation.Position + instPos);
@@ -49,7 +49,7 @@ namespace Engine3D
                     if (_pos != null)
                     {
                         Vector3 pos = (Vector3)_pos;
-                        if (editorData.gizmoManager.AbsoluteMoving)
+                        if (gizmoManager.AbsoluteMoving)
                             pos.Y = 0;
                         else
                         {
@@ -71,7 +71,7 @@ namespace Engine3D
                 else if (pixel.objectId == 2)
                 {
                     objectMovingAxis = Axis.Y;
-                    if (editorData.gizmoManager.AbsoluteMoving)
+                    if (gizmoManager.AbsoluteMoving)
                     {
                         objectMovingPlane = new Plane(new Vector3(0, 0, 1), selectedO.transformation.Position.Z);
                     }
@@ -87,7 +87,7 @@ namespace Engine3D
                     if (_pos != null)
                     {
                         Vector3 pos = (Vector3)_pos;
-                        if (editorData.gizmoManager.AbsoluteMoving)
+                        if (gizmoManager.AbsoluteMoving)
                             pos.X = 0;
                         else
                         {
@@ -110,7 +110,7 @@ namespace Engine3D
                 else if (pixel.objectId == 3)
                 {
                     objectMovingAxis = Axis.Z;
-                    if (editorData.gizmoManager.AbsoluteMoving)
+                    if (gizmoManager.AbsoluteMoving)
                     {
                         objectMovingPlane = new Plane(new Vector3(1, 0, 0), selectedO.transformation.Position.X);
                     }
@@ -126,7 +126,7 @@ namespace Engine3D
                     if (_pos != null)
                     {
                         Vector3 pos = (Vector3)_pos;
-                        if (editorData.gizmoManager.AbsoluteMoving)
+                        if (gizmoManager.AbsoluteMoving)
                             pos.Y = 0;
                         else
                         {

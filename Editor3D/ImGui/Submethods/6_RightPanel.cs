@@ -1112,22 +1112,25 @@ namespace Engine3D
                                             if (!editorData.runParticles)
                                             {
                                                 ImGui.SetCursorPosX((ImGui.GetWindowSize().X / 2.0f) - 10);
-                                                if (ImGui.ImageButton("##runParticlesStart", (IntPtr)Engine.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                                                if (ImGui.ImageButton("##runParticlesStart", (IntPtr)engineData.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                                                 {
                                                     editorData.runParticles = true;
+                                                    engine.SetRunParticles(true);
                                                 }
                                             }
                                             else
                                             {
                                                 ImGui.SetCursorPosX((ImGui.GetWindowSize().X / 2.0f) - 30);
-                                                if (ImGui.ImageButton("##runParticlesEnd", (IntPtr)Engine.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                                                if (ImGui.ImageButton("##runParticlesEnd", (IntPtr)engineData.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                                                 {
                                                     editorData.runParticles = false;
-                                                    editorData.resetParticles = true;
+                                                    engine.SetRunParticles(false);
+                                                    engine.ResetParticles();
                                                 }
                                                 ImGui.SameLine();
-                                                if (ImGui.ImageButton("##runParticlesPause", (IntPtr)Engine.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                                                if (ImGui.ImageButton("##runParticlesPause", (IntPtr)engineData.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                                                 {
+                                                    engine.SetRunParticles(false);
                                                     editorData.runParticles = false;
                                                 }
                                             }
@@ -1202,7 +1205,7 @@ namespace Engine3D
 
                                 foreach (IComponent c in toRemoveComp)
                                 {
-                                    o.DeleteComponent(c, ref editorData.textureManager);
+                                    o.DeleteComponent(c, ref engineData.textureManager);
                                     editorData.recalculateObjects = true;
                                 }
 
@@ -1234,8 +1237,8 @@ namespace Engine3D
                                         HashSet<string> alreadyGotBase = new HashSet<string>();
                                         foreach (IComponent c in o.components)
                                         {
-                                            var cType = c.GetType();
-                                            if (cType.BaseType.Name == "BaseMesh")
+                                            Type cType = c.GetType();
+                                            if (cType.BaseType != null && cType.BaseType.Name == "BaseMesh")
                                             {
                                                 alreadyGotBase.Add("BaseMesh");
                                             }
@@ -1278,7 +1281,7 @@ namespace Engine3D
                                                 }
                                                 if (component.name == "Light")
                                                 {
-                                                    o.components.Add(new Light(objects[objects.Count - 1], engine.shaderProgram.id, 0, LightType.DirectionalLight));
+                                                    o.components.Add(new Light(o, engine.shaderProgram.id, 0, LightType.DirectionalLight));
                                                     engine.lights = new List<Light>();
                                                 }
                                                 if (component.name == "ParticleSystem")

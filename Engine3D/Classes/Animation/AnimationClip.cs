@@ -105,38 +105,39 @@ namespace Engine3D
                     animPose.AlreadyInterpolated = true;
                 }
 
-                switch(Engine.editorData.animType)
-                {
-                    case (0):
-                        localAnim = boneR * boneT;
-                        break;
-                    case (1):
-                        localAnim = boneT * boneR;
-                        break;
-                    case (2):
-                        localAnim = Matrix4.Transpose(boneR) * Matrix4.Transpose(boneT);
-                        break;
-                    case (3):
-                        localAnim = Matrix4.Transpose(boneT) * Matrix4.Transpose(boneR);
-                        break;
-                    case (4):
-                        localAnim = Matrix4.Transpose(boneR) * boneT;
-                        break;
-                    case (5):
-                        localAnim = boneT * Matrix4.Transpose(boneR);
-                        break;
-                    case (6):
-                        localAnim = boneR * Matrix4.Transpose(boneT);
-                        break;
-                    case (7):
-                        localAnim = Matrix4.Transpose(boneT) * boneR;
-                        break;
-                }
+                throw new NotImplementedException();
+                //switch(Engine.editorData.animType)
+                //{
+                //    case (0):
+                //        localAnim = boneR * boneT;
+                //        break;
+                //    case (1):
+                //        localAnim = boneT * boneR;
+                //        break;
+                //    case (2):
+                //        localAnim = Matrix4.Transpose(boneR) * Matrix4.Transpose(boneT);
+                //        break;
+                //    case (3):
+                //        localAnim = Matrix4.Transpose(boneT) * Matrix4.Transpose(boneR);
+                //        break;
+                //    case (4):
+                //        localAnim = Matrix4.Transpose(boneR) * boneT;
+                //        break;
+                //    case (5):
+                //        localAnim = boneT * Matrix4.Transpose(boneR);
+                //        break;
+                //    case (6):
+                //        localAnim = boneR * Matrix4.Transpose(boneT);
+                //        break;
+                //    case (7):
+                //        localAnim = Matrix4.Transpose(boneT) * boneR;
+                //        break;
+                //}
 
-                if(Engine.editorData.animEndType == 0)
-                    return Matrix4.Transpose(localAnim);
-                else
-                    return localAnim;
+                //if(Engine.editorData.animEndType == 0)
+                //    return Matrix4.Transpose(localAnim);
+                //else
+                //    return localAnim;
             }
 
             return Matrix4.Identity;

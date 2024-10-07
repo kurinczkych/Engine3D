@@ -36,41 +36,42 @@ namespace Engine3D
             if(animation != null)
                 animMatrix = animation.GetAnimMatrixForBone(bone, animation.GetLocalTimer());
 
-            switch (Engine.editorData.matrixType)
-            {
-                case (0):
-                    bone.GlobalTransform = animMatrix * bone.ParentTransform * bone.Transform * bone.LocalTransform;
-                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
-                    break;
-                case (1):
-                    bone.GlobalTransform = bone.ParentTransform * animMatrix * bone.Transform * bone.LocalTransform;
-                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
-                    break;
-                case (2):
-                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * animMatrix * bone.LocalTransform;
-                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
-                    break;
-                case (3):
-                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform * animMatrix;
-                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
-                    break;
-                case (4):
-                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
-                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset * animMatrix;
-                    break;
-                case (5):
-                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
-                    bone.FinalTransform = InverseGlobal * bone.GlobalTransform * animMatrix * bone.BoneOffset;
-                    break;
-                case (6):
-                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
-                    bone.FinalTransform = InverseGlobal * animMatrix * bone.GlobalTransform * bone.BoneOffset;
-                    break;
-                case (7):
-                    bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
-                    bone.FinalTransform = animMatrix * InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
-                    break;
-            }
+            throw new NotImplementedException();
+            //switch (Engine.editorData.matrixType)
+            //{
+            //    case (0):
+            //        bone.GlobalTransform = animMatrix * bone.ParentTransform * bone.Transform * bone.LocalTransform;
+            //        bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+            //        break;
+            //    case (1):
+            //        bone.GlobalTransform = bone.ParentTransform * animMatrix * bone.Transform * bone.LocalTransform;
+            //        bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+            //        break;
+            //    case (2):
+            //        bone.GlobalTransform = bone.ParentTransform * bone.Transform * animMatrix * bone.LocalTransform;
+            //        bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+            //        break;
+            //    case (3):
+            //        bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform * animMatrix;
+            //        bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+            //        break;
+            //    case (4):
+            //        bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+            //        bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset * animMatrix;
+            //        break;
+            //    case (5):
+            //        bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+            //        bone.FinalTransform = InverseGlobal * bone.GlobalTransform * animMatrix * bone.BoneOffset;
+            //        break;
+            //    case (6):
+            //        bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+            //        bone.FinalTransform = InverseGlobal * animMatrix * bone.GlobalTransform * bone.BoneOffset;
+            //        break;
+            //    case (7):
+            //        bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
+            //        bone.FinalTransform = animMatrix * InverseGlobal * bone.GlobalTransform * bone.BoneOffset;
+            //        break;
+            //}
 
             //bone.GlobalTransform = bone.ParentTransform * bone.Transform * bone.LocalTransform;
             //bone.FinalTransform = InverseGlobal * bone.GlobalTransform * bone.BoneOffset;

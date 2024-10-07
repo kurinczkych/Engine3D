@@ -18,7 +18,7 @@ namespace Engine3D
             if (ImGui.Begin("BottomPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar))
             {
 
-                string fpsStr = editorData.fps.GetFpsString();
+                string fpsStr = engine.GetFpsString();
                 System.Numerics.Vector2 bottomPanelSize = ImGui.GetContentRegionAvail();
                 System.Numerics.Vector2 textSize = ImGui.CalcTextSize(fpsStr);
                 if (editorData.assetStoreManager.IsZipDownloadInProgress)

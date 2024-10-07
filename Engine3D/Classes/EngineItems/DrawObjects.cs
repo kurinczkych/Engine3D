@@ -34,7 +34,7 @@ namespace Engine3D
                     if (baseMesh.GetType() == typeof(Mesh))
                     {
                         Mesh mesh = (Mesh)baseMesh;
-                        if (editorData.gameRunning == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
+                        if (gameState == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
                         {
                             //List<triangle> notOccludedTris = new List<triangle>();
                             //OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
@@ -65,7 +65,7 @@ namespace Engine3D
                             if (o.isEnabled)
                             {
                                 // OUTLINING
-                                if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
+                                if (o.isSelected && o.isEnabled && gameState == GameState.Stopped)
                                 {
                                     GL.Enable(EnableCap.StencilTest);
                                     GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
@@ -74,18 +74,18 @@ namespace Engine3D
                                 }
 
                                 if(mesh.animation == null)
-                                    mesh.Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
+                                    mesh.Draw(gameState, shaderProgram, meshVbo, meshIbo);
                                 else
-                                    mesh.DrawAnimated(editorData.gameRunning, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
+                                    mesh.DrawAnimated(gameState, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
 
                                 // OUTLINING
-                                if (o.isSelected && o.isEnabled && editorData.gameRunning == GameState.Stopped)
+                                if (o.isSelected && o.isEnabled && gameState == GameState.Stopped)
                                 {
                                     GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
                                     GL.StencilMask(0x00);
                                     GL.Disable(EnableCap.DepthTest);
 
-                                    mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineShader, onlyPosAndNormalVao, onlyPosAndNormalVbo, onlyPosAndNormalIbo);
+                                    mesh.DrawOnlyPosAndNormal(gameState, outlineShader, onlyPosAndNormalVao, onlyPosAndNormalVbo, onlyPosAndNormalIbo);
 
                                     GL.StencilMask(0xFF);
                                     GL.StencilFunc(StencilFunction.Always, 0, 0xFF);
@@ -106,7 +106,7 @@ namespace Engine3D
                         // OUTLINING
                         if (o.isEnabled)
                         {
-                            if (o.isSelected && editorData.gameRunning == GameState.Stopped)
+                            if (o.isSelected && gameState == GameState.Stopped)
                             {
                                 GL.Enable(EnableCap.StencilTest);
                                 GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
@@ -114,12 +114,12 @@ namespace Engine3D
                                 GL.StencilMask(0xFF);
                             }
 
-                            mesh.Draw(editorData.gameRunning, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo); 
+                            mesh.Draw(gameState, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo); 
 
                             currentMeshType = typeof(InstancedMesh);
 
                             // OUTLINING
-                            if (o.isSelected && editorData.gameRunning == GameState.Stopped)
+                            if (o.isSelected && gameState == GameState.Stopped)
                             {
                                 GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
                                 GL.StencilMask(0x00);
@@ -129,7 +129,7 @@ namespace Engine3D
                                 //if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1)
                                 //    instIndex = editorData.instIndex;
 
-                                mesh.DrawOnlyPosAndNormal(editorData.gameRunning, outlineInstancedShader, instancedOnlyPosAndNormalVao, onlyPosAndNormalVbo,
+                                mesh.DrawOnlyPosAndNormal(gameState, outlineInstancedShader, instancedOnlyPosAndNormalVao, onlyPosAndNormalVbo,
                                                           instancedOnlyPosAndNormalVbo, onlyPosAndNormalIbo, instIndex);
 
                                 GL.StencilMask(0xFF);
@@ -152,7 +152,7 @@ namespace Engine3D
                         onlyPosShaderProgram.Use();
                     }
 
-                    vertices.AddRange(mesh.Draw(editorData.gameRunning));
+                    vertices.AddRange(mesh.Draw(gameState));
                     currentMeshType = typeof(WireframeMesh);
                 }
                 else if (objectType == ObjectType.UIMesh && baseMesh is UITextureMesh)
@@ -168,7 +168,7 @@ namespace Engine3D
                         posTexShader.Use();
                     }
 
-                    vertices.AddRange(mesh.Draw(editorData.gameRunning));
+                    vertices.AddRange(mesh.Draw(gameState));
                     currentMeshType = typeof(UITextureMesh);
 
                     uiTexVbo.Buffer(vertices);
@@ -188,7 +188,7 @@ namespace Engine3D
                     if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(TextMesh) : currentMeshType, typeof(TextMesh), null))
                         vertices = new List<float>();
 
-                    vertices.AddRange(mesh.Draw(editorData.gameRunning));
+                    vertices.AddRange(mesh.Draw(gameState));
                     currentMeshType = typeof(TextMesh);
                 }
             }

@@ -13,43 +13,45 @@ namespace Engine3D
     {
         private void DrawMoverGizmo()
         {
-            if (editorData.gameRunning == GameState.Stopped)
+            if (selectedObject == null)
+                return;
+
+            Object o = selectedObject;
+
+            if (gameState == GameState.Stopped)
             {
-                if (editorData.selectedItem != null && editorData.selectedItem is Object o)
+                GL.Clear(ClearBufferMask.DepthBufferBit);
+                shaderProgram.Use();
+
+                BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
+
+                if (gizmoManager.PerInstanceMove && gizmoManager.instIndex != -1)
                 {
-                    GL.Clear(ClearBufferMask.DepthBufferBit);
-                    shaderProgram.Use();
+                    if (mesh == null)
+                        throw new Exception("Can't draw the gizmo, because the object doesn't have a mesh!");
 
-                    BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
+                    if (mesh.GetType() == typeof(InstancedMesh))
 
-                    if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1)
                     {
-                        if(mesh == null)
-                            throw new Exception("Can't draw the gizmo, because the object doesn't have a mesh!");
+                        //editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
+                        //                                         o.Rotation);
 
-                        if (mesh.GetType() == typeof(InstancedMesh))
-
-                        {
-                            //editorData.gizmoManager.UpdateMoverGizmo(o.Position + ((InstancedMesh)o.GetMesh()).instancedData[editorData.instIndex].Position,
-                            //                                         o.Rotation);
-
-                            editorData.gizmoManager.UpdateMoverGizmo(o.transformation.Position + ((InstancedMesh)mesh).instancedData[editorData.instIndex].Position,
-                                                                     o.transformation.Rotation * ((InstancedMesh)mesh).instancedData[editorData.instIndex].Rotation);
-                            // TODO
-                        }
+                        gizmoManager.UpdateMoverGizmo(o.transformation.Position + ((InstancedMesh)mesh).instancedData[gizmoManager.instIndex].Position,
+                                                                 o.transformation.Rotation * ((InstancedMesh)mesh).instancedData[gizmoManager.instIndex].Rotation);
+                        // TODO
                     }
-                    else
-                        editorData.gizmoManager.UpdateMoverGizmo(o.transformation.Position, o.transformation.Rotation);
+                }
+                else
+                    gizmoManager.UpdateMoverGizmo(o.transformation.Position, o.transformation.Rotation);
 
 
-                    foreach (Object moverGizmo in editorData.gizmoManager.moverGizmos)
-                    {
-                        BaseMesh? moverMesh = (BaseMesh?)moverGizmo.GetComponent<BaseMesh>();
-                        if (moverMesh == null)
-                            continue;
+                foreach (Object moverGizmo in gizmoManager.moverGizmos)
+                {
+                    BaseMesh? moverMesh = (BaseMesh?)moverGizmo.GetComponent<BaseMesh>();
+                    if (moverMesh == null)
+                        continue;
 
-                        ((Mesh)moverMesh).Draw(editorData.gameRunning, shaderProgram, meshVbo, meshIbo);
-                    }
+                    ((Mesh)moverMesh).Draw(gameState, shaderProgram, meshVbo, meshIbo);
                 }
             }
         }

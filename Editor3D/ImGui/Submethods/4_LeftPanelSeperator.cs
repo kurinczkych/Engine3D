@@ -28,14 +28,14 @@ namespace Engine3D
                     if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                         isResizingLeft = true;
 
-                    mouseTypes[0] = true;
+                    editorData.mouseTypes[0] = true;
                 }
                 else
-                    mouseTypes[0] = false;
+                    editorData.mouseTypes[0] = false;
 
                 if (isResizingLeft)
                 {
-                    mouseTypes[0] = true;
+                    editorData.mouseTypes[0] = true;
 
                     float mouseX = ImGui.GetIO().MousePos.X;
                     gameWindow.leftPanelPercent = mouseX / _windowWidth;

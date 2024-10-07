@@ -15,6 +15,8 @@ namespace Engine3D
             if (keyboardState.IsKeyReleased(Keys.Delete) && editorData.selectedItem != null && editorData.selectedItem is Object objectDelete)
             {
                 engine.RemoveObject(objectDelete);
+                editorData.recalculateObjects = true;
+                SelectItem(null, editorData);
                 // Todo: particle and lights
             }
 
@@ -38,6 +40,7 @@ namespace Engine3D
                             {
                                 engine.AddObject(ObjectType.Empty);
                                 shouldOpenTreeNodeMeshes = true;
+                                editorData.recalculateObjects = true;
                             }
                             if (ImGui.BeginMenu("3D Object"))
                             {
@@ -45,26 +48,31 @@ namespace Engine3D
                                 {
                                     engine.AddObject(ObjectType.Cube);
                                     shouldOpenTreeNodeMeshes = true;
+                                    editorData.recalculateObjects = true;
                                 }
                                 if (ImGui.MenuItem("Sphere"))
                                 {
                                     engine.AddObject(ObjectType.Sphere);
                                     shouldOpenTreeNodeMeshes = true;
+                                    editorData.recalculateObjects = true;
                                 }
                                 if (ImGui.MenuItem("Capsule"))
                                 {
                                     engine.AddObject(ObjectType.Capsule);
                                     shouldOpenTreeNodeMeshes = true;
+                                    editorData.recalculateObjects = true;
                                 }
                                 if (ImGui.MenuItem("Plane"))
                                 {
                                     engine.AddObject(ObjectType.Plane);
                                     shouldOpenTreeNodeMeshes = true;
+                                    editorData.recalculateObjects = true;
                                 }
                                 if (ImGui.MenuItem("Mesh"))
                                 {
                                     engine.AddObject(ObjectType.TriangleMesh);
                                     shouldOpenTreeNodeMeshes = true;
+                                    editorData.recalculateObjects = true;
                                 }
 
                                 ImGui.EndMenu();
@@ -73,11 +81,13 @@ namespace Engine3D
                             {
                                 engine.AddParticleSystem();
                                 shouldOpenTreeNodeMeshes = true;
+                                editorData.recalculateObjects = true;
                             }
                             if (ImGui.MenuItem("Audio emitter"))
                             {
                                 engine.AddObject(ObjectType.AudioEmitter);
                                 shouldOpenTreeNodeMeshes = true;
+                                editorData.recalculateObjects = true;
                             }
                             if (ImGui.BeginMenu("Lighting"))
                             {
@@ -85,11 +95,13 @@ namespace Engine3D
                                 {
                                     engine.AddLight(Light.LightType.PointLight);
                                     shouldOpenTreeNodeMeshes = true;
+                                    editorData.recalculateObjects = true;
                                 }
                                 if (ImGui.MenuItem("Directional Light"))
                                 {
                                     engine.AddLight(Light.LightType.DirectionalLight);
                                     shouldOpenTreeNodeMeshes = true;
+                                    editorData.recalculateObjects = true;
                                 }
 
                                 ImGui.EndMenu();
@@ -100,7 +112,7 @@ namespace Engine3D
                         style.WindowPadding = windowPadding;
                         style.PopupRounding = popupRounding;
 
-                        if (editorData.objects.Count > 0)
+                        if (engineData.objects.Count > 0)
                         {
 
                             if (shouldOpenTreeNodeMeshes)
@@ -109,19 +121,19 @@ namespace Engine3D
                                 shouldOpenTreeNodeMeshes = false; // Reset the flag so it doesn't open again automatically.
                             }
 
-                            if (objects.Count > 0 && ImGui.TreeNode("Objects"))
+                            if (engineData.objects.Count > 0 && ImGui.TreeNode("Objects"))
                             {
                                 ImGui.Separator();
-                                for (int i = 0; i < objects.Count; i++)
+                                for (int i = 0; i < engineData.objects.Count; i++)
                                 {
-                                    Object ro = objects[i];
+                                    Object ro = engineData.objects[i];
 
                                     if (ImGui.Selectable(ro.displayName))
                                     {
                                         SelectItem(ro, editorData);
                                     }
                                     if (ImGui.IsItemHovered())
-                                        anyObjectHovered = ro.id;
+                                        editorData.anyObjectHovered = ro.id;
 
                                     if (isObjectHovered != -1 && isObjectHovered == ro.id)
                                     {
@@ -129,10 +141,12 @@ namespace Engine3D
                                         style.PopupRounding = 2f;
                                         if (ImGui.BeginPopupContextWindow("objectManagingMenu", ImGuiPopupFlags.MouseButtonRight))
                                         {
-                                            anyObjectHovered = ro.id;
+                                            editorData.anyObjectHovered = ro.id;
                                             if (ImGui.MenuItem("Delete"))
                                             {
                                                 engine.RemoveObject(ro);
+                                                editorData.recalculateObjects = true;
+                                                SelectItem(null, editorData);
                                             }
 
                                             ImGui.EndPopup();

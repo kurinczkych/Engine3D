@@ -55,32 +55,34 @@ namespace Engine3D
 
                 if (editorData.gameRunning == GameState.Stopped)
                 {
-                    if (ImGui.ImageButton("play", (IntPtr)Engine.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    if (ImGui.ImageButton("play", (IntPtr)engineData.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
                         editorData.gameRunning = GameState.Running;
                         editorData.justSetGameState = true;
+                        engine.SetGameState(editorData.gameRunning);
                     }
                 }
                 else
                 {
-                    if (ImGui.ImageButton("stop", (IntPtr)Engine.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    if (ImGui.ImageButton("stop", (IntPtr)engineData.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
                         editorData.gameRunning = GameState.Stopped;
                         editorData.justSetGameState = true;
+                        engine.SetGameState(editorData.gameRunning);
                     }
                 }
 
                 ImGui.SameLine();
                 if (editorData.gameRunning == GameState.Running)
                 {
-                    if (ImGui.ImageButton("pause", (IntPtr)Engine.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    if (ImGui.ImageButton("pause", (IntPtr)engineData.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
                         editorData.isPaused = !editorData.isPaused;
                     }
                 }
 
                 ImGui.SameLine();
-                if (ImGui.ImageButton("screen", (IntPtr)Engine.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                if (ImGui.ImageButton("screen", (IntPtr)engineData.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                 {
                     editorData.isGameFullscreen = !editorData.isGameFullscreen;
                     editorData.windowResized = true;

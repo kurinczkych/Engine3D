@@ -18,28 +18,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Engine3D
 {
-    public class GameWindowProperty
+    public enum GameState
     {
-        public float topPanelSize = 50;
-        public float bottomPanelSize = 25;
-
-        public float bottomPanelPercent = 0.25f;
-        public float leftPanelPercent = 0.15f;
-        public float rightPanelPercent = 0.20f;
-
-        public float origBottomPanelPercent;
-        public float origLeftPanelPercent;
-        public float origRightPanelPercent;
-
-        public Vector2 gameWindowPos;
-        public Vector2 gameWindowSize;
-
-        public GameWindowProperty()
-        {
-            origBottomPanelPercent = bottomPanelPercent;
-            origLeftPanelPercent = leftPanelPercent;
-            origRightPanelPercent = rightPanelPercent;
-        }
+        Running,
+        Stopped
     }
 
     public partial class Engine : GameWindow
@@ -115,6 +97,7 @@ namespace Engine3D
 
         private Vector2 origWindowSize;
         public Vector2 windowSize;
+        public GameWindowProperty gameWindowProperty;
         //private Vector2 gameWindowMousePos;
 
         private SoundManager soundManager;
@@ -123,6 +106,7 @@ namespace Engine3D
         public static TextureManager textureManager;
         public static ConsoleManager consoleManager = new ConsoleManager();
         public static AssimpManager assimpManager = new AssimpManager();
+        private GizmoManager gizmoManager;
 
         private TextGenerator textGenerator;
         private Dictionary<string, TextMesh> texts;
@@ -144,11 +128,28 @@ namespace Engine3D
         #endregion
 
         #region UI variables
-        public static EditorData editorData;
-        private ImGuiController imGuiController;
+        private GameState gameState;
+        private bool runParticles = false;
+        private Vector2 gizmoWindowPos = new Vector2();
+        private Vector2 gizmoWindowSize = new Vector2();
         #endregion
 
         #region Engine variables
+        public FPS fps = new FPS();
+
+        public delegate void RenderDelegate(FrameEventArgs args);
+        public delegate void UpdateDelegate(FrameEventArgs args);
+        public delegate void UnloadDelegate();
+        public delegate void WindowResized(ResizeEventArgs e);
+        public delegate void ObjectSelected(Object? o, int inst);
+
+        private List<RenderDelegate> renderMethods = new List<RenderDelegate>();
+        private List<UpdateDelegate> updateMethods = new List<UpdateDelegate>();
+        private List<UnloadDelegate> unloadMethods = new List<UnloadDelegate>();
+        private WindowResized? windowResized;
+        private ObjectSelected? objectSelected;
+
+        public Object? selectedObject;
         public static int objectID = 1;
         private List<Object> objects;
         private List<Object> _meshObjects;
@@ -220,13 +221,12 @@ namespace Engine3D
             Title = "3D Engine";
 
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
-            editorData = new EditorData();
-            editorData.gameWindow = new GameWindowProperty();
-            editorData.gameWindow.gameWindowSize = new Vector2();
-            editorData.gameWindow.gameWindowPos = new Vector2();
 
             windowSize = new Vector2(width, height);
             origWindowSize = new Vector2(width, height);
+
+            gameWindowProperty = new GameWindowProperty();
+            gameWindowProperty.gameWindowSize = new Vector2(width, height);
             CenterWindow(new Vector2i(width, height));
 
             shaderProgram = new Shader();
@@ -236,8 +236,6 @@ namespace Engine3D
             fileDetectorStopWatch = new Stopwatch();
 
             assetManager = new AssetManager(ref textureManager);
-            editorData.assetManager = assetManager;
-            editorData.textureManager = textureManager;
 
             objects = new List<Object>();
             _meshObjects = new List<Object>();
@@ -265,218 +263,71 @@ namespace Engine3D
             gridColor = new Color4(r, g, b, 1.0f);
         }
 
-        private void AddObjectAndCalculate(Object o)
-        {
-            editorData.objects.Add(o);
-            _meshObjects.Add(o);
-            o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
-            if(mesh != null)
-                mesh.RecalculateModelMatrix(new bool[] { true, false, false });
-        }
-
-        public void AddObject(ObjectType type)
-        {
-            if (type == ObjectType.Cube)
-            {
-                Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref mainCamera, ref o));
-                AddObjectAndCalculate(o);
-            }
-            else if (type == ObjectType.Sphere)
-            {
-                Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", BaseMesh.GetUnitSphere(), windowSize, ref mainCamera, ref o));
-                AddObjectAndCalculate(o);
-            }
-            else if (type == ObjectType.Capsule)
-            {
-                Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", BaseMesh.GetUnitCapsule(), windowSize, ref mainCamera, ref o));
-                AddObjectAndCalculate(o);
-            }
-            else if (type == ObjectType.Plane)
-            {
-                Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", BaseMesh.GetUnitFace(), windowSize, ref mainCamera, ref o));
-                AddObjectAndCalculate(o);
-            }
-            else if (type == ObjectType.TriangleMesh)
-            {
-                Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref mainCamera, ref o));
-                AddObjectAndCalculate(o);
-            }
-            else if (type == ObjectType.Empty)
-            {
-                Object o = new Object(type);
-                editorData.objects.Add(o);
-                o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            }
-            editorData.recalculateObjects = true;
-        }
-
-        public void AddMeshObject(string meshName)
-        {
-            Object o = new Object(ObjectType.TriangleMesh);
-            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref mainCamera, ref o));
-            AddObjectAndCalculate(o);
-            editorData.recalculateObjects = true;
-        }
-
-        public void AddLight(Light.LightType lightType)
-        {
-            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0, lightType));
-            objects[objects.Count - 1].transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-
-            lights = new List<Light>();
-            editorData.recalculateObjects = true;
-        }
-
-        public void AddParticleSystem()
-        {
-            Object o = new Object(ObjectType.Empty) { name = "ParticleSystem" };
-            o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            o.components.Add(new ParticleSystem(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, windowSize, ref mainCamera, ref o));
-            objects.Add(o);
-
-            particleSystems = new List<ParticleSystem>();
-            editorData.recalculateObjects = true;
-        }
-
-        public void RemoveObject(Object o)
-        {
-            if (o.GetComponent<BaseMesh>() is BaseMesh mesh)
-            {
-                if (mesh.GetType() == typeof(Mesh))
-                    _meshObjects.Remove(o);
-                else if (mesh.GetType() == typeof(InstancedMesh))
-                    _instObjects.Remove(o); 
-
-                textureManager.DeleteTexture(mesh.textureName);
-            }
-
-            lights = new List<Light>();
-            particleSystems = new List<ParticleSystem>();
-            imGuiController.SelectItem(null, editorData);
-            o.Delete(ref textureManager);
-            objects.Remove(o);
-            editorData.recalculateObjects = true;
-        }
-
-
-        private void AddText(Object obj, string tag)
-        {
-            BaseMesh? textMesh = (BaseMesh?)obj.GetComponent<BaseMesh>();
-            if(textMesh == null)
-                throw new Exception("Can only add Text, if the object has a TextMesh");
-
-
-            if (obj.GetObjectType() != ObjectType.TextMesh && textMesh.GetType() != typeof(TextMesh))
-                throw new Exception("Can only add Text, if its ObjectType.TextMesh");
-
-            haveText = true;
-            objects.Add(obj);
-            texts.Add(tag, (TextMesh)textMesh);
-            objects.Sort();
-        }
-
-        private void RenderInfiniteFloor()
-        {
-            GL.Disable(EnableCap.CullFace);
-            infiniteFloorShader.Use();
-
-            Vector3 cameraPos = mainCamera.GetPosition();
-
-            Matrix4 projectionMatrix = mainCamera.projectionMatrix;
-            Matrix4 viewMatrix = mainCamera.viewMatrix;
-            Matrix4 scaleMatrix = Matrix4.CreateScale(10000,1,10000);
-            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(new OpenTK.Mathematics.Quaternion(0, 0, 0));
-            Matrix4 translationMatrix = Matrix4.CreateTranslation(0, 0, 0); 
-
-            Matrix4 modelMatrix = scaleMatrix* rotationMatrix * translationMatrix;
-
-            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "modelMatrix"), true, ref modelMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "viewMatrix"), true, ref viewMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "projectionMatrix"), true, ref projectionMatrix);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "cameraPos"), ref cameraPos);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "bgColor"), backgroundColor.R, backgroundColor.G, backgroundColor.B);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "lineColor"), gridColor.R, gridColor.G, gridColor.B);
-
-            infiniteFloorVao.Bind();
-            List<float> gridVertices = new List<float>
-            {
-                // Position data (X, Y, Z)
-                -1.0f, 0.0f, -1.0f,  // Bottom-left
-                 1.0f, 0.0f, -1.0f,  // Bottom-right
-                 1.0f, 0.0f,  1.0f,  // Top-right
-                -1.0f, 0.0f,  1.0f   // Top-left
-            };
-            infiniteFloorVbo.Buffer(gridVertices);
-            GL.DrawArrays(OpenTK.Graphics.OpenGL4.PrimitiveType.TriangleFan, 0, 4);
-
-            infiniteFloorVao.Unbind();
-            GL.Enable(EnableCap.CullFace);
-        }
-
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            imGuiController.Update(this, (float)args.Time);
+            //#region Fullscreen scissoring
+            ////if (!editorData.isGameFullscreen)
+            ////{
+            ////    GL.Viewport((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
+            ////                (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+            ////    GL.Enable(EnableCap.ScissorTest);
+            ////    GL.Scissor((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
+            ////               (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+            ////}
+            //#endregion
 
-            #region Fullscreen scissoring
-            //if (!editorData.isGameFullscreen)
-            //{
-            //    GL.Viewport((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
-            //                (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
-            //    GL.Enable(EnableCap.ScissorTest);
-            //    GL.Scissor((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
-            //               (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
-            //}
-            #endregion
+            //vertices.Clear();
 
-            vertices.Clear();
+            //FrustumCalculating();
 
-            FrustumCalculating();
+            //OcclusionCuller();
 
-            OcclusionCuller();
+            //ObjectAndAxisPicking();
 
-            ObjectAndAxisPicking();
+            //GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
 
-            GL.Viewport(0, 0, (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
 
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+            //GL.ClearColor(backgroundColor);
+            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-            GL.ClearColor(backgroundColor);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+            //RenderInfiniteFloor();
 
-            RenderInfiniteFloor();
+            //shaderProgram.Use();
+            //Light.SendToGPU(lights, shaderProgram.id);
 
-            shaderProgram.Use();
-            Light.SendToGPU(lights, shaderProgram.id);
+            //DrawObjects(args.Time);
 
-            DrawObjects(args.Time);
+            //DrawMoverGizmo();
 
-            DrawMoverGizmo();
+            ////DrawCameraRay();
 
-            //DrawCameraRay();
+            //TextUpdating();
 
-            TextUpdating();
-
-            instancedShaderProgram.Use();
-            Light.SendToGPU(lights, instancedShaderProgram.id);
-            DrawParticleSystems();
+            //instancedShaderProgram.Use();
+            //Light.SendToGPU(lights, instancedShaderProgram.id);
+            //DrawParticleSystems();
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            GL.ClearColor(backgroundColor); //temp
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit); //temp
 
-            #region Fullscreen scissoring
-            //if (!editorData.isGameFullscreen)
-            //{
-            //    GL.Disable(EnableCap.ScissorTest);
-            //    GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
-            //}
-            #endregion
+            //#region Fullscreen scissoring
+            ////if (!editorData.isGameFullscreen)
+            ////{
+            ////    GL.Disable(EnableCap.ScissorTest);
+            ////    GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            ////}
+            //#endregion
+
+            GL.GetError();
+            foreach (var renderMethod in renderMethods)
+            {
+                renderMethod.Invoke(args);
+            }
+
+            GL.GetError();
 
             Context.SwapBuffers();
 
@@ -487,10 +338,9 @@ namespace Engine3D
         {
             base.OnUpdateFrame(args);
 
-            editorData.assetStoreManager.DownloadIfNeeded();
-            assetManager.UpdateIfNeeded();
+            fps.Update((float)args.Time);
 
-            editorData.fps.Update((float)args.Time);
+            assetManager.UpdateIfNeeded();
 
             if (fileDetectorStopWatch.Elapsed.TotalSeconds > 5)
             {
@@ -498,11 +348,9 @@ namespace Engine3D
                 FileManager.GetAllAssets(ref assetManager);
             }
 
-            CursorAndGameStateSetting();
-
             MouseMoving();
 
-            if (editorData.gameRunning == GameState.Running)
+            if (gameState == GameState.Running)
             {
                 character.CalculateVelocity(KeyboardState, MouseState, args);
                 character.UpdatePosition(KeyboardState, MouseState, args);
@@ -514,15 +362,8 @@ namespace Engine3D
                 EditorMoving(args);
             }
 
-            if(editorData.resetParticles)
-            {
-                foreach (ParticleSystem ps in particleSystems)
-                {
-                    ps.RemoveAllParticles();
-                }
-                editorData.resetParticles = false;
-            }
-            if(editorData.gameRunning == GameState.Running || editorData.runParticles) 
+            
+            if(gameState == GameState.Running || runParticles) 
             {
                 foreach (ParticleSystem ps in particleSystems)
                 {
@@ -530,9 +371,9 @@ namespace Engine3D
                 }
             }
 
-            character.AfterUpdate(MouseState, args, editorData.gameRunning);
+            character.AfterUpdate(MouseState, args, gameState);
 
-            if (editorData.fps.totalTime > 0 && editorData.gameRunning == GameState.Running)
+            if (fps.totalTime > 0 && gameState == GameState.Running)
             {
                 physx.Simulate((float)args.Time);
                 foreach (Object o in objects)
@@ -567,6 +408,11 @@ namespace Engine3D
                     }
                 }
             }
+
+            foreach (var updateMethod in updateMethods)
+            {
+                updateMethod.Invoke(args);
+            }
         }
 
         protected override void OnLoad()
@@ -577,7 +423,6 @@ namespace Engine3D
             textGenerator = new TextGenerator();
 
             #region Editor data
-            imGuiController = new ImGuiController(ClientSize.X, ClientSize.Y, ref editorData);
             textureManager.AddTexture("ui_play.png", out bool successPlay, flipY: false);
             if (!successPlay) { throw new Exception("ui_play.png was not found in the embedded resources!"); }
             textureManager.AddTexture("ui_stop.png", out bool successStop, flipY: false);
@@ -602,13 +447,12 @@ namespace Engine3D
             if (!successRelative) { throw new Exception("ui_relative.png was not found in the embedded resources!"); }
             textureManager.AddTexture("ui_absolute.png", out bool successAbsolute, flipY: false);
             if (!successAbsolute) { throw new Exception("ui_absolute.png was not found in the embedded resources!"); }
-            editorData.objects = objects;
+
             FileManager.GetAllAssets(ref assetManager);
-            editorData.assetStoreManager = new AssetStoreManager(ref assetManager);
             fileDetectorStopWatch.Start();
             #endregion
 
-            InitFramebuffer(editorData.gameWindow.gameWindowSize);
+            InitFramebuffer(gameWindowProperty.gameWindowSize);
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
@@ -728,7 +572,6 @@ namespace Engine3D
 
             // Create Physx context
             physx = new Physx(true);
-            editorData.physx = physx;
 
             // Create Sound Manager
             soundManager = new SoundManager();
@@ -750,7 +593,7 @@ namespace Engine3D
             Vector3 characterPos = new Vector3(-5, 10, 0);
             character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref mainCamera), ref physx, characterPos, ref mainCamera);
 
-            editorData.gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera);
+            gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera);
 
             //Point Lights
             //objects.Add(new PointLight(Color4.White, shaderProgram.id, pointLights.Count));
@@ -922,14 +765,16 @@ namespace Engine3D
         {
             base.OnTextInput(e);
 
-            imGuiController.PressChar((char)e.Unicode);
+            //imGuiController.PressChar((char)e.Unicode);
+            // TODO
         }
 
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
             base.OnMouseWheel(e);
 
-            imGuiController.MouseScroll(e.Offset);
+            //imGuiController.MouseScroll(e.Offset);
+            // TODO
         }
 
         protected override void OnUnload()
@@ -963,16 +808,19 @@ namespace Engine3D
 
             FileManager.DisposeStreams();
             textureManager.DeleteTextures();
-            editorData.assetStoreManager.DeleteFolderContent("Temp");
-            editorData.assetStoreManager.Delete();
+
+            foreach (var unloadMethod in unloadMethods)
+            {
+                unloadMethod.Invoke();
+            }
         }
 
         private bool IsMouseInGameWindow(MouseState mouseState)
         {
             float mouseY = windowSize.Y - mouseState.Y;
 
-            bool isInsideHorizontally = mouseState.X >= editorData.gameWindow.gameWindowPos.X && mouseState.X <= (editorData.gameWindow.gameWindowPos.X + editorData.gameWindow.gameWindowSize.X);
-            bool isInsideVertically = mouseY >= editorData.gameWindow.gameWindowPos.Y && mouseY <= (editorData.gameWindow.gameWindowPos.Y + editorData.gameWindow.gameWindowSize.Y);
+            bool isInsideHorizontally = mouseState.X >= gameWindowProperty.gameWindowPos.X && mouseState.X <= (gameWindowProperty.gameWindowPos.X + gameWindowProperty.gameWindowSize.X);
+            bool isInsideVertically = mouseY >= gameWindowProperty.gameWindowPos.Y && mouseY <= (gameWindowProperty.gameWindowPos.Y + gameWindowProperty.gameWindowSize.Y);
 
             return isInsideHorizontally && isInsideVertically;
         }
@@ -1021,6 +869,12 @@ namespace Engine3D
 
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, depthRenderbuffer);
             GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.Depth24Stencil8, (int)newViewPortSize.X, (int)newViewPortSize.Y);
+
+            var status = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+            if (status != FramebufferErrorCode.FramebufferComplete)
+            {
+                throw new Exception($"Framebuffer is incomplete: {status}");
+            }
         }
 
         public int GetGameViewportTexture()
@@ -1040,39 +894,10 @@ namespace Engine3D
             windowSize.X = e.Width;
             windowSize.Y = e.Height;
 
-            editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X * (1.0f - (editorData.gameWindow.leftPanelPercent + editorData.gameWindow.rightPanelPercent)),
-                                                            windowSize.Y * (1 - editorData.gameWindow.bottomPanelPercent) - editorData.gameWindow.topPanelSize - editorData.gameWindow.bottomPanelSize);
-            editorData.gameWindow.gameWindowPos = new Vector2(windowSize.X * editorData.gameWindow.leftPanelPercent, windowSize.Y * editorData.gameWindow.bottomPanelPercent + editorData.gameWindow.bottomPanelSize);
-
-            if(mainCamera != null)
-                mainCamera.SetScreenSize(windowSize, editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
-
-            if (imGuiController != null)
-                imGuiController.WindowResized(ClientSize.X, ClientSize.Y);
-
-            //ResizeFramebuffer(windowSize);
-            ResizeFramebuffer(editorData.gameWindow.gameWindowSize);
-        }
-
-        private void ResizedEditorWindow()
-        {
-            if (editorData.isGameFullscreen)
+            if(windowResized != null)
             {
-                editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X, windowSize.Y);
-                editorData.gameWindow.gameWindowPos = new Vector2(0, 0);
+                windowResized.Invoke(e);
             }
-            else
-            {
-                editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X * (1.0f - (editorData.gameWindow.leftPanelPercent + editorData.gameWindow.rightPanelPercent)),
-                                                                windowSize.Y * (1 - editorData.gameWindow.bottomPanelPercent) - editorData.gameWindow.topPanelSize - editorData.gameWindow.bottomPanelSize);
-                editorData.gameWindow.gameWindowPos = new Vector2(windowSize.X * editorData.gameWindow.leftPanelPercent, windowSize.Y * editorData.gameWindow.bottomPanelPercent + editorData.gameWindow.bottomPanelSize);
-            }
-
-            if(mainCamera != null)
-                mainCamera.SetScreenSize(windowSize, editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
-
-            //ResizeFramebuffer(windowSize);
-            ResizeFramebuffer(editorData.gameWindow.gameWindowSize);
         }
     }
 }

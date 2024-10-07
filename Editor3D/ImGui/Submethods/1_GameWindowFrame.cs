@@ -35,6 +35,7 @@ namespace Engine3D
 
                             engine.AddMeshObject(GetStringFromByte(pathBytes));
                             shouldOpenTreeNodeMeshes = true;
+                            editorData.recalculateObjects = true;
                         }
                     }
                     ImGui.EndDragDropTarget();

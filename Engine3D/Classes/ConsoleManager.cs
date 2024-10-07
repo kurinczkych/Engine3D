@@ -52,8 +52,6 @@ namespace Engine3D
             LogColors.Add(LogType.Message, new System.Numerics.Vector4(1.0f, 1.0f, 1.0f, 1.0f));
             LogColors.Add(LogType.Warning, new System.Numerics.Vector4(1.0f, 0.5f, 0.0f, 1.0f));
             LogColors.Add(LogType.Error, new System.Numerics.Vector4(1.0f, 0.0f, 0.0f, 1.0f));
-
-            Logs.Add(new Log("Project NAME loaded"));
         }
 
         public void AddLog(string log, LogType logType = LogType.Message)

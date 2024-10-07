@@ -27,14 +27,14 @@ namespace Engine3D
                     if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                         isResizingRight = true;
 
-                    mouseTypes[1] = true;
+                    editorData.mouseTypes[1] = true;
                 }
                 else
-                    mouseTypes[1] = false;
+                    editorData.mouseTypes[1] = false;
 
                 if (isResizingRight)
                 {
-                    mouseTypes[1] = true;
+                    editorData.mouseTypes[1] = true;
 
                     float mouseX = ImGui.GetIO().MousePos.X;
                     gameWindow.rightPanelPercent = 1 - mouseX / _windowWidth;

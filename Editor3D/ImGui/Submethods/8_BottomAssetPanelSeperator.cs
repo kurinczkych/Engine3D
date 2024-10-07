@@ -26,14 +26,14 @@ namespace Engine3D
                     if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                         isResizingBottom = true;
 
-                    mouseTypes[2] = true;
+                    editorData.mouseTypes[2] = true;
                 }
                 else
-                    mouseTypes[2] = false;
+                    editorData.mouseTypes[2] = false;
 
                 if (isResizingBottom)
                 {
-                    mouseTypes[2] = true;
+                    editorData.mouseTypes[2] = true;
 
                     float mouseY = ImGui.GetIO().MousePos.Y;
                     gameWindow.bottomPanelPercent = 1 - mouseY / (_windowHeight - gameWindow.bottomPanelSize - 5);

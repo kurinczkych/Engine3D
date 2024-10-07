@@ -55,7 +55,7 @@ namespace Engine3D
                                     ImGui.PushID("back");
 
                                     System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                    ImGui.Image((IntPtr)Engine.textureManager.textures["ui_back.png"].TextureId, imageSize);
+                                    ImGui.Image((IntPtr)engineData.textureManager.textures["ui_back.png"].TextureId, imageSize);
 
                                     if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                                     {
@@ -92,7 +92,7 @@ namespace Engine3D
                                         ImGui.PushID(currentTextureAssetFolder.folders[folderNames[i]].name);
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                        ImGui.Image((IntPtr)Engine.textureManager.textures["ui_folder.png"].TextureId, imageSize);
+                                        ImGui.Image((IntPtr)engineData.textureManager.textures["ui_folder.png"].TextureId, imageSize);
 
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                                         {
@@ -132,7 +132,7 @@ namespace Engine3D
 
                                         columnI++;
                                     }
-                                    else if (Engine.textureManager.textures.ContainsKey("ui_" + currentTextureAssetFolder.assets[i - folderCount].Name))
+                                    else if (engineData.textureManager.textures.ContainsKey("ui_" + currentTextureAssetFolder.assets[i - folderCount].Name))
                                     {
                                         if (columnI % columns != 0)
                                         {
@@ -143,7 +143,7 @@ namespace Engine3D
                                         ImGui.PushID(currentTextureAssetFolder.assets[i - folderCount].Name);
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                        ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + currentTextureAssetFolder.assets[i - folderCount].Name].TextureId, imageSize);
+                                        ImGui.Image((IntPtr)engineData.textureManager.textures["ui_" + currentTextureAssetFolder.assets[i - folderCount].Name].TextureId, imageSize);
 
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
                                         {
@@ -169,7 +169,7 @@ namespace Engine3D
 
                                         ImGui.InvisibleButton("##invisible", imageSize);
 
-                                        DragDropImageSourceUI(ref Engine.textureManager, "TEXTURE_NAME", currentTextureAssetFolder.assets[i - folderCount].Name,
+                                        DragDropImageSourceUI(ref engineData.textureManager, "TEXTURE_NAME", currentTextureAssetFolder.assets[i - folderCount].Name,
                                                               currentTextureAssetFolder.assets[i - folderCount].Path, imageSize);
 
                                         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
@@ -185,7 +185,7 @@ namespace Engine3D
                                     i++;
                                 }
 
-                                editorData.assetManager.Remove(toRemove);
+                                engineData.assetManager.Remove(toRemove);
 
                                 if (changeToFolder != null)
                                     currentTextureAssetFolder = changeToFolder;
@@ -219,7 +219,7 @@ namespace Engine3D
                                     ImGui.PushID("back");
 
                                     System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                    ImGui.Image((IntPtr)Engine.textureManager.textures["ui_back.png"].TextureId, imageSize);
+                                    ImGui.Image((IntPtr)engineData.textureManager.textures["ui_back.png"].TextureId, imageSize);
 
                                     if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                                     {
@@ -256,7 +256,7 @@ namespace Engine3D
                                         ImGui.PushID(currentModelAssetFolder.folders[folderNames[i]].name);
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                        ImGui.Image((IntPtr)Engine.textureManager.textures["ui_folder.png"].TextureId, imageSize);
+                                        ImGui.Image((IntPtr)engineData.textureManager.textures["ui_folder.png"].TextureId, imageSize);
 
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                                         {
@@ -308,10 +308,10 @@ namespace Engine3D
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
 
-                                        if (Engine.textureManager.textures.ContainsKey("ui_" + currentModelAssetFolder.assets[i - folderCount].Name))
-                                            ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + currentModelAssetFolder.assets[i - folderCount].Name].TextureId, imageSize);
+                                        if (engineData.textureManager.textures.ContainsKey("ui_" + currentModelAssetFolder.assets[i - folderCount].Name))
+                                            ImGui.Image((IntPtr)engineData.textureManager.textures["ui_" + currentModelAssetFolder.assets[i - folderCount].Name].TextureId, imageSize);
                                         else
-                                            ImGui.Image((IntPtr)Engine.textureManager.textures["ui_missing.png"].TextureId, imageSize);
+                                            ImGui.Image((IntPtr)engineData.textureManager.textures["ui_missing.png"].TextureId, imageSize);
 
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
                                         {
@@ -337,7 +337,7 @@ namespace Engine3D
 
                                         ImGui.InvisibleButton("##invisible", imageSize);
 
-                                        DragDropImageSourceUI(ref Engine.textureManager, "MESH_NAME", currentModelAssetFolder.assets[i - folderCount].Name,
+                                        DragDropImageSourceUI(ref engineData.textureManager, "MESH_NAME", currentModelAssetFolder.assets[i - folderCount].Name,
                                                               currentModelAssetFolder.assets[i - folderCount].Path, imageSize);
 
                                         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
@@ -353,7 +353,7 @@ namespace Engine3D
                                     i++;
                                 }
 
-                                editorData.assetManager.Remove(toRemove);
+                                engineData.assetManager.Remove(toRemove);
 
                                 if (changeToFolder != null)
                                     currentModelAssetFolder = changeToFolder;
@@ -387,7 +387,7 @@ namespace Engine3D
                                     ImGui.PushID("back");
 
                                     System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                    ImGui.Image((IntPtr)Engine.textureManager.textures["ui_back.png"].TextureId, imageSize);
+                                    ImGui.Image((IntPtr)engineData.textureManager.textures["ui_back.png"].TextureId, imageSize);
 
                                     if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                                     {
@@ -424,7 +424,7 @@ namespace Engine3D
                                         ImGui.PushID(currentAudioAssetFolder.folders[folderNames[i]].name);
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
-                                        ImGui.Image((IntPtr)Engine.textureManager.textures["ui_folder.png"].TextureId, imageSize);
+                                        ImGui.Image((IntPtr)engineData.textureManager.textures["ui_folder.png"].TextureId, imageSize);
 
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                                         {
@@ -476,10 +476,10 @@ namespace Engine3D
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
 
-                                        if (Engine.textureManager.textures.ContainsKey("ui_" + currentAudioAssetFolder.assets[i - folderCount].Name))
-                                            ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + currentAudioAssetFolder.assets[i - folderCount].Name].TextureId, imageSize);
+                                        if (engineData.textureManager.textures.ContainsKey("ui_" + currentAudioAssetFolder.assets[i - folderCount].Name))
+                                            ImGui.Image((IntPtr)engineData.textureManager.textures["ui_" + currentAudioAssetFolder.assets[i - folderCount].Name].TextureId, imageSize);
                                         else
-                                            ImGui.Image((IntPtr)Engine.textureManager.textures["ui_missing.png"].TextureId, imageSize);
+                                            ImGui.Image((IntPtr)engineData.textureManager.textures["ui_missing.png"].TextureId, imageSize);
 
                                         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
                                         {
@@ -505,7 +505,7 @@ namespace Engine3D
 
                                         ImGui.InvisibleButton("##invisible", imageSize);
 
-                                        DragDropImageSourceUI(ref Engine.textureManager, "AUDIO_NAME", currentAudioAssetFolder.assets[i - folderCount].Name,
+                                        DragDropImageSourceUI(ref engineData.textureManager, "AUDIO_NAME", currentAudioAssetFolder.assets[i - folderCount].Name,
                                                               currentAudioAssetFolder.assets[i - folderCount].Path, imageSize);
 
                                         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + itemWidth);
@@ -521,7 +521,7 @@ namespace Engine3D
                                     i++;
                                 }
 
-                                editorData.assetManager.Remove(toRemove);
+                                engineData.assetManager.Remove(toRemove);
 
                                 if (changeToFolder != null)
                                     currentAudioAssetFolder = changeToFolder;
@@ -630,7 +630,7 @@ namespace Engine3D
 
                             for (int i = 0; i < editorData.assetStoreManager.assets.Count; i++)
                             {
-                                if (Engine.textureManager.textures.ContainsKey("ui_" + editorData.assetStoreManager.assets[i].Path))
+                                if (engineData.textureManager.textures.ContainsKey("ui_" + editorData.assetStoreManager.assets[i].Path))
                                 {
                                     if (i % columns != 0)
                                     {
@@ -640,7 +640,7 @@ namespace Engine3D
                                     ImGui.BeginGroup();
                                     ImGui.PushID(editorData.assetStoreManager.assets[i].Path);
 
-                                    ImGui.Image((IntPtr)Engine.textureManager.textures["ui_" + editorData.assetStoreManager.assets[i].Path].TextureId, imageSize);
+                                    ImGui.Image((IntPtr)engineData.textureManager.textures["ui_" + editorData.assetStoreManager.assets[i].Path].TextureId, imageSize);
 
                                     var cursorPos = ImGui.GetCursorPos();
 

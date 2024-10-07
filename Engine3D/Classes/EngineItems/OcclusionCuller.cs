@@ -11,7 +11,7 @@ namespace Engine3D
     {
         private void OcclusionCuller()
         {
-            if (editorData.gameRunning == GameState.Running)
+            if (gameState == GameState.Running)
             {
                 if (useOcclusionCulling)
                 {

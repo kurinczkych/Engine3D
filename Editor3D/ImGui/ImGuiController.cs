@@ -1,186 +1,24 @@
-﻿using Assimp;
-using ImGuiNET;
-using Newtonsoft.Json.Linq;
-using OpenTK.Graphics.OpenGL4;
+﻿using ImGuiNET;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
-using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using PuppeteerSharp;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
 using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static Engine3D.Light;
-using static System.Net.Mime.MediaTypeNames;
-using ErrorCode = OpenTK.Graphics.OpenGL4.ErrorCode;
+
 
 #pragma warning disable CS8602
 
 namespace Engine3D
 {
-    public class FPS
-    {
-        public int fps;
-
-        public int minFps = int.MaxValue;
-        public int maxFps = 0;
-        public double totalTime;
-
-        private const int SAMPLE_SIZE = 30;
-        private Queue<double> sampleTimes = new Queue<double>(SAMPLE_SIZE);
-
-        private Stopwatch maxminStopwatch;
-
-        //private bool limitFps = false;
-        private const double TargetDeltaTime = 1.0 / 60.0; // for 60 FPS
-
-        public const int fpsLength = 5;
-
-        public FPS()
-        {
-            maxminStopwatch = new Stopwatch();
-            maxminStopwatch.Start();
-        }
-
-        public void Update(float delta)
-        {
-            if (sampleTimes.Count >= SAMPLE_SIZE)
-            {
-                totalTime -= sampleTimes.Dequeue();
-            }
-
-            sampleTimes.Enqueue(delta);
-            totalTime += delta;
-
-            double averageDeltaTime = totalTime / sampleTimes.Count;
-            double fps = 1.0 / averageDeltaTime;
-            this.fps = (int)fps;
-
-            if (!maxminStopwatch.IsRunning)
-            {
-                if (fps > maxFps)
-                    maxFps = (int)fps;
-                if (fps < minFps)
-                    minFps = (int)fps;
-            }
-            else
-            {
-                if (maxminStopwatch.ElapsedMilliseconds > 3000)
-                    maxminStopwatch.Stop();
-            }
-        }
-
-        public string GetFpsString()
-        {
-            string fpsStr = fps.ToString();
-            string maxFpsStr = maxFps.ToString();
-            string minFpsStr = minFps.ToString();
-            if(fpsStr.Length < fpsLength)
-            {
-                for (int i = 0; i < (fpsLength + 1 - fpsStr.Length); i++)
-                    fpsStr = " " + fpsStr;
-            }
-            if(maxFpsStr.Length < fpsLength)
-            {
-                for (int i = 0; i < (fpsLength + 1 - maxFpsStr.Length); i++)
-                    maxFpsStr = " " + maxFpsStr;
-            }
-            if(minFpsStr.Length < fpsLength)
-            {
-                for (int i = 0; i < (fpsLength + 1 - minFpsStr.Length); i++)
-                    minFpsStr = " " + minFpsStr;
-            }
-
-            string fpsFullStr = "FPS: " + fpsStr + "    |    MaxFPS: " + maxFpsStr + "    |    MinFPS: " + minFpsStr;
-
-            return fpsFullStr;
-        }
-    }
-
-    public enum GameState
-    {
-        Running,
-        Stopped
-    }
-
-    public class EditorData
-    {
-        #region Data
-        public List<Object> objects;
-        public bool recalculateObjects = true;
-
-        public FPS fps = new FPS();
-
-        public object? selectedItem;
-        public int instIndex = -1;
-
-        public AssetStoreManager assetStoreManager;
-        public AssetManager assetManager;
-        public TextureManager textureManager;
-
-        public int currentAssetTexture = 0;
-        public List<Asset> AssetTextures;
-
-        public GizmoManager gizmoManager;
-
-        public GameWindowProperty gameWindow;
-
-        public Vector2 gizmoWindowPos = Vector2.Zero;
-        public Vector2 gizmoWindowSize = Vector2.Zero;
-
-        public Physx physx;
-
-        public bool runParticles = false;
-        public bool resetParticles = false;
-        #endregion
-
-        #region Properties 
-        public bool windowResized = false;
-        public MouseCursor mouseType = MouseCursor.Default;
-
-        public bool manualCursor = false;
-        public bool isGameFullscreen = false;
-        public bool justSetGameState = false;
-        public bool isPaused = false;
-        public GameState prevGameState;
-        private GameState _gameRunning;
-        public GameState gameRunning
-        {
-            get
-            {
-                return _gameRunning;
-            }
-            set
-            {
-                prevGameState = _gameRunning;
-                _gameRunning = value;
-            }
-        }
-        #endregion
-
-        public int animType = 0;
-        public int animEndType = 0;
-        public int matrixType = 5;
-
-        public EditorData()
-        {
-            _gameRunning = GameState.Stopped;
-        }
-    }
+    
 
     public partial class ImGuiController : BaseImGuiController
     {
         private EditorData editorData;
+        private EngineData engineData;
+        private Engine engine;
+        private Vector2i windowSize = new Vector2i();
 
         private string currentBottomPanelTab = "Project";
         private Dictionary<string, byte[]> _inputBuffers = new Dictionary<string, byte[]>();
@@ -199,7 +37,8 @@ namespace Engine3D
         private AssetFolder currentModelAssetFolder;
         private AssetFolder currentAudioAssetFolder;
 
-        List<Object> objects = new List<Object>();
+        private KeyboardState keyboardState;
+        private MouseState mouseState;
 
         private Dictionary<string,bool> colorPickerOpen = new Dictionary<string, bool>();
         private bool advancedLightSetting = false;
@@ -219,12 +58,31 @@ namespace Engine3D
         public System.Numerics.Vector2? particlesWindowPos = null;
         public System.Numerics.Vector2 particlesWindowSize = new System.Numerics.Vector2(150, 150);
 
-        public ImGuiController(int width, int height, ref EditorData editorData) : base(width, height)
+        public ImGuiController(int width, int height, ref Engine engine) : base(width, height)
         {
-            this.editorData = editorData;
-            currentTextureAssetFolder = editorData.assetManager.assets.folders[FileType.Textures.ToString()];
-            currentModelAssetFolder = editorData.assetManager.assets.folders[FileType.Models.ToString()];
-            currentAudioAssetFolder = editorData.assetManager.assets.folders[FileType.Audio.ToString()];
+            windowSize = new Vector2i(width, height);
+
+            editorData = new EditorData();
+            editorData.gameWindow = new GameWindowProperty();
+            editorData.gameWindow.gameWindowSize = new Vector2(width,height);
+            editorData.gameWindow.gameWindowPos = new Vector2();
+            engine.SetGameWindow(editorData.gameWindow);
+
+            this.engine = engine;
+            engineData = new EngineData();
+            engineData.assetManager = engine.GetAssetManager();
+            engineData.textureManager = engine.GetTextureManager();
+            editorData.assetStoreManager = new AssetStoreManager(ref engineData.assetManager);
+            engineData.gizmoManager = engine.GetGizmoManager();
+
+            keyboardState = engine.GetKeyboardState();
+            mouseState = engine.GetMouseState();
+
+            engineData.objects = engine.GetObjects();
+
+            currentTextureAssetFolder = engineData.assetManager.assets.folders[FileType.Textures.ToString()];
+            currentModelAssetFolder = engineData.assetManager.assets.folders[FileType.Models.ToString()];
+            currentAudioAssetFolder = engineData.assetManager.assets.folders[FileType.Audio.ToString()];
 
             showConsoleTypeList = Enum.GetNames(typeof(ShowConsoleType));
 
@@ -338,18 +196,125 @@ namespace Engine3D
         }
         #endregion
 
+        #region MainMethods
+        public void Init()
+        {
+            engine.SubscribeToResizeEvent(OnResize);
+            engine.SubscribeToObjectSelectedEvent(ObjectSelected);
+
+            keyboardState = engine.GetKeyboardState();
+            mouseState = engine.GetMouseState();
+
+            engine.AddRenderMethod(OnRender);
+            engine.AddUpdateMethod(OnUpdate);
+            engine.AddUnloadMethod(OnUnload);
+        }
+
+        public void OnRender(FrameEventArgs args)
+        {
+            if (!editorData.isGameFullscreen)
+                EditorWindow(ref editorData);
+            else
+                FullscreenWindow(ref editorData);
+
+            Render();
+        }
+
+        public void OnUpdate(FrameEventArgs args)
+        {
+            editorData.assetStoreManager.DownloadIfNeeded();
+
+            if (editorData.gameRunning == GameState.Stopped &&
+                   editorData.justSetGameState)
+            {
+                editorData.manualCursor = false;
+                editorData.justSetGameState = false;
+            }
+
+            if (editorData.gameRunning == GameState.Running && engine.GetCursorState() != CursorState.Grabbed && !editorData.manualCursor)
+            {
+                engine.SetCursorState(CursorState.Grabbed);
+            }
+            else if (editorData.gameRunning == GameState.Stopped && engine.GetCursorState() != CursorState.Normal)
+            {
+                engine.SetCursorState(CursorState.Normal);
+            }
+
+            if (keyboardState.IsKeyReleased(Keys.F5))
+            {
+                editorData.gameRunning = editorData.gameRunning == GameState.Stopped ? GameState.Running : GameState.Stopped;
+            }
+
+            if (keyboardState.IsKeyReleased(Keys.F2))
+            {
+                if (engine.GetCursorState() == CursorState.Normal)
+                {
+                    engine.SetCursorState(CursorState.Grabbed);
+                    editorData.manualCursor = false;
+                }
+                else if (engine.GetCursorState() == CursorState.Grabbed)
+                {
+                    engine.SetCursorState(CursorState.Normal);
+                    editorData.manualCursor = true;
+                }
+            }
+
+            if (editorData.windowResized)
+            {
+                if (editorData.isGameFullscreen)
+                {
+                    editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X, windowSize.Y);
+                    editorData.gameWindow.gameWindowPos = new Vector2(0, 0);
+                }
+                else
+                {
+                    editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X * (1.0f - (editorData.gameWindow.leftPanelPercent + editorData.gameWindow.rightPanelPercent)),
+                                                                    windowSize.Y * (1 - editorData.gameWindow.bottomPanelPercent) - editorData.gameWindow.topPanelSize - editorData.gameWindow.bottomPanelSize);
+                    editorData.gameWindow.gameWindowPos = new Vector2(windowSize.X * editorData.gameWindow.leftPanelPercent, windowSize.Y * editorData.gameWindow.bottomPanelPercent + editorData.gameWindow.bottomPanelSize);
+                }
+
+                engine.ResizedEditorWindow(editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
+            }
+            if (engine.GetCursor() != editorData.mouseType)
+                engine.SetCursor(editorData.mouseType);
+        }
+
+        public void OnUnload()
+        {
+            editorData.assetStoreManager.DeleteFolderContent("Temp");
+            editorData.assetStoreManager.Delete();
+        }
+
+        public void ObjectSelected(Engine3D.Object? o, int inst)
+        {
+            SelectItem(o, editorData, inst);
+        }
+
+        public void OnResize(ResizeEventArgs e)
+        {
+            windowSize.X = e.Width;
+            windowSize.Y = e.Height;
+
+            editorData.gameWindow.gameWindowSize = new Vector2(windowSize.X * (1.0f - (editorData.gameWindow.leftPanelPercent + editorData.gameWindow.rightPanelPercent)),
+                                                            windowSize.Y * (1 - editorData.gameWindow.bottomPanelPercent) - editorData.gameWindow.topPanelSize - editorData.gameWindow.bottomPanelSize);
+            editorData.gameWindow.gameWindowPos = new Vector2(windowSize.X * editorData.gameWindow.leftPanelPercent, windowSize.Y * editorData.gameWindow.bottomPanelPercent + editorData.gameWindow.bottomPanelSize);
+
+            engine.ResizedEditorWindow(editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
+
+            WindowResized(windowSize.X, windowSize.Y);
+        }
+        #endregion
+
         public void CalculateObjectList()
         {
-            objects.Clear();
-            objects = new List<Object>(editorData.objects);
             Dictionary<string, int> names = new Dictionary<string, int>();
 
-            for(int i = 0; i < objects.Count; i++)
+            for(int i = 0; i < engineData.objects.Count; i++)
             {
-                string name = objects[i].name == "" ? "Object " + i.ToString() : objects[i].name;
-                if (objects[i].GetComponent<BaseMesh>() != null)
+                string name = engineData.objects[i].name == "" ? "Object " + i.ToString() : engineData.objects[i].name;
+                if (engineData.objects[i].GetComponent<BaseMesh>() != null)
                 {
-                    if (objects[i].GetComponent<BaseMesh>() is InstancedMesh)
+                    if (engineData.objects[i].GetComponent<BaseMesh>() is InstancedMesh)
                         name += " (Instanced)";
                 }
 
@@ -359,9 +324,9 @@ namespace Engine3D
                     names[name] = 0;
 
                 if (names[name] == 0)
-                    objects[i].displayName = name;
+                    engineData.objects[i].displayName = name;
                 else
-                    objects[i].displayName = name + " (" + names[name] + ")";
+                    engineData.objects[i].displayName = name + " (" + names[name] + ")";
             }
         }
 
@@ -648,7 +613,7 @@ namespace Engine3D
         }
         #endregion
 
-        public void SelectItem(object? selectedObject, EditorData editorData, int instIndex = -1)
+        public void SelectItem(Object? selectedObject, EditorData editorData, int instIndex = -1)
         {
             if (editorData.selectedItem != null)
             {
@@ -663,14 +628,16 @@ namespace Engine3D
             if (selectedObject == null)
             {
                 editorData.selectedItem = null;
-                editorData.instIndex = -1;
+                engine.SetGizmoInstIndex(-1);
                 return;
             }
+
+            shouldOpenTreeNodeMeshes = true;
 
             justSelectedItem = true;
             editorData.selectedItem = selectedObject;
             if (instIndex != -1)
-                editorData.instIndex = instIndex;
+                engine.SetGizmoInstIndex(instIndex);
 
             ((ISelectable)selectedObject).isSelected = true;
 
@@ -690,8 +657,7 @@ namespace Engine3D
             //TODO pointlight and particle system selection
         }
 
-        public void EditorWindow(ref EditorData editorData, 
-                                 KeyboardState keyboardState, MouseState mouseState, Engine engine)
+        public void EditorWindow(ref EditorData editorData)
         {
             GameWindowProperty gameWindow = editorData.gameWindow;
             if(editorData.recalculateObjects)
@@ -701,7 +667,6 @@ namespace Engine3D
             }
 
             var io = ImGui.GetIO();
-            int anyObjectHovered = -1;
 
             if (editorData.gameRunning == GameState.Running && !editorData.manualCursor)
                 io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
@@ -709,7 +674,6 @@ namespace Engine3D
                 io.ConfigFlags &= ~ImGuiConfigFlags.NoMouse;
 
             editorData.windowResized = false;
-            bool[] mouseTypes = new bool[3];
 
             var style = ImGui.GetStyle();
             style.WindowBorderSize = 0.5f;
@@ -726,36 +690,118 @@ namespace Engine3D
             style.WindowRounding = 5f;
             style.PopupRounding = 5f;
 
-            TopPanelWithMenubar(ref gameWindow, ref style);
+            //TopPanelWithMenubar(ref gameWindow, ref style);
 
-            GameWindowFrame(ref gameWindow);
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, gameWindow.topPanelSize));
+            ImGui.SetNextWindowPos(System.Numerics.Vector2.Zero, ImGuiCond.Always);
+            if (ImGui.Begin("TopPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar |
+                                        ImGuiWindowFlags.NoScrollbar))
+            {
+                if (ImGui.BeginMenuBar())
+                {
+                    if (ImGui.BeginMenu("File"))
+                    {
+                        if (ImGui.MenuItem("Open", "Ctrl+O"))
+                        {
 
-            ManipulationGizmosMenu(ref gameWindow, ref style);
+                        }
+                        ImGui.EndMenu();
+                    }
+                    if (ImGui.BeginMenu("Window"))
+                    {
+                        if (ImGui.MenuItem("Reset panels"))
+                        {
+                            gameWindow.leftPanelPercent = gameWindow.origLeftPanelPercent;
+                            gameWindow.rightPanelPercent = gameWindow.origRightPanelPercent;
+                            gameWindow.bottomPanelPercent = gameWindow.origBottomPanelPercent;
+                            editorData.windowResized = true;
+                        }
+                        ImGui.EndMenu();
+                    }
+                    ImGui.EndMenuBar();
+                }
 
-            LeftPanel(ref gameWindow, ref style, ref keyboardState);
+                var button = style.Colors[(int)ImGuiCol.Button];
+                style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 
-            LeftPanelSeperator(ref gameWindow, ref style);
+                float totalWidth = 40;
+                if (editorData.gameRunning == GameState.Running)
+                    totalWidth = 60;
 
-            RightPanel(ref gameWindow, ref style, ref keyboardState);
+                float startX = (ImGui.GetWindowSize().X - totalWidth) * 0.5f;
+                float startY = (ImGui.GetWindowSize().Y - 10) * 0.5f;
+                ImGui.SetCursorPos(new System.Numerics.Vector2(startX, startY));
 
-            RightPanelSeperator(ref gameWindow, ref style);
+                if (editorData.gameRunning == GameState.Stopped)
+                {
+                    if (ImGui.ImageButton("play", (IntPtr)engineData.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    {
+                        editorData.gameRunning = GameState.Running;
+                        editorData.justSetGameState = true;
+                        engine.SetGameState(editorData.gameRunning);
+                    }
+                }
+                else
+                {
+                    if (ImGui.ImageButton("stop", (IntPtr)engineData.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    {
+                        editorData.gameRunning = GameState.Stopped;
+                        editorData.justSetGameState = true;
+                        engine.SetGameState(editorData.gameRunning);
+                    }
+                }
 
-            BottomAssetPanelSeperator(ref gameWindow, ref style);
+                ImGui.SameLine();
+                if (editorData.gameRunning == GameState.Running)
+                {
+                    if (ImGui.ImageButton("pause", (IntPtr)engineData.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    {
+                        editorData.isPaused = !editorData.isPaused;
+                    }
+                }
 
-            BottomAssetPanel(ref gameWindow, ref style, ref keyboardState, ref mouseState);
+                ImGui.SameLine();
+                if (ImGui.ImageButton("screen", (IntPtr)engineData.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                {
+                    editorData.isGameFullscreen = !editorData.isGameFullscreen;
+                    editorData.windowResized = true;
+                }
 
-            BottomPanel(ref gameWindow, ref style);
+
+                style.Colors[(int)ImGuiCol.Button] = button;
+            }
+            ImGui.End();
+
+            //GameWindowFrame(ref gameWindow);
+
+            //ManipulationGizmosMenu(ref gameWindow, ref style);
+
+            //LeftPanel(ref gameWindow, ref style, ref keyboardState);
+
+            //LeftPanelSeperator(ref gameWindow, ref style);
+
+            //SceneView(ref gameWindow);
+
+            //RightPanel(ref gameWindow, ref style, ref keyboardState);
+
+            //RightPanelSeperator(ref gameWindow, ref style);
+
+            //BottomAssetPanelSeperator(ref gameWindow, ref style);
+
+            //BottomAssetPanel(ref gameWindow, ref style, ref keyboardState, ref mouseState);
+
+            //BottomPanel(ref gameWindow, ref style);
 
             #region Every frame variable updates
-            if (isObjectHovered != anyObjectHovered)
-                isObjectHovered = anyObjectHovered;
+            if (isObjectHovered != editorData.anyObjectHovered)
+                isObjectHovered = editorData.anyObjectHovered;
 
             if (justSelectedItem)
                 justSelectedItem = false;
 
-            if (mouseTypes[0] || mouseTypes[1])
+            if (editorData.mouseTypes[0] || editorData.mouseTypes[1])
                 editorData.mouseType = MouseCursor.HResize;
-            else if (mouseTypes[2])
+            else if (editorData.mouseTypes[2])
                 editorData.mouseType = MouseCursor.VResize;
             else
                 editorData.mouseType = MouseCursor.Default;
@@ -878,7 +924,7 @@ namespace Engine3D
 
                 if (editorData.gameRunning == GameState.Stopped)
                 {
-                    if (ImGui.ImageButton("play", (IntPtr)Engine.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    if (ImGui.ImageButton("play", (IntPtr)engineData.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
                         editorData.gameRunning = GameState.Running;
                         editorData.justSetGameState = true;
@@ -886,7 +932,7 @@ namespace Engine3D
                 }
                 else
                 {
-                    if (ImGui.ImageButton("stop", (IntPtr)Engine.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    if (ImGui.ImageButton("stop", (IntPtr)engineData.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
                         editorData.gameRunning = GameState.Stopped;
                         editorData.justSetGameState = true;
@@ -896,14 +942,14 @@ namespace Engine3D
                 ImGui.SameLine();
                 if (editorData.gameRunning == GameState.Running)
                 {
-                    if (ImGui.ImageButton("pause", (IntPtr)Engine.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                    if (ImGui.ImageButton("pause", (IntPtr)engineData.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                     {
                         editorData.isPaused = !editorData.isPaused;
                     }
                 }
 
                 ImGui.SameLine();
-                if (ImGui.ImageButton("screen", (IntPtr)Engine.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
+                if (ImGui.ImageButton("screen", (IntPtr)engineData.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
                 {
                     editorData.isGameFullscreen = !editorData.isGameFullscreen;
                 }

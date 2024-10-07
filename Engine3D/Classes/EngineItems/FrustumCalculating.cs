@@ -10,7 +10,7 @@ namespace Engine3D
     {
         private void FrustumCalculating()
         {
-            if (editorData.gameRunning == GameState.Running || firstRun)
+            if (gameState == GameState.Running || firstRun)
             {
                 foreach (Object obj in objects)
                 {
