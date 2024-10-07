@@ -13,7 +13,7 @@ namespace Editor3D
 
             Engine engine = new Engine(windowSize.X, windowSize.Y);
             ImGuiController imGuiController = new ImGuiController(windowSize.X, windowSize.Y, ref engine);
-            imGuiController.Init();
+            engine.AddOnLoadMethod(imGuiController.OnLoad);
             engine.Run();
         }
 

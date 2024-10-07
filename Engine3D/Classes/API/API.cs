@@ -28,6 +28,11 @@ namespace Engine3D
             unloadMethods.Add(unloadMethod);
         }
 
+        public void AddOnLoadMethod(OnLoadDelegate onLoadMethod)
+        {
+            onLoadMethods.Add(onLoadMethod);
+        }
+
         public void SubscribeToResizeEvent(WindowResized res)
         {
             windowResized = res;
@@ -137,6 +142,7 @@ namespace Engine3D
 
         private void AddObjectAndCalculate(Object o)
         {
+            objects.Add(o);
             _meshObjects.Add(o);
             o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
             BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
@@ -180,6 +186,7 @@ namespace Engine3D
             {
                 Object o = new Object(type);
                 o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
+                objects.Add(o);
             }
         }
 

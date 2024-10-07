@@ -6,13 +6,11 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Reflection;
 using System.Text;
 
-
 #pragma warning disable CS8602
 
 namespace Engine3D
 {
     
-
     public partial class ImGuiController : BaseImGuiController
     {
         private EditorData editorData;
@@ -70,19 +68,6 @@ namespace Engine3D
 
             this.engine = engine;
             engineData = new EngineData();
-            engineData.assetManager = engine.GetAssetManager();
-            engineData.textureManager = engine.GetTextureManager();
-            editorData.assetStoreManager = new AssetStoreManager(ref engineData.assetManager);
-            engineData.gizmoManager = engine.GetGizmoManager();
-
-            keyboardState = engine.GetKeyboardState();
-            mouseState = engine.GetMouseState();
-
-            engineData.objects = engine.GetObjects();
-
-            currentTextureAssetFolder = engineData.assetManager.assets.folders[FileType.Textures.ToString()];
-            currentModelAssetFolder = engineData.assetManager.assets.folders[FileType.Models.ToString()];
-            currentAudioAssetFolder = engineData.assetManager.assets.folders[FileType.Audio.ToString()];
 
             showConsoleTypeList = Enum.GetNames(typeof(ShowConsoleType));
 
@@ -120,7 +105,6 @@ namespace Engine3D
             _inputBuffers.Add("##textureMetalPath", new byte[300]);
             _inputBuffers.Add("##meshPath", new byte[300]);
             _inputBuffers.Add("##assetSearch", new byte[200]);
-
             #endregion
         }
 
@@ -197,7 +181,7 @@ namespace Engine3D
         #endregion
 
         #region MainMethods
-        public void Init()
+        public void OnLoad()
         {
             engine.SubscribeToResizeEvent(OnResize);
             engine.SubscribeToObjectSelectedEvent(ObjectSelected);
@@ -208,6 +192,20 @@ namespace Engine3D
             engine.AddRenderMethod(OnRender);
             engine.AddUpdateMethod(OnUpdate);
             engine.AddUnloadMethod(OnUnload);
+
+            engineData.assetManager = engine.GetAssetManager();
+            engineData.textureManager = engine.GetTextureManager();
+            editorData.assetStoreManager = new AssetStoreManager(ref engineData.assetManager);
+            engineData.gizmoManager = engine.GetGizmoManager();
+
+            keyboardState = engine.GetKeyboardState();
+            mouseState = engine.GetMouseState();
+
+            engineData.objects = engine.GetObjects();
+
+            currentTextureAssetFolder = engineData.assetManager.assets.folders[FileType.Textures.ToString()];
+            currentModelAssetFolder = engineData.assetManager.assets.folders[FileType.Models.ToString()];
+            currentAudioAssetFolder = engineData.assetManager.assets.folders[FileType.Audio.ToString()];
         }
 
         public void OnRender(FrameEventArgs args)
@@ -222,6 +220,7 @@ namespace Engine3D
 
         public void OnUpdate(FrameEventArgs args)
         {
+            Update(engine, (float)args.Time);
             editorData.assetStoreManager.DownloadIfNeeded();
 
             if (editorData.gameRunning == GameState.Stopped &&
@@ -690,107 +689,27 @@ namespace Engine3D
             style.WindowRounding = 5f;
             style.PopupRounding = 5f;
 
-            //TopPanelWithMenubar(ref gameWindow, ref style);
+            TopPanelWithMenubar(ref gameWindow, ref style);
 
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, gameWindow.topPanelSize));
-            ImGui.SetNextWindowPos(System.Numerics.Vector2.Zero, ImGuiCond.Always);
-            if (ImGui.Begin("TopPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.MenuBar |
-                                        ImGuiWindowFlags.NoScrollbar))
-            {
-                if (ImGui.BeginMenuBar())
-                {
-                    if (ImGui.BeginMenu("File"))
-                    {
-                        if (ImGui.MenuItem("Open", "Ctrl+O"))
-                        {
+            GameWindowFrame(ref gameWindow);
 
-                        }
-                        ImGui.EndMenu();
-                    }
-                    if (ImGui.BeginMenu("Window"))
-                    {
-                        if (ImGui.MenuItem("Reset panels"))
-                        {
-                            gameWindow.leftPanelPercent = gameWindow.origLeftPanelPercent;
-                            gameWindow.rightPanelPercent = gameWindow.origRightPanelPercent;
-                            gameWindow.bottomPanelPercent = gameWindow.origBottomPanelPercent;
-                            editorData.windowResized = true;
-                        }
-                        ImGui.EndMenu();
-                    }
-                    ImGui.EndMenuBar();
-                }
+            ManipulationGizmosMenu(ref gameWindow, ref style);
 
-                var button = style.Colors[(int)ImGuiCol.Button];
-                style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+            LeftPanel(ref gameWindow, ref style, ref keyboardState);
 
-                float totalWidth = 40;
-                if (editorData.gameRunning == GameState.Running)
-                    totalWidth = 60;
+            LeftPanelSeperator(ref gameWindow, ref style);
 
-                float startX = (ImGui.GetWindowSize().X - totalWidth) * 0.5f;
-                float startY = (ImGui.GetWindowSize().Y - 10) * 0.5f;
-                ImGui.SetCursorPos(new System.Numerics.Vector2(startX, startY));
+            SceneView(ref gameWindow);
 
-                if (editorData.gameRunning == GameState.Stopped)
-                {
-                    if (ImGui.ImageButton("play", (IntPtr)engineData.textureManager.textures["ui_play.png"].TextureId, new System.Numerics.Vector2(20, 20)))
-                    {
-                        editorData.gameRunning = GameState.Running;
-                        editorData.justSetGameState = true;
-                        engine.SetGameState(editorData.gameRunning);
-                    }
-                }
-                else
-                {
-                    if (ImGui.ImageButton("stop", (IntPtr)engineData.textureManager.textures["ui_stop.png"].TextureId, new System.Numerics.Vector2(20, 20)))
-                    {
-                        editorData.gameRunning = GameState.Stopped;
-                        editorData.justSetGameState = true;
-                        engine.SetGameState(editorData.gameRunning);
-                    }
-                }
+            RightPanel(ref gameWindow, ref style, ref keyboardState);
 
-                ImGui.SameLine();
-                if (editorData.gameRunning == GameState.Running)
-                {
-                    if (ImGui.ImageButton("pause", (IntPtr)engineData.textureManager.textures["ui_pause.png"].TextureId, new System.Numerics.Vector2(20, 20)))
-                    {
-                        editorData.isPaused = !editorData.isPaused;
-                    }
-                }
+            RightPanelSeperator(ref gameWindow, ref style);
 
-                ImGui.SameLine();
-                if (ImGui.ImageButton("screen", (IntPtr)engineData.textureManager.textures["ui_screen.png"].TextureId, new System.Numerics.Vector2(20, 20)))
-                {
-                    editorData.isGameFullscreen = !editorData.isGameFullscreen;
-                    editorData.windowResized = true;
-                }
+            BottomAssetPanelSeperator(ref gameWindow, ref style);
 
+            BottomAssetPanel(ref gameWindow, ref style, ref keyboardState, ref mouseState);
 
-                style.Colors[(int)ImGuiCol.Button] = button;
-            }
-            ImGui.End();
-
-            //GameWindowFrame(ref gameWindow);
-
-            //ManipulationGizmosMenu(ref gameWindow, ref style);
-
-            //LeftPanel(ref gameWindow, ref style, ref keyboardState);
-
-            //LeftPanelSeperator(ref gameWindow, ref style);
-
-            //SceneView(ref gameWindow);
-
-            //RightPanel(ref gameWindow, ref style, ref keyboardState);
-
-            //RightPanelSeperator(ref gameWindow, ref style);
-
-            //BottomAssetPanelSeperator(ref gameWindow, ref style);
-
-            //BottomAssetPanel(ref gameWindow, ref style, ref keyboardState, ref mouseState);
-
-            //BottomPanel(ref gameWindow, ref style);
+            BottomPanel(ref gameWindow, ref style);
 
             #region Every frame variable updates
             if (isObjectHovered != editorData.anyObjectHovered)

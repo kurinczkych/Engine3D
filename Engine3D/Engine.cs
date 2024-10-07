@@ -124,11 +124,10 @@ namespace Engine3D
         private Axis? objectMovingAxis;
         private Plane? objectMovingPlane;
         private Vector3 objectMovingOrig;
-
         #endregion
 
         #region UI variables
-        private GameState gameState;
+        private GameState gameState = GameState.Stopped;
         private bool runParticles = false;
         private Vector2 gizmoWindowPos = new Vector2();
         private Vector2 gizmoWindowSize = new Vector2();
@@ -140,12 +139,14 @@ namespace Engine3D
         public delegate void RenderDelegate(FrameEventArgs args);
         public delegate void UpdateDelegate(FrameEventArgs args);
         public delegate void UnloadDelegate();
+        public delegate void OnLoadDelegate();
         public delegate void WindowResized(ResizeEventArgs e);
         public delegate void ObjectSelected(Object? o, int inst);
 
         private List<RenderDelegate> renderMethods = new List<RenderDelegate>();
         private List<UpdateDelegate> updateMethods = new List<UpdateDelegate>();
         private List<UnloadDelegate> unloadMethods = new List<UnloadDelegate>();
+        private List<OnLoadDelegate> onLoadMethods = new List<OnLoadDelegate>();
         private WindowResized? windowResized;
         private ObjectSelected? objectSelected;
 
@@ -265,69 +266,62 @@ namespace Engine3D
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            //#region Fullscreen scissoring
-            ////if (!editorData.isGameFullscreen)
-            ////{
-            ////    GL.Viewport((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
-            ////                (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
-            ////    GL.Enable(EnableCap.ScissorTest);
-            ////    GL.Scissor((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
-            ////               (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
-            ////}
-            //#endregion
+            #region Fullscreen scissoring
+            //if (!editorData.isGameFullscreen)
+            //{
+            //    GL.Viewport((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
+            //                (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+            //    GL.Enable(EnableCap.ScissorTest);
+            //    GL.Scissor((int)editorData.gameWindow.gameWindowPos.X, (int)editorData.gameWindow.gameWindowPos.Y,
+            //               (int)editorData.gameWindow.gameWindowSize.X, (int)editorData.gameWindow.gameWindowSize.Y);
+            //}
+            #endregion
 
-            //vertices.Clear();
+            vertices.Clear();
 
-            //FrustumCalculating();
+            FrustumCalculating();
 
-            //OcclusionCuller();
+            OcclusionCuller();
 
-            //ObjectAndAxisPicking();
+            ObjectAndAxisPicking();
 
-            //GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
+            GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
 
-            //GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
 
-            //GL.ClearColor(backgroundColor);
-            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+            GL.ClearColor(backgroundColor);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-            //RenderInfiniteFloor();
+            RenderInfiniteFloor();
 
-            //shaderProgram.Use();
-            //Light.SendToGPU(lights, shaderProgram.id);
+            shaderProgram.Use();
+            Light.SendToGPU(lights, shaderProgram.id);
 
-            //DrawObjects(args.Time);
+            DrawObjects(args.Time);
 
-            //DrawMoverGizmo();
+            DrawMoverGizmo();
 
-            ////DrawCameraRay();
+            TextUpdating();
 
-            //TextUpdating();
-
-            //instancedShaderProgram.Use();
-            //Light.SendToGPU(lights, instancedShaderProgram.id);
-            //DrawParticleSystems();
+            instancedShaderProgram.Use();
+            Light.SendToGPU(lights, instancedShaderProgram.id);
+            DrawParticleSystems();
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
-            GL.ClearColor(backgroundColor); //temp
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit); //temp
 
-            //#region Fullscreen scissoring
-            ////if (!editorData.isGameFullscreen)
-            ////{
-            ////    GL.Disable(EnableCap.ScissorTest);
-            ////    GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
-            ////}
-            //#endregion
+            #region Fullscreen scissoring
+            //if (!editorData.isGameFullscreen)
+            //{
+            //    GL.Disable(EnableCap.ScissorTest);
+            //    GL.Viewport(0, 0, (int)windowSize.X, (int)windowSize.Y);
+            //}
+            #endregion
 
-            GL.GetError();
             foreach (var renderMethod in renderMethods)
             {
                 renderMethod.Invoke(args);
             }
-
-            GL.GetError();
 
             Context.SwapBuffers();
 
@@ -337,6 +331,11 @@ namespace Engine3D
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
             base.OnUpdateFrame(args);
+
+            foreach (var updateMethod in updateMethods)
+            {
+                updateMethod.Invoke(args);
+            }
 
             fps.Update((float)args.Time);
 
@@ -407,11 +406,6 @@ namespace Engine3D
                         }
                     }
                 }
-            }
-
-            foreach (var updateMethod in updateMethods)
-            {
-                updateMethod.Invoke(args);
             }
         }
 
@@ -759,6 +753,11 @@ namespace Engine3D
             }
 
             objects.Sort();
+
+            foreach (var onLoadMethod in onLoadMethods)
+            {
+                onLoadMethod.Invoke();
+            }
         }
 
         protected override void OnTextInput(TextInputEventArgs e)
