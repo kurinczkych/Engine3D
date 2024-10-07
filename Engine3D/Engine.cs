@@ -470,8 +470,6 @@ namespace Engine3D
             editorData.assetStoreManager.DownloadIfNeeded();
             assetManager.UpdateIfNeeded();
 
-            EditorManaging();
-
             Context.SwapBuffers();
 
             base.OnRenderFrame(args);
