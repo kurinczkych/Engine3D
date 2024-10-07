@@ -1218,6 +1218,23 @@ namespace Engine3D
             style.Colors[(int)ImGuiCol.WindowBg] = baseBGColor;
             #endregion
 
+            #region SceneView
+            int gameTexture = engine.GetGameViewportTexture();
+
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(0, 0));  // Disable padding
+            //ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gameWindow.gameWindowSize.X - 20, editorData.gameWindow.gameWindowSize.Y - 20));
+            //ImGui.SetNextWindowPos(new System.Numerics.Vector2(_windowWidth * gameWindow.leftPanelPercent + seperatorSize + 10, gameWindow.topPanelSize + 10), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gameWindow.gameWindowSize.X - seperatorSize, editorData.gameWindow.gameWindowSize.Y));
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(_windowWidth * gameWindow.leftPanelPercent + seperatorSize, gameWindow.topPanelSize), ImGuiCond.Always);
+            if (ImGui.Begin("SceneView", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus))
+            {
+                ImGui.SetCursorPos(new System.Numerics.Vector2(0, 0));
+                ImGui.Image((IntPtr)gameTexture, new System.Numerics.Vector2(editorData.gameWindow.gameWindowSize.X, editorData.gameWindow.gameWindowSize.Y), new System.Numerics.Vector2(0, 1), new System.Numerics.Vector2(1, 0));
+                ImGui.End();
+            }
+            ImGui.PopStyleVar();
+            #endregion
+
             #region Right panel
 
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth * gameWindow.rightPanelPercent - seperatorSize,
@@ -3390,6 +3407,7 @@ namespace Engine3D
             else
                 editorData.mouseType = MouseCursor.Default;
             #endregion
+
 
             //ImGui.SetNextWindowSize(new System.Numerics.Vector2(480, 300));
             //if (ImGui.Begin("DebugPanel"))

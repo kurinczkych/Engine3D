@@ -1,5 +1,4 @@
 ﻿using Assimp;
-using Engine3D.Classes;
 using FontStashSharp;
 using MagicPhysX;
 using OpenTK.Graphics.OpenGL4;

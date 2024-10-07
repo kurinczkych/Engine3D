@@ -1,5 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,11 @@ namespace Engine3D
             {
                 if(!IsMouseInsideGizmoWindow() || editorData.gizmoWindowPos == Vector2.Zero)
                 {
+                    float scaleX = windowSize.X / editorData.gameWindow.gameWindowSize.X;
+                    float scaleY = windowSize.Y / editorData.gameWindow.gameWindowSize.Y;
+                    float mouseXInFramebuffer = (MouseState.X - (editorData.gameWindow.leftPanelPercent * windowSize.X + 5)) * scaleX;
+                    float mouseYInFramebuffer = (MouseState.Y - (editorData.gameWindow.topPanelSize)) * scaleY;
+
                     if (objectMovingAxis != null && MouseState.IsButtonDown(MouseButton.Left) && editorData.selectedItem != null)
                     {
                         GizmoObjectManipulating();
@@ -27,7 +33,7 @@ namespace Engine3D
                         objectMovingAxis = null;
                         objectMovingPlane = null;
                     }
-                    else if (IsMouseInGameWindow(MouseState) && !imGuiController.CursorInImGuiWindow(new Vector2(MouseState.X, MouseState.Y)) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
+                    else if (IsMouseInGameWindow(MouseState) && !imGuiController.CursorInImGuiWindow(new Vector2(mouseXInFramebuffer, mouseYInFramebuffer)) && MouseState.IsButtonPressed(MouseButton.Left) && objectMovingAxis == null)
                     {
                         #region Object selection Drawing
                         pickingTexture.EnableWriting();
@@ -63,7 +69,7 @@ namespace Engine3D
 
                         pickingTexture.DisableWriting();
 
-                        PixelInfo pixel = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
+                        PixelInfo pixel = pickingTexture.ReadPixel((int)mouseXInFramebuffer, (int)(windowSize.Y - mouseYInFramebuffer));
                         #endregion
 
                         #region Axis picking
@@ -90,7 +96,7 @@ namespace Engine3D
 
                             pickingTexture.DisableWriting();
 
-                            PixelInfo pixel2 = pickingTexture.ReadPixel((int)MouseState.X, (int)(windowSize.Y - MouseState.Y));
+                            PixelInfo pixel2 = pickingTexture.ReadPixel((int)mouseXInFramebuffer, (int)(windowSize.Y - mouseYInFramebuffer));
                             CreateAxisPlane(pixel2, selectedO);
                         }
 

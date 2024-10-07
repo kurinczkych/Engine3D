@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Engine3D.Classes.GPU
+namespace Engine3D
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct DrawArraysIndirectCommand
