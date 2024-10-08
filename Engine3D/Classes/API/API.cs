@@ -152,13 +152,13 @@ namespace Engine3D
 
         public List<Object> GetObjects()
         {
-            return objects;
+            return scene.objects;
         }
 
         private void AddObjectAndCalculate(Object o)
         {
-            objects.Add(o);
-            _meshObjects.Add(o);
+            scene.objects.Add(o);
+            scene._meshObjects.Add(o);
             o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
             BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
             if (mesh != null)
@@ -201,7 +201,7 @@ namespace Engine3D
             {
                 Object o = new Object(type);
                 o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-                objects.Add(o);
+                scene.objects.Add(o);
             }
         }
 
@@ -214,9 +214,9 @@ namespace Engine3D
 
         public void AddLight(Light.LightType lightType)
         {
-            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0, lightType));
-            objects[objects.Count - 1].transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
+            scene.objects.Add(new Object(ObjectType.Empty) { name = "Light" });
+            scene.objects[scene.objects.Count - 1].components.Add(new Light(scene.objects[scene.objects.Count - 1], shaderProgram.id, 0, lightType));
+            scene.objects[scene.objects.Count - 1].transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
 
             lights = new List<Light>();
         }
@@ -226,7 +226,7 @@ namespace Engine3D
             Object o = new Object(ObjectType.Empty) { name = "ParticleSystem" };
             o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
             o.components.Add(new ParticleSystem(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, windowSize, ref mainCamera, ref o));
-            objects.Add(o);
+            scene.objects.Add(o);
 
             particleSystems = new List<ParticleSystem>();
         }
@@ -236,9 +236,9 @@ namespace Engine3D
             if (o.GetComponent<BaseMesh>() is BaseMesh mesh)
             {
                 if (mesh.GetType() == typeof(Mesh))
-                    _meshObjects.Remove(o);
+                    scene._meshObjects.Remove(o);
                 else if (mesh.GetType() == typeof(InstancedMesh))
-                    _instObjects.Remove(o);
+                    scene._instObjects.Remove(o);
 
                 textureManager.DeleteTexture(mesh.textureName);
             }
@@ -246,7 +246,7 @@ namespace Engine3D
             lights = new List<Light>();
             particleSystems = new List<ParticleSystem>();
             o.Delete(ref textureManager);
-            objects.Remove(o);
+            scene.objects.Remove(o);
         }
 
 
@@ -261,9 +261,9 @@ namespace Engine3D
                 throw new Exception("Can only add Text, if its ObjectType.TextMesh");
 
             haveText = true;
-            objects.Add(obj);
+            scene.objects.Add(obj);
             texts.Add(tag, (TextMesh)textMesh);
-            objects.Sort();
+            scene.objects.Sort();
         }
 
         public void SetGameState(GameState state)

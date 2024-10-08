@@ -12,7 +12,7 @@ namespace Engine3D
         {
             if (gameState == GameState.Running || firstRun)
             {
-                foreach (Object obj in objects)
+                foreach (Object obj in scene.objects)
                 {
                     BaseMesh? mesh = (BaseMesh?)obj.GetComponent<BaseMesh>();
                     if(mesh != null)

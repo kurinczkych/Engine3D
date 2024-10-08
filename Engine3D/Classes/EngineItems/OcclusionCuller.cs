@@ -20,7 +20,7 @@ namespace Engine3D
                     GL.Clear(ClearBufferMask.DepthBufferBit);
                     GL.ClearDepth(1.0);
 
-                    List<Object> triangleMeshObjects = objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
+                    List<Object> triangleMeshObjects = scene.objects.Where(x => x.GetObjectType() == ObjectType.TriangleMesh).ToList();
                     aabbShaderProgram.Use();
                     List<float> posVertices = new List<float>();
                     foreach (Object obj in triangleMeshObjects)
