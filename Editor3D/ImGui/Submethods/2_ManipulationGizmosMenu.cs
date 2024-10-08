@@ -184,6 +184,8 @@ namespace Engine3D
                     }
                     #endregion
                 }
+                if (ImGui.IsWindowHovered())
+                    editorData.uiHasMouse = true;
                 ImGui.PopStyleVar(2);
                 style.WindowRounding = 5f;
                 style.Colors[(int)ImGuiCol.Button] = button;

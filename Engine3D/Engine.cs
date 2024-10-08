@@ -131,6 +131,7 @@ namespace Engine3D
         private bool runParticles = false;
         private Vector2 gizmoWindowPos = new Vector2();
         private Vector2 gizmoWindowSize = new Vector2();
+        private bool UIHasMouse = false;
         #endregion
 
         #region Engine variables
@@ -140,15 +141,19 @@ namespace Engine3D
         public delegate void UpdateDelegate(FrameEventArgs args);
         public delegate void UnloadDelegate();
         public delegate void OnLoadDelegate();
-        public delegate void WindowResized(ResizeEventArgs e);
-        public delegate void ObjectSelected(Object? o, int inst);
+        public delegate void WindowResizedDelegate(ResizeEventArgs e);
+        public delegate void ObjectSelectedDelegate(Object? o, int inst);
+        public delegate void CharInputDelegate(TextInputEventArgs e);
+        public delegate void MouseWheelInputDelegate(MouseWheelEventArgs e);
 
         private List<RenderDelegate> renderMethods = new List<RenderDelegate>();
         private List<UpdateDelegate> updateMethods = new List<UpdateDelegate>();
         private List<UnloadDelegate> unloadMethods = new List<UnloadDelegate>();
         private List<OnLoadDelegate> onLoadMethods = new List<OnLoadDelegate>();
-        private WindowResized? windowResized;
-        private ObjectSelected? objectSelected;
+        private List<CharInputDelegate> charInputMethods = new List<CharInputDelegate>();
+        private List<MouseWheelInputDelegate> mouseWheelInputMethods = new List<MouseWheelInputDelegate>();
+        private WindowResizedDelegate? windowResized;
+        private ObjectSelectedDelegate? objectSelected;
 
         public Object? selectedObject;
         public static int objectID = 1;
@@ -764,16 +769,16 @@ namespace Engine3D
         {
             base.OnTextInput(e);
 
-            //imGuiController.PressChar((char)e.Unicode);
-            // TODO
+            foreach (var method in charInputMethods)
+                method.Invoke(e);
         }
 
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
             base.OnMouseWheel(e);
 
-            //imGuiController.MouseScroll(e.Offset);
-            // TODO
+            foreach (var method in mouseWheelInputMethods)
+                method.Invoke(e);
         }
 
         protected override void OnUnload()

@@ -97,9 +97,8 @@ namespace Engine3D
 
             SetPerFrameImGuiData(1f / 60f);
 
-
             ImGui.NewFrame();
-            _frameBegun = true;
+            _frameBegun = false;
         }
 
         public void WindowResized(int width, int height)

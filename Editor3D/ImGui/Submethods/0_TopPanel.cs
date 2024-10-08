@@ -91,6 +91,8 @@ namespace Engine3D
 
                 style.Colors[(int)ImGuiCol.Button] = button;
             }
+            if (ImGui.IsWindowHovered())
+                editorData.uiHasMouse = true;
             ImGui.End();
         }
     }

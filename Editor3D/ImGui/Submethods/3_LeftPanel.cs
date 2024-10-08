@@ -128,7 +128,7 @@ namespace Engine3D
                                 {
                                     Object ro = engineData.objects[i];
 
-                                    if (ImGui.Selectable(ro.displayName))
+                                    if (ImGui.Selectable(ro.displayName, (editorData.selectedItem != null && editorData.selectedItem.id == ro.id)))
                                     {
                                         SelectItem(ro, editorData);
                                     }
@@ -164,6 +164,8 @@ namespace Engine3D
                     ImGui.EndTabBar();
                 }
             }
+            if (ImGui.IsWindowHovered())
+                editorData.uiHasMouse = true;
             ImGui.PopStyleVar();
             ImGui.End();
         }

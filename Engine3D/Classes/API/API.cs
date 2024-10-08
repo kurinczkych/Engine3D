@@ -33,12 +33,22 @@ namespace Engine3D
             onLoadMethods.Add(onLoadMethod);
         }
 
-        public void SubscribeToResizeEvent(WindowResized res)
+        public void AddCharInputMethod(CharInputDelegate charInputMethod)
+        {
+            charInputMethods.Add(charInputMethod);
+        }
+
+        public void AddMouseWheelInputMethod(MouseWheelInputDelegate mouseWheelInputMethod)
+        {
+            mouseWheelInputMethods.Add(mouseWheelInputMethod);
+        }
+
+        public void SubscribeToResizeEvent(WindowResizedDelegate res)
         {
             windowResized = res;
         }
 
-        public void SubscribeToObjectSelectedEvent(ObjectSelected o)
+        public void SubscribeToObjectSelectedEvent(ObjectSelectedDelegate o)
         {
             objectSelected = o;
         }
@@ -84,6 +94,11 @@ namespace Engine3D
                 gizmoWindowPos = pos;
             if(gizmoWindowSize != size)
                 gizmoWindowSize = size;
+        }
+
+        public void SetUIHasMouse(bool hasMouse)
+        {
+            UIHasMouse = hasMouse;
         }
 
         public void SetSelectedObject(Object? o)

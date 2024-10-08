@@ -50,6 +50,8 @@ namespace Engine3D
                     }
                 }
             }
+            if (ImGui.IsWindowHovered())
+                editorData.uiHasMouse = true;
             ImGui.End();
             ImGui.PopStyleVar(); // Pop the style for padding
             style.WindowMinSize = new System.Numerics.Vector2(32, 32);

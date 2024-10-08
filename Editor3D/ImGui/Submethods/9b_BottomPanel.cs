@@ -35,6 +35,8 @@ namespace Engine3D
                 ImGui.SetCursorPosX(bottomPanelSize.X - textSize.X);
                 ImGui.Text(fpsStr);
             }
+            if (ImGui.IsWindowHovered())
+                editorData.uiHasMouse = true;
         }
     }
 }

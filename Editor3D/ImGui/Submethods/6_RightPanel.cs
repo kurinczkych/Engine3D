@@ -1138,8 +1138,10 @@ namespace Engine3D
 
                                             ImGui.Text("Particles: " + ps.GetParticleCount());
 
-                                            ImGui.End();
                                         }
+                                        if (ImGui.IsWindowHovered())
+                                            editorData.uiHasMouse = true;
+                                        ImGui.End();
                                         ImGui.PopStyleColor();
                                         ImGui.PopStyleVar();
                                         #endregion
@@ -1324,6 +1326,8 @@ namespace Engine3D
                     ImGui.EndTabBar();
                 }
             }
+            if (ImGui.IsWindowHovered())
+                editorData.uiHasMouse = true;
             ImGui.PopStyleVar();
             ImGui.End();
         }

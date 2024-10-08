@@ -725,6 +725,8 @@ namespace Engine3D
                     ImGui.EndTabBar();
                 }
             }
+            if (ImGui.IsWindowHovered())
+                editorData.uiHasMouse = true;
             ImGui.PopStyleVar();
             ImGui.End();
         }

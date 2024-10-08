@@ -4,6 +4,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 
 #pragma warning disable CS8602
@@ -192,6 +193,8 @@ namespace Engine3D
             engine.AddRenderMethod(OnRender);
             engine.AddUpdateMethod(OnUpdate);
             engine.AddUnloadMethod(OnUnload);
+            engine.AddCharInputMethod(OnTextInput);
+            engine.AddMouseWheelInputMethod(OnMouseWheel);
 
             engineData.assetManager = engine.GetAssetManager();
             engineData.textureManager = engine.GetTextureManager();
@@ -210,6 +213,8 @@ namespace Engine3D
 
         public void OnRender(FrameEventArgs args)
         {
+            Update(engine, (float)args.Time);
+
             if (!editorData.isGameFullscreen)
                 EditorWindow(ref editorData);
             else
@@ -220,7 +225,6 @@ namespace Engine3D
 
         public void OnUpdate(FrameEventArgs args)
         {
-            Update(engine, (float)args.Time);
             editorData.assetStoreManager.DownloadIfNeeded();
 
             if (editorData.gameRunning == GameState.Stopped &&
@@ -242,6 +246,7 @@ namespace Engine3D
             if (keyboardState.IsKeyReleased(Keys.F5))
             {
                 editorData.gameRunning = editorData.gameRunning == GameState.Stopped ? GameState.Running : GameState.Stopped;
+                engine.SetGameState(editorData.gameRunning);
             }
 
             if (keyboardState.IsKeyReleased(Keys.F2))
@@ -302,8 +307,19 @@ namespace Engine3D
 
             WindowResized(windowSize.X, windowSize.Y);
         }
+
+        protected void OnTextInput(TextInputEventArgs e)
+        {
+            PressChar((char)e.Unicode);
+        }
+
+        protected void OnMouseWheel(MouseWheelEventArgs e)
+        {
+            MouseScroll(e.Offset);
+        }
         #endregion
 
+        #region Other
         public void CalculateObjectList()
         {
             Dictionary<string, int> names = new Dictionary<string, int>();
@@ -338,6 +354,7 @@ namespace Engine3D
 
             return isInHorizontalBounds && isInVerticalBounds;
         }
+        #endregion
 
         #region Helpers
 
@@ -612,6 +629,7 @@ namespace Engine3D
         }
         #endregion
 
+        #region SelectItem
         public void SelectItem(Object? selectedObject, EditorData editorData, int instIndex = -1)
         {
             if (editorData.selectedItem != null)
@@ -627,6 +645,7 @@ namespace Engine3D
             if (selectedObject == null)
             {
                 editorData.selectedItem = null;
+                engine.SetSelectedObject(null);
                 engine.SetGizmoInstIndex(-1);
                 return;
             }
@@ -635,6 +654,7 @@ namespace Engine3D
 
             justSelectedItem = true;
             editorData.selectedItem = selectedObject;
+            engine.SetSelectedObject(selectedObject);
             if (instIndex != -1)
                 engine.SetGizmoInstIndex(instIndex);
 
@@ -655,6 +675,7 @@ namespace Engine3D
             }
             //TODO pointlight and particle system selection
         }
+        #endregion
 
         public void EditorWindow(ref EditorData editorData)
         {
@@ -665,12 +686,15 @@ namespace Engine3D
                 editorData.recalculateObjects = false;
             }
 
-            var io = ImGui.GetIO();
+            editorData.io = ImGui.GetIO();
+            editorData.uiHasMouse = false;
+
+            editorData.anyObjectHovered = -1;
 
             if (editorData.gameRunning == GameState.Running && !editorData.manualCursor)
-                io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
+                editorData.io.ConfigFlags |= ImGuiConfigFlags.NoMouse;
             else
-                io.ConfigFlags &= ~ImGuiConfigFlags.NoMouse;
+                editorData.io.ConfigFlags &= ~ImGuiConfigFlags.NoMouse;
 
             editorData.windowResized = false;
 
@@ -689,6 +713,8 @@ namespace Engine3D
             style.WindowRounding = 5f;
             style.PopupRounding = 5f;
 
+            editorData.io.WantCaptureMouse = false;
+
             TopPanelWithMenubar(ref gameWindow, ref style);
 
             GameWindowFrame(ref gameWindow);
@@ -699,8 +725,6 @@ namespace Engine3D
 
             LeftPanelSeperator(ref gameWindow, ref style);
 
-            SceneView(ref gameWindow);
-
             RightPanel(ref gameWindow, ref style, ref keyboardState);
 
             RightPanelSeperator(ref gameWindow, ref style);
@@ -710,6 +734,10 @@ namespace Engine3D
             BottomAssetPanel(ref gameWindow, ref style, ref keyboardState, ref mouseState);
 
             BottomPanel(ref gameWindow, ref style);
+
+            engine.SetUIHasMouse(editorData.uiHasMouse);
+
+            SceneView(ref gameWindow);
 
             #region Every frame variable updates
             if (isObjectHovered != editorData.anyObjectHovered)

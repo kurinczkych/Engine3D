@@ -1,4 +1,5 @@
-﻿using OpenTK.Mathematics;
+﻿using ImGuiNET;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common.Input;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,9 @@ namespace Engine3D
     {
         #region Data
         public bool recalculateObjects = true;
+
+        public ImGuiIOPtr io;
+        public bool uiHasMouse = false;
 
         public Object? selectedItem;
         public int anyObjectHovered = -1;
