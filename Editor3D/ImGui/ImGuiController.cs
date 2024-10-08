@@ -713,8 +713,6 @@ namespace Engine3D
             style.WindowRounding = 5f;
             style.PopupRounding = 5f;
 
-            editorData.io.WantCaptureMouse = false;
-
             TopPanelWithMenubar(ref gameWindow, ref style);
 
             GameWindowFrame(ref gameWindow);
