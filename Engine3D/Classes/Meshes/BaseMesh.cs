@@ -35,12 +35,8 @@ namespace Engine3D
                 modelName_ = Path.GetFileName(modelPath);
                 ProcessObj(modelPath);
 
-                if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-                {
-                    ComputeVertexNormalsSpherical();
-                }
-                else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
-                    ComputeVertexNormals();
+
+                ComputeNormalsIfNeeded();
 
                 ComputeTangents();
                 recalculate = true;
@@ -473,11 +469,7 @@ namespace Engine3D
 
         public void Delete(ref TextureManager textureManager)
         {
-            foreach (MeshData mesh in model.meshes)
-            {
-                if (mesh.allVerts != null)
-                    mesh.allVerts.Clear();
-            }
+            model.meshes.Clear();
             if (uniformLocations != null)
                 uniformLocations.Clear();
 
@@ -530,49 +522,6 @@ namespace Engine3D
                     {
                         mesh.visibleIndices.Clear();
 
-                        #region not used foreach frustum calc
-                        //foreach (triangle tri in tris)
-                        //{
-                        //    //visibleIndices.Add(tri.vi[0]);
-                        //    //visibleIndices.Add(tri.vi[1]);
-                        //    //visibleIndices.Add(tri.vi[2]);
-                        //    if (modelMatrix != Matrix4.Identity)
-                        //    {
-                        //        bool visible = false;
-                        //        for (int i = 0; i < 3; i++)
-                        //        {
-                        //            Vector3 p = Vector3.TransformPosition(tri.v[i].p, modelMatrix);
-                        //            if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
-                        //            {
-                        //                visible = true;
-                        //                break;
-                        //            }
-                        //        }
-                        //        tri.visibile = visible;
-
-                        //        if (tri.visibile)
-                        //        {
-                        //            visibleIndices.Add(tri.vi[0]);
-                        //            visibleIndices.Add(tri.vi[1]);
-                        //            visibleIndices.Add(tri.vi[2]);
-                        //        }
-                        //    }
-                        //    else
-                        //    {
-                        //        tri.visibile = camera.frustum.IsTriangleInside(tri) || camera.IsTriangleClose(tri);
-
-                        //        if (tri.visibile)
-                        //        {
-                        //            visibleIndices.Add(tri.vi[0]);
-                        //            visibleIndices.Add(tri.vi[1]);
-                        //            visibleIndices.Add(tri.vi[2]);
-                        //        }
-                        //    }
-                        //}
-                        #endregion
-
-                        var a = this.GetType();
-
                         ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
                         Parallel.ForEach(mesh.groupedIndices, parallelOptions,
                         () => new List<uint>(),
@@ -583,7 +532,7 @@ namespace Engine3D
                                 bool visible = false;
                                 for (int i = 0; i < 3; i++)
                                 {
-                                    Vector3 p = Vector3.TransformPosition(mesh.uniqueVertices[(int)indices_[i]].p, modelMatrix);
+                                    Vector3 p = Vector3.TransformPosition(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]]), modelMatrix);
                                     if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
                                     {
                                         visible = true;
@@ -609,7 +558,7 @@ namespace Engine3D
                                 bool visible = false;
                                 for (int i = 0; i < 3; i++)
                                 {
-                                    if (camera.frustum.IsInside(mesh.uniqueVertices[(int)indices_[i]].p) || camera.IsPointClose(mesh.uniqueVertices[(int)indices_[i]].p))
+                                    if (camera.frustum.IsInside(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]])) || camera.IsPointClose(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]])))
                                     {
                                         visible = true;
                                         break;
@@ -643,37 +592,6 @@ namespace Engine3D
             }
         }
 
-        public void AllIndicesVisible()
-        {
-            foreach(MeshData mesh in model.meshes)
-                mesh.visibleIndices = new List<uint>(mesh.indices);
-        }
-
-        protected static Vector3 ComputeFaceNormal(triangle tri)
-        {
-            Vector3 edge1 = tri.v[1].p - tri.v[0].p;
-            Vector3 edge2 = tri.v[2].p - tri.v[0].p;
-            Vector3 normal = Vector3.Cross(edge1, edge2);
-            return normal;
-        }
-
-        protected static Vector3 ComputeFaceNormal(Vector3 p1, Vector3 p2, Vector3 p3)
-        {
-            Vector3 edge1 = p2 - p1;
-            Vector3 edge2 = p3 - p1;
-            Vector3 normal = Vector3.Cross(edge1, edge2);
-            return normal;
-        }
-
-        protected static Vector3 Average(List<Vector3> vectors)
-        {
-            Vector3 sum = Vector3.Zero;
-            foreach (var vec in vectors)
-            {
-                sum += vec;
-            }
-            return sum / vectors.Count;
-        }
 
         protected class Vector3Comparer : IEqualityComparer<Vector3>
         {
@@ -690,181 +608,263 @@ namespace Engine3D
 
         public void ComputeVertexNormalsSpherical()
         {
-            foreach (MeshData mesh in model.meshes)
+            foreach (MeshData meshData in model.meshes)
             {
-                mesh.visibleVerticesData.Clear();
-                mesh.visibleVerticesDataOnlyPos.Clear();
-                mesh.visibleVerticesDataOnlyPosAndNormal.Clear();
-                bool anim = false;
-                if (mesh.visibleVerticesDataWithAnim.Count > 0)
+                Assimp.Mesh mesh = meshData.mesh;
+                // Clear any existing normals if present
+                if (mesh.HasNormals)
                 {
-                    mesh.visibleVerticesDataWithAnim.Clear();
-                    anim = true;
+                    mesh.Normals.Clear();
                 }
 
-                for (int i = 0; i < mesh.uniqueVertices.Count; i++)
+                // Loop through each vertex in the mesh
+                for (int i = 0; i < mesh.Vertices.Count; i++)
                 {
-                    var v = mesh.uniqueVertices[i];
-                    v.n = v.p.Normalized();
-                    mesh.uniqueVertices[i] = v;
+                    // Get the vertex position
+                    Vector3D position = mesh.Vertices[i];
 
-                    mesh.visibleVerticesData.AddRange(v.GetData());
-                    if(anim)
-                        mesh.visibleVerticesDataWithAnim.AddRange(v.GetDataWithAnim());
-                    mesh.visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
-                    mesh.visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
+                    // Compute the spherical normal by normalizing the position
+                    Vector3D sphericalNormal = position;
+                    sphericalNormal.Normalize();
+
+                    // Store the computed normal in the mesh
+                    mesh.Normals.Add(sphericalNormal);
                 }
             }
         }
 
-        public void ComputeVertexNormals()
+        public void ComputeNormalsIfNeeded()
         {
-            foreach (MeshData mesh in model.meshes)
+            foreach (MeshData meshData in model.meshes)
             {
-                mesh.visibleVerticesData.Clear();
-                mesh.visibleVerticesDataOnlyPos.Clear();
-                mesh.visibleVerticesDataOnlyPosAndNormal.Clear();
+                //if (meshData.mesh.HasNormals)
+                //    continue;
+
+                Assimp.Mesh mesh = meshData.mesh;
+
+                meshData.visibleVerticesData.Clear();
+                meshData.visibleVerticesDataOnlyPos.Clear();
+                meshData.visibleVerticesDataOnlyPosAndNormal.Clear();
                 bool anim = false;
-                if (mesh.visibleVerticesDataWithAnim.Count > 0)
+                if (meshData.visibleVerticesDataWithAnim.Count > 0)
                 {
-                    mesh.visibleVerticesDataWithAnim.Clear();
+                    meshData.visibleVerticesDataWithAnim.Clear();
                     anim = true;
                 }
 
                 Dictionary<Vector3, Vector3> vertexNormals = new Dictionary<Vector3, Vector3>();
                 Dictionary<Vector3, int> vertexNormalsCounts = new Dictionary<Vector3, int>();
 
-                for (int i = 0; i < mesh.indices.Count; i += 3)
+                int[] indices = mesh.GetIndices();
+                for (int i = 0; i < indices.Length; i += 3)
                 {
-                    var v = mesh.uniqueVertices[(int)mesh.indices[i]];
-                    Vector3 faceNormal = ComputeFaceNormal(mesh.uniqueVertices[(int)mesh.indices[i]].p, 
-                                                           mesh.uniqueVertices[(int)mesh.indices[i + 1]].p,
-                                                           mesh.uniqueVertices[(int)mesh.indices[i + 2]].p);
+                    Vector3D faceNormal = ComputeFaceNormal(mesh.Vertices[indices[i]],
+                                                           mesh.Vertices[indices[i + 1]],
+                                                           mesh.Vertices[indices[i + 2]]);
                     for (int j = 0; j < 3; j++)
                     {
-                        if (!vertexNormals.ContainsKey(mesh.uniqueVertices[(int)mesh.indices[i + j]].p))
+                        if (!vertexNormals.ContainsKey(AHelp.AssimpToOpenTK(mesh.Vertices[indices[i + j]])))
                         {
-                            vertexNormals[mesh.uniqueVertices[(int)mesh.indices[i + j]].p] = faceNormal;
-                            vertexNormalsCounts[mesh.uniqueVertices[(int)mesh.indices[i + j]].p] = 1;
+                            vertexNormals[AHelp.AssimpToOpenTK(mesh.Vertices[indices[i + j]])] = AHelp.AssimpToOpenTK(faceNormal);
+                            vertexNormalsCounts[AHelp.AssimpToOpenTK(mesh.Vertices[indices[i + j]])] = 1;
                         }
                         else
                         {
-                            vertexNormals[mesh.uniqueVertices[(int)mesh.indices[i + j]].p] += faceNormal;
-                            vertexNormalsCounts[mesh.uniqueVertices[(int)mesh.indices[i + j]].p]++;
+                            vertexNormals[AHelp.AssimpToOpenTK(mesh.Vertices[indices[i + j]])] += AHelp.AssimpToOpenTK(faceNormal);
+                            vertexNormalsCounts[AHelp.AssimpToOpenTK(mesh.Vertices[indices[i + j]])]++;
                         }
                     }
                 }
 
-
-                for (int i = 0; i < mesh.uniqueVertices.Count; i++)
+                mesh.Normals.Clear();
+                for (int i = 0; i < mesh.Vertices.Count; i++)
                 {
-                    var v = mesh.uniqueVertices[i];
-                    v.n = (vertexNormals[mesh.uniqueVertices[i].p] / vertexNormalsCounts[mesh.uniqueVertices[i].p]).Normalized();
-                    mesh.uniqueVertices[i] = v;
+                    Vector3 n = (vertexNormals[AHelp.AssimpToOpenTK(mesh.Vertices[i])] / vertexNormalsCounts[AHelp.AssimpToOpenTK(mesh.Vertices[i])]).Normalized();
+                    mesh.Normals.Add(AHelp.OpenTKToAssimp(n));
+                }
 
-                    mesh.visibleVerticesData.AddRange(v.GetData());
-                    if(anim)
-                        mesh.visibleVerticesDataWithAnim.AddRange(v.GetDataWithAnim());
-                    mesh.visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
-                    mesh.visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
+                meshData.visibleVerticesData.AddRange(BaseMesh.GetMeshData(mesh));
+                if (anim)
+                    meshData.visibleVerticesDataWithAnim.AddRange(BaseMesh.GetMeshDataWithAnim(mesh));
+                meshData.visibleVerticesDataOnlyPos.AddRange(BaseMesh.GetMeshDataOnlyPos(mesh));
+                meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(BaseMesh.GetMeshDataOnlyPosAndNormal(mesh));
+            }
+        }
+
+        protected Vector3D ComputeFaceNormal(Vector3D p1, Vector3D p2, Vector3D p3)
+        {
+            Vector3D edge1 = p2 - p1;
+            Vector3D edge2 = p3 - p1;
+            Vector3D normal = Vector3D.Cross(edge1, edge2);
+            normal.Normalize();
+            return normal;
+        }
+
+        public void ComputeNormalsIfNeededFlat()
+        {
+            foreach(MeshData mesh in model.meshes)
+            {
+                // Check if the mesh already has normals
+                if (mesh.mesh.HasNormals)
+                {
+                    continue; // Skip this mesh if normals already exist
+                }
+
+                // If not, we need to compute the normals
+                // Initialize an empty list of normals for the mesh
+                mesh.mesh.Normals.Clear();
+
+                // Initialize a dictionary to accumulate face normals for each vertex
+                Dictionary<int, List<Vector3D>> vertexNormalSums = new Dictionary<int, List<Vector3D>>();
+
+                // Iterate through each face (triangle) in the mesh
+                for (int i = 0; i < mesh.mesh.Faces.Count; i++)
+                {
+                    var face = mesh.mesh.Faces[i];
+                    if (face.Indices.Count != 3) continue; // Only process triangles
+
+                    // Get the vertices of the triangle
+                    Vector3D p0 = mesh.mesh.Vertices[face.Indices[0]];
+                    Vector3D p1 = mesh.mesh.Vertices[face.Indices[1]];
+                    Vector3D p2 = mesh.mesh.Vertices[face.Indices[2]];
+
+                    // Compute the face normal (cross product of two edges of the triangle)
+                    Vector3D edge1 = p1 - p0;
+                    Vector3D edge2 = p2 - p0;
+                    Vector3D faceNormal = Vector3D.Cross(edge1, edge2);
+                    faceNormal.Normalize();
+
+                    // Accumulate the face normal for each vertex of the triangle
+                    for (int j = 0; j < 3; j++)
+                    {
+                        int vertexIndex = face.Indices[j];
+
+                        if (!vertexNormalSums.ContainsKey(vertexIndex))
+                        {
+                            vertexNormalSums[vertexIndex] = new List<Vector3D>();
+                        }
+
+                        vertexNormalSums[vertexIndex].Add(faceNormal);
+                    }
+                }
+
+                // Compute the average normal for each vertex and normalize it
+                for (int i = 0; i < mesh.mesh.Vertices.Count; i++)
+                {
+                    if (vertexNormalSums.ContainsKey(i))
+                    {
+                        Vector3D averageNormal = Average(vertexNormalSums[i]);
+                        averageNormal.Normalize();
+                        mesh.mesh.Normals.Add(averageNormal); // Add the computed normal to the mesh
+                    }
+                    else
+                    {
+                        // If no normal has been computed for the vertex, add a default normal
+                        mesh.mesh.Normals.Add(new Vector3D(0, 0, 1)); // Upward normal as a fallback
+                    }
                 }
             }
         }
+
 
         public void ComputeTangents()
         {
             foreach (MeshData mesh in model.meshes)
             {
-                mesh.visibleVerticesData.Clear();
-                mesh.visibleVerticesDataOnlyPos.Clear();
-                mesh.visibleVerticesDataOnlyPosAndNormal.Clear();
-                bool anim = false;
-                if (mesh.visibleVerticesDataWithAnim.Count > 0)
+                // Check if tangents are already available
+                if (mesh.mesh.HasTangentBasis)
                 {
-                    mesh.visibleVerticesDataWithAnim.Clear();
-                    anim = true;
+                    continue; // Skip the calculation if tangents already exist
+                }
+
+                // Ensure there are texture coordinates, as tangents depend on them
+                if (!mesh.mesh.HasTextureCoords(0))
+                {
+                    throw new InvalidOperationException("Mesh does not have texture coordinates. Tangents cannot be computed.");
                 }
 
                 // Initialize tangent and bitangent lists with zeros
-                Dictionary<Vector3, List<Vector3>> tangentSums = new Dictionary<Vector3, List<Vector3>>();
-                Dictionary<Vector3, List<Vector3>> bitangentSums = new Dictionary<Vector3, List<Vector3>>();
+                Dictionary<int, List<Vector3D>> tangentSums = new Dictionary<int, List<Vector3D>>();
+                Dictionary<int, List<Vector3D>> bitangentSums = new Dictionary<int, List<Vector3D>>();
 
-                for (int i = 0; i < mesh.indices.Count; i += 3)
+                // Iterate through each face (triangle) in the mesh
+                for (int i = 0; i < mesh.mesh.Faces.Count; i++)
                 {
-                    // Get the vertices of the triangle
-                    Vector3 p0 = mesh.uniqueVertices[(int)mesh.indices[i]].p;
-                    Vector3 p1 = mesh.uniqueVertices[(int)mesh.indices[i + 1]].p;
-                    Vector3 p2 = mesh.uniqueVertices[(int)mesh.indices[i + 2]].p;
+                    var face = mesh.mesh.Faces[i];
+                    if (face.Indices.Count != 3) continue; // Only process triangles
 
-                    // Get UVs of the triangle
-                    Vector2 uv0 = new Vector2(mesh.uniqueVertices[(int)mesh.indices[i]].t.u, mesh.uniqueVertices[(int)mesh.indices[i]].t.v);
-                    Vector2 uv1 = new Vector2(mesh.uniqueVertices[(int)mesh.indices[i + 1]].t.u, mesh.uniqueVertices[(int)mesh.indices[i + 1]].t.v);
-                    Vector2 uv2 = new Vector2(mesh.uniqueVertices[(int)mesh.indices[i + 2]].t.u, mesh.uniqueVertices[(int)mesh.indices[i + 2]].t.v);
+                    // Get the vertices and texture coordinates of the triangle
+                    Vector3D p0 = mesh.mesh.Vertices[face.Indices[0]];
+                    Vector3D p1 = mesh.mesh.Vertices[face.Indices[1]];
+                    Vector3D p2 = mesh.mesh.Vertices[face.Indices[2]];
+
+                    Vector3D uv0 = mesh.mesh.TextureCoordinateChannels[0][face.Indices[0]];
+                    Vector3D uv1 = mesh.mesh.TextureCoordinateChannels[0][face.Indices[1]];
+                    Vector3D uv2 = mesh.mesh.TextureCoordinateChannels[0][face.Indices[2]];
 
                     // Compute the edges of the triangle in both object space and texture space
-                    Vector3 edge1 = p1 - p0;
-                    Vector3 edge2 = p2 - p0;
+                    Vector3D edge1 = p1 - p0;
+                    Vector3D edge2 = p2 - p0;
 
-                    Vector2 deltaUV1 = uv1 - uv0;
-                    Vector2 deltaUV2 = uv2 - uv0;
+                    Vector3D deltaUV1 = uv1 - uv0;
+                    Vector3D deltaUV2 = uv2 - uv0;
 
                     float d = deltaUV1.X * deltaUV2.Y - deltaUV2.X * deltaUV1.Y;
-                    float f = 1.0f;
-                    if (d != 0)
-                        f /= d;
-                    else
-                        f = 0;
+                    float f = d != 0.0f ? 1.0f / d : 0.0f;
 
                     // Calculate tangent and bitangent
-                    Vector3 tangent = new Vector3(
+                    Vector3D tangent = new Vector3D(
                         f * (deltaUV2.Y * edge1.X - deltaUV1.Y * edge2.X),
                         f * (deltaUV2.Y * edge1.Y - deltaUV1.Y * edge2.Y),
                         f * (deltaUV2.Y * edge1.Z - deltaUV1.Y * edge2.Z)
                     );
 
-                    Vector3 bitangent = new Vector3(
+                    Vector3D bitangent = new Vector3D(
                         f * (-deltaUV2.X * edge1.X + deltaUV1.X * edge2.X),
                         f * (-deltaUV2.X * edge1.Y + deltaUV1.X * edge2.Y),
                         f * (-deltaUV2.X * edge1.Z + deltaUV1.X * edge2.Z)
                     );
 
+                    // Store the tangent and bitangent for each vertex
                     for (int j = 0; j < 3; j++)
                     {
-                        if (!tangentSums.ContainsKey(mesh.uniqueVertices[(int)mesh.indices[i + j]].p))
+                        int vertexIndex = face.Indices[j];
+
+                        if (!tangentSums.ContainsKey(vertexIndex))
                         {
-                            tangentSums[mesh.uniqueVertices[(int)mesh.indices[i + j]].p] = new List<Vector3>();
-                            bitangentSums[mesh.uniqueVertices[(int)mesh.indices[i + j]].p] = new List<Vector3>();
+                            tangentSums[vertexIndex] = new List<Vector3D>();
+                            bitangentSums[vertexIndex] = new List<Vector3D>();
                         }
 
-                        tangentSums[mesh.uniqueVertices[(int)mesh.indices[i + j]].p].Add(tangent);
-                        bitangentSums[mesh.uniqueVertices[(int)mesh.indices[i + j]].p].Add(bitangent);
+                        tangentSums[vertexIndex].Add(tangent);
+                        bitangentSums[vertexIndex].Add(bitangent);
                     }
                 }
 
                 // Average and normalize tangents and bitangents
-                for (int i = 0; i < mesh.uniqueVertices.Count; i++)
+                for (int i = 0; i < mesh.mesh.Vertices.Count; i++)
                 {
-                    Vector3 vertex = mesh.uniqueVertices[i].p;
+                    Vector3D avgTangent = Average(tangentSums[i]);
+                    avgTangent.Normalize();
+                    Vector3D avgBitangent = Average(bitangentSums[i]);
+                    avgBitangent.Normalize();
 
-                    Vector3 avgTangent = Average(tangentSums[vertex]).Normalized();
-                    if (float.IsNaN(avgTangent.X))
-                        avgTangent = Vector3.Zero;
-                    Vector3 avgBitangent = Average(bitangentSums[vertex]).Normalized();
-                    if (float.IsNaN(avgBitangent.X))
-                        avgBitangent = Vector3.Zero;
-
-                    var v = mesh.uniqueVertices[i];
-                    v.tan = avgTangent;
-                    v.bitan = avgBitangent;
-                    mesh.uniqueVertices[i] = v;
-
-                    mesh.visibleVerticesData.AddRange(v.GetData());
-                    if(anim)
-                        mesh.visibleVerticesDataWithAnim.AddRange(v.GetDataWithAnim());
-                    mesh.visibleVerticesDataOnlyPos.AddRange(v.GetDataOnlyPos());
-                    mesh.visibleVerticesDataOnlyPosAndNormal.AddRange(v.GetDataOnlyPosAndNormal());
+                    // Assign the computed tangents and bitangents to the mesh
+                    mesh.mesh.Tangents.Add(avgTangent);
+                    mesh.mesh.BiTangents.Add(avgBitangent);
                 }
             }
+        }
+
+        // Helper function to calculate the average of a list of vectors
+        private Vector3D Average(List<Vector3D> vectors)
+        {
+            Vector3D sum = new Vector3D(0, 0, 0);
+            foreach (var vec in vectors)
+            {
+                sum += vec;
+            }
+            return sum / vectors.Count;
         }
 
         public void ProcessObj(string relativeModelPath, float cr=1, float cg=1, float cb=1, float ca=1)
@@ -876,185 +876,491 @@ namespace Engine3D
             }
         }
 
-        #region SimpleMeshes
-        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Vector3[] n, Vec2d[] t, Color4 c)
+        public void AllIndicesVisible()
         {
-            list.Add(new Vertex(v[0], n[0], t[0]) { c = c });
-            list.Add(new Vertex(v[1], n[1], t[1]) { c = c });
-            list.Add(new Vertex(v[2], n[2], t[2]) { c = c });
-        }
-        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Vec2d[] t, Color4 c)
-        {
-            list.Add(new Vertex(v[0], t[0]) { c = c });
-            list.Add(new Vertex(v[1], t[1]) { c = c });
-            list.Add(new Vertex(v[2], t[2]) { c = c });
-        }
-        private static void AddToVertexList(ref List<Vertex> list, Vector3[] v, Color4 c)
-        {
-            list.Add(new Vertex(v[0]) { c = c });
-            list.Add(new Vertex(v[1]) { c = c });
-            list.Add(new Vertex(v[2]) { c = c });
+            foreach (MeshData mesh in model.meshes)
+                mesh.visibleIndices = mesh.mesh.GetIndices().Select(x => (uint)x).ToList();
         }
 
+        #region GetMeshData methods
+        public static float[] GetMeshData(Assimp.Mesh mesh)
+        {
+            // List to store all vertex data
+            List<float> vertexData = new List<float>();
+
+            // Loop through each vertex in the mesh
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                // Get position (p.X, p.Y, p.Z)
+                Vector3D position = mesh.Vertices[i];
+                vertexData.Add(position.X);
+                vertexData.Add(position.Y);
+                vertexData.Add(position.Z);
+
+                // Get normal (n.X, n.Y, n.Z) if the mesh has normals
+                if (mesh.HasNormals)
+                {
+                    Vector3D normal = mesh.Normals[i];
+                    vertexData.Add(normal.X);
+                    vertexData.Add(normal.Y);
+                    vertexData.Add(normal.Z);
+                }
+                else
+                {
+                    // Default normal values if missing
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                }
+
+                // Get texture coordinates (t.u, t.v) if available
+                if (mesh.HasTextureCoords(0))
+                {
+                    Vector3D texCoord = mesh.TextureCoordinateChannels[0][i];
+                    vertexData.Add(texCoord.X); // u
+                    vertexData.Add(texCoord.Y); // v
+                }
+                else
+                {
+                    // Default texture coordinate values if missing
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                }
+
+                // Get vertex color (c.R, c.G, c.B, c.A) if available
+                if (mesh.HasVertexColors(0))
+                {
+                    Color4D color = mesh.VertexColorChannels[0][i];
+                    vertexData.Add(color.R);
+                    vertexData.Add(color.G);
+                    vertexData.Add(color.B);
+                    vertexData.Add(color.A);
+                }
+                else
+                {
+                    // Default color values if missing
+                    vertexData.Add(1); // R
+                    vertexData.Add(1); // G
+                    vertexData.Add(1); // B
+                    vertexData.Add(1); // A
+                }
+
+                // Get tangent (tan.X, tan.Y, tan.Z) if available
+                if (mesh.HasTangentBasis)
+                {
+                    Vector3D tangent = mesh.Tangents[i];
+                    vertexData.Add(tangent.X);
+                    vertexData.Add(tangent.Y);
+                    vertexData.Add(tangent.Z);
+                }
+                else
+                {
+                    // Default tangent values if missing
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                }
+            }
+
+            // Return the list as a float array
+            return vertexData.ToArray();
+        }
+
+        public static float[] GetMeshDataWithAnim(Assimp.Mesh mesh)
+        {
+            // List to store all vertex data
+            List<float> vertexData = new List<float>();
+
+            // Dictionary to hold bone IDs and weights for each vertex
+            var vertexBoneIDs = new Dictionary<int, List<int>>();
+            var vertexBoneWeights = new Dictionary<int, List<float>>();
+
+            // Initialize the dictionaries
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                vertexBoneIDs[i] = new List<int> { 0, 0, 0, 0 };    // Assumes a maximum of 4 bones per vertex
+                vertexBoneWeights[i] = new List<float> { 0.0f, 0.0f, 0.0f, 0.0f };
+            }
+
+            // Populate bone IDs and weights from mesh bones
+            if (mesh.HasBones)
+            {
+                for (int boneIndex = 0; boneIndex < mesh.Bones.Count; boneIndex++)
+                {
+                    var bone = mesh.Bones[boneIndex];
+                    foreach (var weight in bone.VertexWeights)
+                    {
+                        int vertexId = weight.VertexID;
+                        float boneWeight = weight.Weight;
+
+                        // Assign bone ID and weight to the first available slot (max 4 bones per vertex)
+                        for (int i = 0; i < 4; i++)
+                        {
+                            if (vertexBoneWeights[vertexId][i] == 0.0f)
+                            {
+                                vertexBoneIDs[vertexId][i] = boneIndex; // Store bone index
+                                vertexBoneWeights[vertexId][i] = boneWeight; // Store bone weight
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Loop through each vertex in the mesh
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                // Get position (p.X, p.Y, p.Z)
+                Vector3D position = mesh.Vertices[i];
+                vertexData.Add(position.X);
+                vertexData.Add(position.Y);
+                vertexData.Add(position.Z);
+
+                // Get normal (n.X, n.Y, n.Z) if the mesh has normals
+                if (mesh.HasNormals)
+                {
+                    Vector3D normal = mesh.Normals[i];
+                    vertexData.Add(normal.X);
+                    vertexData.Add(normal.Y);
+                    vertexData.Add(normal.Z);
+                }
+                else
+                {
+                    // Default normal values if missing
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                }
+
+                // Get texture coordinates (t.u, t.v) if available
+                if (mesh.HasTextureCoords(0))
+                {
+                    Vector3D texCoord = mesh.TextureCoordinateChannels[0][i];
+                    vertexData.Add(texCoord.X); // u
+                    vertexData.Add(texCoord.Y); // v
+                }
+                else
+                {
+                    // Default texture coordinate values if missing
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                }
+
+                // Get vertex color (c.R, c.G, c.B, c.A) if available
+                if (mesh.HasVertexColors(0))
+                {
+                    Color4D color = mesh.VertexColorChannels[0][i];
+                    vertexData.Add(color.R);
+                    vertexData.Add(color.G);
+                    vertexData.Add(color.B);
+                    vertexData.Add(color.A);
+                }
+                else
+                {
+                    // Default color values if missing
+                    vertexData.Add(1); // R
+                    vertexData.Add(1); // G
+                    vertexData.Add(1); // B
+                    vertexData.Add(1); // A
+                }
+
+                // Get tangent (tan.X, tan.Y, tan.Z) if available
+                if (mesh.HasTangentBasis)
+                {
+                    Vector3D tangent = mesh.Tangents[i];
+                    vertexData.Add(tangent.X);
+                    vertexData.Add(tangent.Y);
+                    vertexData.Add(tangent.Z);
+                }
+                else
+                {
+                    // Default tangent values if missing
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                    vertexData.Add(0);
+                }
+
+                // Add bone IDs (max 4)
+                vertexData.AddRange(vertexBoneIDs[i].Take(4).Select(x => (float)x));
+
+                // Add bone weights (max 4)
+                vertexData.AddRange(vertexBoneWeights[i].Take(4));
+
+                // Add bone count (the number of non-zero bone weights)
+                int boneCount = vertexBoneWeights[i].Count(weight => weight > 0);
+                vertexData.Add(boneCount);
+            }
+
+            // Return the list as a float array
+            return vertexData.ToArray();
+        }
+
+        public static float[] GetMeshDataOnlyPos(Assimp.Mesh mesh)
+        {
+            // List to store all position data
+            List<float> positionData = new List<float>();
+
+            // Loop through each vertex in the mesh
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                // Get position (p.X, p.Y, p.Z)
+                Vector3D position = mesh.Vertices[i];
+                positionData.Add(position.X);
+                positionData.Add(position.Y);
+                positionData.Add(position.Z);
+            }
+
+            // Return the list as a float array
+            return positionData.ToArray();
+        }
+
+        public static float[] GetMeshDataOnlyPosAndNormal(Assimp.Mesh mesh)
+        {
+            // List to store all position and normal data
+            List<float> data = new List<float>();
+
+            // Loop through each vertex in the mesh
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                // Get position (p.X, p.Y, p.Z)
+                Vector3D position = mesh.Vertices[i];
+                data.Add(position.X);
+                data.Add(position.Y);
+                data.Add(position.Z);
+
+                // Get normal (n.X, n.Y, n.Z) if the mesh has normals
+                if (mesh.HasNormals)
+                {
+                    Vector3D normal = mesh.Normals[i];
+                    data.Add(normal.X);
+                    data.Add(normal.Y);
+                    data.Add(normal.Z);
+                }
+                else
+                {
+                    // If no normals exist, add default values (0, 0, 0)
+                    data.Add(0);
+                    data.Add(0);
+                    data.Add(0);
+                }
+            }
+
+            // Return the list as a float array
+            return data.ToArray();
+        }
+        #endregion
+
+        #region SimpleMeshes
         public static ModelData GetUnitCube(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
-            Color4 c = new Color4(r, g, b, a);
-
-            MeshData meshData = new MeshData();
+            Color4D c = new Color4D(r, g, b, a);
 
             float halfSize = 0.5f;
 
             // Define cube vertices
-            Vector3 p1 = new Vector3(-halfSize, -halfSize, -halfSize);
-            Vector3 p2 = new Vector3(halfSize, -halfSize, -halfSize);
-            Vector3 p3 = new Vector3(halfSize, halfSize, -halfSize);
-            Vector3 p4 = new Vector3(-halfSize, halfSize, -halfSize);
-            Vector3 p5 = new Vector3(-halfSize, -halfSize, halfSize);
-            Vector3 p6 = new Vector3(halfSize, -halfSize, halfSize);
-            Vector3 p7 = new Vector3(halfSize, halfSize, halfSize);
-            Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
+            Vector3D p1 = new Vector3D(-halfSize, -halfSize, -halfSize);
+            Vector3D p2 = new Vector3D(halfSize, -halfSize, -halfSize);
+            Vector3D p3 = new Vector3D(halfSize, halfSize, -halfSize);
+            Vector3D p4 = new Vector3D(-halfSize, halfSize, -halfSize);
+            Vector3D p5 = new Vector3D(-halfSize, -halfSize, halfSize);
+            Vector3D p6 = new Vector3D(halfSize, -halfSize, halfSize);
+            Vector3D p7 = new Vector3D(halfSize, halfSize, halfSize);
+            Vector3D p8 = new Vector3D(-halfSize, halfSize, halfSize);
 
-            Vec2d t1 = new Vec2d(0, 0);
-            Vec2d t2 = new Vec2d(1, 0);
-            Vec2d t3 = new Vec2d(1, 1);
-            Vec2d t4 = new Vec2d(0, 1);
+            Vector3D t1 = new Vector3D(0, 0, 0); // Assimp uses 3D vectors for texcoords as well
+            Vector3D t2 = new Vector3D(1, 0, 0);
+            Vector3D t3 = new Vector3D(1, 1, 0);
+            Vector3D t4 = new Vector3D(0, 1, 0);
 
-            Vector3 normalBack = new Vector3(0, 0, -1);  // Back face (-Z)
-            Vector3 normalFront = new Vector3(0, 0, 1);  // Front face (+Z)
-            Vector3 normalLeft = new Vector3(-1, 0, 0);  // Left face (-X)
-            Vector3 normalRight = new Vector3(1, 0, 0);  // Right face (+X)
-            Vector3 normalTop = new Vector3(0, 1, 0);    // Top face (+Y)
-            Vector3 normalBottom = new Vector3(0, -1, 0); // Bottom face (-Y)
+            Vector3D normalBack = new Vector3D(0, 0, -1);  // Back face (-Z)
+            Vector3D normalFront = new Vector3D(0, 0, 1);  // Front face (+Z)
+            Vector3D normalLeft = new Vector3D(-1, 0, 0);  // Left face (-X)
+            Vector3D normalRight = new Vector3D(1, 0, 0);  // Right face (+X)
+            Vector3D normalTop = new Vector3D(0, 1, 0);    // Top face (+Y)
+            Vector3D normalBottom = new Vector3D(0, -1, 0); // Bottom face (-Y)
 
-            List<Vertex> list = new List<Vertex>();
+            Assimp.Mesh assimpMesh = new Assimp.Mesh(Assimp.PrimitiveType.Triangle);
 
-            AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, new Vector3[] { normalBack, normalBack, normalBack }, new Vec2d[] { t1, t3, t2 }, c);
-            AddToVertexList(ref list, new Vector3[] { p3, p1, p4 }, new Vector3[] { normalBack, normalBack, normalBack }, new Vec2d[] { t3, t1, t4 }, c);
+            List<Vector3D> vertices = new List<Vector3D>();
+            List<Vector3D> normals = new List<Vector3D>();
+            List<Vector3D> texCoords = new List<Vector3D>();
+            List<Color4D> colors = new List<Color4D>();
+            List<int> indices = new List<int>();
 
-            // Front face (+Z)
-            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vector3[] { normalFront, normalFront, normalFront }, new Vec2d[] { t1, t2, t3 }, c);
-            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vector3[] { normalFront, normalFront, normalFront }, new Vec2d[] { t3, t4, t1 }, c);
-
-            // Left face (-X)
-            AddToVertexList(ref list, new Vector3[] { p1, p8, p4 }, new Vector3[] { normalLeft, normalLeft, normalLeft }, new Vec2d[] { t1, t3, t2 }, c);
-            AddToVertexList(ref list, new Vector3[] { p8, p1, p5 }, new Vector3[] { normalLeft, normalLeft, normalLeft }, new Vec2d[] { t3, t1, t4 }, c);
-
-            // Right face (+X)
-            AddToVertexList(ref list, new Vector3[] { p2, p3, p7 }, new Vector3[] { normalRight, normalRight, normalRight }, new Vec2d[] { t1, t2, t3 }, c);
-            AddToVertexList(ref list, new Vector3[] { p7, p6, p2 }, new Vector3[] { normalRight, normalRight, normalRight }, new Vec2d[] { t3, t4, t1 }, c);
-
-            // Top face (+Y)
-            AddToVertexList(ref list, new Vector3[] { p4, p7, p3 }, new Vector3[] { normalTop, normalTop, normalTop }, new Vec2d[] { t1, t3, t2 }, c);
-            AddToVertexList(ref list, new Vector3[] { p7, p4, p8 }, new Vector3[] { normalTop, normalTop, normalTop }, new Vec2d[] { t3, t1, t4 }, c);
-
-            // Bottom face (-Y)
-            AddToVertexList(ref list, new Vector3[] { p1, p2, p6 }, new Vector3[] { normalBottom, normalBottom, normalBottom }, new Vec2d[] { t1, t2, t3 }, c);
-            AddToVertexList(ref list, new Vector3[] { p6, p5, p1 }, new Vector3[] { normalBottom, normalBottom, normalBottom }, new Vec2d[] { t3, t4, t1 }, c);
-
-            //AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, new Vec2d[] { t1, t3, t2 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p3, p1, p4 }, new Vec2d[] { t3, t1, t4 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p1, p8, p4 }, new Vec2d[] { t1, t3, t2 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p8, p1, p5 }, new Vec2d[] { t3, t1, t4 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p2, p3, p7 }, new Vec2d[] { t1, t2, t3 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p7, p6, p2 }, new Vec2d[] { t3, t4, t1 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p4, p7, p3 }, new Vec2d[] { t1, t3, t2 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p7, p4, p8 }, new Vec2d[] { t3, t1, t4 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p1, p2, p6 }, new Vec2d[] { t1, t2, t3 }, c);
-            //AddToVertexList(ref list, new Vector3[] { p6, p5, p1 }, new Vec2d[] { t3, t4, t1 }, c);
-
-            Dictionary<int, uint> hash = new Dictionary<int, uint>();
-            for (int i = 0; i < list.Count; i++)
+            void AddFace(Vector3D[] faceVertices, Vector3D[] faceNormals, Vector3D[] faceTexCoords, Color4D[] faceColors)
             {
-                int vh = list[i].GetHashCode();
-                if (!hash.ContainsKey(vh))
+                for (int i = 0; i < 3; i++)
                 {
-                    meshData.uniqueVertices.Add(list[i]);
-                    meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
-                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
-                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
-                    meshData.Bounds.Enclose(list[i]);
-                }
-                else
-                {
-                    meshData.indices.Add(hash[vh]);
+                    vertices.Add(faceVertices[i]);
+                    normals.Add(faceNormals[i]);
+                    texCoords.Add(faceTexCoords[i]);
+                    colors.Add(faceColors[i]);
+                    indices.Add(vertices.Count - 1); // Add index
                 }
             }
 
-            meshData.CalculateGroupedIndices();
+            AddFace(new[] { p1, p3, p2 }, new[] { normalBack, normalBack, normalBack }, new[] { t1, t3, t2 }, new[] { c, c, c, c });
+            AddFace(new[] { p3, p1, p4 }, new[] { normalBack, normalBack, normalBack }, new[] { t3, t1, t4 }, new[] { c, c, c, c });
 
-            ModelData model = new ModelData();
-            model.meshes.Add(meshData);
-            return model;
+            // Front face (+Z)
+            AddFace(new[] { p5, p6, p7 }, new[] { normalFront, normalFront, normalFront }, new[] { t1, t2, t3 }, new[] { c, c, c, c });
+            AddFace(new[] { p7, p8, p5 }, new[] { normalFront, normalFront, normalFront }, new[] { t3, t4, t1 }, new[] { c, c, c, c });
+
+            // Left face (-X)
+            AddFace(new[] { p1, p8, p4 }, new[] { normalLeft, normalLeft, normalLeft }, new[] { t1, t3, t2 }, new[] { c, c, c, c });
+            AddFace(new[] { p8, p1, p5 }, new[] { normalLeft, normalLeft, normalLeft }, new[] { t3, t1, t4 }, new[] { c, c, c, c });
+
+            // Right face (+X)
+            AddFace(new[] { p2, p3, p7 }, new[] { normalRight, normalRight, normalRight }, new[] { t1, t2, t3 }, new[] { c, c, c, c });
+            AddFace(new[] { p7, p6, p2 }, new[] { normalRight, normalRight, normalRight }, new[] { t3, t4, t1 }, new[] { c, c, c, c });
+
+            // Top face (+Y)
+            AddFace(new[] { p4, p7, p3 }, new[] { normalTop, normalTop, normalTop }, new[] { t1, t3, t2 }, new[] { c, c, c, c });
+            AddFace(new[] { p7, p4, p8 }, new[] { normalTop, normalTop, normalTop }, new[] { t3, t1, t4 }, new[] { c, c, c, c });
+
+            // Bottom face (-Y)
+            AddFace(new[] { p1, p2, p6 }, new[] { normalBottom, normalBottom, normalBottom }, new[] { t1, t2, t3 }, new[] { c, c, c, c });
+            AddFace(new[] { p6, p5, p1 }, new[] { normalBottom, normalBottom, normalBottom }, new[] { t3, t4, t1 }, new[] { c, c, c, c });
+
+            assimpMesh.Vertices.AddRange(vertices);
+            assimpMesh.Normals.AddRange(normals);
+            assimpMesh.TextureCoordinateChannels[0].AddRange(texCoords);
+            assimpMesh.VertexColorChannels[0].AddRange(colors);
+
+            for (int i = 0; i < indices.Count; i += 3)
+            {
+                Face face = new Face();
+                face.Indices.Add(indices[i]);
+                face.Indices.Add(indices[i + 1]);
+                face.Indices.Add(indices[i + 2]);
+                assimpMesh.Faces.Add(face); // Add each face directly to the mesh's Faces collection
+            }
+
+            ModelData modelData = new ModelData();
+            modelData.meshes.Add(new MeshData(assimpMesh));
+            modelData.meshes[0].CalculateGroupedIndices();
+
+            return modelData;
         }
 
         public static ModelData GetUnitFace(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
-            Color4 c = new Color4(r, g, b, a);
-
-            MeshData meshData = new MeshData();
+            Color4D c = new Color4D(r, g, b, a);
 
             float halfSize = 0.5f;
 
-            // Define cube vertices (only what's needed for the front face)
-            Vector3 p5 = new Vector3(-halfSize, -halfSize, halfSize);
-            Vector3 p6 = new Vector3(halfSize, -halfSize, halfSize);
-            Vector3 p7 = new Vector3(halfSize, halfSize, halfSize);
-            Vector3 p8 = new Vector3(-halfSize, halfSize, halfSize);
+            // Define vertices for the front face
+            Vector3D p5 = new Vector3D(-halfSize, -halfSize, halfSize);
+            Vector3D p6 = new Vector3D(halfSize, -halfSize, halfSize);
+            Vector3D p7 = new Vector3D(halfSize, halfSize, halfSize);
+            Vector3D p8 = new Vector3D(-halfSize, halfSize, halfSize);
 
-            Vec2d t1 = new Vec2d(0, 0);
-            Vec2d t2 = new Vec2d(1, 0);
-            Vec2d t3 = new Vec2d(1, 1);
-            Vec2d t4 = new Vec2d(0, 1);
+            // Texture coordinates
+            Vector3D t1 = new Vector3D(0, 0, 0);
+            Vector3D t2 = new Vector3D(1, 0, 0);
+            Vector3D t3 = new Vector3D(1, 1, 0);
+            Vector3D t4 = new Vector3D(0, 1, 0);
 
-            List<Vertex> list = new List<Vertex>();
+            // Create Assimp Mesh for a single face
+            Assimp.Mesh assimpMesh = new Assimp.Mesh(Assimp.PrimitiveType.Triangle);
 
-            // Front face
-            AddToVertexList(ref list, new Vector3[] { p5, p6, p7 }, new Vec2d[] { t1, t2, t3 }, c);
-            AddToVertexList(ref list, new Vector3[] { p7, p8, p5 }, new Vec2d[] { t3, t4, t1 }, c);
+            List<Vector3D> vertices = new List<Vector3D>();
+            List<Vector3D> texCoords = new List<Vector3D>();
+            List<Color4D> colors = new List<Color4D>();
+            List<int> indices = new List<int>();
 
-            Dictionary<int, uint> hash = new Dictionary<int, uint>();
-            for (int i = 0; i < list.Count; i++)
+            // Helper method to add vertices, texcoords, and indices to the mesh
+            void AddFace(Vector3D[] faceVertices, Vector3D[] faceTexCoords, Color4D[] faceColors)
             {
-                int vh = list[i].GetHashCode();
-                if (!hash.ContainsKey(vh))
+                for (int i = 0; i < 3; i++)
                 {
-                    meshData.uniqueVertices.Add(list[i]);
-                    meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
-                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
-                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
-                    meshData.Bounds.Enclose(list[i]);
-                }
-                else
-                {
-                    meshData.indices.Add(hash[vh]);
+                    vertices.Add(faceVertices[i]);
+                    texCoords.Add(faceTexCoords[i]);
+                    colors.Add(faceColors[i]);
+                    indices.Add(vertices.Count - 1); // Add index
                 }
             }
 
-            meshData.CalculateGroupedIndices();
+            // Add front face triangles
+            AddFace(new[] { p5, p6, p7 }, new[] { t1, t2, t3 }, new[] { c, c, c, c }); // First triangle
+            AddFace(new[] { p7, p8, p5 }, new[] { t3, t4, t1 }, new[] { c, c, c, c }); // Second triangle
 
-            ModelData model = new ModelData();
-            model.meshes.Add(meshData);
-            return model;
+            // Populate Assimp mesh with vertices and texture coordinates
+            assimpMesh.Vertices.AddRange(vertices);
+            assimpMesh.TextureCoordinateChannels[0].AddRange(texCoords);
+
+            // Now add the faces directly to the mesh
+            for (int i = 0; i < indices.Count; i += 3)
+            {
+                Face face = new Face();
+                face.Indices.Add(indices[i]);
+                face.Indices.Add(indices[i + 1]);
+                face.Indices.Add(indices[i + 2]);
+                assimpMesh.Faces.Add(face); // Add each face directly to the mesh's Faces collection
+            }
+
+            ModelData modelData = new ModelData();
+            modelData.meshes.Add(new MeshData(assimpMesh));
+            modelData.meshes[0].CalculateGroupedIndices();
+
+            return modelData;
         }
 
         public static ModelData GetUnitSphere(float radius = 1, int resolution = 10,
-                                                                                  float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+                                      float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
-            Color4 c = new Color4(r, g, b, a);
-
-            MeshData meshData = new MeshData();
+            Color4D c = new Color4D(r, g, b, a);
 
             // Validate inputs
             if (radius <= 0 || resolution < 3)
                 throw new ArgumentException("Invalid radius or resolution.");
 
-            List<Vertex> list = new List<Vertex>();
+            // Create Assimp Mesh for the sphere
+            Assimp.Mesh assimpMesh = new Assimp.Mesh(Assimp.PrimitiveType.Triangle);
+
+            List<Vector3D> vertices = new List<Vector3D>();
+            List<Vector3D> normals = new List<Vector3D>();
+            List<int> indices = new List<int>();
+            List<Color4D> vertexColors = new List<Color4D>();
+            List<Vector3D> texCoords = new List<Vector3D>();
+
+            // Helper method to add vertices, normals, colors, texCoords, and indices to the mesh
+            void AddTriangle(Vector3D p1, Vector3D p2, Vector3D p3, Vector3D uv1, Vector3D uv2, Vector3D uv3)
+            {
+                // Add vertices
+                vertices.Add(p1);
+                vertices.Add(p2);
+                vertices.Add(p3);
+
+                // Compute normals
+                Vector3D normal1 = p1;
+                Vector3D normal2 = p2;
+                Vector3D normal3 = p3;
+                normal1.Normalize();
+                normal2.Normalize();
+                normal3.Normalize();
+
+                normals.Add(normal1);
+                normals.Add(normal2);
+                normals.Add(normal3);
+
+                // Add vertex colors
+                vertexColors.Add(c); // Color for p1
+                vertexColors.Add(c); // Color for p2
+                vertexColors.Add(c); // Color for p3
+
+                // Add texture coordinates (TexUVs)
+                texCoords.Add(uv1);
+                texCoords.Add(uv2);
+                texCoords.Add(uv3);
+
+                // Add indices for the new triangle
+                indices.Add(vertices.Count - 3);
+                indices.Add(vertices.Count - 2);
+                indices.Add(vertices.Count - 1);
+            }
+
+            // Generate vertices, normals, colors, texCoords, and triangles for the sphere
             for (int i = 0; i < resolution; i++)
             {
                 for (int j = 0; j < resolution; j++)
@@ -1064,70 +1370,113 @@ namespace Engine3D
                     float v1 = j / (float)resolution * MathF.PI;
                     float v2 = (j + 1) / (float)resolution * MathF.PI;
 
-                    Vector3 p1 = new Vector3(
+                    // Vertex positions
+                    Vector3D p1 = new Vector3D(
                         radius * MathF.Sin(v1) * MathF.Cos(u1),
                         radius * MathF.Cos(v1),
                         radius * MathF.Sin(v1) * MathF.Sin(u1));
 
-                    Vector3 p2 = new Vector3(
+                    Vector3D p2 = new Vector3D(
                         radius * MathF.Sin(v1) * MathF.Cos(u2),
                         radius * MathF.Cos(v1),
                         radius * MathF.Sin(v1) * MathF.Sin(u2));
 
-                    Vector3 p3 = new Vector3(
+                    Vector3D p3 = new Vector3D(
                         radius * MathF.Sin(v2) * MathF.Cos(u1),
                         radius * MathF.Cos(v2),
                         radius * MathF.Sin(v2) * MathF.Sin(u1));
 
-                    Vector3 p4 = new Vector3(
+                    Vector3D p4 = new Vector3D(
                         radius * MathF.Sin(v2) * MathF.Cos(u2),
                         radius * MathF.Cos(v2),
                         radius * MathF.Sin(v2) * MathF.Sin(u2));
 
-                    AddToVertexList(ref list, new Vector3[] { p1, p2, p3 }, c);
-                    AddToVertexList(ref list, new Vector3[] { p2, p4, p3 }, c);
+                    // Texture coordinates (u, v)
+                    Vector3D uv1 = new Vector3D(i / (float)resolution, j / (float)resolution, 0);
+                    Vector3D uv2 = new Vector3D((i + 1) / (float)resolution, j / (float)resolution, 0);
+                    Vector3D uv3 = new Vector3D(i / (float)resolution, (j + 1) / (float)resolution, 0);
+                    Vector3D uv4 = new Vector3D((i + 1) / (float)resolution, (j + 1) / (float)resolution, 0);
+
+                    // Add two triangles for each quad
+                    AddTriangle(p1, p2, p3, uv1, uv2, uv3); // First triangle
+                    AddTriangle(p2, p4, p3, uv2, uv4, uv3); // Second triangle
                 }
             }
 
-            Dictionary<int, uint> hash = new Dictionary<int, uint>();
-            for (int i = 0; i < list.Count; i++)
+            // Populate Assimp mesh with vertices, normals, colors, and texCoords
+            assimpMesh.Vertices.AddRange(vertices);
+            assimpMesh.Normals.AddRange(normals);
+            assimpMesh.VertexColorChannels[0].AddRange(vertexColors);
+            assimpMesh.TextureCoordinateChannels[0].AddRange(texCoords);
+
+            // Add faces (triangles)
+            for (int i = 0; i < indices.Count; i += 3)
             {
-                int vh = list[i].GetHashCode();
-                if (!hash.ContainsKey(vh))
-                {
-                    meshData.uniqueVertices.Add(list[i]);
-                    meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
-                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
-                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
-                    meshData.Bounds.Enclose(list[i]);
-                }
-                else
-                {
-                    meshData.indices.Add(hash[vh]);
-                }
+                Face face = new Face();
+                face.Indices.Add(indices[i]);
+                face.Indices.Add(indices[i + 1]);
+                face.Indices.Add(indices[i + 2]);
+                assimpMesh.Faces.Add(face);
             }
 
-            meshData.CalculateGroupedIndices();
+            // Create a new ModelData object and add the mesh to it
+            ModelData modelData = new ModelData();
+            modelData.meshes.Add(new MeshData(assimpMesh));
+            modelData.meshes[0].CalculateGroupedIndices();
 
-            ModelData model = new ModelData();
-            model.meshes.Add(meshData);
-            return model;
+            return modelData;
         }
 
         public static ModelData GetUnitCapsule(float radius = 0.5f, float halfHeight = 0.5f, int resolution = 10,
-                                                                                   float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
+                                       float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f)
         {
-            Color4 c = new Color4(r, g, b, a);
-
-            MeshData meshData = new MeshData();
+            Color4D color = new Color4D(r, g, b, a);
 
             // Validate inputs
             if (radius <= 0 || resolution < 3)
                 throw new ArgumentException("Invalid radius or resolution.");
 
-            List<Vertex> list = new List<Vertex>();
+            // Create Assimp Mesh for the capsule
+            Assimp.Mesh assimpMesh = new Assimp.Mesh(Assimp.PrimitiveType.Triangle);
+
+            List<Vector3D> vertices = new List<Vector3D>();
+            List<Vector3D> normals = new List<Vector3D>();
+            List<int> indices = new List<int>();
+            List<Color4D> vertexColors = new List<Color4D>();
+            List<Vector3D> texCoords = new List<Vector3D>();
+
+            // Helper method to add vertices, normals, colors, texCoords, and indices to the mesh
+            void AddTriangle(Vector3D p1, Vector3D p2, Vector3D p3, Vector3D uv1, Vector3D uv2, Vector3D uv3)
+            {
+                vertices.Add(p1);
+                vertices.Add(p2);
+                vertices.Add(p3);
+
+                Vector3D normal1 = p1;
+                Vector3D normal2 = p2;
+                Vector3D normal3 = p3;
+
+                normal1.Normalize();
+                normal2.Normalize();
+                normal3.Normalize();
+
+                normals.Add(normal1);
+                normals.Add(normal2);
+                normals.Add(normal3);
+
+                vertexColors.Add(color); // Add vertex color for p1
+                vertexColors.Add(color); // Add vertex color for p2
+                vertexColors.Add(color); // Add vertex color for p3
+
+                texCoords.Add(uv1); // Add texture coordinates for p1
+                texCoords.Add(uv2); // Add texture coordinates for p2
+                texCoords.Add(uv3); // Add texture coordinates for p3
+
+                indices.Add(vertices.Count - 3); // Add indices for the new triangle
+                indices.Add(vertices.Count - 2);
+                indices.Add(vertices.Count - 1);
+            }
+
             // Generate the top and bottom hemispheres
             for (int i = 0; i < resolution; i++)
             {
@@ -1138,37 +1487,44 @@ namespace Engine3D
                     float v1 = j / (float)resolution * MathF.PI;
                     float v2 = (j + 1) / (float)resolution * MathF.PI;
 
-                    Vector3 p1 = new Vector3(
+                    // Top hemisphere
+                    Vector3D p1 = new Vector3D(
                         halfHeight + radius * MathF.Cos(v1),
                         radius * MathF.Sin(v1) * MathF.Cos(u1),
                         radius * MathF.Sin(v1) * MathF.Sin(u1));
 
-                    Vector3 p2 = new Vector3(
+                    Vector3D p2 = new Vector3D(
                         halfHeight + radius * MathF.Cos(v1),
                         radius * MathF.Sin(v1) * MathF.Cos(u2),
                         radius * MathF.Sin(v1) * MathF.Sin(u2));
 
-                    Vector3 p3 = new Vector3(
+                    Vector3D p3 = new Vector3D(
                         halfHeight + radius * MathF.Cos(v2),
                         radius * MathF.Sin(v2) * MathF.Cos(u1),
                         radius * MathF.Sin(v2) * MathF.Sin(u1));
 
-                    Vector3 p4 = new Vector3(
+                    Vector3D p4 = new Vector3D(
                         halfHeight + radius * MathF.Cos(v2),
                         radius * MathF.Sin(v2) * MathF.Cos(u2),
                         radius * MathF.Sin(v2) * MathF.Sin(u2));
 
-                    AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, c);
-                    AddToVertexList(ref list, new Vector3[] { p2, p3, p4 }, c);
+                    // Texture coordinates (u, v)
+                    Vector3D uv1 = new Vector3D(i / (float)resolution, j / (float)resolution, 0);
+                    Vector3D uv2 = new Vector3D((i + 1) / (float)resolution, j / (float)resolution, 0);
+                    Vector3D uv3 = new Vector3D(i / (float)resolution, (j + 1) / (float)resolution, 0);
+                    Vector3D uv4 = new Vector3D((i + 1) / (float)resolution, (j + 1) / (float)resolution, 0);
 
-                    // Back hemisphere (invert the x-coordinates)
-                    Vector3 p1b = new Vector3(-p1.X, p1.Y, p1.Z);
-                    Vector3 p2b = new Vector3(-p2.X, p2.Y, p2.Z);
-                    Vector3 p3b = new Vector3(-p3.X, p3.Y, p3.Z);
-                    Vector3 p4b = new Vector3(-p4.X, p4.Y, p4.Z);
+                    AddTriangle(p1, p3, p2, uv1, uv3, uv2); // First triangle
+                    AddTriangle(p2, p3, p4, uv2, uv3, uv4); // Second triangle
 
-                    AddToVertexList(ref list, new Vector3[] { p1b, p2b, p3b }, c);
-                    AddToVertexList(ref list, new Vector3[] { p2b, p4b, p3b }, c);
+                    // Bottom hemisphere (invert the X-coordinates)
+                    Vector3D p1b = new Vector3D(-p1.X, p1.Y, p1.Z);
+                    Vector3D p2b = new Vector3D(-p2.X, p2.Y, p2.Z);
+                    Vector3D p3b = new Vector3D(-p3.X, p3.Y, p3.Z);
+                    Vector3D p4b = new Vector3D(-p4.X, p4.Y, p4.Z);
+
+                    AddTriangle(p1b, p2b, p3b, uv1, uv2, uv3); // First bottom triangle
+                    AddTriangle(p2b, p4b, p3b, uv2, uv4, uv3); // Second bottom triangle
                 }
             }
 
@@ -1179,41 +1535,45 @@ namespace Engine3D
                 float u2 = (i + 1) / (float)resolution * MathF.PI * 2;
 
                 // Creating vertices for the cylinder
-                Vector3 p1 = new Vector3(halfHeight, radius * MathF.Cos(u1), radius * MathF.Sin(u1));
-                Vector3 p2 = new Vector3(halfHeight, radius * MathF.Cos(u2), radius * MathF.Sin(u2));
-                Vector3 p3 = new Vector3(-halfHeight, p1.Y, p1.Z);
-                Vector3 p4 = new Vector3(-halfHeight, p2.Y, p2.Z);
+                Vector3D p1 = new Vector3D(halfHeight, radius * MathF.Cos(u1), radius * MathF.Sin(u1));
+                Vector3D p2 = new Vector3D(halfHeight, radius * MathF.Cos(u2), radius * MathF.Sin(u2));
+                Vector3D p3 = new Vector3D(-halfHeight, p1.Y, p1.Z);
+                Vector3D p4 = new Vector3D(-halfHeight, p2.Y, p2.Z);
 
-                AddToVertexList(ref list, new Vector3[] { p1, p3, p2 }, c);
-                AddToVertexList(ref list, new Vector3[] { p2, p3, p4 }, c);
+                // Texture coordinates for cylinder segment
+                Vector3D uv1 = new Vector3D(i / (float)resolution, 0, 0);
+                Vector3D uv2 = new Vector3D((i + 1) / (float)resolution, 0, 0);
+                Vector3D uv3 = new Vector3D(i / (float)resolution, 1, 0);
+                Vector3D uv4 = new Vector3D((i + 1) / (float)resolution, 1, 0);
+
+                AddTriangle(p1, p3, p2, uv1, uv3, uv2); // First triangle for the cylinder
+                AddTriangle(p2, p3, p4, uv2, uv3, uv4); // Second triangle for the cylinder
             }
 
-            Dictionary<int, uint> hash = new Dictionary<int, uint>();
-            for (int i = 0; i < list.Count; i++)
+            // Populate Assimp mesh with vertices, normals, colors, and texCoords
+            assimpMesh.Vertices.AddRange(vertices);
+            assimpMesh.Normals.AddRange(normals);
+            assimpMesh.VertexColorChannels[0].AddRange(vertexColors);
+            assimpMesh.TextureCoordinateChannels[0].AddRange(texCoords);
+
+            // Add faces
+            for (int i = 0; i < indices.Count; i += 3)
             {
-                int vh = list[i].GetHashCode();
-                if (!hash.ContainsKey(vh))
-                {
-                    meshData.uniqueVertices.Add(list[i]);
-                    meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.visibleVerticesDataOnlyPos.AddRange(list[i].GetDataOnlyPos());
-                    meshData.visibleVerticesDataOnlyPosAndNormal.AddRange(list[i].GetDataOnlyPosAndNormal());
-                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
-                    meshData.Bounds.Enclose(list[i]);
-                }
-                else
-                {
-                    meshData.indices.Add(hash[vh]);
-                }
+                Face face = new Face();
+                face.Indices.Add(indices[i]);
+                face.Indices.Add(indices[i + 1]);
+                face.Indices.Add(indices[i + 2]);
+                assimpMesh.Faces.Add(face);
             }
 
-            meshData.CalculateGroupedIndices();
+            // Create a new ModelData object and add the Assimp mesh to it
+            ModelData modelData = new ModelData();
+            modelData.meshes.Add(new MeshData(assimpMesh));
+            modelData.meshes[0].CalculateGroupedIndices();
 
-            ModelData model = new ModelData();
-            model.meshes.Add(meshData);
-            return model;
+            return modelData;
         }
+
         #endregion
 
     }

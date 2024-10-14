@@ -11,9 +11,7 @@ namespace Engine3D
     public class ModelData
     {
         public List<MeshData> meshes = new List<MeshData>();
-        public Skeleton skeleton;
-        public List<Matrix4> boneMatrices = new List<Matrix4>();
-        public int boneCount = 0;
+        public List<Assimp.Material> materials = new List<Assimp.Material>();
 
         public ModelData() { }
     }

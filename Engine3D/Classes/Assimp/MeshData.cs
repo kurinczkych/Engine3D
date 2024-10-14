@@ -5,37 +5,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static OpenTK.Graphics.OpenGL.GL;
 
 namespace Engine3D
 {
     public class MeshData
     {
-        public List<Vec2d> uvs = new List<Vec2d>();
-        public List<Vector3> normals = new List<Vector3>();
-        public List<Vector3> allVerts = new List<Vector3>();
-
-        public List<Vertex> uniqueVertices = new List<Vertex>();
+        public Assimp.Mesh mesh;
         public List<float> visibleVerticesData = new List<float>();
         public List<float> visibleVerticesDataWithAnim = new List<float>();
         public List<float> visibleVerticesDataOnlyPos = new List<float>();
         public List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
 
-        public List<uint> indices = new List<uint>();
         public List<uint> visibleIndices = new List<uint>();
         public uint maxVisibleIndex = 0;
 
-        public bool hasIndices = false;
-        public AABB Bounds = new AABB();
-
         public List<List<uint>> groupedIndices = new List<List<uint>>();
 
-        public MeshData() { }
+        public AABB Bounds = new AABB();
+
+        public MeshData(Assimp.Mesh mesh)
+        {
+            this.mesh = mesh;
+            foreach (Vector3D v in mesh.Vertices)
+                Bounds.Enclose(v);
+
+            CalculateGroupedIndices();
+            visibleVerticesData.AddRange(BaseMesh.GetMeshData(mesh));
+            visibleVerticesDataWithAnim.AddRange(BaseMesh.GetMeshDataWithAnim(mesh));
+            visibleVerticesDataOnlyPos.AddRange(BaseMesh.GetMeshDataOnlyPos(mesh));
+            visibleVerticesDataOnlyPosAndNormal.AddRange(BaseMesh.GetMeshDataOnlyPosAndNormal(mesh));
+        }
 
         public void CalculateGroupedIndices()
         {
-            groupedIndices = indices
-                   .Select((x, i) => new { Index = i, Value = x })
+            groupedIndices = mesh.GetIndices()
+                   .Select((x, i) => new { Index = i, Value = (uint)x })
                    .GroupBy(x => x.Index / 3)
                    .Select(x => x.Select(v => v.Value).ToList())
                    .ToList();
@@ -53,17 +57,17 @@ namespace Engine3D
                 anim = true;
             }
 
-            for (int i = 0; i < uniqueVertices.Count; i++)
+            for (int i = 0; i < mesh.Vertices.Count; i++)
             {
-                var a = uniqueVertices[i];
-                a.p = Vector3.TransformPosition(uniqueVertices[i].p, trans);
-                uniqueVertices[i] = a;
+                var a = mesh.Vertices[i];
+                a = AHelp.OpenTKToAssimp(Vector3.TransformPosition(AHelp.AssimpToOpenTK(mesh.Vertices[i]), trans));
+                mesh.Vertices[i] = a;
 
-                visibleVerticesData.AddRange(uniqueVertices[i].GetData());
-                if(anim)
-                    visibleVerticesDataWithAnim.AddRange(uniqueVertices[i].GetDataWithAnim());
-                visibleVerticesDataOnlyPos.AddRange(uniqueVertices[i].GetDataOnlyPos());
-                visibleVerticesDataOnlyPosAndNormal.AddRange(uniqueVertices[i].GetDataOnlyPosAndNormal());
+                visibleVerticesData.AddRange(BaseMesh.GetMeshData(mesh));
+                if (anim)
+                    visibleVerticesDataWithAnim.AddRange(BaseMesh.GetMeshDataWithAnim(mesh));
+                visibleVerticesDataOnlyPos.AddRange(BaseMesh.GetMeshDataOnlyPos(mesh));
+                visibleVerticesDataOnlyPosAndNormal.AddRange(BaseMesh.GetMeshDataOnlyPosAndNormal(mesh));
             }
         }
     }

@@ -26,57 +26,59 @@ namespace Engine3D
 
         public void AnimateKeyFrames(Bone bone, double animTime)
         {
-            Matrix4 localAnim = Matrix4.Identity;
-            Matrix4 boneT = Matrix4.Identity;
-            Matrix4 boneR = Matrix4.Identity;
-            AnimationPose? animPose = GetAnimationPose(bone.Name);
+            throw new NotImplementedException();
 
-            if(animPose != null)
-            {
-                if(animPose.AlreadyInterpolated)
-                {
-                    var a = animPose.GetTranslationKeyFrame(animPose.FindTranslationKeyFrame(animTime)).Translation;
-                    boneT = Matrix4.CreateTranslation(a);
-                    var b = animPose.GetRotationKeyFrame(animPose.FindRotationKeyFrame(animTime)).Rotation;
-                    boneR = Matrix4.CreateFromQuaternion(b);
-                }
-                else
-                {
-                    var a = animPose.GetInterpolatedTranslationKeyFrame(animTime);
-                    boneT = Matrix4.CreateTranslation(a);
-                    var b = animPose.GetInterpolatedRotationKeyFrame(animTime);
-                    boneR = Matrix4.CreateFromQuaternion(b);
-                    animPose.AlreadyInterpolated = true;
-                }
+            //Matrix4 localAnim = Matrix4.Identity;
+            //Matrix4 boneT = Matrix4.Identity;
+            //Matrix4 boneR = Matrix4.Identity;
+            //AnimationPose? animPose = GetAnimationPose(bone.Name);
 
-                localAnim = boneT * boneR;
+            //if(animPose != null)
+            //{
+            //    if(animPose.AlreadyInterpolated)
+            //    {
+            //        var a = animPose.GetTranslationKeyFrame(animPose.FindTranslationKeyFrame(animTime)).Translation;
+            //        boneT = Matrix4.CreateTranslation(a);
+            //        var b = animPose.GetRotationKeyFrame(animPose.FindRotationKeyFrame(animTime)).Rotation;
+            //        boneR = Matrix4.CreateFromQuaternion(b);
+            //    }
+            //    else
+            //    {
+            //        var a = animPose.GetInterpolatedTranslationKeyFrame(animTime);
+            //        boneT = Matrix4.CreateTranslation(a);
+            //        var b = animPose.GetInterpolatedRotationKeyFrame(animTime);
+            //        boneR = Matrix4.CreateFromQuaternion(b);
+            //        animPose.AlreadyInterpolated = true;
+            //    }
 
-                if(bone.BoneIndex > -1)
-                {
-                    //bone->finalTransform = bone->parent->finalTransform * local_anim;
-                    //d_animation_matrix[bone_i] = bone->finalTransform * bone_offset; //Change this to match OGL
+            //    localAnim = boneT * boneR;
 
-                    bone.FinalTransform = bone.FinalTransform * localAnim;
-                    Matrix4 final = bone.FinalTransform * bone.BoneOffset;
+            //    if(bone.BoneIndex > -1)
+            //    {
+            //        //bone->finalTransform = bone->parent->finalTransform * local_anim;
+            //        //d_animation_matrix[bone_i] = bone->finalTransform * bone_offset; //Change this to match OGL
 
-                    //bone.FinalTransform = bone.Parent.FinalTransform * localAnim;
-                    //Matrix4 final = bone.FinalTransform * bone.BoneOffset;
+            //        bone.FinalTransform = bone.FinalTransform * localAnim;
+            //        Matrix4 final = bone.FinalTransform * bone.BoneOffset;
 
-                    //Matrix4 final = bone.Parent.FinalTransform * localAnim;
-                    //final = final * bone.BoneOffset;
+            //        //bone.FinalTransform = bone.Parent.FinalTransform * localAnim;
+            //        //Matrix4 final = bone.FinalTransform * bone.BoneOffset;
 
-                    //final = boneT * boneR * bone.BoneOffset;
-                    if (AnimationMatrices.ContainsKey(bone.Name))
-                        AnimationMatrices[bone.Name] = final;
-                    else
-                        AnimationMatrices.Add(bone.Name, final);
-                }
-            }
+            //        //Matrix4 final = bone.Parent.FinalTransform * localAnim;
+            //        //final = final * bone.BoneOffset;
 
-            foreach(var boneChild in bone.Children)
-            {
-                AnimateKeyFrames(boneChild, animTime);
-            }
+            //        //final = boneT * boneR * bone.BoneOffset;
+            //        if (AnimationMatrices.ContainsKey(bone.Name))
+            //            AnimationMatrices[bone.Name] = final;
+            //        else
+            //            AnimationMatrices.Add(bone.Name, final);
+            //    }
+            //}
+
+            //foreach(var boneChild in bone.Children)
+            //{
+            //    AnimateKeyFrames(boneChild, animTime);
+            //}
         }
 
         public Matrix4 GetAnimMatrixForBone(Bone bone, double animTime)

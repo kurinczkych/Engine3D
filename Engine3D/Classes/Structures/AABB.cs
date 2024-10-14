@@ -1,4 +1,5 @@
-﻿using FontStashSharp;
+﻿using Assimp;
+using FontStashSharp;
 using MagicPhysX;
 using Newtonsoft.Json;
 using OpenTK.Mathematics;
@@ -74,6 +75,13 @@ namespace Engine3D
         {
             Min = Helper.Vector3Min(Min, v.p);
             Max = Helper.Vector3Max(Max, v.p);
+        }
+
+        public void Enclose(Vector3D v)
+        {
+            Vector3 vTK = AHelp.AssimpToOpenTK(v);
+            Min = Helper.Vector3Min(Min, vTK);
+            Max = Helper.Vector3Max(Max, vTK);
         }
 
         public void Enclose(Vector3 point)

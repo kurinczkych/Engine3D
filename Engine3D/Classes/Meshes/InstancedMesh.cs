@@ -66,11 +66,7 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if(model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-            {
-                ComputeVertexNormalsSpherical();
-            }
-
+            ComputeNormalsIfNeeded();
             ComputeTangents();
 
             GetUniformLocations();
@@ -95,13 +91,7 @@ namespace Engine3D
             this.modelName_ = modelName;
             this.model = model;
 
-            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-            {
-                ComputeVertexNormalsSpherical();
-            }
-            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
-                ComputeVertexNormals();
-
+            ComputeNormalsIfNeeded();
             ComputeTangents();
 
             GetUniformLocations();
@@ -121,13 +111,7 @@ namespace Engine3D
             this.modelName_ = modelName;
             this.model = model;
 
-            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-            {
-                ComputeVertexNormalsSpherical();
-            }
-            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
-                ComputeVertexNormals();
-
+            ComputeNormalsIfNeeded();
             ComputeTangents();
 
             GetUniformLocations();
@@ -350,7 +334,7 @@ namespace Engine3D
                         ibo_.Buffer(mesh.visibleIndices);
                         vbo_.Buffer(mesh.visibleVerticesDataOnlyPosAndNormal);
                         instVbo_.Buffer(instancedVertices);
-                        GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
+                        GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.mesh.GetIndices().Length, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
                         continue;
                     }
                 }
@@ -363,7 +347,7 @@ namespace Engine3D
                 ibo_.Buffer(mesh.visibleIndices);
                 vbo_.Buffer(mesh.visibleVerticesDataOnlyPosAndNormal);
                 instVbo_.Buffer(instancedVertices);
-                GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
+                GL.DrawElementsInstanced(PrimitiveType.Triangles, mesh.mesh.GetIndices().Length, DrawElementsType.UnsignedInt, IntPtr.Zero, instancedData.Count());
 
                 //if(instIndex == -1)
                 //    GL.DrawElementsInstanced(PrimitiveType.Triangles, indices.Count, DrawElementsType.UnsignedInt, IntPtr.Zero, mesh.instancedData.Count());

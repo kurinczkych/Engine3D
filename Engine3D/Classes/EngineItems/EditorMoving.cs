@@ -56,6 +56,16 @@ namespace Engine3D
                         flySpeed_ *= 2;
                     }
 
+                    if (KeyboardState.IsKeyDown(Keys.Space))
+                    {
+                        character.Velocity.Y += flySpeed_ * 10 * (float)args.Time;
+                        characterMoved = true;
+                    }
+                    if (KeyboardState.IsKeyDown(Keys.LeftControl))
+                    {
+                        character.Velocity.Y -= flySpeed_ * 10 * (float)args.Time;
+                        characterMoved = true;
+                    }
                     if (KeyboardState.IsKeyDown(Keys.W))
                     {
                         character.Velocity += (mainCamera.front * flySpeed_) * (float)args.Time;

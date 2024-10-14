@@ -74,14 +74,7 @@ namespace Engine3D
             modelName = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-            {
-                ComputeVertexNormalsSpherical();
-            }
-            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
-                ComputeVertexNormals();
-
-
+            ComputeNormalsIfNeeded();
             ComputeTangents();
 
             GetUniformLocations();
@@ -104,13 +97,7 @@ namespace Engine3D
             modelName_ = Path.GetFileName(relativeModelPath);
             ProcessObj(relativeModelPath);
 
-            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-            {
-                ComputeVertexNormalsSpherical();
-            }
-            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
-                ComputeVertexNormals();
-
+            ComputeNormalsIfNeeded();
             ComputeTangents();
 
             GetUniformLocations();
@@ -137,13 +124,7 @@ namespace Engine3D
             this.modelName_ = modelName;
             this.model = model;
 
-            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-            {
-                ComputeVertexNormalsSpherical();
-            }
-            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
-                ComputeVertexNormals();
-
+            ComputeNormalsIfNeeded();
             ComputeTangents();
 
             GetUniformLocations();
@@ -165,13 +146,7 @@ namespace Engine3D
             this.modelName_ = modelName;
             this.model = model;
 
-            if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && !model.meshes[0].uniqueVertices[0].gotNormal)
-            {
-                ComputeVertexNormalsSpherical();
-            }
-            else if (model.meshes.Count > 0 && model.meshes[0].uniqueVertices.Count > 0 && model.meshes[0].uniqueVertices[0].gotNormal)
-                ComputeVertexNormals();
-
+            ComputeNormalsIfNeeded();
             ComputeTangents();
 
             GetUniformLocations();
@@ -197,7 +172,7 @@ namespace Engine3D
 
         private PxVec3 ConvertToNDCPxVec3(int index, int meshIndex)
         {
-            Vector3 v = Vector3.TransformPosition(model.meshes[meshIndex].allVerts[index], modelMatrix);
+            Vector3 v = Vector3.TransformPosition(AHelp.AssimpToOpenTK(model.meshes[meshIndex].mesh.Vertices[index]), modelMatrix);
 
             PxVec3 vec = new PxVec3();
             vec.x = v.X;
@@ -402,12 +377,12 @@ namespace Engine3D
             {
                 //animation.AnimateKeyFrames(model.skeleton.RootBone, animation.GetLocalTimer());
                 //model.skeleton.UpdateSkeleton();
-                animation.Update(delta);
-                model.skeleton.UpdateSkeleton(animation:animation);
+                //animation.Update(delta);
+                //model.skeleton.UpdateSkeleton(animation:animation);
                 //model.skeleton.UpdateBoneMatrices(ref model.boneMatrices);
 
-                List<int> indexes = new List<int>();
-                model.skeleton.SendToGpu(null, ref uniformAnimLocations, ref indexes);
+                //List<int> indexes = new List<int>();
+                //model.skeleton.SendToGpu(null, ref uniformAnimLocations, ref indexes);
                 //string ab = "";
                 //foreach(var a in indexes)
                 //    ab += a.ToString() + "\n";
@@ -863,34 +838,35 @@ namespace Engine3D
 
         public void GetCookedData(out PxVec3[] verts, out int[] indicesOut)
         {
-            List<PxVec3> verts_ = new List<PxVec3>();
-            List<int> indicesOut_ = new List<int>();
+            throw new NotImplementedException();
+            //List<PxVec3> verts_ = new List<PxVec3>();
+            //List<int> indicesOut_ = new List<int>();
 
-            int lastIndex = 0;
+            //int lastIndex = 0;
 
-            for (int i = 0; i < model.meshes.Count; i++)
-            {
-                MeshData mesh = model.meshes[i];
+            //for (int i = 0; i < model.meshes.Count; i++)
+            //{
+            //    MeshData mesh = model.meshes[i];
 
-                int largestIndex = (int)mesh.indices.Max();
+            //    int largestIndex = (int)mesh.indices.Max();
 
-                for (int j = 0; j < mesh.allVerts.Count(); j++)
-                {
-                    verts_.Add(ConvertToNDCPxVec3(j, i));
-                }
+            //    for (int j = 0; j < mesh.allVerts.Count(); j++)
+            //    {
+            //        verts_.Add(ConvertToNDCPxVec3(j, i));
+            //    }
 
-                for (int j = 0; j < mesh.indices.Count; j += 3)
-                {
-                    indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j]].pi + lastIndex);
-                    indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 1]].pi + lastIndex);
-                    indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 2]].pi + lastIndex);
-                }
+            //    for (int j = 0; j < mesh.indices.Count; j += 3)
+            //    {
+            //        indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j]].pi + lastIndex);
+            //        indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 1]].pi + lastIndex);
+            //        indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 2]].pi + lastIndex);
+            //    }
 
-                lastIndex += largestIndex;
-            }
+            //    lastIndex += largestIndex;
+            //}
 
-            verts = verts_.ToArray();
-            indicesOut = indicesOut_.ToArray();
+            //verts = verts_.ToArray();
+            //indicesOut = indicesOut_.ToArray();
         }
     }
 }

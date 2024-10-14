@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Assimp;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -148,46 +149,74 @@ namespace Engine3D
 
         public MeshData GetTriangles(string t)
         {
-            MeshData meshData = new MeshData();
+            // Create an Assimp mesh object (Triangle Primitive)
+            Assimp.Mesh assimpMesh = new Assimp.Mesh(PrimitiveType.Triangle);
 
-            List<Vertex> list = new List<Vertex>();
+            // List to store all vertex data
+            List<Vector3D> vertices = new List<Vector3D>();
+            List<Vector3D> normals = new List<Vector3D>(); // Assuming normal data exists
+            List<Vector3D> texCoords = new List<Vector3D>(); // Assuming texture coordinates exist
+            List<int> indices = new List<int>();
 
             Vector2 currentPos = Vector2.Zero;
-            foreach(char c in t)
+
+            // Loop through each character in the string
+            foreach (char c in t)
             {
+                // Retrieve symbol from the dictionary
                 Symbol s = symbols[c];
 
-                Vertex v1 = s.v1; Vertex v2 = s.v2; Vertex v3 = s.v3;
-                Vertex v4 = s.v4; Vertex v5 = s.v5; Vertex v6 = s.v6;
+                // Get the six vertices (two triangles forming a quad)
+                Vertex v1 = s.v1, v2 = s.v2, v3 = s.v3;
+                Vertex v4 = s.v4, v5 = s.v5, v6 = s.v6;
                 List<Vertex> sublist = new List<Vertex>() { v1, v2, v3, v4, v5, v6 };
 
+                // Offset vertices based on the current position
                 for (int i = 0; i < sublist.Count; i++)
                 {
-                    var a = sublist[i];
-                    a.p += new Vector3(currentPos.X, currentPos.Y, 0);
-                    sublist[i] = a;
+                    var vertex = sublist[i];
+                    vertex.p += new Vector3(currentPos.X, currentPos.Y, 0);
+                    sublist[i] = vertex;
+
+                    // Add vertex data to Assimp mesh
+                    vertices.Add(new Vector3D(vertex.p.X, vertex.p.Y, vertex.p.Z));
+
+                    // Assuming normals are stored similarly in the Symbol
+                    normals.Add(new Vector3D(vertex.n.X, vertex.n.Y, vertex.n.Z));
+
+                    // Assuming texture coordinates are stored in the vertex (texcoord u,v)
+                    texCoords.Add(new Vector3D(vertex.t.u, vertex.t.v, 0));
                 }
 
+                // Add indices for the two triangles forming the quad
+                indices.Add(vertices.Count - 6); // First triangle (v1, v2, v3)
+                indices.Add(vertices.Count - 5);
+                indices.Add(vertices.Count - 4);
+
+                indices.Add(vertices.Count - 3); // Second triangle (v4, v5, v6)
+                indices.Add(vertices.Count - 2);
+                indices.Add(vertices.Count - 1);
+
+                // Move the current position to the right for the next symbol
                 currentPos.X += s.width;
             }
 
-            Dictionary<int, uint> hash = new Dictionary<int, uint>();
-            for (int i = 0; i < list.Count; i++)
+            // Add all vertex data to the Assimp mesh
+            assimpMesh.Vertices.AddRange(vertices);
+            assimpMesh.Normals.AddRange(normals);
+            assimpMesh.TextureCoordinateChannels[0].AddRange(texCoords);
+
+            // Add faces (triangles) to the Assimp mesh
+            for (int i = 0; i < indices.Count; i += 3)
             {
-                int vh = list[i].GetHashCode();
-                if (!hash.ContainsKey(vh))
-                {
-                    meshData.uniqueVertices.Add(list[i]);
-                    meshData.visibleVerticesData.AddRange(list[i].GetData());
-                    meshData.indices.Add((uint)meshData.uniqueVertices.Count - 1);
-                    hash.Add(vh, (uint)meshData.uniqueVertices.Count - 1);
-                    meshData.Bounds.Enclose(list[i]);
-                }
-                else
-                {
-                    meshData.indices.Add(hash[vh]);
-                }
+                Face face = new Face();
+                face.Indices.Add(indices[i]);
+                face.Indices.Add(indices[i + 1]);
+                face.Indices.Add(indices[i + 2]);
+                assimpMesh.Faces.Add(face);
             }
+
+            MeshData meshData = new MeshData(assimpMesh);
 
             return meshData;
         }

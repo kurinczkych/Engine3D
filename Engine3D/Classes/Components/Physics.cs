@@ -178,114 +178,115 @@ namespace Engine3D
 
         public void AddTriangleMeshCollider(Transformation trans, BaseMesh mesh, bool removeCollider = false)
         {
-            List<Vector3> allVerts = new List<Vector3>();
-            List<int> indices = new List<int>();
-            bool hasIndices = true;
+            throw new NotImplementedException();
+            //List<Vector3> allVerts = new List<Vector3>();
+            //List<int> indices = new List<int>();
+            //bool hasIndices = true;
 
-            int lastIndex = 0;
+            //int lastIndex = 0;
 
-            for (int i = 0; i < mesh.model.meshes.Count; i++)
-            {
-                MeshData meshData = mesh.model.meshes[i];
+            //for (int i = 0; i < mesh.model.meshes.Count; i++)
+            //{
+            //    MeshData meshData = mesh.model.meshes[i];
 
-                if (!meshData.hasIndices)
-                    hasIndices = false;
+            //    if (!meshData.hasIndices)
+            //        hasIndices = false;
 
-                int largestIndex = (int)meshData.indices.Max();
+            //    int largestIndex = (int)meshData.indices.Max();
 
-                for (int j = 0; j < meshData.allVerts.Count(); j++)
-                {
-                    allVerts.Add(meshData.allVerts[j]);
-                }
+            //    for (int j = 0; j < meshData.allVerts.Count(); j++)
+            //    {
+            //        allVerts.Add(meshData.allVerts[j]);
+            //    }
 
-                for (int j = 0; j < meshData.indices.Count; j += 3)
-                {
-                    indices.Add(meshData.uniqueVertices[(int)meshData.indices[j]].pi + lastIndex);
-                    indices.Add(meshData.uniqueVertices[(int)meshData.indices[j + 1]].pi + lastIndex);
-                    indices.Add(meshData.uniqueVertices[(int)meshData.indices[j + 2]].pi + lastIndex);
-                }
+            //    for (int j = 0; j < meshData.indices.Count; j += 3)
+            //    {
+            //        indices.Add(meshData.uniqueVertices[(int)meshData.indices[j]].pi + lastIndex);
+            //        indices.Add(meshData.uniqueVertices[(int)meshData.indices[j + 1]].pi + lastIndex);
+            //        indices.Add(meshData.uniqueVertices[(int)meshData.indices[j + 2]].pi + lastIndex);
+            //    }
 
-                lastIndex += largestIndex;
-            }
+            //    lastIndex += largestIndex;
+            //}
 
 
-            if (removeCollider)
-                RemoveCollider();
+            //if (removeCollider)
+            //    RemoveCollider();
 
-            Type meshType = mesh.GetType();
-            if (meshType != typeof(Mesh))
-                throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
-            if (!hasIndices)
-                throw new Exception("The mesh doesn't have triangle indices!");
+            //Type meshType = mesh.GetType();
+            //if (meshType != typeof(Mesh))
+            //    throw new Exception("Only 'Mesh' type object can be a TriangleMesh");
+            //if (!hasIndices)
+            //    throw new Exception("The mesh doesn't have triangle indices!");
 
-            uint count = (uint)indices.Count;
-            PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
-            meshDesc.points.count = count;
-            meshDesc.points.stride = (uint)sizeof(PxVec3);
-            PxVec3[] verts = new PxVec3[allVerts.Count()];
-            int[] indices_ = new int[count];
-            ((Mesh)mesh).GetCookedData(out verts, out indices_);
-            GCHandle vertsHandle = GCHandle.Alloc(verts, GCHandleType.Pinned);
-            GCHandle indicesHandle = GCHandle.Alloc(indices_, GCHandleType.Pinned);
+            //uint count = (uint)indices.Count;
+            //PxTriangleMeshDesc meshDesc = PxTriangleMeshDesc_new();
+            //meshDesc.points.count = count;
+            //meshDesc.points.stride = (uint)sizeof(PxVec3);
+            //PxVec3[] verts = new PxVec3[allVerts.Count()];
+            //int[] indices_ = new int[count];
+            //((Mesh)mesh).GetCookedData(out verts, out indices_);
+            //GCHandle vertsHandle = GCHandle.Alloc(verts, GCHandleType.Pinned);
+            //GCHandle indicesHandle = GCHandle.Alloc(indices_, GCHandleType.Pinned);
 
-            var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
-            PxCookingParams cookingParams = PxCookingParams_new(&tolerancesScale);
+            //var tolerancesScale = new PxTolerancesScale { length = 1, speed = 10 };
+            //PxCookingParams cookingParams = PxCookingParams_new(&tolerancesScale);
 
-            bool valid = mesh.isValidMesh((PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer(), (int)count, (int*)indicesHandle.AddrOfPinnedObject().ToPointer(), (int)count);
-            if (!valid)
-                throw new Exception("TriangleMesh cooking data is not right!");
+            //bool valid = mesh.isValidMesh((PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer(), (int)count, (int*)indicesHandle.AddrOfPinnedObject().ToPointer(), (int)count);
+            //if (!valid)
+            //    throw new Exception("TriangleMesh cooking data is not right!");
 
-            meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
+            //meshDesc.points.data = (PxVec3*)vertsHandle.AddrOfPinnedObject().ToPointer();
 
-            meshDesc.triangles.count = (uint)indices.Count() / 3;
-            meshDesc.triangles.stride = 3 * sizeof(int);
-            meshDesc.triangles.data = (int*)indicesHandle.AddrOfPinnedObject().ToPointer();
+            //meshDesc.triangles.count = (uint)indices.Count() / 3;
+            //meshDesc.triangles.stride = 3 * sizeof(int);
+            //meshDesc.triangles.data = (int*)indicesHandle.AddrOfPinnedObject().ToPointer();
 
-            PxTriangleMeshCookingResult result;
-            PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
+            //PxTriangleMeshCookingResult result;
+            //PxInsertionCallback* callback = PxPhysics_getPhysicsInsertionCallback_mut(physx.GetPhysics());
 
-            PxTriangleMesh triMeshPtr = new PxTriangleMesh();
-            PxTriangleMesh* triMesh = &triMeshPtr;
-            try
-            {
-                // Establish a no GC region. The size parameter specifies how much memory
-                // to reserve for the small object heap.
-                if (GC.TryStartNoGCRegion(indices.Count() / 3 * 60))
-                {
-                    triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
+            //PxTriangleMesh triMeshPtr = new PxTriangleMesh();
+            //PxTriangleMesh* triMesh = &triMeshPtr;
+            //try
+            //{
+            //    // Establish a no GC region. The size parameter specifies how much memory
+            //    // to reserve for the small object heap.
+            //    if (GC.TryStartNoGCRegion(indices.Count() / 3 * 60))
+            //    {
+            //        triMesh = phys_PxCreateTriangleMesh(&cookingParams, &meshDesc, callback, &result);
 
-                }
-            }
-            finally
-            {
-                // Always make sure to end the no GC region.
-                if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion)
-                {
-                    GC.EndNoGCRegion();
-                }
-            }
-            ;
-            if (triMesh == null || &triMesh == null)
-            {
-                throw new Exception("TriangleMesh cooking didn't work!");
-            }
+            //    }
+            //}
+            //finally
+            //{
+            //    // Always make sure to end the no GC region.
+            //    if (GCSettings.LatencyMode == GCLatencyMode.NoGCRegion)
+            //    {
+            //        GC.EndNoGCRegion();
+            //    }
+            //}
+            //;
+            //if (triMesh == null || &triMesh == null)
+            //{
+            //    throw new Exception("TriangleMesh cooking didn't work!");
+            //}
 
-            PxVec3 scale = new PxVec3 { x = 1, y = 1, z = 1 };
-            PxQuat quat = QuatHelper.OpenTkToPx(trans.Rotation);
-            PxMeshScale meshScale = PxMeshScale_new_3(&scale, &quat);
-            PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &meshScale, PxMeshGeometryFlags.DoubleSided);
+            //PxVec3 scale = new PxVec3 { x = 1, y = 1, z = 1 };
+            //PxQuat quat = QuatHelper.OpenTkToPx(trans.Rotation);
+            //PxMeshScale meshScale = PxMeshScale_new_3(&scale, &quat);
+            //PxTriangleMeshGeometry meshGeo = PxTriangleMeshGeometry_new(triMesh, &meshScale, PxMeshGeometryFlags.DoubleSided);
 
-            var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
-            PxVec3 position = new PxVec3 { x = trans.Position.X, y = trans.Position.Y, z = trans.Position.Z };
-            PxTransform transform = PxTransform_new_1(&position);
-            var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
-            PxRigidStatic* staticCollider = physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&meshGeo, material, &identity);
-            physx.GetScene()->AddActorMut((PxActor*)staticCollider, null);
-            staticColliderPtr = new IntPtr(staticCollider);
-            colliderType = ColliderType.TriangleMesh;
+            //var material = physx.GetPhysics()->CreateMaterialMut(StaticFriction, DynamicFriction, Restitution);
+            //PxVec3 position = new PxVec3 { x = trans.Position.X, y = trans.Position.Y, z = trans.Position.Z };
+            //PxTransform transform = PxTransform_new_1(&position);
+            //var identity = PxTransform_new_2(PxIDENTITY.PxIdentity);
+            //PxRigidStatic* staticCollider = physx.GetPhysics()->PhysPxCreateStatic(&transform, (PxGeometry*)&meshGeo, material, &identity);
+            //physx.GetScene()->AddActorMut((PxActor*)staticCollider, null);
+            //staticColliderPtr = new IntPtr(staticCollider);
+            //colliderType = ColliderType.TriangleMesh;
 
-            vertsHandle.Free();
-            indicesHandle.Free();
+            //vertsHandle.Free();
+            //indicesHandle.Free();
         }
 
         public void AddCapsuleCollider(Transformation trans, bool isStatic, bool removeCollider = false)
