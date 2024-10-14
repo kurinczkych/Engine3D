@@ -326,10 +326,16 @@ namespace Engine3D
 
         public void LoadScene(string path)
         {
+            List<Object>? objects = SceneManager.LoadScene(path, false);
+            if (objects == null)
+            {
+                consoleManager.AddLog("Project not found or corrupted!", LogType.Error);
+                return;
+            }
+
             this.objects.Clear();
             textureManager.DeleteObjectTextures();
 
-            List<Object> objects = SceneManager.LoadScene(path, false);
             foreach(var obj in objects)
             {
                 foreach (var comp in obj.components)
@@ -377,6 +383,11 @@ namespace Engine3D
                     else if (comp is Camera cam)
                     {
                         cam.parentObject = obj;
+                        mainCamera = cam;
+                        cam.SetYaw(cam.GetYaw());
+                        cam.SetPitch(cam.GetPitch());
+                        character.Position = cam.GetPosition();
+                        character.camera = mainCamera;
                     }
                     else if (comp is Light light)
                     {

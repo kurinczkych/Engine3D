@@ -22,7 +22,7 @@ namespace Engine3D
         public float sensitivity = 180f;
         private float speed = 2f;
         //private float flySpeed = 10f;
-        private float flySpeed = 2.5f;
+        public float flySpeed = 2.5f;
         public bool isOnGround = false;
         private float gravity = 120;
         private float jumpForce = 20.0f;
@@ -54,7 +54,7 @@ namespace Engine3D
         private bool firstMove = true;
         public Vector2 lastPos;
 
-        private Vector3 Velocity;
+        public Vector3 Velocity;
         public Vector3 Position;
         private Vector3 OrigPosition;
 
@@ -73,7 +73,7 @@ namespace Engine3D
             get { return "Yaw: " + Math.Round(camera.GetYaw(), 2).ToString() + ", Pitch: " + Math.Round(camera.GetPitch(), 2).ToString(); }
         }
 
-        private Camera camera;
+        public Camera camera;
         private Physx physx;
         public WireframeMesh mesh;
 
@@ -180,14 +180,14 @@ namespace Engine3D
                 if (!noClip)
                     Velocity += (camera.frontClamped * speed_) * (float)args.Time;
                 else
-                    Velocity += (camera.frontClamped * flySpeed_) * (float)args.Time;
+                    Velocity += (camera.front * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.S))
             {
                 if (!noClip)
                     Velocity -= (camera.frontClamped * speed_) * (float)args.Time;
                 else
-                    Velocity -= (camera.frontClamped * flySpeed_) * (float)args.Time;
+                    Velocity -= (camera.front * flySpeed_) * (float)args.Time;
             }
             if (keyboardState.IsKeyDown(Keys.A))
             {
@@ -241,7 +241,7 @@ namespace Engine3D
             Velocity.Z *= 0.9f;
 
             if (noClip)
-                Velocity.Y *= 0.1f;
+                Velocity.Y *= 0.9f;
 
             ZeroSmallVelocity();
             thirdY -= mouseState.ScrollDelta.Y;

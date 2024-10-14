@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,16 +10,17 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
+
     public static class SceneManager
     {
-        public static List<Object> LoadScene(string path, bool compress=true)
+        public static List<Object>? LoadScene(string path, bool compress=true)
         {
             string saveFile = path + "\\save.sav";
 
             if (!File.Exists(saveFile))
             {
                 Engine.consoleManager.AddLog("File not found: " + saveFile, LogType.Error);
-                return new List<Object>();
+                return null;
             }
 
             if (compress)
@@ -43,9 +45,9 @@ namespace Engine3D
                     serializer.Converters.Add(new IComponentListConverter());
 
                     List<Object>? objects = serializer.Deserialize<List<Object>>(jsonReader);
-                    ;
+
                     if (objects == null)
-                        return new List<Object>();
+                        return null;
 
                     return objects;
                 }
@@ -72,7 +74,7 @@ namespace Engine3D
                     List<Object>? objects = serializer.Deserialize<List<Object>>(jsonReader);
 
                     if (objects == null)
-                        return new List<Object>();
+                        return null;
 
                     return objects;
                 }
