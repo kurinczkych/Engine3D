@@ -10,6 +10,7 @@ using OpenTK.Mathematics;
 using System.ComponentModel.DataAnnotations;
 
 #pragma warning disable CS8765
+#pragma warning disable CS8625
 
 namespace Engine3D
 {
@@ -23,6 +24,7 @@ namespace Engine3D
 
             // Serialize fields too, if desired
             var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                             .Where(f => !f.Name.Contains("k__BackingField"))
                              .Select(f => base.CreateProperty(f, memberSerialization))
                              .ToList();
 
@@ -393,7 +395,24 @@ namespace Engine3D
             {
                 if (comp is BaseMesh bm)
                 {
-                    serializer.Serialize(writer, bm.modelName, typeof(BaseMesh));
+                    if(bm.modelPath != null && bm.modelPath != "")
+                    {
+                        var originalModelData = bm.model;
+                        bm.model = null;
+
+                        serializer.Serialize(writer, bm, typeof(BaseMesh));
+                        bm.model = originalModelData;
+                    }
+                    else
+                        serializer.Serialize(writer, bm, typeof(BaseMesh));
+                }
+                else if (comp is Camera cam)
+                {
+                    serializer.Serialize(writer, comp, typeof(IComponent));
+                }
+                else if(comp is Light light)
+                {
+                    serializer.Serialize(writer, comp, typeof(IComponent));
                 }
             }
             writer.WriteEndArray();
@@ -403,11 +422,16 @@ namespace Engine3D
         {
             var components = new List<IComponent>();
 
-            while (reader.Read() && reader.TokenType != JsonToken.EndArray)
+            if (reader.TokenType == JsonToken.StartArray)
             {
-                IComponent? comp = serializer.Deserialize<IComponent>(reader);
-                if(comp != null)
-                    components.Add(comp);
+                while (reader.Read() && reader.TokenType != JsonToken.EndArray)
+                {
+                    IComponent? comp = serializer.Deserialize<IComponent>(reader);
+                    if (comp != null)
+                    {
+                        components.Add(comp);
+                    }
+                }
             }
 
             return components;

@@ -4,6 +4,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -73,13 +74,14 @@ namespace Engine3D
             showConsoleTypeList = Enum.GetNames(typeof(ShowConsoleType));
 
             #region GetComponents
-            var types = Assembly.GetExecutingAssembly().GetTypes();
+            Assembly engineAssembly = typeof(IComponent).Assembly;
+            var types = engineAssembly.GetTypes();
 
             foreach (var type in types)
             {
                 if (type.IsClass && typeof(IComponent).IsAssignableFrom(type) && !exludedComponents.Contains(type.Name))
                 {
-                    availableComponents.Add(new ComponentType(type.Name, type.BaseType.Name, type));
+                    availableComponents.Add(new ComponentType(type.Name, type.BaseType?.Name, type));
                 }
             }
 
@@ -324,7 +326,7 @@ namespace Engine3D
         {
             Dictionary<string, int> names = new Dictionary<string, int>();
 
-            for(int i = 0; i < engineData.objects.Count; i++)
+            for (int i = 0; i < engineData.objects.Count; i++)
             {
                 string name = engineData.objects[i].name == "" ? "Object " + i.ToString() : engineData.objects[i].name;
                 if (engineData.objects[i].GetComponent<BaseMesh>() != null)

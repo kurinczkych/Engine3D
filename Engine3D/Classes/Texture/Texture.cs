@@ -67,9 +67,12 @@ namespace Engine3D
 
         public bool flipY;
 
+        public bool UITexture = false;
+
         public Texture(int unit, string texturePath, out bool success, bool flipY = true, string textureFilter = "linear", AssetTypeEditor type = AssetTypeEditor.UI)
         {
             TextureName = Path.GetFileName(texturePath);
+            UITexture = true;
 
             if (texturePath == TextureName)
             {

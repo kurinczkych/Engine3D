@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Metadata.Ecma335;
 using OpenTK.Graphics.OpenGL;
 using System.Data;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 #pragma warning disable CS8767
 
@@ -101,7 +101,8 @@ namespace Engine3D
         public string name = "";
         public string displayName = "";
 
-        [JsonConverter(typeof(IComponentListConverter))]
+        //[JsonIgnore]
+        //[JsonConverter(typeof(IComponentListConverter))]
         public List<IComponent> components = new List<IComponent>();
         [JsonIgnore]
         private Dictionary<Type, IComponent> componentCache = new Dictionary<Type, IComponent>();
@@ -174,6 +175,7 @@ namespace Engine3D
 
         public Transformation transformation { get; set; }
 
+        [JsonIgnore]
         public string PStr
         {
             get { return Math.Round(transformation.Position.X, 2).ToString() + "," + 
@@ -216,6 +218,27 @@ namespace Engine3D
             }
 
             return component;
+        }
+
+        public bool HasComponent<T>()
+        {
+            Type type = typeof(T);
+            if (componentCache.TryGetValue(type, out var component))
+            {
+                return true;
+            }
+
+            // If not in cache, find it in the list
+            component = components.FirstOrDefault(c => c is T);
+
+            // Cache it for future lookups
+            if (component != null)
+            {
+                componentCache[type] = component;
+                return true;
+            }
+
+            return false;
         }
 
         public void AddMesh(BaseMesh mesh)

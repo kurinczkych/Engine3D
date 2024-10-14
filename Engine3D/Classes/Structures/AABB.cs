@@ -15,8 +15,12 @@ namespace Engine3D
         public Vector3 Min = new Vector3();
         public Vector3 Max = new Vector3();
 
+        
+        [JsonIgnore]
         public float Width { get { return Max.X - Min.X; } }
+        [JsonIgnore]
         public float Height { get { return Max.Y - Min.Y; } }
+        [JsonIgnore]
         public float Depth { get { return Max.Z - Min.Z; } }
 
         [JsonIgnore]

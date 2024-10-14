@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Engine3D
@@ -37,6 +38,7 @@ namespace Engine3D
 
         private Vector2 windowSize;
 
+        [JsonIgnore]
         Matrix4 viewMatrix, projectionMatrix;
 
         private InstancedVAO Vao;
@@ -177,6 +179,12 @@ namespace Engine3D
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
+
+            if (!uniformLocations.ContainsKey("modelMatrix"))
+            {
+                uniformLocations.Clear();
+                GetUniformLocations();
+            }
 
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);

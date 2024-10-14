@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Engine3D
 {
@@ -24,12 +25,34 @@ namespace Engine3D
                     {
                         if (ImGui.MenuItem("Open", "Ctrl+O"))
                         {
+                            using (var dialog = new FolderBrowserDialog())
+                            {
+                                dialog.Description = "Select a folder";
+                                dialog.UseDescriptionForTitle = true; // This applies only in some OS versions.
 
+                                DialogResult result = dialog.ShowDialog();
+
+                                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
+                                {
+                                    engine.LoadScene(dialog.SelectedPath);
+                                }
+                                editorData.recalculateObjects = true;
+                            }
                         }
                         if (ImGui.MenuItem("Save", "Ctrl+S"))
                         {
-                            string path = FolderDialogShell32.SaveFolderDialog();
-                            ;
+                            using (var dialog = new FolderBrowserDialog())
+                            {
+                                dialog.Description = "Select a folder";
+                                dialog.UseDescriptionForTitle = true; // This applies only in some OS versions.
+
+                                DialogResult result = dialog.ShowDialog();
+
+                                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(dialog.SelectedPath))
+                                {
+                                    engine.SaveScene(dialog.SelectedPath);
+                                }
+                            }
                         }
                     ImGui.EndMenu();
                     }

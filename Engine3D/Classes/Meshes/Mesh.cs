@@ -19,6 +19,7 @@ using Cyotek.Drawing.BitmapFont;
 using System.Runtime.CompilerServices;
 using OpenTK.Windowing.Common;
 using Node = Assimp.Node;
+using System.Text.Json.Serialization;
 
 #pragma warning disable CS8600
 #pragma warning disable CS8604
@@ -37,13 +38,20 @@ namespace Engine3D
 
         private Vector2 windowSize;
 
+        [JsonIgnore]
         private Matrix4 viewMatrix, projectionMatrix, orthoProjectionMatrix;
+        [JsonIgnore]
         private Vector3 cameraPos;
 
         public AnimationClip? animation;
 
         private VAO Vao;
         private VBO Vbo;
+
+        public Mesh() : base()
+        {
+            
+        }
 
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string relativeModelPath, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
@@ -298,6 +306,12 @@ namespace Engine3D
             projectionMatrix = camera.projectionMatrix;
             orthoProjectionMatrix = camera.projectionMatrixOrtho;
             viewMatrix = camera.viewMatrix;
+
+            if (!uniformLocations.ContainsKey("modelMatrix"))
+            {
+                uniformLocations.Clear();
+                GetUniformLocations();
+            }
 
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);

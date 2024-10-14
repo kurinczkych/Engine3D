@@ -254,7 +254,10 @@ namespace Engine3D
                 }
             }
 
-            return string.Join('\\', dirs);
+            if (dirs.Count == 0)
+                return fullpath;
+            else
+                return string.Join('\\', dirs);
         }
     }
 }

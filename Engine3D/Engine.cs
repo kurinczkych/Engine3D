@@ -12,9 +12,12 @@ using MagicPhysX;
 using Assimp;
 using System.Drawing;
 using System.ComponentModel.DataAnnotations;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
+#pragma warning disable CS8603
 
 namespace Engine3D
 {
@@ -163,7 +166,25 @@ namespace Engine3D
         public List<Object> _instObjects = new List<Object>();
 
         public Character character;
-        public Camera mainCamera;
+
+        public Camera? mainCamera_ = null;
+        public Camera mainCamera
+        {
+            get 
+            { 
+                if(mainCamera_ == null)
+                {
+                    var cam = (Camera?)objects.Where(x => x.HasComponent<Camera>()).Select(x => x.GetComponent<Camera>()).FirstOrDefault();
+                    if (cam != null)
+                        mainCamera_ = cam;
+                }
+                return mainCamera_; 
+            }
+            set
+            {
+                mainCamera_ = value;
+            }
+        }
         private List<float> vertices = new List<float>();
         private List<uint> indices = new List<uint>();
         private List<float> verticesUnique = new List<float>();
@@ -588,9 +609,9 @@ namespace Engine3D
             onlyPosShaderProgram.Use();
 
             Vector3 characterPos = new Vector3(-5, 10, 0);
-            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref mainCamera), ref physx, characterPos, ref mainCamera);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref mainCamera_), ref physx, characterPos, ref mainCamera_);
 
-            gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera);
+            gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
 
             //Point Lights
             //objects.Add(new PointLight(Color4.White, shaderProgram.id, pointLights.Count));

@@ -94,20 +94,30 @@ namespace Engine3D
 
         public void DeleteTexture(Texture texture, BaseMesh mesh, string textureType)
         {
-            //GL.UseProgram(mesh.shaderProgramId);
+            GL.UseProgram(mesh.shaderProgramId);
 
-            //string use = "use";
-            //if (textureType == "")
-            //    use = "useTexture";
-            //mesh.RemoveTexture("textureSampler" + textureType, use);
+            string use = "use";
+            if (textureType == "")
+                use = "useTexture";
+            mesh.RemoveTexture("textureSampler" + textureType, use);
 
-            //textures.Remove(texture.TextureName);
+            textures.Remove(texture.TextureName);
         }
 
         public void DeleteTextures()
         {
             foreach(var texture in textures.Values)
             {
+                texture.Delete();
+            }
+        }
+
+        public void DeleteObjectTextures()
+        {
+            foreach(var texture in textures.Values)
+            {
+                if (texture.UITexture)
+                    continue;
                 texture.Delete();
             }
         }

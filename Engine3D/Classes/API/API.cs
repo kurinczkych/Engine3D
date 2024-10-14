@@ -170,31 +170,31 @@ namespace Engine3D
             if (type == ObjectType.Cube)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref mainCamera, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Sphere)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", BaseMesh.GetUnitSphere(), windowSize, ref mainCamera, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", BaseMesh.GetUnitSphere(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Capsule)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", BaseMesh.GetUnitCapsule(), windowSize, ref mainCamera, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", BaseMesh.GetUnitCapsule(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Plane)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", BaseMesh.GetUnitFace(), windowSize, ref mainCamera, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", BaseMesh.GetUnitFace(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.TriangleMesh)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref mainCamera, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Empty)
@@ -208,7 +208,7 @@ namespace Engine3D
         public void AddMeshObject(string meshName)
         {
             Object o = new Object(ObjectType.TriangleMesh);
-            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref mainCamera, ref o));
+            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref mainCamera_, ref o));
             AddObjectAndCalculate(o);
         }
 
@@ -225,7 +225,7 @@ namespace Engine3D
         {
             Object o = new Object(ObjectType.Empty) { name = "ParticleSystem" };
             o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            o.components.Add(new ParticleSystem(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, windowSize, ref mainCamera, ref o));
+            o.components.Add(new ParticleSystem(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, windowSize, ref mainCamera_, ref o));
             objects.Add(o);
 
             particleSystems = new List<ParticleSystem>();
@@ -321,7 +321,75 @@ namespace Engine3D
 
         public void SaveScene(string path)
         {
-            SceneManager.SaveScene(path, objects);
+            SceneManager.SaveScene(path, objects, false);
+        }
+
+        public void LoadScene(string path)
+        {
+            this.objects.Clear();
+            textureManager.DeleteObjectTextures();
+
+            List<Object> objects = SceneManager.LoadScene(path, false);
+            foreach(var obj in objects)
+            {
+                foreach (var comp in obj.components)
+                {
+                    if (comp is BaseMesh bm)
+                    {
+                        #region Texture
+                        if(bm._textureName != null && bm._textureName != "")
+                        {
+                            bm.textureName = bm._textureName;
+                        }
+                        if(bm._textureNormalName != null && bm._textureNormalName != "")
+                        {
+                            bm.textureNormalName = bm._textureNormalName;
+                        }
+                        if(bm._textureHeightName != null && bm._textureHeightName != "")
+                        {
+                            bm.textureHeightName = bm._textureHeightName;
+                        }
+                        if(bm._textureAOName != null && bm._textureAOName != "")
+                        {
+                            bm.textureAOName = bm._textureAOName;
+                        }
+                        if(bm._textureRoughName != null && bm._textureRoughName != "")
+                        {
+                            bm.textureRoughName = bm._textureRoughName;
+                        }
+                        if(bm._textureMetalName != null && bm._textureMetalName != "")
+                        {
+                            bm.textureMetalName = bm._textureMetalName;
+                        }
+                        #endregion
+
+                        #region Mesh
+                        bm.camera = mainCamera;
+                        bm.parentObject = obj;
+
+                        if(bm.modelPath != "" && bm.modelPath != null)
+                            bm.modelName = bm.modelPath;
+
+                        bm.RecalculateModelMatrix(new bool[] { true, true, true });
+                        bm.recalculate = true;
+                        #endregion
+                    }
+                    else if (comp is Camera cam)
+                    {
+                        cam.parentObject = obj;
+                    }
+                    else if (comp is Light light)
+                    {
+                        light.parentObject = obj;
+                    }
+                }
+            }
+
+            this.objects.AddRange(objects);
+            _meshObjects.Clear();
+            _meshObjects.AddRange(this.objects.Where(x => x.HasComponent<Mesh>()));
+            _instObjects.Clear();
+            _instObjects.AddRange(this.objects.Where(x => x.HasComponent<InstancedMesh>()));
         }
     }
 }

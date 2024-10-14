@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using Newtonsoft.Json;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -50,8 +51,15 @@ namespace Engine3D
         #endregion
 
         private LightType lightType = LightType.DirectionalLight;
-        private Object parentObject;
+        [JsonIgnore]
+        public Object parentObject;
+        [JsonIgnore]
         private Dictionary<string, int> uniforms;
+
+        public Light()
+        {
+            
+        }
 
         public Light(Object parentObject, int shaderProgramId, int id)
         {
@@ -143,6 +151,9 @@ namespace Engine3D
 
             for (int i = 0; i < lights.Count; i++)
             {
+                if (lights[i].uniforms == null || lights[i].uniforms.Count == 0)
+                    lights[i].GetUniformLocations();
+
                 GL.Uniform1(lights[i].uniforms["lightTypeLoc"], (int)lights[i].lightType);
                 if (lights[i].lightType == LightType.PointLight)
                 {

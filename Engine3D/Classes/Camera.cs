@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -36,7 +37,13 @@ namespace Engine3D
         public Matrix4 projectionMatrixOrtho;
         public Frustum frustum;
 
+        [JsonIgnore]
         public Object parentObject;
+
+        public Camera()
+        {
+            
+        }
 
         public Camera(Vector2 screenSize, Object parentObject)
         {

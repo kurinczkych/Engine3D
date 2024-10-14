@@ -1,6 +1,7 @@
 ﻿using Assimp;
 using FontStashSharp;
 using MagicPhysX;
+using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
@@ -23,6 +24,7 @@ namespace Engine3D
         public int shaderProgramId;
 
         protected string modelName_;
+        [JsonIgnore]
         public string modelName
         {
             get { return modelName_; }
@@ -46,16 +48,21 @@ namespace Engine3D
         }
         public string modelPath;
 
+        [JsonIgnore]
         private bool _recalculate = false;
+        [JsonIgnore]
         public bool recalculate
         {
             get { return _recalculate; }
             set { _recalculate = value; recalculateOnlyPos = true; recalculateOnlyPosAndNormal = true; }
         }
+        [JsonIgnore]
         protected bool recalculateOnlyPos;
+        [JsonIgnore]
         protected bool recalculateOnlyPosAndNormal;
 
         protected int useBillboarding_ = 0;
+        [JsonIgnore]
         public int useBillboarding
         {
             get
@@ -74,17 +81,25 @@ namespace Engine3D
 
         public ModelData model = new ModelData();
 
+        [JsonIgnore]
         public Object parentObject;
 
         #region Texture
+        [JsonIgnore]
         public Texture? texture;
+        [JsonIgnore]
         public Texture? textureNormal;
+        [JsonIgnore]
         public Texture? textureHeight;
+        [JsonIgnore]
         public Texture? textureAO;
+        [JsonIgnore]
         public Texture? textureRough;
+        [JsonIgnore]
         public Texture? textureMetal;
 
-        //private string _textureName;
+        public string _textureName;
+        [JsonIgnore]
         public string textureName
         {
             get
@@ -96,6 +111,7 @@ namespace Engine3D
             }
             set
             {
+                _textureName = value;
                 string texturePath = value;
                 if (texturePath == "" && texture != null)
                 {
@@ -123,7 +139,8 @@ namespace Engine3D
                 }
             }
         }
-        //private string _textureNormalName;
+        public string _textureNormalName;
+        [JsonIgnore]
         public string textureNormalName
         {
             get
@@ -135,6 +152,7 @@ namespace Engine3D
             }
             set
             {
+                _textureNormalName = value;
                 string texturePath = value;
                 if (texturePath == "" && textureNormal != null)
                 {
@@ -162,7 +180,8 @@ namespace Engine3D
                 }
             }
         }
-        //private string _textureHeightName;
+        public string _textureHeightName;
+        [JsonIgnore]
         public string textureHeightName
         {
             get
@@ -174,6 +193,7 @@ namespace Engine3D
             }
             set
             {
+                _textureHeightName = value;
                 string texturePath = value;
                 if (texturePath == "" && textureHeight != null)
                 {
@@ -201,7 +221,8 @@ namespace Engine3D
                 }
             }
         }
-        //private string _textureAOName;
+        public string _textureAOName;
+        [JsonIgnore]
         public string textureAOName
         {
             get
@@ -213,6 +234,7 @@ namespace Engine3D
             }
             set
             {
+                _textureAOName = value;
                 string texturePath = value;
                 if (texturePath == "" && textureAO != null)
                 {
@@ -240,7 +262,8 @@ namespace Engine3D
                 }
             }
         }
-        //private string _textureRoughName;
+        public string _textureRoughName;
+        [JsonIgnore]
         public string textureRoughName
         {
             get
@@ -252,6 +275,7 @@ namespace Engine3D
             }
             set
             {
+                _textureRoughName = value;
                 string texturePath = value;
                 if (texturePath == "" && textureRough != null)
                 {
@@ -279,7 +303,8 @@ namespace Engine3D
                 }
             }
         }
-        //private string _textureMetalName;
+        public string _textureMetalName;
+        [JsonIgnore]
         public string textureMetalName
         {
             get
@@ -291,6 +316,7 @@ namespace Engine3D
             }
             set
             {
+                _textureMetalName = value;
                 string texturePath = value;
                 if (texturePath == "" && textureMetal != null)
                 {
@@ -322,21 +348,34 @@ namespace Engine3D
 
         public bool useShading = true;
 
-        protected Camera camera;
+        [JsonIgnore]
+        public Camera camera;
 
+        [JsonIgnore]
         public Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
+        [JsonIgnore]
         public Dictionary<string, int> uniformAnimLocations = new Dictionary<string, int>();
 
+        [JsonIgnore]
         public BVH? BVHStruct;
 
+        [JsonIgnore]
         protected Matrix4 scaleMatrix = Matrix4.Identity;
+        [JsonIgnore]
         protected Matrix4 rotationMatrix = Matrix4.Identity;
+        [JsonIgnore]
         protected Matrix4 translationMatrix = Matrix4.Identity;
+        [JsonIgnore]
         public Matrix4 modelMatrix = Matrix4.Identity;
 
         //protected int threadSize;
         //private int desiredPercentage = 80;
         public static int threadSize = 32;
+
+        protected BaseMesh()
+        {
+            
+        }
 
         public BaseMesh(int vaoId, int vboId, int shaderProgramId)
         {

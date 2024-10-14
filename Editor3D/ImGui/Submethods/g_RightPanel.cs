@@ -1289,7 +1289,7 @@ namespace Engine3D
                                                 if (component.name == "ParticleSystem")
                                                 {
                                                     o.components.Add(new ParticleSystem(engine.instancedMeshVao, engine.instancedMeshVbo, engine.instancedShaderProgram.id,
-                                                                                        engine.windowSize, ref engine.mainCamera, ref o));
+                                                                                        engine.windowSize, ref engine.mainCamera_, ref o));
 
                                                     engine.particleSystems = new List<ParticleSystem>();
                                                 }
