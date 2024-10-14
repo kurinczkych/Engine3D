@@ -150,7 +150,7 @@ namespace Engine3D
         public List<string> toLoadString = new List<string>();
         private List<Asset> toRemove = new List<Asset>();
         public List<string> loaded = new List<string>();
-        private List<Asset> loadedAssets = new List<Asset>();
+        public List<Asset> loadedAssets = new List<Asset>();
         public AssetFolder assets = new AssetFolder("Assets");
         private TextureManager textureManager;
 

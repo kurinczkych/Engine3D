@@ -250,6 +250,7 @@ namespace Engine3D
                                         ImGui.SameLine();
                                     }
 
+                                    //Folders
                                     if (i < currentModelAssetFolder.folders.Count)
                                     {
                                         ImGui.BeginGroup();
@@ -296,7 +297,8 @@ namespace Engine3D
 
                                         columnI++;
                                     }
-                                    else if (currentTextureAssetFolder.assets.Count > i - folderCount)
+                                    //Items
+                                    else if (currentModelAssetFolder.assets.Count > i - folderCount)
                                     {
                                         if (columnI % columns != 0)
                                         {
@@ -304,7 +306,7 @@ namespace Engine3D
                                         }
 
                                         ImGui.BeginGroup();
-                                        ImGui.PushID(currentTextureAssetFolder.assets[i - folderCount].Name);
+                                        ImGui.PushID(currentModelAssetFolder.assets[i - folderCount].Name);
 
                                         System.Numerics.Vector2 cursorPos = ImGui.GetCursorPos();
 
