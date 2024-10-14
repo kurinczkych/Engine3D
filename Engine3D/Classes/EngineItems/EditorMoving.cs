@@ -49,7 +49,7 @@ namespace Engine3D
                 if (moved)
                 {
                     ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
-                    Parallel.ForEach(scene.objects, parallelOptions, obj =>
+                    Parallel.ForEach(objects, parallelOptions, obj =>
                     {
                         BaseMesh? mesh = (BaseMesh?)obj.GetComponent<BaseMesh>();
                         if (mesh != null)

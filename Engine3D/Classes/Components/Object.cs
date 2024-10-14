@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Metadata.Ecma335;
 using OpenTK.Graphics.OpenGL;
 using System.Data;
+using System.Text.Json.Serialization;
 
 #pragma warning disable CS8767
 
@@ -44,6 +45,7 @@ namespace Engine3D
 
     public class Transformation
     {
+        [JsonIgnore]
         public Vector3 LastPosition;
         private Vector3 position_;
         public Vector3 Position
@@ -56,6 +58,7 @@ namespace Engine3D
             }
         }
 
+        [JsonIgnore]
         public Quaternion LastRotation;
         private Quaternion rotation_;
         public Quaternion Rotation
@@ -98,11 +101,16 @@ namespace Engine3D
         public string name = "";
         public string displayName = "";
 
+        [JsonConverter(typeof(IComponentListConverter))]
         public List<IComponent> components = new List<IComponent>();
+        [JsonIgnore]
         private Dictionary<Type, IComponent> componentCache = new Dictionary<Type, IComponent>();
 
+        [JsonIgnore]
         public bool isSelected { get; set; }
+        [JsonIgnore]
         public bool isEnabled = true;
+        [JsonIgnore]
         public List<Object>? moverGizmos;
         public AABB Bounds;
 
@@ -157,8 +165,11 @@ namespace Engine3D
         //    }
         //}
 
+        [JsonIgnore]
         public BSP BSPStruct { get; private set; }
+        [JsonIgnore]
         public Octree Octree { get; private set; }
+        [JsonIgnore]
         public GridStructure GridStructure { get; private set; }
 
         public Transformation transformation { get; set; }

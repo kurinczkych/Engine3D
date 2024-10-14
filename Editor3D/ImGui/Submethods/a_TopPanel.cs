@@ -26,7 +26,12 @@ namespace Engine3D
                         {
 
                         }
-                        ImGui.EndMenu();
+                        if (ImGui.MenuItem("Save", "Ctrl+S"))
+                        {
+                            string path = FolderDialogShell32.SaveFolderDialog();
+                            ;
+                        }
+                    ImGui.EndMenu();
                     }
                     if (ImGui.BeginMenu("Window"))
                     {

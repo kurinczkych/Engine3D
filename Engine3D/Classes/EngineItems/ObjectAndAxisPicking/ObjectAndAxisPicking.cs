@@ -40,7 +40,7 @@ namespace Engine3D
                         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
                         pickingShader.Use();
-                        foreach (Object o in scene._meshObjects)
+                        foreach (Object o in _meshObjects)
                         {
                             BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                             if(mesh == null)
@@ -53,7 +53,7 @@ namespace Engine3D
                         }
 
                         pickingInstancedShader.Use();
-                        foreach (Object o in scene._instObjects)
+                        foreach (Object o in _instObjects)
                         {
                             BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                             if (mesh == null)
@@ -105,9 +105,9 @@ namespace Engine3D
                         #region Object selection
                         if (!axisClicked && objectMovingAxis == null)
                         {
-                            if (pixel.objectId != 0 && scene.objects.Count > 0)
+                            if (pixel.objectId != 0 && objects.Count > 0)
                             {
-                                var objs = scene.objects.Where(x => x.id == pixel.objectId);
+                                var objs = objects.Where(x => x.id == pixel.objectId);
 
                                 if (objs == null || objs.Count() == 0)
                                 {

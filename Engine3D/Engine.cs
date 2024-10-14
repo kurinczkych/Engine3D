@@ -157,7 +157,10 @@ namespace Engine3D
 
         public Object? selectedObject;
         public static int objectID = 1;
-        private Scene scene;
+
+        public List<Object> objects = new List<Object>();
+        public List<Object> _meshObjects = new List<Object>();
+        public List<Object> _instObjects = new List<Object>();
 
         public Character character;
         public Camera mainCamera;
@@ -173,7 +176,7 @@ namespace Engine3D
                 if(lights_ == null)
                 {
                     lights_ = new List<Light>();
-                    lights_ = scene.objects
+                    lights_ = objects
                         .SelectMany(o => o.components.OfType<Light>())
                         .ToList();
 
@@ -198,7 +201,7 @@ namespace Engine3D
                 if (particleSystems_ == null)
                 {
                     particleSystems_ = new List<ParticleSystem>();
-                    particleSystems_ = scene.objects
+                    particleSystems_ = objects
                         .SelectMany(o => o.components.OfType<ParticleSystem>())
                         .ToList();
                 }
@@ -241,7 +244,6 @@ namespace Engine3D
 
             assetManager = new AssetManager(ref textureManager);
 
-            scene = new Scene();
             queryPool = new QueryPool(1000);
             pendingQueries = new Dictionary<int, Tuple<int, BVHNode>>();
 
@@ -376,7 +378,7 @@ namespace Engine3D
             if (fps.totalTime > 0 && gameState == GameState.Running)
             {
                 physx.Simulate((float)args.Time);
-                foreach (Object o in scene.objects)
+                foreach (Object o in objects)
                 {
                     if (o.GetComponent<Physics>() is Physics p)
                     {
@@ -581,7 +583,7 @@ namespace Engine3D
             mainCamera = (Camera)camObj.components[camObj.components.Count-1];
             mainCamera.SetYaw(358);
             mainCamera.SetPitch(-4.23f);
-            scene.objects.Add(camObj);
+            objects.Add(camObj);
 
             onlyPosShaderProgram.Use();
 
@@ -595,9 +597,9 @@ namespace Engine3D
             //pointLights[0].transformation.Position = new Vector3(0, 110, 0);
 
             shaderProgram.Use();
-            scene.objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            scene.objects[scene.objects.Count - 1].components.Add(new Light(scene.objects[scene.objects.Count - 1], shaderProgram.id, 0));
-            scene.objects[scene.objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
+            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
+            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0));
+            objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             Light.SendToGPU(lights, shaderProgram.id);
 
             #region DebugLines
@@ -753,7 +755,7 @@ namespace Engine3D
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             }
 
-            scene.objects.Sort();
+            objects.Sort();
 
             foreach (var onLoadMethod in onLoadMethods)
             {
@@ -788,7 +790,7 @@ namespace Engine3D
             GL.DeleteVertexArray(uiTexVao.id);
             GL.DeleteVertexArray(wireVao.id);
 
-            foreach(Object obj in scene.objects)
+            foreach(Object obj in objects)
             {
                 BaseMesh? mesh = (BaseMesh?)obj.GetComponent<BaseMesh>();
                 if (mesh == null)

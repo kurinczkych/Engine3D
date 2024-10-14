@@ -1,5 +1,6 @@
 ﻿using FontStashSharp;
 using MagicPhysX;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ namespace Engine3D
         public float Height { get { return Max.Y - Min.Y; } }
         public float Depth { get { return Max.Z - Min.Z; } }
 
+        [JsonIgnore]
         public Vector3 Center
         {
             get

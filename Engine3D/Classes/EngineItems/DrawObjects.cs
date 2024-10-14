@@ -14,7 +14,7 @@ namespace Engine3D
         {
             vertices.Clear();
             Type? currentMeshType = null;
-            foreach (Object o in scene.objects)
+            foreach (Object o in objects)
             {
                 BaseMesh? baseMesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                 if (baseMesh == null)
