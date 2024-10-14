@@ -144,6 +144,9 @@ namespace Engine3D
                     var files = Directory.GetFiles(fileLocation);
                     foreach (var file in files)
                     {
+                        if (Path.GetExtension(file) == ".mtl")
+                            continue;
+
                         IncreaseFileTypeCount(fileLocation);
                         Asset asset = new Asset(Asset.CurrentId + 1, Path.GetFileName(file), file, GetAssetType((FileType)type), GetAssetTypeEditor((FileType)type), type);
                         assetManager.Add(asset);
@@ -166,6 +169,9 @@ namespace Engine3D
                     {
                         foreach (var file in files)
                         {
+                            if (Path.GetExtension(file) == ".mtl")
+                                continue;
+
                             if (assetManager.loaded.Contains(file) || assetManager.toLoadString.Contains(file))
                                 continue;
 
