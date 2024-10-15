@@ -61,27 +61,29 @@ namespace Engine3D
             
         }
 
-        public Light(Object parentObject, int shaderProgramId, int id)
+        public Light(Object parentObject, int id)
         {
             this.parentObject = parentObject;
-            this.shaderProgramId = shaderProgramId;
             this.id = id;
 
             SetLightType(LightType.DirectionalLight);
         }
 
-        public Light(Object parentObject, int shaderProgramId, int id, LightType lightType)
+        public Light(Object parentObject, int id, LightType lightType)
         {
             this.parentObject = parentObject;
-            this.shaderProgramId = shaderProgramId;
             this.id = id;
 
             this.lightType = lightType;
             SetLightType(lightType);
         }
 
-        private void GetUniformLocations()
+        private void GetUniformLocations(int spi)
         {
+            if (shaderProgramId == spi)
+                return;
+            shaderProgramId = spi;
+
             uniforms = new Dictionary<string, int>();
 
             uniforms.Add("lightTypeLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightType"));
@@ -141,8 +143,6 @@ namespace Engine3D
                 specular = new Vector3(1.0f, 1.0f, 1.0f);
                 specularPow = 2.0f;
             }
-
-            GetUniformLocations();
         }
 
         public static void SendToGPU(List<Light> lights, int shaderProgramId)
@@ -151,9 +151,7 @@ namespace Engine3D
 
             for (int i = 0; i < lights.Count; i++)
             {
-                if (lights[i].uniforms == null || lights[i].uniforms.Count == 0)
-                    lights[i].GetUniformLocations();
-
+                lights[i].GetUniformLocations(shaderProgramId);
                 GL.Uniform1(lights[i].uniforms["lightTypeLoc"], (int)lights[i].lightType);
                 if (lights[i].lightType == LightType.PointLight)
                 {

@@ -29,6 +29,8 @@
     <None Remove="Shaders\aabb\aabb.frag" />
     <None Remove="Shaders\aabb\aabb.vert" />
     <None Remove="Shaders\ComputeShaders\cullingshader.comp" />
+    <None Remove="Shaders\Default\Default - Copy.frag" />
+    <None Remove="Shaders\Default\Default - Copy.vert" />
     <None Remove="Shaders\Default\Default.frag" />
     <None Remove="Shaders\Default\Default.geom" />
     <None Remove="Shaders\Default\Default.vert" />
@@ -100,6 +102,8 @@
     <EmbeddedResource Include="Shaders\aabb\aabb.frag" />
     <EmbeddedResource Include="Shaders\aabb\aabb.vert" />
     <EmbeddedResource Include="Shaders\ComputeShaders\cullingshader.comp" />
+    <EmbeddedResource Include="Shaders\Default\Default - Copy.frag" />
+    <EmbeddedResource Include="Shaders\Default\Default - Copy.vert" />
     <EmbeddedResource Include="Shaders\Default\DefaultWithBone.vert" />
     <EmbeddedResource Include="Shaders\Default\Default.frag" />
     <EmbeddedResource Include="Shaders\Default\Default.geom" />

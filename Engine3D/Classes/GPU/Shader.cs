@@ -35,6 +35,14 @@ namespace Engine3D
                 GL.ShaderSource(shader, LoadShaderSource(shaderNames[i]));
                 GL.CompileShader(shader);
                 shaderIds.Add(shader);
+
+                GL.GetShader(shader, ShaderParameter.CompileStatus, out int vertexCompiled);
+                if (vertexCompiled == 0)
+                {
+                    string infoLog = GL.GetShaderInfoLog(shader);
+                    Engine.consoleManager.AddLog($"{shaderNames[i]} - Shader Compile Error: {infoLog}", LogType.Error);
+                }
+
             }
 
 
@@ -43,18 +51,12 @@ namespace Engine3D
 
             GL.LinkProgram(id);
 
-            //if (shaderNames[0].Contains("infinite"))
-            //    ;
-
-            //int linkStatus;
-            //GL.GetProgram(id, GetProgramParameterName.LinkStatus, out linkStatus);
-            //if (linkStatus == 0)
-            //{
-            //    // Program linking failed, get the info log for details
-            //    string programInfoLog = GL.GetProgramInfoLog(id);
-            //    Console.WriteLine("Shader program linking failed: " + programInfoLog);
-            //}
-            //;
+            GL.GetProgram(id, GetProgramParameterName.LinkStatus, out int linked);
+            if (linked == 0)
+            {
+                string infoLog = GL.GetProgramInfoLog(id);
+                Engine.consoleManager.AddLog($"Shader Program Link Error: {infoLog}", LogType.Error);
+            }
 
             Use();
 

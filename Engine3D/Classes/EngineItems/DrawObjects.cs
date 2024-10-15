@@ -20,6 +20,16 @@ namespace Engine3D
         {
             vertices.Clear();
             Type? currentMeshType = null;
+
+            Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
+            Vector3? lightDir = null;
+            if (light == null)
+                return;
+            else
+                lightDir = light.GetDirection();
+
+            shadowMapFBO.BindForReading();
+
             foreach (Object o in objects)
             {
                 BaseMesh? baseMesh = (BaseMesh?)o.GetComponent<BaseMesh>();
@@ -60,7 +70,7 @@ namespace Engine3D
                                 }
 
                                 if(mesh.animation == null)
-                                    mesh.Draw(gameState, shaderProgram, meshVbo, meshIbo);
+                                    mesh.Draw(gameState, shaderProgram, meshVbo, meshIbo, lightDir);
                                 else
                                     mesh.DrawAnimated(gameState, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
 
@@ -221,16 +231,19 @@ namespace Engine3D
 
         private void DrawObjectsForShadow(double delta)
         {
+            Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
+            if (light == null)
+                return;
+
             shadowMapFBO.BindForWriting();
 
             GL.Clear(ClearBufferMask.DepthBufferBit);
 
             shadowShader.Use();
 
-            Vector3 lightDir = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault().GetDirection();
-            Matrix4 shadowProj = mainCamera.GetProjectionMatrixOrtho();
-            float distanceFromScene = 50;
-            Matrix4 shadowView = shadowMapFBO.GetLightViewMatrix(lightDir, new Vector3(0, 0, 0), distanceFromScene);
+            Vector3 lightDir = light.GetDirection();
+            Matrix4 shadowProj = mainCamera.projectionMatrixOrthoShadow;
+            Matrix4 shadowView = ShadowMapFBO.GetLightViewMatrix(lightDir);
 
             vertices.Clear();
             Type? currentMeshType = null;

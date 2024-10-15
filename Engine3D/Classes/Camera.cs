@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Assimp;
 using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -35,6 +36,7 @@ namespace Engine3D
         public Matrix4 projectionMatrix;
         public Matrix4 projectionMatrixBigger;
         public Matrix4 projectionMatrixOrtho;
+        public Matrix4 projectionMatrixOrthoShadow;
         public Frustum frustum;
 
         [JsonIgnore]
@@ -114,6 +116,7 @@ namespace Engine3D
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
+            projectionMatrixOrthoShadow = GetProjectionMatrixOrthoShadow();
         }
         #endregion
 
@@ -123,6 +126,7 @@ namespace Engine3D
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
+            projectionMatrixOrthoShadow = GetProjectionMatrixOrthoShadow();
             UpdateVectors();
         }
 
@@ -146,16 +150,123 @@ namespace Engine3D
 
         public Matrix4 GetProjectionMatrixOrtho()
         {
-            float l = -5.0f;
-            float r =  5.0f;
-            float t =  5.0f / aspectRatio;
-            float b = -5.0f / aspectRatio;
-            float n = near;
-            float f = far;
+            float l = -25.0f;
+            float r =  25.0f;
+            float t =  25.0f/* / aspectRatio*/;
+            float b = -25.0f/* / aspectRatio*/;
+            float n = near; // 0.1
+            float f = far; // 1000
 
             Matrix4 m = Matrix4.CreateOrthographic(r - l, t - b, n, f);
 
             return m;
+        }
+
+        public Matrix4 GetProjectionMatrixOrthoShadow()
+        {
+            // MY APPROACH ------------------------------------------ Working but not tight light view proj
+            float l = -25.0f;
+            float r = 25.0f;
+            float t = 25.0f/* / aspectRatio*/;
+            float b = -25.0f/* / aspectRatio*/;
+            float n = 5; // 0.1
+            float f = 1000; // 1000
+
+            Matrix4 m = Matrix4.CreateOrthographic(r - l, t - b, n, f);
+
+            return m;
+
+            // OGLDEV APPROACH ------------------------------------------ NOT WORKING
+            //Frustum f = new Frustum();
+            //f.CalcCorners(gameScreenSize.X, gameScreenSize.Y, near, far, fov);
+
+            //Matrix4 inverseCamView = viewMatrix.Inverted();
+            //f.Transform(inverseCamView);
+
+            //Frustum viewFrustumInWorldSpace = f.GetCopy();
+
+            //Matrix4 lightView = ShadowMapFBO.GetLightViewMatrix(new Vector3(0, -1, 0));
+            //f.Transform(lightView);
+
+            //AABB aabb = f.CalcAABB();
+
+            //Vector3 bottomLeft = new Vector3(aabb.Min.X, aabb.Min.Y, aabb.Min.Z);
+            //Vector3 topRight = new Vector3(aabb.Max.X, aabb.Max.Y, aabb.Min.Z);
+            //Vector4 lightPosWorld4d = new Vector4((bottomLeft + topRight) / 2.0f, 1.0f);
+
+            //Matrix4 lightViewInv = lightView.Inverted();
+            //lightPosWorld4d = lightViewInv * lightPosWorld4d;
+            //Vector3 lightPosWorld = new Vector3(lightPosWorld4d.X, lightPosWorld4d.Y, lightPosWorld4d.Z);
+
+            //Matrix4 lightView2 = ShadowMapFBO.GetLightViewMatrix(new Vector3(0, -1, 0), lightPosWorld);
+            //viewFrustumInWorldSpace.Transform(lightView2);
+
+            //AABB final_aabb = viewFrustumInWorldSpace.CalcAABB();
+            //Matrix4 lightProjection = Matrix4.CreateOrthographicOffCenter(final_aabb.Min.X, final_aabb.Max.X, final_aabb.Min.Y, final_aabb.Max.Y, final_aabb.Min.Z, final_aabb.Max.Z);
+            //return lightProjection;
+
+
+            // CHATGPT APPROACH ------------------------------------------ Flickering
+            //Vector3 lightDirection = new Vector3(0, -1, 0);
+
+            //Vector3[] frustumCorners = GetFrustumCornersWorldSpace();
+
+            //// Step 2: Transform the frustum corners into light space
+            //Matrix4 lightView = ShadowMapFBO.GetLightViewMatrix(lightDirection);
+            //Vector3 min = new Vector3(float.MaxValue);
+            //Vector3 max = new Vector3(float.MinValue);
+
+            //for (int i = 0; i < 8; i++)
+            //{
+            //    Vector4 transformedCorner = new Vector4(frustumCorners[i], 1.0f);
+
+            //    // Multiply with the light's view matrix to get light-space coordinates
+            //    transformedCorner = lightView * transformedCorner;
+
+            //    // Update the min/max bounds for the transformed coordinates
+            //    min = Vector3.ComponentMin(min, transformedCorner.Xyz);
+            //    max = Vector3.ComponentMax(max, transformedCorner.Xyz);
+            //}
+
+            //// Step 3: Create the orthographic projection matrix that tightly fits the frustum bounds
+            //float l = min.X;
+            //float r = max.X;
+            //float b = min.Y;
+            //float t = max.Y;
+
+            //// Ensure near (n) and far (f) are positive
+            //float n = Math.Min(min.Z, max.Z);  // Near is the closest (smallest) Z value
+            //float f = Math.Max(min.Z, max.Z);
+
+            //Matrix4 lightProjection = Matrix4.CreateOrthographicOffCenter(l, r, b, t, n, f);
+
+            //return lightProjection;
+        }
+
+        private Vector3[] GetFrustumCornersWorldSpace()
+        {
+            Vector3[] frustumCorners = new Vector3[8];
+
+            float halfHeightNear = (float)Math.Tan(MathHelper.DegreesToRadians(fov / 2.0f)) * near;
+            float halfWidthNear = halfHeightNear * aspectRatio;
+            float halfHeightFar = (float)Math.Tan(MathHelper.DegreesToRadians(fov / 2.0f)) * far;
+            float halfWidthFar = halfHeightFar * aspectRatio;
+
+            // Near plane corners
+            Vector3 nearCenter = parentObject.transformation.Position + front * near;
+            frustumCorners[0] = nearCenter + (up * halfHeightNear) - (right * halfWidthNear);  // Top-Left
+            frustumCorners[1] = nearCenter + (up * halfHeightNear) + (right * halfWidthNear);  // Top-Right
+            frustumCorners[2] = nearCenter - (up * halfHeightNear) - (right * halfWidthNear);  // Bottom-Left
+            frustumCorners[3] = nearCenter - (up * halfHeightNear) + (right * halfWidthNear);  // Bottom-Right
+
+            // Far plane corners
+            Vector3 farCenter = parentObject.transformation.Position + front * far;
+            frustumCorners[4] = farCenter + (up * halfHeightFar) - (right * halfWidthFar);  // Top-Left
+            frustumCorners[5] = farCenter + (up * halfHeightFar) + (right * halfWidthFar);  // Top-Right
+            frustumCorners[6] = farCenter - (up * halfHeightFar) - (right * halfWidthFar);  // Bottom-Left
+            frustumCorners[7] = farCenter - (up * halfHeightFar) + (right * halfWidthFar);  // Bottom-Right
+
+            return frustumCorners;
         }
 
         public Vector3 GetCameraRay(Vector2 screenPoint)
@@ -352,6 +463,7 @@ namespace Engine3D
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
+            projectionMatrixOrthoShadow = GetProjectionMatrixOrthoShadow();
             frustum = GetFrustum(); 
         }
     }

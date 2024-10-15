@@ -505,7 +505,7 @@ namespace Engine3D
             }
         }
 
-        protected abstract void SendUniforms();
+        protected abstract void SendUniforms(Vector3? lightDir);
 
         public void CalculateFrustumVisibility()
         {
@@ -518,7 +518,7 @@ namespace Engine3D
                 }
                 else
                 {
-                    foreach (MeshData mesh in model.meshes)
+                    foreach (MeshData mesh in model.meshes) 
                     {
                         mesh.visibleIndices.Clear();
 
@@ -780,7 +780,8 @@ namespace Engine3D
                 // Ensure there are texture coordinates, as tangents depend on them
                 if (!mesh.mesh.HasTextureCoords(0))
                 {
-                    throw new InvalidOperationException("Mesh does not have texture coordinates. Tangents cannot be computed.");
+                    return;
+                    //throw new InvalidOperationException("Mesh does not have texture coordinates. Tangents cannot be computed.");
                 }
 
                 // Initialize tangent and bitangent lists with zeros

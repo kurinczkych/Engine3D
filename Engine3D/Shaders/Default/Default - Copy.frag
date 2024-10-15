@@ -67,10 +67,9 @@ float ShadowCalculation(vec4 fragPosLightSpace)
 
     // Bias to prevent shadow acne (tune this value)
     float bias = 0.005;
-//
-//    // If the current depth is greater than the closest depth, the fragment is in shadow
+
+    // If the current depth is greater than the closest depth, the fragment is in shadow
     float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-//    float shadow = 0.1;
 
     // Alternatively, return smooth shadows using Percentage-Closer Filtering (PCF)
     // float shadow = 0.0;
@@ -172,9 +171,12 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness, vec4 
         specular *= k_s;
     }
 
-    // Shadow calculation (attenuate specular more than diffuse to retain depth)
+    // Shadow calculation
     float shadow = ShadowCalculation(fragPosLightSpace); 
-    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color;
+
+    // Apply shadow factor (attenuate diffuse and specular lighting if in shadow)
+    return (ambient + (1.0 - shadow) * (diffuse + specular)) * light.color;
+//    return (ambient + diffuse + specular) * light.color;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {

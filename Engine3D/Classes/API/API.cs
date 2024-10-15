@@ -216,7 +216,7 @@ namespace Engine3D
         public void AddLight(Light.LightType lightType)
         {
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0, lightType));
+            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0, lightType));
             objects[objects.Count - 1].transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
 
             lights = new List<Light>();

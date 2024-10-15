@@ -64,7 +64,7 @@ namespace Engine3D
             this.textGenerator = tg;
 
             GetUniformLocations();
-            SendUniforms();
+            SendUniforms(null);
         }
 
         public void ChangeText(string text)
@@ -99,7 +99,7 @@ namespace Engine3D
             uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
         }
 
-        protected override void SendUniforms()
+        protected override void SendUniforms(Vector3? lightDir)
         {
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             if(texture != null)
@@ -114,7 +114,7 @@ namespace Engine3D
 
             if (gameRunning == GameState.Stopped && vertices.Count > 0)
             {
-                SendUniforms();
+                SendUniforms(null);
 
                 if (texture != null)
                 {
@@ -147,7 +147,7 @@ namespace Engine3D
             //    vertices.AddRange(ConvertToNDC(tri, 2, ref transformMatrix));
             //}
 
-            SendUniforms();
+            SendUniforms(null);
             texture.Bind();
 
             return vertices;

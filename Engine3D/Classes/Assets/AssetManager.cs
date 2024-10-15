@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK.Graphics.OpenGL4;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -190,7 +191,7 @@ namespace Engine3D
 
         public void UpdateIfNeeded()
         {
-            if(toLoad.Count > 0)
+            if (toLoad.Count > 0)
             {
                 Asset a = toLoad[0];
 

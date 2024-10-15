@@ -70,7 +70,7 @@ namespace Engine3D
             ComputeTangents();
 
             GetUniformLocations();
-            SendUniforms();
+            SendUniforms(null);
         }
 
         public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
@@ -95,7 +95,7 @@ namespace Engine3D
             ComputeTangents();
 
             GetUniformLocations();
-            SendUniforms();
+            SendUniforms(null);
         }
 
         public InstancedMesh(InstancedVAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
@@ -115,7 +115,7 @@ namespace Engine3D
             ComputeTangents();
 
             GetUniformLocations();
-            SendUniforms();
+            SendUniforms(null);
         }
 
         private void GetUniformLocations()
@@ -159,7 +159,7 @@ namespace Engine3D
             }
         }
 
-        protected override void SendUniforms()
+        protected override void SendUniforms(Vector3? lightDir)
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
@@ -241,7 +241,7 @@ namespace Engine3D
 
             Vao.Bind();
             shader.Use();
-            SendUniforms();
+            SendUniforms(null);
 
             foreach (MeshData mesh in model.meshes)
             {

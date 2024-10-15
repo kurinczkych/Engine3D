@@ -84,6 +84,12 @@ namespace Engine3D
             Max = Helper.Vector3Max(Max, vTK);
         }
 
+        public void Enclose(Vector4 v)
+        {
+            Min = Helper.Vector3Min(Min, v.Xyz);
+            Max = Helper.Vector3Max(Max, v.Xyz);
+        }
+
         public void Enclose(Vector3 point)
         {
             Min = Vector3.ComponentMin(Min, point);

@@ -38,7 +38,7 @@ namespace Engine3D
 
         public static GLState GLState = new GLState();
 
-        private ShadowMapFBO shadowMapFBO;
+        public static ShadowMapFBO shadowMapFBO;
 
         #region VAO/VBO/IBO
         private VAO onlyPosVao;
@@ -329,6 +329,7 @@ namespace Engine3D
 
             GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
+            shaderProgram.Use();
             DrawObjects(args.Time);
 
             DrawMoverGizmo();
@@ -632,7 +633,7 @@ namespace Engine3D
 
             shaderProgram.Use();
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0));
+            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0));
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(270,0,0));
             Light.SendToGPU(lights, shaderProgram.id);

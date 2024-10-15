@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace Engine3D
 {
@@ -126,18 +127,86 @@ namespace Engine3D
             return triangles;
         }
 
+        public void CalcCorners(float width, float height, float near, float far, float fov)
+        {
+            float AR = height / width;
+
+            float tanHalfFOV = (float)Math.Tan(MathHelper.DegreesToRadians(fov / 2.0f));
+
+            float NearZ = near;
+            float NearX = NearZ * tanHalfFOV;
+            float NearY = NearZ * tanHalfFOV * AR;
+
+            ntl = new Vector4(-NearX, NearY, NearZ, 1.0f);
+            nbl = new Vector4(-NearX, -NearY, NearZ, 1.0f);
+            ntr = new Vector4(NearX, NearY, NearZ, 1.0f);
+            nbr = new Vector4(NearX, -NearY, NearZ, 1.0f);
+
+            float FarZ = far;
+            float FarX = FarZ * tanHalfFOV;
+            float FarY = FarZ * tanHalfFOV * AR;
+
+            ftl = new Vector4(-FarX, FarY, FarZ, 1.0f);
+            fbl = new Vector4(-FarX, -FarY, FarZ, 1.0f);
+            ftr = new Vector4(FarX, FarY, FarZ, 1.0f);
+            fbr = new Vector4(FarX, -FarY, FarZ, 1.0f);
+        }
+
+        public void Transform(Matrix4 m)
+        {
+            ntl = m * ntl;
+            nbl = m * nbl;
+            ntr = m * ntr;
+            nbr = m * nbr;
+
+            ftl = m * ftl;
+            fbl = m * fbl;
+            ftr = m * ftr;
+            fbr = m * fbr;
+        }
+
+        public AABB CalcAABB()
+        {
+            AABB aabb = new AABB();
+            aabb.Enclose(ntl);
+            aabb.Enclose(nbl);
+            aabb.Enclose(ntr);
+            aabb.Enclose(nbr);
+            
+            aabb.Enclose(ftl);
+            aabb.Enclose(fbl);
+            aabb.Enclose(ftr);
+            aabb.Enclose(fbr);
+            return aabb;
+        }
+
+        public Frustum GetCopy()
+        {
+            Frustum f = new Frustum();
+            f.ntl = ntl;
+            f.nbl = nbl;
+            f.ntr = ntr;
+            f.nbr = nbr;
+
+            f.ftl = ftl;
+            f.fbl = fbl;
+            f.ftr = ftr;
+            f.fbr = fbr;
+            return f;
+        }
+
         public Plane[] planes;
 
         public Vector3 nearCenter;
         public Vector3 farCenter;
 
-        public Vector3 ntl;
-        public Vector3 ntr;
-        public Vector3 nbl;
-        public Vector3 nbr;
-        public Vector3 ftl;
-        public Vector3 ftr;
-        public Vector3 fbl;
-        public Vector3 fbr;
+        public Vector4 ntl;
+        public Vector4 ntr;
+        public Vector4 nbl;
+        public Vector4 nbr;
+        public Vector4 ftl;
+        public Vector4 ftr;
+        public Vector4 fbl;
+        public Vector4 fbr;
     }
 }

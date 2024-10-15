@@ -12,6 +12,8 @@ using Newtonsoft.Json.Linq;
 
 #pragma warning disable CS8765
 #pragma warning disable CS8625
+#pragma warning disable CS8604
+#pragma warning disable CS8602
 
 namespace Engine3D
 {

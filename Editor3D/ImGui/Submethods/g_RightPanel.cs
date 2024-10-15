@@ -1283,7 +1283,7 @@ namespace Engine3D
                                                 }
                                                 if (component.name == "Light")
                                                 {
-                                                    o.components.Add(new Light(o, engine.shaderProgram.id, 0, LightType.DirectionalLight));
+                                                    o.components.Add(new Light(o, 0, LightType.DirectionalLight));
                                                     engine.lights = new List<Light>();
                                                 }
                                                 if (component.name == "ParticleSystem")
