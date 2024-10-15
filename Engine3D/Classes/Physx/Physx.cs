@@ -52,7 +52,7 @@ namespace Engine3D
                     fixed (byte* bytePointer = byteArray)
                     {
                         var transport = phys_PxDefaultPvdSocketTransportCreate(bytePointer, 5425, 100);
-                        GetPvd()->ConnectMut(transport, PxPvdInstrumentationFlags.All)
+                        GetPvd()->ConnectMut(transport, PxPvdInstrumentationFlags.All);
                     }
 
                     var sceneDesc = PxSceneDesc_new(&tolerancesScale);
