@@ -10,6 +10,12 @@ namespace Engine3D
 {
     public partial class Engine
     {
+        public enum DrawPass
+        {
+            ShadowMapPass,
+            LightingPass
+        }
+
         private void DrawObjects(double delta)
         {
             vertices.Clear();
@@ -36,31 +42,11 @@ namespace Engine3D
                         Mesh mesh = (Mesh)baseMesh;
                         if (gameState == GameState.Running && useOcclusionCulling && objectType == ObjectType.TriangleMesh)
                         {
-                            //List<triangle> notOccludedTris = new List<triangle>();
-                            //OcclusionCulling.TraverseBVHNode(o.BVHStruct.Root, ref notOccludedTris, ref frustum);
-
-                            //vertices.AddRange(mesh.DrawNotOccluded(notOccludedTris));
-                            //currentMeshType = typeof(Mesh);
-
-                            //if (vertices.Count > 0)
-                            //{
-                            //    meshVbo.Buffer(vertices);
-                            //    GL.DrawArrays(PrimitiveType.Triangles, 0, vertices.Count);
-                            //    vertices.Clear();
-                            //}
+                            
                         }
                         else
                         {
                             currentMeshType = typeof(Mesh);
-
-                            //cullingProgram.Use();
-
-                            //visibilityVbo.Buffer(vertices);
-                            //frustumVbo.Buffer(character.camera.frustum.GetData());
-                            //GL.DispatchCompute(256, 1, 1);
-                            //GL.MemoryBarrier(MemoryBarrierFlags.ShaderStorageBarrierBit); 
-
-                            //GL.DrawArraysIndirect(PrimitiveType.Triangles, IntPtr.Zero);
 
                             if (o.isEnabled)
                             {
@@ -126,8 +112,6 @@ namespace Engine3D
                                 GL.Disable(EnableCap.DepthTest);
 
                                 int instIndex = -1;
-                                //if (editorData.gizmoManager.PerInstanceMove && editorData.instIndex != -1)
-                                //    instIndex = editorData.instIndex;
 
                                 mesh.DrawOnlyPosAndNormal(gameState, outlineInstancedShader, instancedOnlyPosAndNormalVao, onlyPosAndNormalVbo,
                                                           instancedOnlyPosAndNormalVbo, onlyPosAndNormalIbo, instIndex);
@@ -158,9 +142,6 @@ namespace Engine3D
                 else if (objectType == ObjectType.UIMesh && baseMesh is UITextureMesh)
                 {
                     UITextureMesh mesh = (UITextureMesh)baseMesh;
-
-                    //if (DrawCorrectMesh(ref vertices, currentMesh, typeof(UITextureMesh)))
-                    //    vertices = new List<float>();
 
                     if (currentMeshType == null || currentMeshType != mesh.GetType())
                     {
@@ -238,5 +219,73 @@ namespace Engine3D
 
         }
 
+        private void DrawObjectsForShadow(double delta)
+        {
+            shadowMapFBO.BindForWriting();
+
+            GL.Clear(ClearBufferMask.DepthBufferBit);
+
+            shadowShader.Use();
+
+            Vector3 lightDir = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault().GetDirection();
+            Matrix4 shadowProj = mainCamera.GetProjectionMatrixOrtho();
+            float distanceFromScene = 50;
+            Matrix4 shadowView = shadowMapFBO.GetLightViewMatrix(lightDir, new Vector3(0, 0, 0), distanceFromScene);
+
+            vertices.Clear();
+            Type? currentMeshType = null;
+            foreach (Object o in objects)
+            {
+                BaseMesh? baseMesh = (BaseMesh?)o.GetComponent<BaseMesh>();
+                if (baseMesh == null)
+                {
+                    //throw new Exception("Can't draw the object, it doesn't have a mesh!");
+                    continue;
+                }
+
+                ObjectType objectType = o.GetObjectType();
+                if (objectType == ObjectType.Cube ||
+                   objectType == ObjectType.Sphere ||
+                   objectType == ObjectType.Capsule ||
+                   objectType == ObjectType.TriangleMesh ||
+                   objectType == ObjectType.TriangleMeshWithCollider)
+                {
+
+                    if (baseMesh.GetType() == typeof(Mesh))
+                    {
+                        Mesh mesh = (Mesh)baseMesh;
+                        currentMeshType = typeof(Mesh);
+
+                        if (o.isEnabled)
+                        {
+                            if (mesh.animation == null)
+                                mesh.DrawOnlyPos(gameState, shadowShader, onlyPosVao, onlyPosVbo, onlyPosIbo, shadowProj, shadowView);  
+                            //else
+                            //    mesh.DrawAnimated(gameState, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
+                        }
+                    }
+                    else if (baseMesh.GetType() == typeof(InstancedMesh))
+                    {
+                        throw new NotImplementedException();
+                        //InstancedMesh mesh = (InstancedMesh)baseMesh;
+                        //if (currentMeshType == null || currentMeshType != mesh.GetType())
+                        //{
+                        //    instancedShaderProgram.Use();
+                        //}
+
+                        //if (o.isEnabled)
+                        //{
+                        //    mesh.Draw(gameState, instancedShaderProgram, meshVbo, instancedMeshVbo, meshIbo);
+
+                        //    currentMeshType = typeof(InstancedMesh);
+                        //}
+                    }
+                }
+            }
+
+
+            if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(int) : currentMeshType, typeof(int), null))
+                vertices = new List<float>();
+        }
     }
 }

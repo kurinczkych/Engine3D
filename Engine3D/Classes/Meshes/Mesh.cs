@@ -470,19 +470,25 @@ namespace Engine3D
             }
         }
 
-        public void SendUniformsOnlyPos(Shader shader)
+        public void SendUniformsOnlyPos(Shader shader, Matrix4? otherProj, Matrix4? otherView)
         {
-            projectionMatrix = camera.projectionMatrix;
-            viewMatrix = camera.viewMatrix;
+            if (otherProj != null)
+                projectionMatrix = otherProj.Value;
+            else
+                projectionMatrix = camera.projectionMatrix;
+            if (otherView != null)
+                viewMatrix = otherView.Value;
+            else
+                viewMatrix = camera.viewMatrix;
             cameraPos = camera.GetPosition();
 
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "viewMatrix"), true, ref viewMatrix);
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "projectionMatrix"), true, ref projectionMatrix);
-            GL.Uniform3(GL.GetUniformLocation(shader.id, "cameraPos"), cameraPos);
+            //GL.Uniform3(GL.GetUniformLocation(shader.id, "cameraPos"), cameraPos);
 
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_scaleMatrix"), true, ref scaleMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
+            //GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_scaleMatrix"), true, ref scaleMatrix);
+            //GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
         public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_)
@@ -683,14 +689,14 @@ namespace Engine3D
             }
         }
 
-        public void DrawOnlyPos(GameState gameRunning, Shader shader, VAO vao_, VBO vbo_, IBO ibo_)
+        public void DrawOnlyPos(GameState gameRunning, Shader shader, VAO vao_, VBO vbo_, IBO ibo_, Matrix4? otherProj = null, Matrix4? otherView = null)
         {
             if (!parentObject.isEnabled)
                 return;
 
             vao_.Bind();
             shader.Use();
-            SendUniformsOnlyPos(shader);
+            SendUniformsOnlyPos(shader, otherProj, otherView);
 
             foreach (MeshData mesh in model.meshes)
             {
@@ -716,14 +722,14 @@ namespace Engine3D
             }
         }
         
-        public void DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO vao_, VBO vbo_, IBO ibo_)
+        public void DrawOnlyPosAndNormal(GameState gameRunning, Shader shader, VAO vao_, VBO vbo_, IBO ibo_, Matrix4? otherProj = null, Matrix4? otherView = null)
         {
             if (!parentObject.isEnabled)
                 return;
 
             vao_.Bind();
             shader.Use();
-            SendUniformsOnlyPos(shader);
+            SendUniformsOnlyPos(shader, otherProj, otherView);
 
             foreach (MeshData mesh in model.meshes)
             {

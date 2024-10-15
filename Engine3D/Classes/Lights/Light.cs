@@ -241,6 +241,11 @@ namespace Engine3D
             return lightDirection.Normalized();  // Send normalized light direction
         }
 
+        public Vector3 GetDirection()
+        {
+            return GetLightDirectionFromEuler(parentObject.transformation.Rotation);
+        }
+
         #region Getters/Setters
         public void SetColor(Color4 c)
         {

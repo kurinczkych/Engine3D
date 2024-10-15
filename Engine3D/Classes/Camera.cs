@@ -146,7 +146,16 @@ namespace Engine3D
 
         public Matrix4 GetProjectionMatrixOrtho()
         {
-            return Matrix4.CreateOrthographic(gameScreenSize.X, gameScreenSize.Y, near, far);
+            float l = -5.0f;
+            float r =  5.0f;
+            float t =  5.0f / aspectRatio;
+            float b = -5.0f / aspectRatio;
+            float n = near;
+            float f = far;
+
+            Matrix4 m = Matrix4.CreateOrthographic(r - l, t - b, n, f);
+
+            return m;
         }
 
         public Vector3 GetCameraRay(Vector2 screenPoint)
@@ -343,7 +352,7 @@ namespace Engine3D
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
-            frustum = GetFrustum();
+            frustum = GetFrustum(); 
         }
     }
 }

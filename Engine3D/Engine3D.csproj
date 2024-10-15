@@ -38,9 +38,7 @@
     <None Remove="Shaders\infiniteFloor\infiniteFloor.vert" />
     <None Remove="Shaders\Instanced\Instanced.frag" />
     <None Remove="Shaders\Instanced\Instanced.vert" />
-    <None Remove="Shaders\onlyPos\onlyPos.frag" />
     <None Remove="Shaders\onlyPos\onlyPos.geom" />
-    <None Remove="Shaders\onlyPos\onlyPos.vert" />
     <None Remove="Shaders\onlyPos\onlyPosForGeom.vert" />
     <None Remove="Shaders\outlineInstanced\outlineInstanced.frag" />
     <None Remove="Shaders\outlineInstanced\outlineInstanced.vert" />
@@ -52,6 +50,8 @@
     <None Remove="Shaders\picking\picking.vert" />
     <None Remove="Shaders\postex\postex.frag" />
     <None Remove="Shaders\postex\postex.vert" />
+    <None Remove="Shaders\shadow\shadow.frag" />
+    <None Remove="Shaders\shadow\shadow.vert" />
     <None Remove="Textures\bmp_24.bmp" />
     <None Remove="Textures\font.json" />
     <None Remove="Textures\font2.PNG" />
@@ -123,6 +123,8 @@
     <EmbeddedResource Include="Shaders\picking\picking.vert" />
     <EmbeddedResource Include="Shaders\postex\postex.frag" />
     <EmbeddedResource Include="Shaders\postex\postex.vert" />
+    <EmbeddedResource Include="Shaders\shadow\shadow.frag" />
+    <EmbeddedResource Include="Shaders\shadow\shadow.vert" />
     <EmbeddedResource Include="Textures\font.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>

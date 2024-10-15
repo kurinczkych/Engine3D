@@ -14,6 +14,7 @@ using System.Drawing;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using static Engine3D.Engine;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -37,11 +38,9 @@ namespace Engine3D
 
         public static GLState GLState = new GLState();
 
-        //private IndirectBuffer indirectBuffer;
-        //private VBO visibilityVbo;
-        //private VBO drawCommandsVbo;
-        //private VBO frustumVbo;
+        private ShadowMapFBO shadowMapFBO;
 
+        #region VAO/VBO/IBO
         private VAO onlyPosVao;
         private VBO onlyPosVbo;
         private IBO onlyPosIbo;
@@ -78,7 +77,9 @@ namespace Engine3D
 
         private VAO infiniteFloorVao;
         private VBO infiniteFloorVbo;
+        #endregion
 
+        #region Shaders
         private Shader cullingProgram;
         private Shader outlineShader;
         private Shader outlineInstancedShader;
@@ -91,6 +92,9 @@ namespace Engine3D
         private Shader onlyPosShaderProgram;
         private Shader aabbShaderProgram;
         private Shader infiniteFloorShader;
+        private Shader shadowShader;
+        #endregion
+
         #endregion
 
         #region Program variables
@@ -321,6 +325,10 @@ namespace Engine3D
             shaderProgram.Use();
             Light.SendToGPU(lights, shaderProgram.id);
 
+            DrawObjectsForShadow(args.Time);
+
+            GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
             DrawObjects(args.Time);
 
             DrawMoverGizmo();
@@ -475,6 +483,10 @@ namespace Engine3D
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
 
+            #region FrameBuffers
+            shadowMapFBO = new ShadowMapFBO(new Vector2(1024, 1024/ 1.6606f));
+            #endregion
+
             #region VBO and VAO Init
             //indirectBuffer = new IndirectBuffer();
             //visibilityVbo = new VisibilityVBO(DynamicCopy: true);
@@ -584,6 +596,7 @@ namespace Engine3D
             onlyPosShaderProgram = new Shader(new List<string>() { "onlyPos.vert", "onlyPos.frag" });
             aabbShaderProgram = new Shader(new List<string>() { "aabb.vert", "aabb.frag" });
             infiniteFloorShader = new Shader(new List<string>() { "infiniteFloor.vert", "infiniteFloor.frag" });
+            shadowShader = new Shader(new List<string>() { "shadow.vert", "shadow.frag" });
             #endregion
 
             pickingTexture = new PickingTexture(windowSize);
