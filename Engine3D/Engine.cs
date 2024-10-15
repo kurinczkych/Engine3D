@@ -234,7 +234,7 @@ namespace Engine3D
             }
         }
 
-        private Physx physx;
+        public Physx physx;
 
         private bool useOcclusionCulling = false;
         private QueryPool queryPool;
@@ -621,6 +621,7 @@ namespace Engine3D
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
             objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], shaderProgram.id, 0));
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
+            objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(270,0,0));
             Light.SendToGPU(lights, shaderProgram.id);
 
             #region DebugLines

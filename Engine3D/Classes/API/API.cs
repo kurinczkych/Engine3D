@@ -208,7 +208,7 @@ namespace Engine3D
         public void AddMeshObject(string meshName)
         {
             Object o = new Object(ObjectType.TriangleMesh);
-            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, Path.GetFileName(meshName), windowSize, ref mainCamera_, ref o));
+            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, FileManager.GetPathAfterAssetFolder(meshName), windowSize, ref mainCamera_, ref o));
             AddObjectAndCalculate(o);
         }
 

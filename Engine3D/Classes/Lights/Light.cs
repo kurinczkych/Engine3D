@@ -170,7 +170,7 @@ namespace Engine3D
                 else if (lights[i].lightType == LightType.DirectionalLight)
                 {
                     Vector3 c = new Vector3(lights[i].color.R, lights[i].color.G, lights[i].color.B);
-                    Vector3 rot = QuaternionToDirection(lights[i].parentObject.transformation.Rotation);
+                    Vector3 rot = GetLightDirectionFromEuler(lights[i].parentObject.transformation.Rotation);
                     GL.Uniform3(lights[i].uniforms["directionLoc"], rot);
                     GL.Uniform3(lights[i].uniforms["colorLoc"], c);
 
@@ -227,15 +227,18 @@ namespace Engine3D
             return (4.5f / linear + (float)Math.Sqrt(75.0f / quadratic)) / 2.0f;
         }
 
-        public static Vector3 QuaternionToDirection(Quaternion rot)
+        public static Vector3 GetLightDirectionFromEuler(Quaternion rotation)
         {
-            Vector3 baseDirection = new Vector3(0, -1, 0);
+            // Assuming the forward direction is along the negative Z-axis
+            Vector3 forward = new Vector3(0, 0, -1);
 
-            Vector3 sunDirection = Vector3.Transform(baseDirection, rot);
+            // Rotate the forward vector by the quaternion to get the light direction
+            Vector3 lightDirection = Vector3.Transform(forward, rotation);
+            lightDirection.X = (float)Math.Round(lightDirection.X,3);
+            lightDirection.Y = (float)Math.Round(lightDirection.Y,3);
+            lightDirection.Z = (float)Math.Round(lightDirection.Z,3);
 
-            sunDirection = Vector3.Normalize(sunDirection);
-
-            return sunDirection;
+            return lightDirection.Normalized();  // Send normalized light direction
         }
 
         #region Getters/Setters

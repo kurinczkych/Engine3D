@@ -155,14 +155,14 @@ namespace Engine3D
             {
                 if (keyboardState.IsKeyDown(Keys.Space))
                 {
-                    Velocity.Y += flySpeed_ * 10 * (float)args.Time;
+                    Velocity.Y += flySpeed_ * (float)args.Time;
                 }
             }
 
             if (keyboardState.IsKeyDown(Keys.LeftControl))
             {
                 if (noClip)
-                    Velocity.Y -= flySpeed_ * 10 * (float)args.Time;
+                    Velocity.Y -= flySpeed_ * (float)args.Time;
             }
 
             if (keyboardState.IsKeyDown(Keys.Enter) || keyboardState.IsKeyDown(Keys.KeyPadEnter))

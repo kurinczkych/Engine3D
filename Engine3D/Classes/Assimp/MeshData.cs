@@ -20,6 +20,7 @@ namespace Engine3D
         public uint maxVisibleIndex = 0;
 
         public List<List<uint>> groupedIndices = new List<List<uint>>();
+        public List<int> pis = new List<int>();
 
         public AABB Bounds = new AABB();
 
@@ -28,6 +29,11 @@ namespace Engine3D
             this.mesh = mesh;
             foreach (Vector3D v in mesh.Vertices)
                 Bounds.Enclose(v);
+
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                pis.Add(i);  // Store the index of each vertex
+            }
 
             CalculateGroupedIndices();
             visibleVerticesData.AddRange(BaseMesh.GetMeshData(mesh));

@@ -58,12 +58,12 @@ namespace Engine3D
 
                     if (KeyboardState.IsKeyDown(Keys.Space))
                     {
-                        character.Velocity.Y += flySpeed_ * 10 * (float)args.Time;
+                        character.Velocity.Y += flySpeed_ * (float)args.Time;
                         characterMoved = true;
                     }
                     if (KeyboardState.IsKeyDown(Keys.LeftControl))
                     {
-                        character.Velocity.Y -= flySpeed_ * 10 * (float)args.Time;
+                        character.Velocity.Y -= flySpeed_ * (float)args.Time;
                         characterMoved = true;
                     }
                     if (KeyboardState.IsKeyDown(Keys.W))

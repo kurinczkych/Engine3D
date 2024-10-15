@@ -120,7 +120,6 @@ namespace Engine3D
             modelData.materials = new List<Material>(scene.Materials);
 
             return modelData;
-
         }
 
         

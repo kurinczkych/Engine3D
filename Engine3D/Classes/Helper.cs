@@ -159,12 +159,20 @@ namespace Engine3D
             );
 
             Vector3 normalizedEulerAngles = new Vector3(
-                (float)Math.Round((eulerAnglesDegrees.X + 360) % 360,2),
-                (float)Math.Round((eulerAnglesDegrees.Y + 360) % 360,2),
-                (float)Math.Round((eulerAnglesDegrees.Z + 360) % 360,2)
+                NormalizeAngle(eulerAnglesDegrees.X),
+                NormalizeAngle(eulerAnglesDegrees.Y),
+                NormalizeAngle(eulerAnglesDegrees.Z)
             );
 
             return normalizedEulerAngles;
+        }
+
+        public static float NormalizeAngle(float angle)
+        {
+            angle = angle % 360;
+            if (angle < 0) angle += 360;
+            if (angle == 360) angle = 0;
+            return angle;
         }
 
         public static Quaternion QuaternionFromEuler(Vector3 rot)

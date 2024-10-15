@@ -111,37 +111,39 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
     float roughness = texture(textureSamplerRough, gsFragTexCoord).r;
     float m = roughness * roughness;
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow / m);
 
-    if(useRough == 1)
+    if (useRough == 1)
     {
-        float roughness = texture(textureSamplerRough, gsFragTexCoord).r;
-        float m = roughness * roughness;
+        roughness = texture(textureSamplerRough, gsFragTexCoord).r;
+        m = roughness * roughness;
         spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow / m);
     }
 
     // combine results
-    vec3 ambient  = light.ambient * light.diffuse;
-    if(useAO == 1)
+    vec3 ambient = light.ambient * light.diffuse;
+    if (useAO == 1)
     {
         float ao = texture(textureSamplerAO, gsFragTexCoord).r;
-        ambient  = ambient * ao;
+        ambient *= ao;
     }
 
-    vec3 diffuse  = light.diffuse  * diff * light.diffuse;
-    vec3 specular = light.specular * spec * light.specular;
+    vec3 diffuse = light.diffuse * diff;
 
-    if(useMetal == 1)
+    vec3 specular = light.specular * spec;
+
+    // Correct metalness calculation
+    if (useMetal == 1)
     {
-        vec3 k_s = mix(vec3(metallnessVar), vec3(1.0), metalness); // Reflectance at normal incidence, can be tweaked.
-        vec3 k_d = k_s;
+        vec3 k_s = mix(vec3(0.04), vec3(metallnessVar), metalness); // For metals, k_s is the albedo; for non-metals, it's around 0.04
+        vec3 k_d = vec3(1.0) - k_s;                                 // Non-metals have a diffuse color, metals don't
 
-        diffuse = diffuse * k_d;
-        specular = specular * k_s;
+        diffuse *= k_d;
+        specular *= k_s;
     }
 
     return (ambient + diffuse + specular) * light.color;
-}  
+}
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
     float height = texture(textureSamplerHeight, texCoords).r - 0.5;

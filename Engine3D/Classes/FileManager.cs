@@ -230,6 +230,22 @@ namespace Engine3D
                 return AssetTypeEditor.Unknown;
         }
 
+        public static string GetPathAfterAssetFolder(string fullPath, FileType fileType = FileType.Models)
+        {
+            // Find the index of the "Models" folder in the path
+            int index = fullPath.IndexOf(fileType.ToString());
+
+            // If "Models" is found, extract everything after it
+            if (index >= 0)
+            {
+                // Extract everything after "Models" and the trailing backslash
+                return fullPath.Substring(index + fileType.ToString().Length + 1); // +1 to remove the trailing backslash
+            }
+
+            // If "Models" is not found, return an empty string or the original path
+            return string.Empty;
+        }
+
         public static void DeleteAsset(string assetPath)
         {
             if (assetPath == null || assetPath == "")

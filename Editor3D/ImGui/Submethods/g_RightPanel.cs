@@ -56,7 +56,7 @@ namespace Engine3D
 
                                     ImGui.Text("X");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(o.transformation.Position.X.ToString(), 0, o.transformation.Position.X.ToString().Length, _inputBuffers["##positionX"], 0);
+                                    FillInputBuffer(o.transformation.Position.X.ToString(), "##positionX");
                                     commit = false;
                                     if (ImGui.InputText("##positionX", _inputBuffers["##positionX"], (uint)_inputBuffers["##positionX"].Length))
                                     {
@@ -97,7 +97,7 @@ namespace Engine3D
 
                                     ImGui.Text("Y");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(o.transformation.Position.Y.ToString(), 0, o.transformation.Position.Y.ToString().Length, _inputBuffers["##positionY"], 0);
+                                    FillInputBuffer(o.transformation.Position.Y.ToString(), "##positionY");
                                     commit = false;
                                     if (ImGui.InputText("##positionY", _inputBuffers["##positionY"], (uint)_inputBuffers["##positionY"].Length))
                                     {
@@ -138,7 +138,7 @@ namespace Engine3D
 
                                     ImGui.Text("Z");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(o.transformation.Position.Z.ToString(), 0, o.transformation.Position.Z.ToString().Length, _inputBuffers["##positionZ"], 0);
+                                    FillInputBuffer(o.transformation.Position.Z.ToString(), "##positionZ");
                                     commit = false;
                                     if (ImGui.InputText("##positionZ", _inputBuffers["##positionZ"], (uint)_inputBuffers["##positionZ"].Length) && !justSelectedItem)
                                     {
@@ -186,7 +186,7 @@ namespace Engine3D
 
                                     ImGui.Text("X");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(rotation.X.ToString(), 0, rotation.X.ToString().Length, _inputBuffers["##rotationX"], 0);
+                                    FillInputBuffer(rotation.X.ToString(), "##rotationX");
                                     commit = false;
                                     if (ImGui.InputText("##rotationX", _inputBuffers["##rotationX"], (uint)_inputBuffers["##rotationX"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
                                     {
@@ -228,7 +228,7 @@ namespace Engine3D
 
                                     ImGui.Text("Y");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(rotation.Y.ToString(), 0, rotation.Y.ToString().Length, _inputBuffers["##rotationY"], 0);
+                                    FillInputBuffer(rotation.Y.ToString(), "##rotationY");
                                     commit = false;
                                     if (ImGui.InputText("##rotationY", _inputBuffers["##rotationY"], (uint)_inputBuffers["##rotationY"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
                                     {
@@ -269,7 +269,7 @@ namespace Engine3D
 
                                     ImGui.Text("Z");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(rotation.Z.ToString(), 0, rotation.Z.ToString().Length, _inputBuffers["##rotationZ"], 0);
+                                    FillInputBuffer(rotation.Z.ToString(), "##rotationZ");
                                     commit = false;
                                     if (ImGui.InputText("##rotationZ", _inputBuffers["##rotationZ"], (uint)_inputBuffers["##rotationZ"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
                                     {
@@ -315,7 +315,7 @@ namespace Engine3D
 
                                     ImGui.Text("X");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(o.transformation.Scale.X.ToString(), 0, o.transformation.Scale.X.ToString().Length, _inputBuffers["##scaleX"], 0);
+                                    FillInputBuffer(o.transformation.Scale.X.ToString(), "##scaleX");
                                     commit = false;
                                     if (ImGui.InputText("##scaleX", _inputBuffers["##scaleX"], (uint)_inputBuffers["##scaleX"].Length))
                                     {
@@ -356,7 +356,7 @@ namespace Engine3D
 
                                     ImGui.Text("Y");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(o.transformation.Scale.Y.ToString(), 0, o.transformation.Scale.Y.ToString().Length, _inputBuffers["##scaleY"], 0);
+                                    FillInputBuffer(o.transformation.Scale.Y.ToString(), "##scaleY");
                                     commit = false;
                                     if (ImGui.InputText("##scaleY", _inputBuffers["##scaleY"], (uint)_inputBuffers["##scaleY"].Length))
                                     {
@@ -397,7 +397,7 @@ namespace Engine3D
 
                                     ImGui.Text("Z");
                                     ImGui.SameLine();
-                                    Encoding.UTF8.GetBytes(o.transformation.Scale.Z.ToString(), 0, o.transformation.Scale.Z.ToString().Length, _inputBuffers["##scaleZ"], 0);
+                                    FillInputBuffer(o.transformation.Scale.Z.ToString(), "##scaleZ");
                                     commit = false;
                                     if (ImGui.InputText("##scaleZ", _inputBuffers["##scaleZ"], (uint)_inputBuffers["##scaleZ"].Length))
                                     {

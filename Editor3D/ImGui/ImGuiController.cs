@@ -94,9 +94,9 @@ namespace Engine3D
             _inputBuffers.Add("##positionX", new byte[100]);
             _inputBuffers.Add("##positionY", new byte[100]);
             _inputBuffers.Add("##positionZ", new byte[100]);
-            _inputBuffers.Add("##rotationX", new byte[100]);
-            _inputBuffers.Add("##rotationY", new byte[100]);
-            _inputBuffers.Add("##rotationZ", new byte[100]);
+            _inputBuffers.Add("##rotationX", new byte[200]);
+            _inputBuffers.Add("##rotationY", new byte[200]);
+            _inputBuffers.Add("##rotationZ", new byte[200]);
             _inputBuffers.Add("##scaleX", new byte[100]);
             _inputBuffers.Add("##scaleY", new byte[100]);
             _inputBuffers.Add("##scaleZ", new byte[100]);
@@ -181,6 +181,11 @@ namespace Engine3D
                 i++;
             }
         }
+        private void FillInputBuffer(string value, string bufferName)
+        {
+            ClearBuffer(bufferName);
+            Encoding.UTF8.GetBytes(value, 0, value.Length, _inputBuffers[bufferName], 0);
+        }
         #endregion
 
         #region MainMethods
@@ -202,6 +207,7 @@ namespace Engine3D
             engineData.textureManager = engine.GetTextureManager();
             editorData.assetStoreManager = new AssetStoreManager(ref engineData.assetManager);
             engineData.gizmoManager = engine.GetGizmoManager();
+            editorData.physx = engine.physx;
 
             keyboardState = engine.GetKeyboardState();
             mouseState = engine.GetMouseState();

@@ -796,7 +796,7 @@ namespace Engine3D
         //    return vertices;
         //}
 
-        
+
         //public List<float> DrawOnlyPos(VAO aabbVao, Shader shader)
         //{
         //    aabbVao.Bind();
@@ -838,35 +838,44 @@ namespace Engine3D
 
         public void GetCookedData(out PxVec3[] verts, out int[] indicesOut)
         {
-            throw new NotImplementedException();
-            //List<PxVec3> verts_ = new List<PxVec3>();
-            //List<int> indicesOut_ = new List<int>();
+            List<PxVec3> verts_ = new List<PxVec3>();
+            List<int> indicesOut_ = new List<int>();
 
-            //int lastIndex = 0;
+            int lastIndex = 0;
 
-            //for (int i = 0; i < model.meshes.Count; i++)
-            //{
-            //    MeshData mesh = model.meshes[i];
+            // Loop through all meshes in the model
+            for (int i = 0; i < model.meshes.Count; i++)
+            {
+                MeshData meshData = model.meshes[i];
+                Assimp.Mesh mesh = meshData.mesh;
 
-            //    int largestIndex = (int)mesh.indices.Max();
+                // Calculate the largest index for adjusting indices later
+                int largestIndex = mesh.Faces.Max(f => f.Indices.Max());
 
-            //    for (int j = 0; j < mesh.allVerts.Count(); j++)
-            //    {
-            //        verts_.Add(ConvertToNDCPxVec3(j, i));
-            //    }
+                // Convert vertices using the provided ConvertToNDCPxVec3 method
+                for (int j = 0; j < mesh.Vertices.Count; j++)
+                {
+                    // Convert each vertex to PxVec3 and add to the list, using the index and mesh index
+                    verts_.Add(ConvertToNDCPxVec3(j, i)); // Here we pass the vertex index (j) and the mesh index (i)
+                }
 
-            //    for (int j = 0; j < mesh.indices.Count; j += 3)
-            //    {
-            //        indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j]].pi + lastIndex);
-            //        indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 1]].pi + lastIndex);
-            //        indicesOut_.Add(mesh.uniqueVertices[(int)mesh.indices[j + 2]].pi + lastIndex);
-            //    }
+                // Convert indices using pis to remap them correctly
+                for (int j = 0; j < mesh.Faces.Count; j++)
+                {
+                    Assimp.Face face = mesh.Faces[j];
 
-            //    lastIndex += largestIndex;
-            //}
+                    indicesOut_.Add(meshData.pis[face.Indices[0]] + lastIndex);
+                    indicesOut_.Add(meshData.pis[face.Indices[1]] + lastIndex);
+                    indicesOut_.Add(meshData.pis[face.Indices[2]] + lastIndex);
+                }
 
-            //verts = verts_.ToArray();
-            //indicesOut = indicesOut_.ToArray();
+                // Update lastIndex to adjust indices for the next mesh
+                lastIndex += largestIndex + 1; // Add 1 to handle zero-based index properly
+            }
+
+            // Convert lists to arrays
+            verts = verts_.ToArray();
+            indicesOut = indicesOut_.ToArray();
         }
     }
 }
