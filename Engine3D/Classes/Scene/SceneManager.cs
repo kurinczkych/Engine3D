@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Engine3D.IComponentListConverter;
 
 namespace Engine3D
 {
@@ -43,6 +44,9 @@ namespace Engine3D
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());
                     serializer.Converters.Add(new IComponentListConverter());
+                    serializer.Converters.Add(new Vector3DConverter());
+                    serializer.Converters.Add(new Color4DConverter());
+                    serializer.Converters.Add(new MeshConverter());
 
                     List<Object>? objects = serializer.Deserialize<List<Object>>(jsonReader);
 
@@ -70,6 +74,9 @@ namespace Engine3D
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());
                     serializer.Converters.Add(new IComponentListConverter());
+                    serializer.Converters.Add(new Vector3DConverter());
+                    serializer.Converters.Add(new Color4DConverter());
+                    serializer.Converters.Add(new MeshConverter());
 
                     List<Object>? objects = serializer.Deserialize<List<Object>>(jsonReader);
 
@@ -104,6 +111,9 @@ namespace Engine3D
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());
                     serializer.Converters.Add(new IComponentListConverter());
+                    serializer.Converters.Add(new Vector3DConverter());
+                    serializer.Converters.Add(new Color4DConverter());
+                    serializer.Converters.Add(new MeshConverter());
 
                     serializer.Serialize(jsonWriter, objects);
                 }
@@ -125,6 +135,9 @@ namespace Engine3D
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());
                     serializer.Converters.Add(new IComponentListConverter());
+                    serializer.Converters.Add(new Vector3DConverter());
+                    serializer.Converters.Add(new Color4DConverter());
+                    serializer.Converters.Add(new MeshConverter());
 
                     serializer.Serialize(writer, objects);
                 }

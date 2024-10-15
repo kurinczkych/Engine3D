@@ -401,6 +401,10 @@ namespace Engine3D
             _meshObjects.AddRange(this.objects.Where(x => x.HasComponent<Mesh>()));
             _instObjects.Clear();
             _instObjects.AddRange(this.objects.Where(x => x.HasComponent<InstancedMesh>()));
+            gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
+            lights = new List<Light>();
+            particleSystems = new List<ParticleSystem>();
+
         }
     }
 }

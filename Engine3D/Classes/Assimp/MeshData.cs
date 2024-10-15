@@ -1,4 +1,5 @@
 ﻿using Assimp;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -10,16 +11,26 @@ namespace Engine3D
 {
     public class MeshData
     {
+
+
         public Assimp.Mesh mesh;
+        [JsonIgnore]
         public List<float> visibleVerticesData = new List<float>();
+        [JsonIgnore]
         public List<float> visibleVerticesDataWithAnim = new List<float>();
+        [JsonIgnore]
         public List<float> visibleVerticesDataOnlyPos = new List<float>();
+        [JsonIgnore]
         public List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
 
+        [JsonIgnore]
         public List<uint> visibleIndices = new List<uint>();
+        [JsonIgnore]
         public uint maxVisibleIndex = 0;
 
+        [JsonIgnore]
         public List<List<uint>> groupedIndices = new List<List<uint>>();
+        [JsonIgnore]
         public List<int> pis = new List<int>();
 
         public AABB Bounds = new AABB();

@@ -135,8 +135,10 @@ namespace Engine3D
             lastGizmoType = gizmoType;
         }
 
-        private void CreateMoverGizmos()
+        public void CreateMoverGizmos()
         {
+            moverGizmos.Clear();
+
             float moverGizmoSize = 3;
             float otherAxisScale = 0.5f;
 

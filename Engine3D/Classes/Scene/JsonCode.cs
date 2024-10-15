@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using System.ComponentModel.DataAnnotations;
+using Newtonsoft.Json.Linq;
 
 #pragma warning disable CS8765
 #pragma warning disable CS8625
@@ -383,6 +384,131 @@ namespace Engine3D
             }
 
             return new Matrix4(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44);
+        }
+    }
+
+    public class Vector3DConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(Assimp.Vector3D);
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var vector = (Assimp.Vector3D)value;
+            writer.WriteStartObject();
+            writer.WritePropertyName("X");
+            writer.WriteValue(vector.X);
+            writer.WritePropertyName("Y");
+            writer.WriteValue(vector.Y);
+            writer.WritePropertyName("Z");
+            writer.WriteValue(vector.Z);
+            writer.WriteEndObject();
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            JObject obj = JObject.Load(reader);
+            float x = (float)obj["X"];
+            float y = (float)obj["Y"];
+            float z = (float)obj["Z"];
+            return new Assimp.Vector3D(x, y, z);
+        }
+    }
+
+    public class Color4DConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(Assimp.Color4D);
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var color = (Assimp.Color4D)value;
+            writer.WriteStartObject();
+            writer.WritePropertyName("R");
+            writer.WriteValue(color.R);
+            writer.WritePropertyName("G");
+            writer.WriteValue(color.G);
+            writer.WritePropertyName("B");
+            writer.WriteValue(color.B);
+            writer.WritePropertyName("A");
+            writer.WriteValue(color.A);
+            writer.WriteEndObject();
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            JObject obj = JObject.Load(reader);
+            float r = (float)obj["R"];
+            float g = (float)obj["G"];
+            float b = (float)obj["B"];
+            float a = (float)obj["A"];
+            return new Assimp.Color4D(r, g, b, a);
+        }
+    }
+
+    public class MeshConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(Assimp.Mesh);
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            var mesh = (Assimp.Mesh)value;
+
+            writer.WriteStartObject();
+
+            writer.WritePropertyName("Vertices");
+            serializer.Serialize(writer, mesh.Vertices);
+
+            writer.WritePropertyName("Normals");
+            serializer.Serialize(writer, mesh.Normals);
+
+            writer.WritePropertyName("Faces");
+            serializer.Serialize(writer, mesh.Faces);
+
+            writer.WritePropertyName("MaterialIndex");
+            writer.WriteValue(mesh.MaterialIndex);
+
+            // Add more fields if needed
+            writer.WriteEndObject();
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            var mesh = new Assimp.Mesh();
+
+            JObject obj = JObject.Load(reader);
+
+            // Deserialize vertices
+            var vertices = obj["Vertices"].ToObject<List<Assimp.Vector3D>>();
+            mesh.Vertices.AddRange(vertices);
+
+            // Deserialize normals
+            if (obj["Normals"] != null)
+            {
+                var normals = obj["Normals"].ToObject<List<Assimp.Vector3D>>();
+                mesh.Normals.AddRange(normals);
+            }
+
+            // Deserialize faces
+            if (obj["Faces"] != null)
+            {
+                var faces = obj["Faces"].ToObject<List<Assimp.Face>>();
+                mesh.Faces.AddRange(faces);
+            }
+
+            // Set other properties
+            mesh.MaterialIndex = obj["MaterialIndex"].ToObject<int>();
+
+            // More fields can be handled here
+
+            return mesh;
         }
     }
 

@@ -37,6 +37,7 @@ namespace Engine3D
                                     engine.LoadScene(dialog.SelectedPath);
                                 }
                                 editorData.recalculateObjects = true;
+                                engineData.gizmoManager = engine.GetGizmoManager();
                             }
                         }
                         if (ImGui.MenuItem("Save", "Ctrl+S"))
