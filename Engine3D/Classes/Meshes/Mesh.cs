@@ -53,6 +53,7 @@ namespace Engine3D
             
         }
 
+        // Custom Mesh With Texture
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string relativeModelPath, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
@@ -81,6 +82,7 @@ namespace Engine3D
             SendUniforms(null);
         }
 
+        // Custom Mesh Without Texture
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string relativeModelPath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
@@ -104,6 +106,7 @@ namespace Engine3D
             SendUniforms(null);
         }
 
+        // Uniform Mesh With Texture
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, string texturePath, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
@@ -131,6 +134,7 @@ namespace Engine3D
             SendUniforms(null);
         }
 
+        // Uniform Mesh Without Texture
         public Mesh(VAO vao, VBO vbo, int shaderProgramId, string modelName, ModelData model, Vector2 windowSize, ref Camera camera, ref Object parentObject) : base(vao.id, vbo.id, shaderProgramId)
         {
             this.parentObject = parentObject;
@@ -524,6 +528,9 @@ namespace Engine3D
                 {
                     if (gameRunning == GameState.Stopped && mesh.visibleIndices.Count > 0)
                     {
+                        if (mesh.visibleIndices.Count == 0)
+                            continue;
+
                         if (texture != null)
                         {
                             texture.Bind();
@@ -584,6 +591,8 @@ namespace Engine3D
                 //     });
                 #endregion
 
+                if (mesh.visibleIndices.Count == 0)
+                    continue;
 
                 if (texture != null)
                 {

@@ -22,6 +22,8 @@ namespace Engine3D
         public List<float> visibleVerticesDataOnlyPos = new List<float>();
         [JsonIgnore]
         public List<float> visibleVerticesDataOnlyPosAndNormal = new List<float>();
+        [JsonIgnore]
+        public List<float> visibleVerticesDataOnlyPosAndColor = new List<float>();
 
         [JsonIgnore]
         public List<uint> visibleIndices = new List<uint>();
@@ -51,6 +53,7 @@ namespace Engine3D
             visibleVerticesDataWithAnim.AddRange(BaseMesh.GetMeshDataWithAnim(mesh));
             visibleVerticesDataOnlyPos.AddRange(BaseMesh.GetMeshDataOnlyPos(mesh));
             visibleVerticesDataOnlyPosAndNormal.AddRange(BaseMesh.GetMeshDataOnlyPosAndNormal(mesh));
+            visibleVerticesDataOnlyPosAndColor.AddRange(BaseMesh.GetMeshDataOnlyPosAndColor(mesh));
         }
 
         public void CalculateGroupedIndices()

@@ -44,7 +44,8 @@ namespace Engine3D
                    objectType == ObjectType.Sphere ||
                    objectType == ObjectType.Capsule ||
                    objectType == ObjectType.TriangleMesh ||
-                   objectType == ObjectType.TriangleMeshWithCollider)
+                   objectType == ObjectType.TriangleMeshWithCollider ||
+                   objectType == ObjectType.Gizmo)
                 {
 
                     if (baseMesh.GetType() == typeof(Mesh))
@@ -133,6 +134,18 @@ namespace Engine3D
                             }
                         }
                     }
+                    else if (objectType == ObjectType.Gizmo && baseMesh is Gizmo)
+                    {
+                        Gizmo mesh = (Gizmo)baseMesh;
+
+                        //if (DrawCorrectMesh(ref vertices, currentMeshType == null ? typeof(Gizmo) : currentMeshType, typeof(Gizmo), null))
+                        //    vertices = new List<float>();
+
+                        onlyPosShaderProgram.Use();
+
+                        mesh.Draw(gameState, onlyPosShaderProgram, wireVbo, wireIbo, lightDir);
+                        currentMeshType = typeof(Gizmo);
+                    }
                 }
                 else if (objectType == ObjectType.Wireframe && baseMesh is WireframeMesh)
                 {
@@ -202,6 +215,10 @@ namespace Engine3D
                 instancedMeshVbo.Buffer(vertices);
             }
             else if (prevMeshType == typeof(WireframeMesh) && prevMeshType != currentMeshType)
+            {
+                wireVbo.Buffer(vertices);
+            }
+            else if (prevMeshType == typeof(Gizmo) && prevMeshType != currentMeshType)
             {
                 wireVbo.Buffer(vertices);
             }

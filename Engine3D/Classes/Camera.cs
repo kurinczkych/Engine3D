@@ -162,6 +162,44 @@ namespace Engine3D
             return m;
         }
 
+        public Frustum CreateOrthographicFrustum(Vector3 dir)
+        {
+            float l = -30.0f;
+            float r = 25.0f;
+            float t = 20.0f/* / aspectRatio*/;
+            float b = -15.0f/* / aspectRatio*/;
+            float n = 5; // 0.1
+            float f = 1000; // 1000
+
+            // Normalize the direction
+            dir = dir.Normalized();
+            Vector3 up = Vector3.UnitY;
+
+            // Calculate the right vector using cross product (camera's right)
+            Vector3 right = Vector3.Cross(dir, up).Normalized();
+
+            // Near plane (n units in front of the camera, dir direction)
+            Vector3 nearCenter = dir * n;
+
+            // Far plane (f units in front of the camera, dir direction)
+            Vector3 farCenter = dir * f;
+
+            Frustum frustum = new Frustum();
+            // Near plane
+            frustum.ntl = new Vector4(nearCenter + (up * t) - (right * l), 1.0f);  // Near top-left
+            frustum.ntr = new Vector4(nearCenter + (up * t) + (right * r), 1.0f);  // Near top-right
+            frustum.nbl = new Vector4(nearCenter - (up * b) - (right * l), 1.0f);  // Near bottom-left
+            frustum.nbr = new Vector4(nearCenter - (up * b) + (right * r), 1.0f);  // Near bottom-right
+
+            // Far plane
+            frustum.ftl = new Vector4(farCenter + (up * t) - (right * l), 1.0f);  // Far top-left
+            frustum.ftr = new Vector4(farCenter + (up * t) + (right * r), 1.0f);  // Far top-right
+            frustum.fbl = new Vector4(farCenter - (up * b) - (right * l), 1.0f);  // Far bottom-left
+            frustum.fbr = new Vector4(farCenter - (up * b) + (right * r), 1.0f);  // Far bottom-right
+
+            return frustum;
+        }
+
         public Matrix4 GetProjectionMatrixOrthoShadow()
         {
             // MY APPROACH ------------------------------------------ Working but not tight light view proj

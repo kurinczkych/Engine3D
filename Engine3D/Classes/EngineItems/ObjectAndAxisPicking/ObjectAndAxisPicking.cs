@@ -42,6 +42,9 @@ namespace Engine3D
                         pickingShader.Use();
                         foreach (Object o in _meshObjects)
                         {
+                            if (!o.interactableInEditor)
+                                continue;
+
                             BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                             if(mesh == null)
                                 continue;
@@ -55,6 +58,9 @@ namespace Engine3D
                         pickingInstancedShader.Use();
                         foreach (Object o in _instObjects)
                         {
+                            if (!o.interactableInEditor)
+                                continue;
+
                             BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
                             if (mesh == null)
                                 continue;
@@ -109,7 +115,7 @@ namespace Engine3D
                             {
                                 var objs = objects.Where(x => x.id == pixel.objectId);
 
-                                if (objs == null || objs.Count() == 0)
+                                if (objs == null || objs.Count() == 0 || !objs.First().interactableInEditor)
                                 {
                                     if (objectSelected != null)
                                         objectSelected.Invoke(null, -1);

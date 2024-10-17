@@ -71,6 +71,7 @@ namespace Engine3D
 
         private VAO wireVao;
         private VBO wireVbo;
+        private IBO wireIbo;
 
         private VAO aabbVao;
         private VBO aabbVbo;
@@ -246,6 +247,10 @@ namespace Engine3D
 
         private Color4 backgroundColor = Color4.Black;
         private Color4 gridColor = Color4.White;
+        #endregion
+
+        #region Gizmos
+        public Object lightViewFrustum;
         #endregion
 
         public Engine(int width, int height) : base(GameWindowSettings.Default, new NativeWindowSettings() { StencilBits = 8, DepthBits = 32 })
@@ -442,6 +447,31 @@ namespace Engine3D
             }
         }
 
+        public void LightViewFrustum()
+        {
+            lightViewFrustum = new Object(ObjectType.Gizmo) { name = "frustum", interactableInEditor = false };
+            Gizmo g = new Gizmo(wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_, ref lightViewFrustum);
+            // Half-width for centering the cube
+            float halfWidth = 10 / 2.0f;
+
+            // Distance between near and far plane (we'll make it a cube, so 10 units depth)
+            float depth = 10;
+
+            // Near plane z position (arbitrary choice, we'll use 0 for simplicity)
+            float nearZ = 0.0f;
+            // Far plane z position (10 units away from the near plane)
+            float farZ = nearZ - depth;
+
+            Frustum f = mainCamera.CreateOrthographicFrustum(new Vector3(240, 0, 0));
+
+            g.AddFrustumGizmo(f, Color4.Red);
+            //lightViewFrustum.transformation.Position = new Vector3(0,10,0);
+            g.recalculate = true;
+            g.RecalculateModelMatrix(new bool[] { true, true, true });
+            lightViewFrustum.components.Add(g);
+            objects.Add(lightViewFrustum);
+        }
+
         protected override void OnLoad()
         {
             base.OnLoad();
@@ -567,6 +597,7 @@ namespace Engine3D
             uiTexVao.LinkToVAO(1, 4, uiTexVbo);
             uiTexVao.LinkToVAO(2, 2, uiTexVbo);
 
+            wireIbo = new IBO();
             wireVbo = new VBO();
             wireVao = new VAO(WireframeMesh.floatCount);
             wireVao.LinkToVAO(0, 3, wireVbo);
@@ -635,8 +666,10 @@ namespace Engine3D
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
             objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0));
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
-            objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(270,0,0));
+            objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240,0,0));
             Light.SendToGPU(lights, shaderProgram.id);
+
+            LightViewFrustum();
 
             #region DebugLines
             // Projection matrix and mesh loading
@@ -832,7 +865,7 @@ namespace Engine3D
                 if (mesh == null)
                     continue;
 
-                GL.DeleteBuffer(mesh.vbo);               
+                GL.DeleteBuffer(mesh.vboId);               
             }
 
             cullingProgram.Unload();

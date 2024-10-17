@@ -28,16 +28,19 @@ mat4 GetTranslationMatrix(mat4 mMatrix)
 
 void main()
 {
-	mat4 transMatrix = GetTranslationMatrix(modelMatrix);
+//	mat4 transMatrix = GetTranslationMatrix(modelMatrix);
+//
+//    vec4 positionedVertex = vec4(inPosition, 1.0) * _scaleMatrix * _rotMatrix * transMatrix;
+//
+////    float distance = length(abs(positionedVertex.xyz-cameraPos));
+////    float outlineWidth = (9.0/580.0) * distance + (10.0/29.0);
+//    float outlineWidth = 2;
+//
+//    vec4 rotatedNormal = vec4(inNormal * outlineWidth, 1.0) * _rotMatrix;
+//    vec4 final = positionedVertex + rotatedNormal;
 
-    vec4 positionedVertex = vec4(inPosition, 1.0) * _scaleMatrix * _rotMatrix * transMatrix;
-
-//    float distance = length(abs(positionedVertex.xyz-cameraPos));
-//    float outlineWidth = (9.0/580.0) * distance + (10.0/29.0);
-    float outlineWidth = 1;
-
-    vec4 rotatedNormal = vec4(inNormal * outlineWidth, 1.0) * _rotMatrix;
-    vec4 final = positionedVertex + rotatedNormal;
+    vec4 positionedVertex = vec4(inPosition, 1.0) * modelMatrix;
+    vec4 final = positionedVertex + vec4(inNormal, 1.0);
 
     gl_Position = vec4(final.xyz,1.0) * viewMatrix * projectionMatrix;
 }

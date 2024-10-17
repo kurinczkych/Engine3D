@@ -18,7 +18,6 @@ namespace Engine3D
 
     public unsafe abstract class BaseMesh : IComponent
     {
-        public int vbo;
         public int vaoId;
         public int vboId;
         public int shaderProgramId;
@@ -510,7 +509,8 @@ namespace Engine3D
         public void CalculateFrustumVisibility()
         {
             if (GetType() == typeof(Mesh) ||
-                GetType() == typeof(InstancedMesh))
+                GetType() == typeof(InstancedMesh) ||
+                GetType() == typeof(Gizmo))
             {
                 if (BVHStruct != null)
                 {
@@ -1143,6 +1143,42 @@ namespace Engine3D
                     data.Add(0);
                     data.Add(0);
                     data.Add(0);
+                }
+            }
+
+            // Return the list as a float array
+            return data.ToArray();
+        }
+
+        public static float[] GetMeshDataOnlyPosAndColor(Assimp.Mesh mesh)
+        {
+            // List to store all position and normal data
+            List<float> data = new List<float>();
+
+            // Loop through each vertex in the mesh
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                // Get position (p.X, p.Y, p.Z)
+                Vector3D position = mesh.Vertices[i];
+                data.Add(position.X);
+                data.Add(position.Y);
+                data.Add(position.Z);
+
+                // Get normal (n.X, n.Y, n.Z) if the mesh has normals
+                if (mesh.HasVertexColors(0))
+                {
+                    Color4D color = mesh.VertexColorChannels[0][i];
+                    data.Add(color.R);
+                    data.Add(color.G);
+                    data.Add(color.B);
+                    data.Add(color.A);
+                }
+                else
+                {
+                    data.Add(1.0f);
+                    data.Add(1.0f);
+                    data.Add(1.0f);
+                    data.Add(1.0f);
                 }
             }
 

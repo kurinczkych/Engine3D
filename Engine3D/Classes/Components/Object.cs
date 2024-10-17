@@ -31,7 +31,8 @@ namespace Engine3D
         TextMesh,
         UIMesh,
         Plane,
-        AudioEmitter
+        AudioEmitter,
+        Gizmo
     }
 
     public enum ColliderType
@@ -100,6 +101,7 @@ namespace Engine3D
         public int id;
         public string name = "";
         public string displayName = "";
+        public bool interactableInEditor = true;
 
         //[JsonIgnore]
         //[JsonConverter(typeof(IComponentListConverter))]

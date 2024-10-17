@@ -75,7 +75,7 @@ namespace Engine3D
             lightDir = lightDir.Normalized();
 
             Vector3 lightPos = sceneCenter - lightDir * distanceFromScene;
-
+            
             Vector3 up = Vector3.UnitY;
 
             if (Vector3.Cross(lightDir, up) == Vector3.Zero)

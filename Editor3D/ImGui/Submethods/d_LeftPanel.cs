@@ -127,6 +127,8 @@ namespace Engine3D
                                 for (int i = 0; i < engineData.objects.Count; i++)
                                 {
                                     Object ro = engineData.objects[i];
+                                    if (!ro.interactableInEditor)
+                                        continue;
 
                                     if (ImGui.Selectable(ro.displayName, (editorData.selectedItem != null && editorData.selectedItem.id == ro.id)))
                                     {

@@ -159,8 +159,8 @@ namespace Engine3D
         {
             objects.Add(o);
             _meshObjects.Add(o);
-            //o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            o.transformation.Position = new Vector3(0,0,0);
+            o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
+            //o.transformation.Position = new Vector3(0,0,0);
             BaseMesh? mesh = (BaseMesh?)o.GetComponent<BaseMesh>();
             if (mesh != null)
                 mesh.RecalculateModelMatrix(new bool[] { true, false, false });
