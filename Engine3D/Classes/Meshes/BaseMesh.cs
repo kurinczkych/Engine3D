@@ -509,8 +509,7 @@ namespace Engine3D
         public void CalculateFrustumVisibility()
         {
             if (GetType() == typeof(Mesh) ||
-                GetType() == typeof(InstancedMesh) ||
-                GetType() == typeof(Gizmo))
+                GetType() == typeof(InstancedMesh))
             {
                 if (BVHStruct != null)
                 {
@@ -588,6 +587,25 @@ namespace Engine3D
                             }
                         });
                     }
+                }
+            }
+            else if(GetType() == typeof(Gizmo))
+            {
+                foreach (MeshData mesh in model.meshes)
+                {
+                    mesh.visibleIndices.Clear();
+
+                    bool visible = false;
+                    foreach(Vector3D v in mesh.mesh.Vertices)
+                    {
+                        if (camera.frustum.IsInside(AHelp.AssimpToOpenTK(v)) || camera.IsPointClose(AHelp.AssimpToOpenTK(v)))
+                        {
+                            visible = true;
+                            break;
+                        }
+                    }
+                    if (visible)
+                        AllIndicesVisible();
                 }
             }
         }

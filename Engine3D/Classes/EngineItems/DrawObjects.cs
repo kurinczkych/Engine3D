@@ -259,6 +259,7 @@ namespace Engine3D
             shadowShader.Use();
 
             Vector3 lightDir = light.GetDirection();
+            //Matrix4 shadowProj = Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
             Matrix4 shadowProj = mainCamera.projectionMatrixOrthoShadow;
             Matrix4 shadowView = ShadowMapFBO.GetLightViewMatrix(lightDir);
 

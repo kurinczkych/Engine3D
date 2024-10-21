@@ -451,18 +451,8 @@ namespace Engine3D
         {
             lightViewFrustum = new Object(ObjectType.Gizmo) { name = "frustum", interactableInEditor = false };
             Gizmo g = new Gizmo(wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_, ref lightViewFrustum);
-            // Half-width for centering the cube
-            float halfWidth = 10 / 2.0f;
 
-            // Distance between near and far plane (we'll make it a cube, so 10 units depth)
-            float depth = 10;
-
-            // Near plane z position (arbitrary choice, we'll use 0 for simplicity)
-            float nearZ = 0.0f;
-            // Far plane z position (10 units away from the near plane)
-            float farZ = nearZ - depth;
-
-            Frustum f = mainCamera.CreateOrthographicFrustum(new Vector3(240, 0, 0));
+            Frustum f = ShadowMapFBO.CreateFrustumFromLightViewAndOrtho(new Vector3(240, 0, 0), new Vector3(0, 0, 0), new Vector3(100, 100, 100));
 
             g.AddFrustumGizmo(f, Color4.Red);
             //lightViewFrustum.transformation.Position = new Vector3(0,10,0);

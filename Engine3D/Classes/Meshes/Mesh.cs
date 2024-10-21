@@ -299,8 +299,13 @@ namespace Engine3D
                 GetUniformLocations();
             }
 
+            //if (lightDir != null)
+            //    lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(lightDir??-Vector3.UnitY) * Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
+            //else
+            //    lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY) * Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
+
             if (lightDir != null)
-                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(lightDir??-Vector3.UnitY) * camera.projectionMatrixOrthoShadow;
+                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(lightDir ?? -Vector3.UnitY) * camera.projectionMatrixOrthoShadow;
             else
                 lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY) * camera.projectionMatrixOrthoShadow;
 
