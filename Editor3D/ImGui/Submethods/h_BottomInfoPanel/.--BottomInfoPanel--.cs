@@ -11,6 +11,7 @@ namespace Engine3D
     {
         public void BottomInfoPanel(ref ImGuiStylePtr style)
         {
+            var windowBg = style.Colors[(int)ImGuiCol.WindowBg];
             style.Colors[(int)ImGuiCol.WindowBg] = style.Colors[(int)ImGuiCol.MenuBarBg];
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, editorData.gameWindow.bottomPanelSize + 4));
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, _windowHeight - editorData.gameWindow.bottomPanelSize - 4), ImGuiCond.Always);
@@ -37,6 +38,7 @@ namespace Engine3D
             }
             if (ImGui.IsWindowHovered())
                 editorData.uiHasMouse = true;
+            style.Colors[(int)ImGuiCol.WindowBg] = windowBg;
         }
     }
 }

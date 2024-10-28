@@ -14,10 +14,8 @@ namespace Engine3D
 
     public static class SceneManager
     {
-        public static List<Object>? LoadScene(string path, bool compress=true)
+        public static List<Object>? LoadScene(string saveFile, bool compress=true)
         {
-            string saveFile = path + "\\save.sav";
-
             if (!File.Exists(saveFile))
             {
                 Engine.consoleManager.AddLog("File not found: " + saveFile, LogType.Error);
@@ -90,9 +88,8 @@ namespace Engine3D
             }
         }
 
-        public static void SaveScene(string path, List<Object> objects, bool compress=true)
+        public static void SaveScene(string saveFile, List<Object> objects, bool compress=true)
         {
-            string saveFile = path + "\\save.sav";
             if (compress)
             {
                 using (FileStream fileStream = new FileStream(saveFile, FileMode.Create))

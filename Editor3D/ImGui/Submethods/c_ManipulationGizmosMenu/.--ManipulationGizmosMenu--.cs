@@ -26,6 +26,7 @@ namespace Engine3D
 
                 var button = style.Colors[(int)ImGuiCol.Button];
                 style.Colors[(int)ImGuiCol.Button] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 0.6f);
+                var windowRounding = style.WindowRounding;
                 style.WindowRounding = 0;
                 var frameBorderSize = style.FrameBorderSize;
                 var framePadding = style.FramePadding;
@@ -187,7 +188,7 @@ namespace Engine3D
                 if (ImGui.IsWindowHovered())
                     editorData.uiHasMouse = true;
                 ImGui.PopStyleVar(2);
-                style.WindowRounding = 5f;
+                style.WindowRounding = windowRounding;
                 style.Colors[(int)ImGuiCol.Button] = button;
                 style.FrameBorderSize = frameBorderSize;
                 style.FramePadding = framePadding;

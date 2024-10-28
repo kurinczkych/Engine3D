@@ -57,7 +57,6 @@ namespace Engine3D
                 editorData.windowResized = true;
             }
 
-
             style.Colors[(int)ImGuiCol.Button] = button;
         }
     }
