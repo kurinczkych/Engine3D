@@ -116,7 +116,7 @@ namespace Engine3D
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
-            projectionMatrixOrthoShadow = GetProjectionMatrixOrtho();
+            projectionMatrixOrthoShadow = GetProjectionMatrixOrthoShadow();
         }
         #endregion
 
@@ -126,7 +126,7 @@ namespace Engine3D
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
-            projectionMatrixOrthoShadow = GetProjectionMatrixOrtho();
+            projectionMatrixOrthoShadow = GetProjectionMatrixOrthoShadow();
             UpdateVectors();
         }
 
@@ -162,8 +162,23 @@ namespace Engine3D
             return m;
         }
 
+        public Matrix4 GetProjectionMatrixOrthoShadow()
+        {
+            float l = -25.0f;
+            float r =  25.0f;
+            float t =  25.0f/* / aspectRatio*/;
+            float b = -25.0f/* / aspectRatio*/;
+            float n = near; // 0.1
+            float f = far; // 1000
+
+            Matrix4 m = Matrix4.CreateOrthographic(r - l, t - b, n, f);
+
+            return m;
+        }
+
         public static Matrix4 GetProjectionMatrixOrthoShadow(Vector3 minLightSpace, Vector3 maxLightSpace)
         {
+
             // NEW CHATGPT APPROACH FOR TIGHT FIT
             // Calculate orthographic bounds from transformed min/max light-space coordinates
             float left = minLightSpace.X;
@@ -475,7 +490,7 @@ namespace Engine3D
             projectionMatrix = GetProjectionMatrix();
             projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
-            projectionMatrixOrthoShadow = GetProjectionMatrixOrtho();
+            projectionMatrixOrthoShadow = GetProjectionMatrixOrthoShadow();
             frustum = GetFrustum(); 
         }
     }

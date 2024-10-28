@@ -12,9 +12,21 @@ using static Engine3D.IComponentListConverter;
 namespace Engine3D
 {
 
+    public class Project
+    {
+        public int engineId;
+        public List<Object> objects;
+
+        public Project(int engineId, List<Object> objects)
+        {
+            this.engineId = engineId;
+            this.objects = objects;
+        }
+    }
+
     public static class SceneManager
     {
-        public static List<Object>? LoadScene(string saveFile, bool compress=true)
+        public static Project? LoadScene(string saveFile, bool compress=true)
         {
             if (!File.Exists(saveFile))
             {
@@ -47,12 +59,12 @@ namespace Engine3D
                     serializer.Converters.Add(new Color4DConverter());
                     serializer.Converters.Add(new MeshConverter());
 
-                    List<Object>? objects = serializer.Deserialize<List<Object>>(jsonReader);
+                    Project? project = serializer.Deserialize<Project>(jsonReader);
 
-                    if (objects == null)
+                    if (project == null)
                         return null;
 
-                    return objects;
+                    return project;
                 }
             }
             else
@@ -78,17 +90,17 @@ namespace Engine3D
                     serializer.Converters.Add(new Color4DConverter());
                     serializer.Converters.Add(new MeshConverter());
 
-                    List<Object>? objects = serializer.Deserialize<List<Object>>(jsonReader);
+                    Project? project = serializer.Deserialize<Project>(jsonReader);
 
-                    if (objects == null)
+                    if (project == null)
                         return null;
 
-                    return objects;
+                    return project;
                 }
             }
         }
 
-        public static void SaveScene(string saveFile, List<Object> objects, bool compress=true)
+        public static void SaveScene(string saveFile, Project project, bool compress=true)
         {
             if (compress)
             {
@@ -115,7 +127,7 @@ namespace Engine3D
                     serializer.Converters.Add(new Color4DConverter());
                     serializer.Converters.Add(new MeshConverter());
 
-                    serializer.Serialize(jsonWriter, objects);
+                    serializer.Serialize(jsonWriter, project);
                 }
             }
             else
@@ -140,7 +152,7 @@ namespace Engine3D
                     serializer.Converters.Add(new Color4DConverter());
                     serializer.Converters.Add(new MeshConverter());
 
-                    serializer.Serialize(writer, objects);
+                    serializer.Serialize(writer, project);
                 }
             }
         }

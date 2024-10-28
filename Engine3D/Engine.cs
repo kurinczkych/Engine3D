@@ -15,6 +15,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using static Engine3D.Engine;
+using System.Text;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618

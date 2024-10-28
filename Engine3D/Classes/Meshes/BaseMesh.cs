@@ -416,8 +416,10 @@ namespace Engine3D
 
         public void RemoveTexture(string name1, string name2)
         {
-            GL.Uniform1(uniformLocations[name1], 0);
-            GL.Uniform1(uniformLocations[name2], 0);
+            if(uniformLocations.ContainsKey(name1))
+                GL.Uniform1(uniformLocations[name1], 0);
+            if(uniformLocations.ContainsKey(name2))
+                GL.Uniform1(uniformLocations[name2], 0);
         }
 
         public void RecalculateModelMatrix(bool[] which, bool onlyModelMatrix=false)

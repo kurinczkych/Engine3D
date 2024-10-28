@@ -76,7 +76,7 @@ namespace Engine3D
             ProcessObj(relativeModelPath);
 
             ComputeNormalsIfNeeded();
-            ComputeTangents();
+            //ComputeTangents();
 
             GetUniformLocations();
             SendUniforms(null);
@@ -100,7 +100,7 @@ namespace Engine3D
             ProcessObj(relativeModelPath);
 
             ComputeNormalsIfNeeded();
-            ComputeTangents();
+            //ComputeTangents();
 
             GetUniformLocations();
             SendUniforms(null);
@@ -128,7 +128,7 @@ namespace Engine3D
             this.model = model;
 
             ComputeNormalsIfNeeded();
-            ComputeTangents();
+            //ComputeTangents();
 
             GetUniformLocations();
             SendUniforms(null);
@@ -151,7 +151,7 @@ namespace Engine3D
             this.model = model;
 
             ComputeNormalsIfNeeded();
-            ComputeTangents();
+            //ComputeTangents();
 
             GetUniformLocations();
             SendUniforms(null);

@@ -55,34 +55,33 @@ uniform int useShading;
 const float heightScale = 0.1;
 const float metallnessVar = 0.04;
 
-float ShadowCalculation(vec4 fragPosLightSpace)
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir)
 {
-    // Perform perspective divide to get normalized device coordinates (NDC)
+    // Transform the light-space position to normalized device coordinates (NDC)
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;  // Transform NDC to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5; // Convert NDC to [0, 1] range
 
-    // Get the depth value from the shadow map at this fragment's position
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    // Check if fragment is outside the shadow map bounds
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+    {
+        return 0.0; // No shadow
+    }
+
+    // Retrieve the closest depth from the shadow map at this fragment's position
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+
+    // Current depth of the fragment from the light's perspective
     float currentDepth = projCoords.z;
 
-    // Bias to prevent shadow acne (tune this value)
+    // Apply a bias to avoid shadow acne
     float bias = 0.005;
-//
-//    // If the current depth is greater than the closest depth, the fragment is in shadow
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-//    float shadow = 0.1;
+    
+    // Adjust the bias based on the angle between the normal and the light direction
+    // This reduces self-shadowing on surfaces facing away from the light
+    bias = max(bias * (1.0 - dot(gsFragNormal, lightDir)), 0.001);
 
-    // Alternatively, return smooth shadows using Percentage-Closer Filtering (PCF)
-    // float shadow = 0.0;
-    // for (int x = -1; x <= 1; ++x)
-    // {
-    //     for (int y = -1; y <= 1; ++y)
-    //     {
-    //         float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;  
-    //         shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
-    //     }
-    // }
-    // shadow /= 9.0;
+    // Calculate shadow; if current depth with bias is greater than closest depth, it's in shadow
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
     return shadow;
 }
@@ -173,7 +172,7 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness, vec4 
     }
 
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
-    float shadow = ShadowCalculation(fragPosLightSpace); 
+    float shadow = ShadowCalculation(fragPosLightSpace, lightDir); 
     return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color;
 }
 

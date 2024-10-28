@@ -322,22 +322,23 @@ namespace Engine3D
 
         public void SaveScene(string path)
         {
-            SceneManager.SaveScene(path, objects, false);
+            SceneManager.SaveScene(path, new Project(objectID, objects), false);
         }
 
         public void LoadScene(string path)
         {
-            List<Object>? objects = SceneManager.LoadScene(path, false);
-            if (objects == null)
+            Project? project = SceneManager.LoadScene(path, false);
+            if (project == null)
             {
                 consoleManager.AddLog("Project not found or corrupted!", LogType.Error);
                 return;
             }
 
             this.objects.Clear();
+            objectID = project.engineId;
             textureManager.DeleteObjectTextures();
 
-            foreach(var obj in objects)
+            foreach(var obj in project.objects)
             {
                 foreach (var comp in obj.components)
                 {
@@ -397,7 +398,7 @@ namespace Engine3D
                 }
             }
 
-            this.objects.AddRange(objects);
+            this.objects.AddRange(project.objects);
             _meshObjects.Clear();
             _meshObjects.AddRange(this.objects.Where(x => x.HasComponent<Mesh>()));
             _instObjects.Clear();
@@ -405,7 +406,6 @@ namespace Engine3D
             gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
             lights = new List<Light>();
             particleSystems = new List<ParticleSystem>();
-
         }
     }
 }
