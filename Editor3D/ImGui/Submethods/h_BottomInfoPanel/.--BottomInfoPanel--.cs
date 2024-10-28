@@ -9,13 +9,13 @@ namespace Engine3D
 {
     public partial class ImGuiController : BaseImGuiController
     {
-        public void BottomPanel(ref GameWindowProperty gameWindow, ref ImGuiStylePtr style)
+        public void BottomInfoPanel(ref ImGuiStylePtr style)
         {
             style.Colors[(int)ImGuiCol.WindowBg] = style.Colors[(int)ImGuiCol.MenuBarBg];
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, gameWindow.bottomPanelSize + 4));
-            ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, _windowHeight - gameWindow.bottomPanelSize - 4), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, editorData.gameWindow.bottomPanelSize + 4));
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, _windowHeight - editorData.gameWindow.bottomPanelSize - 4), ImGuiCond.Always);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(ImGui.GetStyle().WindowPadding.X, 0));
-            if (ImGui.Begin("BottomPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar))
+            if (ImGui.Begin("BottomInfoPanel", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar))
             {
 
                 string fpsStr = engine.GetFpsString();

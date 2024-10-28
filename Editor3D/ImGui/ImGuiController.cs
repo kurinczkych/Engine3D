@@ -73,6 +73,21 @@ namespace Engine3D
 
             showConsoleTypeList = Enum.GetNames(typeof(ShowConsoleType));
 
+            var style = ImGui.GetStyle();
+            style.WindowBorderSize = 0.5f;
+            style.Colors[(int)ImGuiCol.WindowBg] = baseBGColor;
+            style.Colors[(int)ImGuiCol.Border] = new System.Numerics.Vector4(0, 0, 0, 1.0f);
+            style.Colors[(int)ImGuiCol.Tab] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
+            style.Colors[(int)ImGuiCol.TabActive] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
+            style.Colors[(int)ImGuiCol.TabHovered] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
+            style.Colors[(int)ImGuiCol.ButtonHovered] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
+            style.Colors[(int)ImGuiCol.ButtonActive] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 1.0f);
+            style.Colors[(int)ImGuiCol.CheckMark] = new System.Numerics.Vector4(1f, 1f, 1f, 1.0f);
+            style.Colors[(int)ImGuiCol.FrameBg] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
+            style.Colors[(int)ImGuiCol.PopupBg] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f); // RGBA
+            style.WindowRounding = 5f;
+            style.PopupRounding = 5f;
+
             #region GetComponents
             Assembly engineAssembly = typeof(IComponent).Assembly;
             var types = engineAssembly.GetTypes();
@@ -687,7 +702,6 @@ namespace Engine3D
 
         public void EditorWindow(ref EditorData editorData)
         {
-            GameWindowProperty gameWindow = editorData.gameWindow;
             if(editorData.recalculateObjects)
             {
                 CalculateObjectList();
@@ -707,43 +721,30 @@ namespace Engine3D
             editorData.windowResized = false;
 
             var style = ImGui.GetStyle();
-            style.WindowBorderSize = 0.5f;
-            style.Colors[(int)ImGuiCol.WindowBg] = baseBGColor;
-            style.Colors[(int)ImGuiCol.Border] = new System.Numerics.Vector4(0, 0, 0, 1.0f);
-            style.Colors[(int)ImGuiCol.Tab] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
-            style.Colors[(int)ImGuiCol.TabActive] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
-            style.Colors[(int)ImGuiCol.TabHovered] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
-            style.Colors[(int)ImGuiCol.ButtonHovered] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f);
-            style.Colors[(int)ImGuiCol.ButtonActive] = new System.Numerics.Vector4(0.7f, 0.7f, 0.7f, 1.0f);
-            style.Colors[(int)ImGuiCol.CheckMark] = new System.Numerics.Vector4(1f, 1f, 1f, 1.0f);
-            style.Colors[(int)ImGuiCol.FrameBg] = new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1.0f);
-            style.Colors[(int)ImGuiCol.PopupBg] = new System.Numerics.Vector4(0.6f, 0.6f, 0.6f, 1.0f); // RGBA
-            style.WindowRounding = 5f;
-            style.PopupRounding = 5f;
 
-            TopPanelWithMenubar(ref gameWindow, ref style);
+            TopPanelWithMenubar(ref style);
 
-            GameWindowFrame(ref gameWindow);
+            DragDropFrame();
 
-            ManipulationGizmosMenu(ref gameWindow, ref style);
+            ManipulationGizmosMenu(ref style);
 
-            LeftPanel(ref gameWindow, ref style, ref keyboardState);
+            LeftPanel(ref style, ref keyboardState);
 
-            LeftPanelSeperator(ref gameWindow, ref style);
+            LeftPanelSeperator(ref style);
 
-            RightPanel(ref gameWindow, ref style, ref keyboardState);
+            RightPanel(ref style, ref keyboardState);
 
-            RightPanelSeperator(ref gameWindow, ref style);
+            RightPanelSeperator(ref style);
 
-            BottomAssetPanelSeperator(ref gameWindow, ref style);
+            BottomAssetPanelSeperator(ref style);
 
-            BottomAssetPanel(ref gameWindow, ref style, ref keyboardState, ref mouseState);
+            BottomAssetPanel(ref style, ref keyboardState, ref mouseState);
 
-            BottomPanel(ref gameWindow, ref style);
+            BottomInfoPanel(ref style);
 
             engine.SetUIHasMouse(editorData.uiHasMouse);
 
-            SceneView(ref gameWindow);
+            SceneView();
 
             #region Every frame variable updates
             if (isObjectHovered != editorData.anyObjectHovered)

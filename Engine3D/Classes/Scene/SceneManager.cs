@@ -40,6 +40,7 @@ namespace Engine3D
 
                     serializer.Converters.Add(new Vector2Converter());
                     serializer.Converters.Add(new Vector3Converter());
+                    serializer.Converters.Add(new Vector4Converter());
                     serializer.Converters.Add(new QuaternionConverter());
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());
@@ -70,6 +71,7 @@ namespace Engine3D
 
                     serializer.Converters.Add(new Vector2Converter());
                     serializer.Converters.Add(new Vector3Converter());
+                    serializer.Converters.Add(new Vector4Converter());
                     serializer.Converters.Add(new QuaternionConverter());
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());
@@ -107,6 +109,7 @@ namespace Engine3D
 
                     serializer.Converters.Add(new Vector2Converter());
                     serializer.Converters.Add(new Vector3Converter());
+                    serializer.Converters.Add(new Vector4Converter());
                     serializer.Converters.Add(new QuaternionConverter());
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());
@@ -131,6 +134,7 @@ namespace Engine3D
                     };
                     serializer.Converters.Add(new Vector2Converter());
                     serializer.Converters.Add(new Vector3Converter());
+                    serializer.Converters.Add(new Vector4Converter());
                     serializer.Converters.Add(new QuaternionConverter());
                     serializer.Converters.Add(new Matrix4Converter());
                     serializer.Converters.Add(new Color4Converter());

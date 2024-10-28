@@ -197,16 +197,16 @@ namespace Engine3D
 
         public Plane[] planes;
 
-        public Vector3 nearCenter;
-        public Vector3 farCenter;
+        public Vector3 nearCenter = Vector3.Zero;
+        public Vector3 farCenter = Vector3.Zero;
 
-        public Vector4 ntl;
-        public Vector4 ntr;
-        public Vector4 nbl;
-        public Vector4 nbr;
-        public Vector4 ftl;
-        public Vector4 ftr;
-        public Vector4 fbl;
-        public Vector4 fbr;
+        public Vector4 ntl = Vector4.Zero;
+        public Vector4 ntr = Vector4.Zero;
+        public Vector4 nbl = Vector4.Zero;
+        public Vector4 nbr = Vector4.Zero;
+        public Vector4 ftl = Vector4.Zero;
+        public Vector4 ftr = Vector4.Zero;
+        public Vector4 fbl = Vector4.Zero;
+        public Vector4 fbr = Vector4.Zero;
     }
 }

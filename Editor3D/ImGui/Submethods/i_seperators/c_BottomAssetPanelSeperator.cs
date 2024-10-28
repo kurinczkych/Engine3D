@@ -9,12 +9,12 @@ namespace Engine3D
 {
     public partial class ImGuiController : BaseImGuiController
     {
-        public void BottomAssetPanelSeperator(ref GameWindowProperty gameWindow, ref ImGuiStylePtr style)
+        public void BottomAssetPanelSeperator(ref ImGuiStylePtr style)
         {
             style.WindowMinSize = new System.Numerics.Vector2(seperatorSize, seperatorSize);
             style.Colors[(int)ImGuiCol.WindowBg] = seperatorColor;
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(_windowWidth, seperatorSize));
-            ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, _windowHeight * (1 - gameWindow.bottomPanelPercent) - gameWindow.bottomPanelSize), ImGuiCond.Always);
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, _windowHeight * (1 - editorData.gameWindow.bottomPanelPercent) - editorData.gameWindow.bottomPanelSize), ImGuiCond.Always);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, System.Numerics.Vector2.Zero);
             if (ImGui.Begin("BottomAssetSeparator", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings |
                                          ImGuiWindowFlags.NoTitleBar))
@@ -36,11 +36,11 @@ namespace Engine3D
                     editorData.mouseTypes[2] = true;
 
                     float mouseY = ImGui.GetIO().MousePos.Y;
-                    gameWindow.bottomPanelPercent = 1 - mouseY / (_windowHeight - gameWindow.bottomPanelSize - 5);
-                    if (gameWindow.bottomPanelPercent < 0.05f)
-                        gameWindow.bottomPanelPercent = 0.05f;
-                    if (gameWindow.bottomPanelPercent > 0.70f)
-                        gameWindow.bottomPanelPercent = 0.70f;
+                    editorData.gameWindow.bottomPanelPercent = 1 - mouseY / (_windowHeight - editorData.gameWindow.bottomPanelSize - 5);
+                    if (editorData.gameWindow.bottomPanelPercent < 0.05f)
+                        editorData.gameWindow.bottomPanelPercent = 0.05f;
+                    if (editorData.gameWindow.bottomPanelPercent > 0.70f)
+                        editorData.gameWindow.bottomPanelPercent = 0.70f;
 
                     editorData.windowResized = true;
 

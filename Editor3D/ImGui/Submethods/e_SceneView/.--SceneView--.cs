@@ -11,7 +11,7 @@ namespace Engine3D
 {
     public partial class ImGuiController : BaseImGuiController
     {
-        public void SceneView(ref GameWindowProperty gameWindow)
+        public void SceneView()
         {
             int gameTexture = engine.GetGameViewportTexture();
 
@@ -19,7 +19,7 @@ namespace Engine3D
             //ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gameWindow.gameWindowSize.X - 20, editorData.gameWindow.gameWindowSize.Y - 20));
             //ImGui.SetNextWindowPos(new System.Numerics.Vector2(_windowWidth * gameWindow.leftPanelPercent + seperatorSize + 10, gameWindow.topPanelSize + 10), ImGuiCond.Always);
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gameWindow.gameWindowSize.X - seperatorSize, editorData.gameWindow.gameWindowSize.Y));
-            ImGui.SetNextWindowPos(new System.Numerics.Vector2(_windowWidth * gameWindow.leftPanelPercent + seperatorSize, gameWindow.topPanelSize), ImGuiCond.Always);
+            ImGui.SetNextWindowPos(new System.Numerics.Vector2(_windowWidth * editorData.gameWindow.leftPanelPercent + seperatorSize, editorData.gameWindow.topPanelSize), ImGuiCond.Always);
             if (ImGui.Begin("SceneView", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus))
             {
                 ImGui.SetCursorPos(new System.Numerics.Vector2(0, 0));

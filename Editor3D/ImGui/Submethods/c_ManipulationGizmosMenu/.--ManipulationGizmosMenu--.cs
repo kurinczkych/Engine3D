@@ -11,7 +11,7 @@ namespace Engine3D
 {
     public partial class ImGuiController : BaseImGuiController
     {
-        public void ManipulationGizmosMenu(ref GameWindowProperty gameWindow, ref ImGuiStylePtr style)
+        public void ManipulationGizmosMenu(ref ImGuiStylePtr style)
         {
             if (editorData.selectedItem != null && editorData.gameRunning == GameState.Stopped)
             {
@@ -33,7 +33,7 @@ namespace Engine3D
                 style.FramePadding = new System.Numerics.Vector2(2.5f, 2.5f);
 
                 editorData.gizmoWindowSize = new Vector2(22.5f, yHeight);
-                editorData.gizmoWindowPos = new Vector2(gameWindow.gameWindowPos.X + seperatorSize, gameWindow.topPanelSize);
+                editorData.gizmoWindowPos = new Vector2(editorData.gameWindow.gameWindowPos.X + seperatorSize, editorData.gameWindow.topPanelSize);
                 engine.SetGizmoWindow(editorData.gizmoWindowSize, editorData.gizmoWindowPos);
 
                 ImGui.SetNextWindowSize(new System.Numerics.Vector2(editorData.gizmoWindowSize.X, editorData.gizmoWindowSize.Y));
