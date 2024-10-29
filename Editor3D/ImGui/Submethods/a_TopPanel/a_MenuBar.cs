@@ -17,6 +17,14 @@ namespace Engine3D
             {
                 if (ImGui.BeginMenu("File"))
                 {
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                    if (ImGui.MenuItem("New", "Ctrl+N"))
+                    {
+                        engine.ResetScene();
+                        editorData.recalculateObjects = true;
+                        engineData.gizmoManager = engine.GetGizmoManager();
+                        engine.ResizedEditorWindow(editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
+                    }
                     if (ImGui.MenuItem("Open", "Ctrl+O"))
                     {
                         using (var dialog = new OpenFileDialog())
@@ -50,6 +58,7 @@ namespace Engine3D
                             }
                         }
                     }
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
                     ImGui.EndMenu();
                 }
                 if (ImGui.BeginMenu("Window"))

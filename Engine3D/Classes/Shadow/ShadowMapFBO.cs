@@ -61,7 +61,7 @@ namespace Engine3D
         {
             if (Engine.GLState.currentTextureUnit != 0)
             {
-                GL.ActiveTexture(TextureUnit.Texture0 );
+                GL.ActiveTexture(TextureUnit.Texture0);
                 Engine.GLState.currentTextureUnit = 0;
             }
 

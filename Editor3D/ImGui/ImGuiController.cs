@@ -327,7 +327,8 @@ namespace Engine3D
             editorData.gameWindow.gameWindowPos = new Vector2(windowSize.X * editorData.gameWindow.leftPanelPercent, windowSize.Y * editorData.gameWindow.bottomPanelPercent + editorData.gameWindow.bottomPanelSize);
 
             engine.ResizedEditorWindow(editorData.gameWindow.gameWindowSize, editorData.gameWindow.gameWindowPos);
-
+            //{ (832, 501)}
+            //{ (192, 217)}
             WindowResized(windowSize.X, windowSize.Y);
         }
 

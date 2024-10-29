@@ -122,11 +122,6 @@ namespace Engine3D
 
         public void UpdateAll()
         {
-            viewMatrix = GetViewMatrix();
-            projectionMatrix = GetProjectionMatrix();
-            projectionMatrixBigger = GetProjectionMatrixBigger(1.3f);
-            projectionMatrixOrtho = GetProjectionMatrixOrtho();
-            projectionMatrixOrthoShadow = GetProjectionMatrixOrthoShadow();
             UpdateVectors();
         }
 

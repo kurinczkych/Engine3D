@@ -55,7 +55,7 @@ uniform int useShading;
 const float heightScale = 0.1;
 const float metallnessVar = 0.04;
 
-float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir)
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal)
 {
     // Transform the light-space position to normalized device coordinates (NDC)
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -78,7 +78,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir)
     
     // Adjust the bias based on the angle between the normal and the light direction
     // This reduces self-shadowing on surfaces facing away from the light
-    bias = max(bias * (1.0 - dot(gsFragNormal, lightDir)), 0.001);
+    bias = max(bias * (1.0 - dot(normal, lightDir)), 0.001);
 
     // Calculate shadow; if current depth with bias is greater than closest depth, it's in shadow
     float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
@@ -143,10 +143,18 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness, vec4 
     float diff = max(dot(normal, lightDir), 0.0);
 
     // Specular shading
-    float roughness = texture(textureSamplerRough, gsFragTexCoord).r;
-    float m = roughness * roughness;
+    float spec;
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow / m);
+    if(useRough == 1)
+    {
+        float roughness = texture(textureSamplerRough, gsFragTexCoord).r;
+        float m = roughness * roughness;
+        spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow / m);
+    }
+    else
+    {
+        spec = pow(max(dot(viewDir, reflectDir), 0.0), light.specularPow / 1);
+    }
 
     // Ambient lighting
     vec3 ambient = light.ambient * light.diffuse;
@@ -172,8 +180,9 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness, vec4 
     }
 
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
-    float shadow = ShadowCalculation(fragPosLightSpace, lightDir); 
+    float shadow = ShadowCalculation(fragPosLightSpace, lightDir, normal); 
     return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color;
+//    return (ambient + diffuse + specular) * light.color;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {

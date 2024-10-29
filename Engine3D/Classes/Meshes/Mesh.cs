@@ -319,7 +319,7 @@ namespace Engine3D
             GL.Uniform1(uniformLocations["useShading"], useShading ? 1 : 0);
 
             if (Engine.shadowMapFBO != null && Engine.shadowMapFBO.shadowMap != -1)
-                GL.Uniform1(uniformLocations["shadowMap"], 0);
+                GL.Uniform1(uniformLocations["shadowMap"], 0); // 0 <- shadowMapFBO has TextureUnit.Texture0.
 
             if (texture != null)
             {

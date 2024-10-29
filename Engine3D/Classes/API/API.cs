@@ -320,6 +320,41 @@ namespace Engine3D
             GL.Enable(EnableCap.CullFace);
         }
 
+        public void ResetScene()
+        {
+            foreach (Object o in objects)
+                o.Delete(ref textureManager);
+            this.objects.Clear();
+            objectID = 1;
+            _meshObjects.Clear();
+            _instObjects.Clear();
+            textureManager.DeleteObjectTextures();
+
+            Object camObj = new Object(ObjectType.Empty) { name = "MainCamera" };
+            camObj.components.Add(new Camera(windowSize, camObj));
+            mainCamera = (Camera)camObj.components[camObj.components.Count - 1];
+            mainCamera.SetYaw(358);
+            mainCamera.SetPitch(-4.23f);
+            objects.Add(camObj);
+
+            onlyPosShaderProgram.Use();
+
+            Vector3 characterPos = new Vector3(-5, 10, 0);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref mainCamera_), ref physx, characterPos, ref mainCamera_);
+
+            gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
+
+            shaderProgram.Use();
+            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
+            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0));
+            objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
+            objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
+            Light.SendToGPU(lights, shaderProgram.id);
+
+            lights = new List<Light>();
+            particleSystems = new List<ParticleSystem>();
+        }
+
         public void SaveScene(string path)
         {
             SceneManager.SaveScene(path, new Project(objectID, objects), false);
@@ -334,9 +369,14 @@ namespace Engine3D
                 return;
             }
 
+            foreach (Object o in objects)
+                o.Delete(ref textureManager);
             this.objects.Clear();
-            objectID = project.engineId;
+            _meshObjects.Clear();
+            _instObjects.Clear();
             textureManager.DeleteObjectTextures();
+
+            objectID = project.engineId;
 
             foreach(var obj in project.objects)
             {
