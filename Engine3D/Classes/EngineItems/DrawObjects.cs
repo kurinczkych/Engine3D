@@ -23,11 +23,6 @@ namespace Engine3D
             Type? currentMeshType = null;
 
             Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
-            Vector3? lightDir = null;
-            if (light == null)
-                return;
-            else
-                lightDir = light.GetDirection();
 
             shadowMapFBO.BindForReading();
 
@@ -72,7 +67,7 @@ namespace Engine3D
                                 }
 
                                 if(mesh.animation == null)
-                                    mesh.Draw(gameState, shaderProgram, meshVbo, meshIbo, lightDir);
+                                    mesh.Draw(gameState, shaderProgram, meshVbo, meshIbo, light);
                                 else
                                     mesh.DrawAnimated(gameState, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
 
@@ -144,7 +139,7 @@ namespace Engine3D
 
                         onlyPosShaderProgram.Use();
 
-                        mesh.Draw(gameState, onlyPosShaderProgram, wireVbo, wireIbo, lightDir);
+                        mesh.Draw(gameState, onlyPosShaderProgram, wireVbo, wireIbo, light);
                         currentMeshType = typeof(Gizmo);
                     }
                 }
@@ -260,9 +255,8 @@ namespace Engine3D
             shadowShader.Use();
 
             Vector3 lightDir = light.GetDirection();
-            //Matrix4 shadowProj = Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
-            Matrix4 shadowProj = mainCamera.projectionMatrixOrthoShadow;
-            Matrix4 shadowView = ShadowMapFBO.GetLightViewMatrix(lightDir);
+            Matrix4 shadowProj = light.projectionMatrixOrtho;
+            Matrix4 shadowView = ShadowMapFBO.GetLightViewMatrix(light);
 
             vertices.Clear();
             Type? currentMeshType = null;

@@ -61,7 +61,7 @@ namespace Engine3D
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
         }
 
-        protected override void SendUniforms(Vector3? lightDir)
+        protected override void SendUniforms(Light? light)
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;

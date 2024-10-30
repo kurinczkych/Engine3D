@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Assimp.Unmanaged;
+using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
@@ -21,6 +22,8 @@ namespace Engine3D
         public string name = "Light";
         private int shaderProgramId;
         private int id;
+
+        private LightType lightType = LightType.DirectionalLight;
 
         #region LightVars
         public int colorLoc;
@@ -50,7 +53,33 @@ namespace Engine3D
         public Vector3 specular;
         #endregion
 
-        private LightType lightType = LightType.DirectionalLight;
+        #region ShadowVars
+        private VAO wireVao;
+        private VBO wireVbo;
+        private int wireShaderId;
+        private Vector2 windowSize;
+        [JsonIgnore]
+        public Camera camera;
+
+        [JsonIgnore]
+        public Gizmo? frustumGizmo;
+
+        private bool showFrustum_ = true;
+        [JsonIgnore]
+        public bool showFrustum
+        {
+            get { return showFrustum_; }
+            set
+            {
+                showFrustum_ = value;
+            }
+        }
+        public Projection projection = Projection.DefaultShadow;
+        public Matrix4 projectionMatrixOrtho = Matrix4.Identity;
+        public Vector3 target = Vector3.Zero;
+        public float distanceFromScene = 50;
+        #endregion
+
         [JsonIgnore]
         public Object parentObject;
         [JsonIgnore]
@@ -61,18 +90,28 @@ namespace Engine3D
             
         }
 
-        public Light(Object parentObject, int id)
+        public Light(Object parentObject, int id, VAO wireVao, VBO wireVbo, int wireShaderId, Vector2 windowSize, ref Camera mainCamera)
         {
             this.parentObject = parentObject;
             this.id = id;
+            this.wireVao = wireVao;
+            this.wireVbo = wireVbo;
+            this.wireShaderId = wireShaderId;
+            this.windowSize = windowSize;
+            camera = mainCamera;
 
             SetLightType(LightType.DirectionalLight);
         }
 
-        public Light(Object parentObject, int id, LightType lightType)
+        public Light(Object parentObject, int id, LightType lightType, VAO wireVao, VBO wireVbo, int wireShaderId, Vector2 windowSize, ref Camera mainCamera)
         {
             this.parentObject = parentObject;
             this.id = id;
+            this.wireVao = wireVao;
+            this.wireVbo = wireVbo;
+            this.wireShaderId = wireShaderId;
+            this.windowSize = windowSize;
+            camera = mainCamera;
 
             this.lightType = lightType;
             SetLightType(lightType);
@@ -142,7 +181,70 @@ namespace Engine3D
                 diffuse = new Vector3(1.0f, 1.0f, 1.0f);
                 specular = new Vector3(1.0f, 1.0f, 1.0f);
                 specularPow = 2.0f;
+                RecalculateFrustumGizmo();
             }
+        }
+
+        public void RecalculateFrustumGizmo()
+        {
+            projectionMatrixOrtho = GetProjectionMatrixOrtho();
+            Vector3 sunDir = GetDirection();
+            Vector3 sunPosition = target - (sunDir.Normalized() * distanceFromScene);
+
+            Frustum frustum = new Frustum();
+
+            // Define the frustum corners in normalized device coordinates
+            Vector4[] frustumCorners = {
+                new Vector4(-1,  1, -1, 1), // Near Top Left
+                new Vector4( 1,  1, -1, 1), // Near Top Right
+                new Vector4(-1, -1, -1, 1), // Near Bottom Left
+                new Vector4( 1, -1, -1, 1), // Near Bottom Right
+                new Vector4(-1,  1,  1, 1), // Far Top Left
+                new Vector4( 1,  1,  1, 1), // Far Top Right
+                new Vector4(-1, -1,  1, 1), // Far Bottom Left
+                new Vector4( 1, -1,  1, 1)  // Far Bottom Right
+            };
+
+            Matrix4 inverseMatrix = Matrix4.Invert(projectionMatrixOrtho * ShadowMapFBO.GetLightViewMatrix(this));
+
+            // Transform each corner from NDC to world space
+            frustum.ntl = Helper.Transform(inverseMatrix, frustumCorners[0]);
+            frustum.ntr = Helper.Transform(inverseMatrix, frustumCorners[1]);
+            frustum.nbl = Helper.Transform(inverseMatrix, frustumCorners[2]);
+            frustum.nbr = Helper.Transform(inverseMatrix, frustumCorners[3]);
+            frustum.ftl = Helper.Transform(inverseMatrix, frustumCorners[4]);
+            frustum.ftr = Helper.Transform(inverseMatrix, frustumCorners[5]);
+            frustum.fbl = Helper.Transform(inverseMatrix, frustumCorners[6]);
+            frustum.fbr = Helper.Transform(inverseMatrix, frustumCorners[7]);
+
+            if(frustumGizmo == null)
+            {
+                frustumGizmo = new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject);
+                frustumGizmo.AddFrustumGizmo(frustum, Color4.Red);
+                frustumGizmo.recalculate = true;
+                frustumGizmo.RecalculateModelMatrix(new bool[] { true, true, true });
+            }
+            else
+            {
+                frustumGizmo.model.meshes.Clear();
+                frustumGizmo.AddFrustumGizmo(frustum, Color4.Red);
+                frustumGizmo.recalculate = true;
+                frustumGizmo.RecalculateModelMatrix(new bool[] { true, true, true });
+            }
+        }
+
+        public Matrix4 GetProjectionMatrixOrtho()
+        {
+            float l = projection.left;
+            float r = projection.right;
+            float t = projection.top;
+            float b = projection.bottom;
+            float n = projection.near;
+            float f = projection.far;
+
+            Matrix4 m = Matrix4.CreateOrthographic(r - l, t - b, n, f);
+
+            return m;
         }
 
         public static void SendToGPU(List<Light> lights, int shaderProgramId)
@@ -239,12 +341,12 @@ namespace Engine3D
             return lightDirection.Normalized();  // Send normalized light direction
         }
 
+
+        #region Getters/Setters
         public Vector3 GetDirection()
         {
             return GetLightDirectionFromEuler(parentObject.transformation.Rotation);
         }
-
-        #region Getters/Setters
         public void SetColor(Color4 c)
         {
             color = new Color4(c.R,c.G,c.B,c.A);

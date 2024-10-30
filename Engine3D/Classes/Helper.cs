@@ -185,5 +185,15 @@ namespace Engine3D
 
             return rotation;
         }
+
+        public static Vector4 Transform(Matrix4 matrix, Vector4 vector)
+        {
+            return new Vector4(
+                matrix.M11 * vector.X + matrix.M12 * vector.Y + matrix.M13 * vector.Z + matrix.M14 * vector.W,
+                matrix.M21 * vector.X + matrix.M22 * vector.Y + matrix.M23 * vector.Z + matrix.M24 * vector.W,
+                matrix.M31 * vector.X + matrix.M32 * vector.Y + matrix.M33 * vector.Z + matrix.M34 * vector.W,
+                matrix.M41 * vector.X + matrix.M42 * vector.Y + matrix.M43 * vector.Z + matrix.M44 * vector.W
+            );
+        }
     }
 }

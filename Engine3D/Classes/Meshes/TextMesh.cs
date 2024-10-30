@@ -99,7 +99,7 @@ namespace Engine3D
             uniformLocations.Add("windowSize", GL.GetUniformLocation(shaderProgramId, "windowSize"));
         }
 
-        protected override void SendUniforms(Vector3? lightDir)
+        protected override void SendUniforms(Light? light)
         {
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             if(texture != null)

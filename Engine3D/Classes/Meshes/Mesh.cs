@@ -282,7 +282,7 @@ namespace Engine3D
             #endregion
         }
 
-        protected override void SendUniforms(Vector3? lightDir)
+        protected override void SendUniforms(Light? light)
         {
             if(Engine.GLState.currentShaderId != shaderProgramId)
             {
@@ -304,10 +304,10 @@ namespace Engine3D
             //else
             //    lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY) * Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
 
-            if (lightDir != null)
-                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(lightDir ?? -Vector3.UnitY) * camera.projectionMatrixOrthoShadow;
+            if (light != null)
+                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(light) * light.projectionMatrixOrtho;
             else
-                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY) * camera.projectionMatrixOrthoShadow;
+                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY, 50) * Matrix4.Identity;
 
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
@@ -517,7 +517,7 @@ namespace Engine3D
             //GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
-        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_, Vector3? lightDir)
+        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_, Light? light)
         {
             if (!parentObject.isEnabled)
                 return;
@@ -525,7 +525,7 @@ namespace Engine3D
             Vao.Bind();
             shader.Use();
 
-            SendUniforms(lightDir);
+            SendUniforms(light);
 
             foreach (MeshData mesh in model.meshes)
             {

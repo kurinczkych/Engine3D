@@ -159,7 +159,7 @@ namespace Engine3D
             }
         }
 
-        protected override void SendUniforms(Vector3? lightDir)
+        protected override void SendUniforms(Light? light)
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;

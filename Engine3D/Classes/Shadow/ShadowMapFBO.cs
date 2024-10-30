@@ -14,7 +14,6 @@ namespace Engine3D
         public int fbo;
         public int shadowMap = -1;
 
-        public static int distanceFromScene = 50;
         public static Vector3 minLightSpace;
         public static Vector3 maxLightSpace;
 
@@ -72,36 +71,18 @@ namespace Engine3D
             }
         }
 
-        public static Matrix4 GetLightViewMatrix(Vector3 lightDir, Vector3 sceneCenter, float distanceFromScene)
+        public static Matrix4 GetLightViewMatrix(Vector3 lightDir, float distanceFromScene)
         {
-            //lightDir = lightDir.Normalized();
+            Vector3 lightPosition = Engine.sceneCenter - lightDir * distanceFromScene;
 
-            //Vector3 lightPos = sceneCenter - lightDir * distanceFromScene;
-
-            //Vector3 up = Vector3.UnitY;
-
-            //if (Vector3.Cross(lightDir, up) == Vector3.Zero)
-            //{
-            //    up = Vector3.UnitZ;
-            //}
-
-            //Matrix4 lightViewMatrix = Matrix4.LookAt(lightPos, sceneCenter, up);
-
-            //return lightViewMatrix;
-            Vector3 lightPosition = sceneCenter - lightDir * distanceFromScene;
-
-            // LookAt matrix for the light
-            return Matrix4.LookAt(lightPosition, sceneCenter, Vector3.UnitY); // Assumi
+            return Matrix4.LookAt(lightPosition, Engine.sceneCenter, Vector3.UnitY);
         }
 
-        public static Matrix4 GetLightViewMatrix(Vector3 lightDir)
+        public static Matrix4 GetLightViewMatrix(Light light)
         {
-            return GetLightViewMatrix(lightDir, new Vector3(0, 0, 0), distanceFromScene);
-        }
+            Vector3 lightPosition = light.target - light.GetDirection() * light.distanceFromScene;
 
-        public static Matrix4 GetLightViewMatrix(Vector3 lightDir, Vector3 pos)
-        {
-            return GetLightViewMatrix(lightDir, pos, distanceFromScene);
+            return Matrix4.LookAt(lightPosition, Engine.sceneCenter, Vector3.UnitY);
         }
 
         public static Vector3 CalculateDirectionFromEuler(float yaw, float pitch, float roll)
@@ -119,75 +100,6 @@ namespace Engine3D
             // Roll would apply rotation around the Z-axis (not needed for this case, roll = 0)
 
             return new Vector3(x, y, z).Normalized();
-        }
-
-        public static Frustum CreateFrustumFromLightViewAndOrtho(Vector3 lightDir, Vector3 sceneCenter, Vector3 sceneExtents)
-        {
-            Vector3 dir = CalculateDirectionFromEuler(lightDir.X, lightDir.Y, lightDir.Z);
-
-            // Step 1: Get light view matrix
-            Matrix4 lightViewMatrix = GetLightViewMatrix(dir, sceneCenter, distanceFromScene);
-
-            // Scene bounding box (AABB)
-            Vector3 minBounds = sceneCenter - sceneExtents;
-            Vector3 maxBounds = sceneCenter + sceneExtents;
-
-            Vector3[] corners = new Vector3[8]
-            {
-                new Vector3(minBounds.X, minBounds.Y, minBounds.Z),
-                new Vector3(minBounds.X, minBounds.Y, maxBounds.Z),
-                new Vector3(minBounds.X, maxBounds.Y, minBounds.Z),
-                new Vector3(minBounds.X, maxBounds.Y, maxBounds.Z),
-                new Vector3(maxBounds.X, minBounds.Y, minBounds.Z),
-                new Vector3(maxBounds.X, minBounds.Y, maxBounds.Z),
-                new Vector3(maxBounds.X, maxBounds.Y, minBounds.Z),
-                new Vector3(maxBounds.X, maxBounds.Y, maxBounds.Z)
-            };
-
-            // Transform scene corners into light space
-            minLightSpace = new Vector3(float.MaxValue);
-            maxLightSpace = new Vector3(float.MinValue);
-
-            for (int i = 0; i < 8; i++)
-            {
-                // Manually multiply the Matrix4 with the Vector4 (this applies the transformation)
-                Vector4 transformedCorner = lightViewMatrix * new Vector4(corners[i], 1.0f);
-
-                // Update min/max in light space
-                minLightSpace = Vector3.ComponentMin(minLightSpace, transformedCorner.Xyz);
-                maxLightSpace = Vector3.ComponentMax(maxLightSpace, transformedCorner.Xyz);
-            }
-
-            // Step 2: Create the orthographic projection from light-space bounds
-            Matrix4 orthoProjectionMatrix = Camera.GetProjectionMatrixOrthoShadow(minLightSpace, maxLightSpace);
-
-            // Step 3: Combine the view and orthographic projection matrices
-            Matrix4 lightSpaceMatrix = orthoProjectionMatrix * lightViewMatrix;
-
-            // Step 4: Create the frustum using the bounds
-            Frustum frustum = new Frustum();
-
-            // Use the light-space bounds to calculate the frustum corners
-            float left = minLightSpace.X;
-            float right = maxLightSpace.X;
-            float bottom = minLightSpace.Y;
-            float top = maxLightSpace.Y;
-            float near = -maxLightSpace.Z;
-            float far = -minLightSpace.Z;
-
-            // Near plane (in light space)
-            frustum.ntl = new Vector4(left, top, near, 1.0f);
-            frustum.ntr = new Vector4(right, top, near, 1.0f);
-            frustum.nbl = new Vector4(left, bottom, near, 1.0f);
-            frustum.nbr = new Vector4(right, bottom, near, 1.0f);
-
-            // Far plane (in light space)
-            frustum.ftl = new Vector4(left, top, far, 1.0f);
-            frustum.ftr = new Vector4(right, top, far, 1.0f);
-            frustum.fbl = new Vector4(left, bottom, far, 1.0f);
-            frustum.fbr = new Vector4(right, bottom, far, 1.0f);
-
-            return frustum;
         }
     }
 }

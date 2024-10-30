@@ -36,7 +36,7 @@ namespace Engine3D
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
         }
 
-        protected override void SendUniforms(Vector3? lightDir)
+        protected override void SendUniforms(Light? light)
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
@@ -46,15 +46,17 @@ namespace Engine3D
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
         }
 
-        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_, Vector3? lightDir)
+        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_, Light? light)
         {
-            if (!parentObject.isEnabled)
+            if (parentObject != null && !parentObject.isEnabled)
+            {
                 return;
+            }
 
             Vao.Bind();
             shader.Use();
 
-            SendUniforms(lightDir);
+            SendUniforms(light);
 
             foreach (MeshData mesh in model.meshes)
             {
@@ -73,7 +75,7 @@ namespace Engine3D
                 else
                 {
                     recalculate = false;
-                    CalculateFrustumVisibility();
+                    CalculateFrustumVisibility(true);
                 }
 
                 if (mesh.visibleIndices.Count == 0)

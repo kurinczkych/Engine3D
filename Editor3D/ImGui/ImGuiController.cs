@@ -382,6 +382,68 @@ namespace Engine3D
 
         #region Helpers
 
+        private Vector4 InputFloat4(string title, string[] names, float[] v4, ref KeyboardState keyboardState, bool hideNames = false)
+        {
+            if (names.Length != 4)
+                throw new Exception("InputFloat4 names length must be 3!");
+
+            float[] vec = new float[]{ v4[0], v4[1], v4[2], v4[3] };
+
+            if (!hideNames)
+            {
+                if(title != "")
+                    ImGui.Text(title);
+            }
+
+            for(int i = 0; i < names.Length; i++)
+            {
+                string bufferName = "##" + title + names[i];
+                if (!_inputBuffers.ContainsKey(bufferName))
+                    _inputBuffers.Add(bufferName, new byte[100]);
+
+                if (!hideNames)
+                {
+                    ImGui.Text(names[i]);
+                    ImGui.SameLine();
+                }
+                Encoding.UTF8.GetBytes(v4[i].ToString(), 0, v4[i].ToString().Length, _inputBuffers[bufferName], 0);
+                bool commit = false;
+                bool reset = false;
+                ImGui.SetNextItemWidth(50);
+                if (ImGui.InputText(bufferName, _inputBuffers[bufferName], (uint)_inputBuffers[bufferName].Length))
+                {
+                    commit = true;
+                }
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                {
+                    reset = true;
+                    commit = true;
+                }
+                if (ImGui.IsItemActive() && keyboardState.IsKeyReleased(Keys.KeyPadEnter))
+                    commit = true;
+
+                if (commit)
+                {
+                    string valueStr = GetStringFromBuffer(bufferName);
+                    float value = -1;
+                    if (float.TryParse(valueStr, out value))
+                    {
+                        if (!reset)
+                            vec[i] = value;
+                        else
+                        {
+                            ClearBuffer(bufferName);
+                            vec[i] = 0;
+                        }
+                    }
+                }
+
+                if(i != names.Length-1)
+                    ImGui.SameLine();
+            }
+
+            return new Vector4(vec[0], vec[1], vec[2], vec[3]);
+        }
         private Vector3 InputFloat3(string title, string[] names, float[] v3, ref KeyboardState keyboardState, bool hideNames = false)
         {
             if (names.Length != 3)
@@ -448,7 +510,7 @@ namespace Engine3D
         private float[] InputFloat2(string title, string[] names, float[] v2, ref KeyboardState keyboardState, bool hideNames = false)
         {
             if (names.Length != 2)
-                throw new Exception("InputFloat3 names length must be 3!");
+                throw new Exception("InputFloat2 names length must be 3!");
 
             float[] vec = new float[]{ v2[0], v2[1] };
 

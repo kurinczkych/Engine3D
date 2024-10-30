@@ -10,6 +10,21 @@ namespace Engine3D
 {
     public class Frustum
     {
+
+        public Plane[] planes;
+
+        public Vector3 nearCenter = Vector3.Zero;
+        public Vector3 farCenter = Vector3.Zero;
+
+        public Vector4 ntl = Vector4.Zero;
+        public Vector4 ntr = Vector4.Zero;
+        public Vector4 nbl = Vector4.Zero;
+        public Vector4 nbr = Vector4.Zero;
+        public Vector4 ftl = Vector4.Zero;
+        public Vector4 ftr = Vector4.Zero;
+        public Vector4 fbl = Vector4.Zero;
+        public Vector4 fbr = Vector4.Zero;
+
         public Frustum()
         {
             planes = new Plane[6];
@@ -194,19 +209,5 @@ namespace Engine3D
             f.fbr = fbr;
             return f;
         }
-
-        public Plane[] planes;
-
-        public Vector3 nearCenter = Vector3.Zero;
-        public Vector3 farCenter = Vector3.Zero;
-
-        public Vector4 ntl = Vector4.Zero;
-        public Vector4 ntr = Vector4.Zero;
-        public Vector4 nbl = Vector4.Zero;
-        public Vector4 nbr = Vector4.Zero;
-        public Vector4 ftl = Vector4.Zero;
-        public Vector4 ftr = Vector4.Zero;
-        public Vector4 fbl = Vector4.Zero;
-        public Vector4 fbr = Vector4.Zero;
     }
 }

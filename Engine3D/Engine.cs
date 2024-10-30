@@ -70,8 +70,8 @@ namespace Engine3D
         private VAO uiTexVao;
         private VBO uiTexVbo;
 
-        private VAO wireVao;
-        private VBO wireVbo;
+        public VAO wireVao;
+        public VBO wireVbo;
         private IBO wireIbo;
 
         private VAO aabbVao;
@@ -91,7 +91,7 @@ namespace Engine3D
         private Shader shaderAnimProgram;
         public Shader instancedShaderProgram;
         private Shader posTexShader;
-        private Shader onlyPosShaderProgram;
+        public Shader onlyPosShaderProgram;
         private Shader aabbShaderProgram;
         private Shader infiniteFloorShader;
         private Shader shadowShader;
@@ -172,6 +172,7 @@ namespace Engine3D
         public List<Object> _instObjects = new List<Object>();
 
         public Character character;
+        public static Vector3 sceneCenter = Vector3.Zero;
 
         public Camera? mainCamera_ = null;
         public Camera mainCamera
@@ -336,8 +337,9 @@ namespace Engine3D
             GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
             shaderProgram.Use();
-            DrawObjects(args.Time);
 
+            DrawObjects(args.Time);
+            DrawGizmos();
             DrawMoverGizmo();
 
             TextUpdating();
@@ -446,21 +448,6 @@ namespace Engine3D
                     }
                 }
             }
-        }
-
-        public void LightViewFrustum()
-        {
-            lightViewFrustum = new Object(ObjectType.Gizmo) { name = "frustum", interactableInEditor = false };
-            Gizmo g = new Gizmo(wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_, ref lightViewFrustum);
-
-            Frustum f = ShadowMapFBO.CreateFrustumFromLightViewAndOrtho(new Vector3(240, 0, 0), new Vector3(0, 0, 0), new Vector3(100, 100, 100));
-
-            g.AddFrustumGizmo(f, Color4.Red);
-            //lightViewFrustum.transformation.Position = new Vector3(0,10,0);
-            g.recalculate = true;
-            g.RecalculateModelMatrix(new bool[] { true, true, true });
-            lightViewFrustum.components.Add(g);
-            objects.Add(lightViewFrustum);
         }
 
         protected override void OnLoad()
@@ -653,14 +640,16 @@ namespace Engine3D
             //objects.Add(new PointLight(Color4.White, shaderProgram.id, pointLights.Count));
             //pointLights[0].transformation.Position = new Vector3(0, 110, 0);
 
-            shaderProgram.Use();
-            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0));
-            objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
-            objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240,0,0));
-            Light.SendToGPU(lights, shaderProgram.id);
+            Object sun = AddLight(Light.LightType.DirectionalLight);
+            sun.name = "Sun";
+            sun.transformation.Position = new Vector3(0, 10, 0);
+            sun.transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
+            Light? sunComp = (Light?)sun.GetComponent<Light>();
+            if(sunComp != null)
+                sunComp.RecalculateFrustumGizmo();
 
-            LightViewFrustum();
+            shaderProgram.Use();
+            Light.SendToGPU(lights, shaderProgram.id);
 
             #region DebugLines
             // Projection matrix and mesh loading

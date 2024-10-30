@@ -506,9 +506,9 @@ namespace Engine3D
             }
         }
 
-        protected abstract void SendUniforms(Vector3? lightDir);
+        protected abstract void SendUniforms(Light? light);
 
-        public void CalculateFrustumVisibility()
+        public void CalculateFrustumVisibility(bool allVisible=false)
         {
             if (GetType() == typeof(Mesh) ||
                 GetType() == typeof(InstancedMesh))
@@ -519,95 +519,109 @@ namespace Engine3D
                 }
                 else
                 {
-                    foreach (MeshData mesh in model.meshes) 
+                    if (allVisible)
                     {
-                        mesh.visibleIndices.Clear();
-
-                        ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
-                        Parallel.ForEach(mesh.groupedIndices, parallelOptions,
-                        () => new List<uint>(),
-                        (indices_, loopState, localIndices) =>
+                        AllIndicesVisible();
+                    }
+                    else
+                    {
+                        foreach (MeshData mesh in model.meshes)
                         {
-                            if (modelMatrix != Matrix4.Identity)
+                            mesh.visibleIndices.Clear();
+
+                            ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = threadSize };
+                            Parallel.ForEach(mesh.groupedIndices, parallelOptions,
+                            () => new List<uint>(),
+                            (indices_, loopState, localIndices) =>
                             {
-                                bool visible = false;
-                                for (int i = 0; i < 3; i++)
+                                if (modelMatrix != Matrix4.Identity)
                                 {
-                                    Vector3 p = Vector3.TransformPosition(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]]), modelMatrix);
-                                    if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
+                                    bool visible = false;
+                                    for (int i = 0; i < 3; i++)
                                     {
-                                        visible = true;
-                                        break;
+                                        Vector3 p = Vector3.TransformPosition(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]]), modelMatrix);
+                                        if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
+                                        {
+                                            visible = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (visible)
+                                    {
+                                        localIndices.Add(indices_[0]);
+                                        localIndices.Add(indices_[1]);
+                                        localIndices.Add(indices_[2]);
+                                        if (indices_[0] > mesh.maxVisibleIndex)
+                                            mesh.maxVisibleIndex = indices_[0];
+                                        if (indices_[1] > mesh.maxVisibleIndex)
+                                            mesh.maxVisibleIndex = indices_[1];
+                                        if (indices_[2] > mesh.maxVisibleIndex)
+                                            mesh.maxVisibleIndex = indices_[2];
                                     }
                                 }
-
-                                if (visible)
+                                else
                                 {
-                                    localIndices.Add(indices_[0]);
-                                    localIndices.Add(indices_[1]);
-                                    localIndices.Add(indices_[2]);
-                                    if (indices_[0] > mesh.maxVisibleIndex)
-                                        mesh.maxVisibleIndex = indices_[0];
-                                    if (indices_[1] > mesh.maxVisibleIndex)
-                                        mesh.maxVisibleIndex = indices_[1];
-                                    if (indices_[2] > mesh.maxVisibleIndex)
-                                        mesh.maxVisibleIndex = indices_[2];
-                                }
-                            }
-                            else
-                            {
-                                bool visible = false;
-                                for (int i = 0; i < 3; i++)
-                                {
-                                    if (camera.frustum.IsInside(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]])) || camera.IsPointClose(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]])))
+                                    bool visible = false;
+                                    for (int i = 0; i < 3; i++)
                                     {
-                                        visible = true;
-                                        break;
+                                        if (camera.frustum.IsInside(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]])) || camera.IsPointClose(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]])))
+                                        {
+                                            visible = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (visible)
+                                    {
+                                        localIndices.Add(indices_[0]);
+                                        localIndices.Add(indices_[1]);
+                                        localIndices.Add(indices_[2]);
+                                        if (indices_[0] > mesh.maxVisibleIndex)
+                                            mesh.maxVisibleIndex = indices_[0];
+                                        if (indices_[1] > mesh.maxVisibleIndex)
+                                            mesh.maxVisibleIndex = indices_[1];
+                                        if (indices_[2] > mesh.maxVisibleIndex)
+                                            mesh.maxVisibleIndex = indices_[2];
                                     }
                                 }
-
-                                if (visible)
-                                {
-                                    localIndices.Add(indices_[0]);
-                                    localIndices.Add(indices_[1]);
-                                    localIndices.Add(indices_[2]);
-                                    if (indices_[0] > mesh.maxVisibleIndex)
-                                        mesh.maxVisibleIndex = indices_[0];
-                                    if (indices_[1] > mesh.maxVisibleIndex)
-                                        mesh.maxVisibleIndex = indices_[1];
-                                    if (indices_[2] > mesh.maxVisibleIndex)
-                                        mesh.maxVisibleIndex = indices_[2];
-                                }
-                            }
-                            return localIndices;
-                        },
-                        localIndices =>
-                        {
-                            lock (mesh.visibleIndices)
+                                return localIndices;
+                            },
+                            localIndices =>
                             {
-                                mesh.visibleIndices.AddRange(localIndices);
-                            }
-                        });
+                                lock (mesh.visibleIndices)
+                                {
+                                    mesh.visibleIndices.AddRange(localIndices);
+                                }
+                            });
+                        }
                     }
                 }
             }
             else if(GetType() == typeof(Gizmo))
             {
-                foreach (MeshData mesh in model.meshes)
+                if (allVisible)
                 {
-                    mesh.visibleIndices.Clear();
-
-                    bool visible = false;
-                    foreach(Vector3D v in mesh.mesh.Vertices)
+                    AllIndicesVisible();
+                }
+                else
+                {
+                    foreach (MeshData mesh in model.meshes)
                     {
-                        if (camera.frustum.IsInside(AHelp.AssimpToOpenTK(v)) || camera.IsPointClose(AHelp.AssimpToOpenTK(v)))
+                        mesh.visibleIndices.Clear();
+
+                        bool visible = false;
+                        foreach (Vector3D v in mesh.mesh.Vertices)
                         {
-                            visible = true;
-                            break;
+                            if (camera.frustum.IsInside(AHelp.AssimpToOpenTK(v)) || camera.IsPointClose(AHelp.AssimpToOpenTK(v)))
+                            {
+                                visible = true;
+                                break;
+                            }
                         }
+                        if (visible)
+                            AllIndicesVisible();
                     }
-                    if (visible)
-                        AllIndicesVisible();
                 }
             }
         }

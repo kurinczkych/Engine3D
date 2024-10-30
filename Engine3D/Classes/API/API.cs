@@ -213,13 +213,18 @@ namespace Engine3D
             AddObjectAndCalculate(o);
         }
 
-        public void AddLight(Light.LightType lightType)
+        public Object AddLight(Light.LightType lightType)
         {
-            objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0, lightType));
-            objects[objects.Count - 1].transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
+            Object light = new Object(ObjectType.Empty) { name = "Light" };
+            Light lightComp = new Light(light, 0, lightType, wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_);
+            light.components.Add(lightComp);
+            light.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
+            lightComp.RecalculateFrustumGizmo();
+            objects.Add(light);
 
             lights = new List<Light>();
+
+            return objects[objects.Count-1];
         }
 
         public void AddParticleSystem()
@@ -346,7 +351,7 @@ namespace Engine3D
 
             shaderProgram.Use();
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0));
+            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0, wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_));
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
             Light.SendToGPU(lights, shaderProgram.id);
@@ -445,6 +450,8 @@ namespace Engine3D
             _instObjects.AddRange(this.objects.Where(x => x.HasComponent<InstancedMesh>()));
             gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
             lights = new List<Light>();
+            foreach (Light l in lights)
+                l.camera = mainCamera_;
             particleSystems = new List<ParticleSystem>();
         }
     }
