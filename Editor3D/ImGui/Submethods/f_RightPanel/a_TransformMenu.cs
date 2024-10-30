@@ -194,6 +194,8 @@ namespace Engine3D
                         }
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
+                        if (o.GetComponent<Light>() is Light light)
+                            light.RecalculateFrustumGizmo();
                     }
                 }
                 ImGui.SameLine();

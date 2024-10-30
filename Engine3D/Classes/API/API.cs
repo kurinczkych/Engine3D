@@ -351,9 +351,11 @@ namespace Engine3D
 
             shaderProgram.Use();
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            objects[objects.Count - 1].components.Add(new Light(objects[objects.Count - 1], 0, wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_));
+            Light light = new Light(objects[objects.Count - 1], 0, wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_);
+            objects[objects.Count - 1].components.Add(light);
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
+            light.RecalculateFrustumGizmo();
             Light.SendToGPU(lights, shaderProgram.id);
 
             lights = new List<Light>();

@@ -172,7 +172,6 @@ namespace Engine3D
         public List<Object> _instObjects = new List<Object>();
 
         public Character character;
-        public static Vector3 sceneCenter = Vector3.Zero;
 
         public Camera? mainCamera_ = null;
         public Camera mainCamera

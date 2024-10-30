@@ -307,7 +307,7 @@ namespace Engine3D
             if (light != null)
                 lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(light) * light.projectionMatrixOrtho;
             else
-                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY, 50) * Matrix4.Identity;
+                lightSpaceMatrix = Matrix4.Identity;
 
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
@@ -502,10 +502,12 @@ namespace Engine3D
                 projectionMatrix = otherProj.Value;
             else
                 projectionMatrix = camera.projectionMatrix;
+
             if (otherView != null)
                 viewMatrix = otherView.Value;
             else
                 viewMatrix = camera.viewMatrix;
+
             cameraPos = camera.GetPosition();
 
             GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);

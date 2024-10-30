@@ -188,34 +188,35 @@ namespace Engine3D
         public void RecalculateFrustumGizmo()
         {
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
-            Vector3 sunDir = GetDirection();
-            Vector3 sunPosition = target - (sunDir.Normalized() * distanceFromScene);
 
             Frustum frustum = new Frustum();
 
-            // Define the frustum corners in normalized device coordinates
-            Vector4[] frustumCorners = {
-                new Vector4(-1,  1, -1, 1), // Near Top Left
-                new Vector4( 1,  1, -1, 1), // Near Top Right
-                new Vector4(-1, -1, -1, 1), // Near Bottom Left
-                new Vector4( 1, -1, -1, 1), // Near Bottom Right
-                new Vector4(-1,  1,  1, 1), // Far Top Left
-                new Vector4( 1,  1,  1, 1), // Far Top Right
-                new Vector4(-1, -1,  1, 1), // Far Bottom Left
-                new Vector4( 1, -1,  1, 1)  // Far Bottom Right
+            // Define the corners in normalized device coordinates for the near and far planes
+            Vector4[] ndcCorners = new Vector4[]
+            {
+            new Vector4(-1, 1, -1, 1), // Near top-left
+            new Vector4(1, 1, -1, 1),  // Near top-right
+            new Vector4(-1, -1, -1, 1), // Near bottom-left
+            new Vector4(1, -1, -1, 1),  // Near bottom-right
+            new Vector4(-1, 1, 1, 1),  // Far top-left
+            new Vector4(1, 1, 1, 1),   // Far top-right
+            new Vector4(-1, -1, 1, 1), // Far bottom-left
+            new Vector4(1, -1, 1, 1)   // Far bottom-right
             };
 
-            Matrix4 inverseMatrix = Matrix4.Invert(projectionMatrixOrtho * ShadowMapFBO.GetLightViewMatrix(this));
+            // Combine the projection and view matrices to transform corners from NDC to world space
+            Matrix4 invCombinedMatrix = Matrix4.Invert(projectionMatrixOrtho * ShadowMapFBO.GetLightViewMatrix(this));
 
             // Transform each corner from NDC to world space
-            frustum.ntl = Helper.Transform(inverseMatrix, frustumCorners[0]);
-            frustum.ntr = Helper.Transform(inverseMatrix, frustumCorners[1]);
-            frustum.nbl = Helper.Transform(inverseMatrix, frustumCorners[2]);
-            frustum.nbr = Helper.Transform(inverseMatrix, frustumCorners[3]);
-            frustum.ftl = Helper.Transform(inverseMatrix, frustumCorners[4]);
-            frustum.ftr = Helper.Transform(inverseMatrix, frustumCorners[5]);
-            frustum.fbl = Helper.Transform(inverseMatrix, frustumCorners[6]);
-            frustum.fbr = Helper.Transform(inverseMatrix, frustumCorners[7]);
+            frustum.ntl = Helper.Transform(invCombinedMatrix, ndcCorners[0]);
+            frustum.ntr = Helper.Transform(invCombinedMatrix, ndcCorners[1]);
+            frustum.nbl = Helper.Transform(invCombinedMatrix, ndcCorners[2]);
+            frustum.nbr = Helper.Transform(invCombinedMatrix, ndcCorners[3]);
+
+            frustum.ftl = Helper.Transform(invCombinedMatrix, ndcCorners[4]);
+            frustum.ftr = Helper.Transform(invCombinedMatrix, ndcCorners[5]);
+            frustum.fbl = Helper.Transform(invCombinedMatrix, ndcCorners[6]);
+            frustum.fbr = Helper.Transform(invCombinedMatrix, ndcCorners[7]);
 
             if(frustumGizmo == null)
             {

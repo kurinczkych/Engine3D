@@ -1,5 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using PuppeteerSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,18 +72,11 @@ namespace Engine3D
             }
         }
 
-        public static Matrix4 GetLightViewMatrix(Vector3 lightDir, float distanceFromScene)
-        {
-            Vector3 lightPosition = Engine.sceneCenter - lightDir * distanceFromScene;
-
-            return Matrix4.LookAt(lightPosition, Engine.sceneCenter, Vector3.UnitY);
-        }
-
         public static Matrix4 GetLightViewMatrix(Light light)
         {
-            Vector3 lightPosition = light.target - light.GetDirection() * light.distanceFromScene;
+            Vector3 lightPosition = light.target - (light.GetDirection() * light.distanceFromScene);
 
-            return Matrix4.LookAt(lightPosition, Engine.sceneCenter, Vector3.UnitY);
+            return Matrix4.LookAt(lightPosition, light.target, Vector3.UnitY);
         }
 
         public static Vector3 CalculateDirectionFromEuler(float yaw, float pitch, float roll)
