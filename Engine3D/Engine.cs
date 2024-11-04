@@ -495,7 +495,7 @@ namespace Engine3D
             GL.Enable(EnableCap.CullFace);
 
             #region FrameBuffers
-            shadowMapFBO = new ShadowMapFBO(new Vector2(1024, 1024/ 1.6606f));
+            shadowMapFBO = new ShadowMapFBO(new Vector2(2048, 2048 / 1.6606f));
             #endregion
 
             #region VBO and VAO Init

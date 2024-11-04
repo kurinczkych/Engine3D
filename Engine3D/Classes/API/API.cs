@@ -463,6 +463,8 @@ namespace Engine3D
                     else if (comp is Light light)
                     {
                         light.parentObject = obj;
+                        light.camera = mainCamera;
+                        light.RecalculateGizmos();
                     }
                 }
             }
@@ -474,8 +476,6 @@ namespace Engine3D
             _instObjects.AddRange(this.objects.Where(x => x.HasComponent<InstancedMesh>()));
             gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
             lights = new List<Light>();
-            foreach (Light l in lights)
-                l.camera = mainCamera_;
             particleSystems = new List<ParticleSystem>();
         }
 

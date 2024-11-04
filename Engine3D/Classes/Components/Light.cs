@@ -239,7 +239,7 @@ namespace Engine3D
             if (!gizmos.ContainsKey("positionGizmo"))
             {
                 gizmos.Add("positionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                gizmos["positionGizmo"].AddSphereGizmo(20, Color4.Green, lightPosition);
+                gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, lightPosition);
                 gizmos["positionGizmo"].recalculate = true;
                 gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
             }
@@ -253,7 +253,7 @@ namespace Engine3D
             if (!gizmos.ContainsKey("targetGizmo"))
             {
                 gizmos.Add("targetGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                gizmos["targetGizmo"].AddSphereGizmo(20, Color4.Red, target);
+                gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
                 gizmos["targetGizmo"].recalculate = true;
                 gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
             }

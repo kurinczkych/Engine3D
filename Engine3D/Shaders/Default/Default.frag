@@ -74,14 +74,21 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal)
     float currentDepth = projCoords.z;
 
     // Apply a bias to avoid shadow acne
-    float bias = 0.05;
-    
-    // Adjust the bias based on the angle between the normal and the light direction
-    // This reduces self-shadowing on surfaces facing away from the light
-    bias = max(bias * (1.0 - dot(normal, lightDir)), 0.001);
+//    float bias = 0.05;
+//    float bias = 0.009;
+//    
+//    // Adjust the bias based on the angle between the normal and the light direction
+//    // This reduces self-shadowing on surfaces facing away from the light
+//    bias = max(bias * (1.0 - dot(normal, lightDir)), 0.001);
+//
+//    // Calculate shadow; if current depth with bias is greater than closest depth, it's in shadow
+//    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
-    // Calculate shadow; if current depth with bias is greater than closest depth, it's in shadow
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    float slopeScaleFactor = 0.01;  // Start with a slightly higher value to reduce shadow acne
+    float constantBias = 0.0005;    // Start with a lower value to reduce Peter Panning
+
+    float bias = max(slopeScaleFactor * (1.0 - dot(normal, lightDir)), constantBias);
+    float shadow = (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
 
     return shadow;
 }
