@@ -71,22 +71,5 @@ namespace Engine3D
                 Engine.GLState.currentTextureId = shadowMap;
             }
         }
-
-        public static Vector3 CalculateDirectionFromEuler(float yaw, float pitch, float roll)
-        {
-            // Convert angles from degrees to radians
-            float yawRad = MathHelper.DegreesToRadians(yaw);
-            float pitchRad = MathHelper.DegreesToRadians(pitch);
-            float rollRad = MathHelper.DegreesToRadians(roll);
-
-            // Calculate direction vector using yaw and pitch
-            float x = (float)(Math.Cos(yawRad) * Math.Cos(pitchRad));
-            float y = (float)Math.Sin(pitchRad);  // Pitch affects the Y component
-            float z = (float)(Math.Sin(yawRad) * Math.Cos(pitchRad));
-
-            // Roll would apply rotation around the Z-axis (not needed for this case, roll = 0)
-
-            return new Vector3(x, y, z).Normalized();
-        }
     }
 }

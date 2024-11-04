@@ -77,7 +77,7 @@ namespace Engine3D
         public Matrix4 projectionMatrixOrtho = Matrix4.Identity;
         public Vector3 target = Vector3.Zero;
         public float distanceFromScene = 50;
-        public Vector3? calculatedDir;
+        public string calculatedDir;
         #endregion
 
         [JsonIgnore]
@@ -205,7 +205,8 @@ namespace Engine3D
             };
 
             // Combine the projection and view matrices to transform corners from NDC to world space
-            Matrix4 invCombinedMatrix = Matrix4.Invert(projectionMatrixOrtho * GetLightViewMatrix());
+            Matrix4 invCombinedMatrix = Matrix4.Invert(projectionMatrixOrtho * GetLightViewMatrixForFrustum());
+            calculatedDir = GetLightViewMatrixForFrustum().ToString();
 
             Vector3 lightDirection = GetDirection();
             Vector3 lightPosition = target - (lightDirection * distanceFromScene);
@@ -308,6 +309,22 @@ namespace Engine3D
             Vector3 lightPosition = target - (GetDirection() * distanceFromScene);
 
             return Matrix4.LookAt(lightPosition, target, Vector3.UnitY);
+        }
+
+        public Matrix4 GetLightViewMatrixForFrustum()
+        {
+            Vector3 lightPosition = target - Vector3.Transform(new Vector3(0, 0, -1), parentObject.transformation.Rotation) * distanceFromScene;
+
+            // Create a rotation matrix from the quaternion
+            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.transformation.Rotation);
+
+            // Create a translation matrix for the light's position
+            Matrix4 translationMatrix = Matrix4.CreateTranslation(-lightPosition);
+
+            // Combine rotation and translation to form the view matrix
+            Matrix4 viewMatrix = translationMatrix * rotationMatrix;
+
+            return viewMatrix;
         }
 
         public Matrix4 GetProjectionMatrixOrtho()

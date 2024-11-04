@@ -155,6 +155,14 @@ namespace Engine3D
                 }
                 #endregion
 
+                ImGui.Spacing();
+                if(o.HasComponent<Light>())
+                {
+                    Light? l = (Light?)o.GetComponent<Light>();
+                    if (l.calculatedDir != null)
+                        ImGui.Text(l.calculatedDir);
+                }
+
                 ImGui.Separator();
 
                 #region Rotation
@@ -185,7 +193,11 @@ namespace Engine3D
                     if (float.TryParse(valueStr, out value))
                     {
                         if (!reset)
+                        {
                             rotation.X = value;
+                            if (rotation.X % 90 == 0)
+                                rotation.X += 0.03f;
+                        }
                         else
                         {
                             ClearBuffer("##rotationX");
@@ -229,7 +241,11 @@ namespace Engine3D
                     if (float.TryParse(valueStr, out value))
                     {
                         if (!reset)
-                            rotation.Y = value;
+                        {
+                            rotation.X = value;
+                            if (rotation.X % 90 == 0)
+                                rotation.X += 0.03f;
+                        }
                         else
                         {
                             ClearBuffer("##rotationY");
@@ -272,7 +288,11 @@ namespace Engine3D
                     if (float.TryParse(valueStr, out value))
                     {
                         if (!reset)
-                            rotation.Z = value;
+                        {
+                            rotation.X = value;
+                            if (rotation.X % 90 == 0)
+                                rotation.X += 0.03f;
+                        }
                         else
                         {
                             ClearBuffer("##rotationZ");
