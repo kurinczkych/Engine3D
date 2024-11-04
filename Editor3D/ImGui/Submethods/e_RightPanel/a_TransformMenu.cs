@@ -63,6 +63,8 @@ namespace Engine3D
                         }
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
+                        if (o.GetComponent<Light>() is Light light)
+                            light.RecalculateGizmos();
                     }
                 }
                 ImGui.SameLine();
@@ -104,6 +106,8 @@ namespace Engine3D
                         }
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
+                        if (o.GetComponent<Light>() is Light light)
+                            light.RecalculateGizmos();
                     }
                 }
                 ImGui.SameLine();
@@ -145,6 +149,8 @@ namespace Engine3D
                         }
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
+                        if (o.GetComponent<Light>() is Light light)
+                            light.RecalculateGizmos();
                     }
                 }
                 #endregion
@@ -158,7 +164,7 @@ namespace Engine3D
 
                 ImGui.Text("X");
                 ImGui.SameLine();
-                FillInputBuffer(rotation.X.ToString(), "##rotationX");
+                FillInputBuffer(Math.Round(rotation.X).ToString(), "##rotationX");
                 commit = false;
                 if (ImGui.InputText("##rotationX", _inputBuffers["##rotationX"], (uint)_inputBuffers["##rotationX"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
                 {
@@ -195,14 +201,14 @@ namespace Engine3D
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
                         if (o.GetComponent<Light>() is Light light)
-                            light.RecalculateFrustumGizmo();
+                            light.RecalculateGizmos();
                     }
                 }
                 ImGui.SameLine();
 
                 ImGui.Text("Y");
                 ImGui.SameLine();
-                FillInputBuffer(rotation.Y.ToString(), "##rotationY");
+                FillInputBuffer(Math.Round(rotation.Y).ToString(), "##rotationY");
                 commit = false;
                 if (ImGui.InputText("##rotationY", _inputBuffers["##rotationY"], (uint)_inputBuffers["##rotationY"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
                 {
@@ -237,13 +243,15 @@ namespace Engine3D
                         }
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
+                        if (o.GetComponent<Light>() is Light light)
+                            light.RecalculateGizmos();
                     }
                 }
                 ImGui.SameLine();
 
                 ImGui.Text("Z");
                 ImGui.SameLine();
-                FillInputBuffer(rotation.Z.ToString(), "##rotationZ");
+                FillInputBuffer(Math.Round(rotation.Z).ToString(), "##rotationZ");
                 commit = false;
                 if (ImGui.InputText("##rotationZ", _inputBuffers["##rotationZ"], (uint)_inputBuffers["##rotationZ"].Length, ImGuiInputTextFlags.EnterReturnsTrue))
                 {
@@ -278,6 +286,8 @@ namespace Engine3D
                         }
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
+                        if (o.GetComponent<Light>() is Light light)
+                            light.RecalculateGizmos();
                     }
                 }
                 #endregion

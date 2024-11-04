@@ -508,7 +508,7 @@ namespace Engine3D
 
         protected abstract void SendUniforms(Light? light);
 
-        public void CalculateFrustumVisibility(bool allVisible=false)
+        public void CalculateFrustumVisibility(bool allVisible=false, bool globalPosition=false)
         {
             if (GetType() == typeof(Mesh) ||
                 GetType() == typeof(InstancedMesh))
@@ -539,7 +539,9 @@ namespace Engine3D
                                     bool visible = false;
                                     for (int i = 0; i < 3; i++)
                                     {
-                                        Vector3 p = Vector3.TransformPosition(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]]), modelMatrix);
+                                        Vector3 p = AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]]);
+                                        if (!globalPosition)
+                                            p = Vector3.TransformPosition(AHelp.AssimpToOpenTK(mesh.mesh.Vertices[(int)indices_[i]]), modelMatrix);
                                         if (camera.frustum.IsInside(p) || camera.IsPointClose(p))
                                         {
                                             visible = true;

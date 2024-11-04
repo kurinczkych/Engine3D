@@ -83,11 +83,11 @@ namespace Engine3D
                     {
                         bool recalculateFrustum = false;
 
-                        bool showFrustum = light.showFrustum;
+                        bool showFrustum = light.showGizmos;
                         if (ImGui.Checkbox("##showFrustum", ref showFrustum))
                         {
-                            light.showFrustum = showFrustum;
-                            if (light.showFrustum)
+                            light.showGizmos = showFrustum;
+                            if (light.showGizmos)
                                 recalculateFrustum = true;
                         }
                         ImGui.SameLine();
@@ -150,7 +150,7 @@ namespace Engine3D
 
                         if(recalculateFrustum)
                         {
-                            light.RecalculateFrustumGizmo();
+                            light.RecalculateGizmos();
                         }
                     }
                 }

@@ -72,13 +72,6 @@ namespace Engine3D
             }
         }
 
-        public static Matrix4 GetLightViewMatrix(Light light)
-        {
-            Vector3 lightPosition = light.target - (light.GetDirection() * light.distanceFromScene);
-
-            return Matrix4.LookAt(lightPosition, light.target, Vector3.UnitY);
-        }
-
         public static Vector3 CalculateDirectionFromEuler(float yaw, float pitch, float roll)
         {
             // Convert angles from degrees to radians

@@ -96,7 +96,7 @@ namespace Engine3D
             {
                 if (type.IsClass && typeof(IComponent).IsAssignableFrom(type) && !exludedComponents.Contains(type.Name))
                 {
-                    availableComponents.Add(new ComponentType(type.Name, type.BaseType?.Name, type));
+                    availableComponents.Add(new ComponentType(type.Name, type.BaseType==null?"":type.BaseType.Name, type));
                 }
             }
 
@@ -341,6 +341,7 @@ namespace Engine3D
         {
             MouseScroll(e.Offset);
         }
+
         #endregion
 
         #region Other
@@ -805,9 +806,14 @@ namespace Engine3D
 
             BottomInfoPanel(ref style);
 
+            ShadowDepth();
+
+            LoadingScreen();
+
             engine.SetUIHasMouse(editorData.uiHasMouse);
 
             SceneView();
+
 
             #region Every frame variable updates
             if (isObjectHovered != editorData.anyObjectHovered)

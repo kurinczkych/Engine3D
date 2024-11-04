@@ -254,9 +254,8 @@ namespace Engine3D
 
             shadowShader.Use();
 
-            Vector3 lightDir = light.GetDirection();
             Matrix4 shadowProj = light.projectionMatrixOrtho;
-            Matrix4 shadowView = ShadowMapFBO.GetLightViewMatrix(light);
+            Matrix4 shadowView = light.GetLightViewMatrix();
 
             vertices.Clear();
             Type? currentMeshType = null;

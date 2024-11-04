@@ -14,7 +14,17 @@ namespace Engine3D
     {
         public void DrawGizmos()
         {
-            List<Gizmo?> gizmos = lights.Where(x => x.frustumGizmo != null && x.showFrustum).Select(x => x.frustumGizmo).ToList();
+            List<Gizmo> gizmos = lights.Where(light => light.gizmos != null && light.showGizmos)
+                                       .SelectMany(light => light.gizmos)
+                                       .Where(gizmoPair => gizmoPair.Value != null && gizmoPair.Key != "directionGizmo")
+                                       .Select(gizmoPair => gizmoPair.Value)
+                                       .ToList();
+
+            gizmos.AddRange(lights.Where(light => light.gizmos != null && light.parentObject != null && (light.parentObject.isSelected || light.showGizmos))
+                            .SelectMany(light => light.gizmos)
+                            .Where(gizmoPair => gizmoPair.Value != null && gizmoPair.Key == "directionGizmo")
+                            .Select(gizmoPair => gizmoPair.Value)
+                            .ToList());
 
             foreach (Gizmo? gizmo in gizmos)
             {

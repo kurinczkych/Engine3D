@@ -377,8 +377,6 @@ namespace Engine3D
                 updateMethod.Invoke(args);
             }
 
-            fps.Update((float)args.Time);
-
             assetManager.UpdateIfNeeded();
 
             if (fileDetectorStopWatch.Elapsed.TotalSeconds > 5)
@@ -387,62 +385,67 @@ namespace Engine3D
                 FileManager.GetAllAssets(ref assetManager);
             }
 
-            MouseMoving();
-
-            if (gameState == GameState.Running)
+            if (assetManager.allLoaded)
             {
-                character.CalculateVelocity(KeyboardState, MouseState, args);
-                character.UpdatePosition(KeyboardState, MouseState, args);
+                fps.Update((float)args.Time);
 
-                soundManager.SetListener(mainCamera.GetPosition());
-            }
-            else
-            {
-                EditorMoving(args);
-            }
+                MouseMoving();
 
-            
-            if(gameState == GameState.Running || runParticles) 
-            {
-                foreach (ParticleSystem ps in particleSystems)
+                if (gameState == GameState.Running)
                 {
-                    ps.Update((float)args.Time);
+                    character.CalculateVelocity(KeyboardState, MouseState, args);
+                    character.UpdatePosition(KeyboardState, MouseState, args);
+
+                    soundManager.SetListener(mainCamera.GetPosition());
                 }
-            }
-
-            character.AfterUpdate(MouseState, args, gameState);
-
-            if (fps.totalTime > 0 && gameState == GameState.Running)
-            {
-                physx.Simulate((float)args.Time);
-                foreach (Object o in objects)
+                else
                 {
-                    if (o.GetComponent<Physics>() is Physics p)
+                    EditorMoving(args);
+                }
+
+
+                if (gameState == GameState.Running || runParticles)
+                {
+                    foreach (ParticleSystem ps in particleSystems)
                     {
-                        var trans = p.CollisionResponse();
-                        if (trans != null)
+                        ps.Update((float)args.Time);
+                    }
+                }
+
+                character.AfterUpdate(MouseState, args, gameState);
+
+                if (fps.totalTime > 0 && gameState == GameState.Running)
+                {
+                    physx.Simulate((float)args.Time);
+                    foreach (Object o in objects)
+                    {
+                        if (o.GetComponent<Physics>() is Physics p)
                         {
-                            BaseMesh? pmesh = (BaseMesh?)o.GetComponent<BaseMesh>();
-                            if (pmesh == null)
-                                continue;
-
-                            bool[] which = new bool[3] { false, false, false };
-
-                            o.transformation.Position = trans.Item1;
-                            if (o.transformation.Position != o.transformation.LastPosition)
+                            var trans = p.CollisionResponse();
+                            if (trans != null)
                             {
-                                pmesh.recalculate = true;
-                                which[0] = true;
-                            }
+                                BaseMesh? pmesh = (BaseMesh?)o.GetComponent<BaseMesh>();
+                                if (pmesh == null)
+                                    continue;
 
-                            o.transformation.Rotation = trans.Item2;
-                            if(o.transformation.Rotation != o.transformation.LastRotation)
-                            {
-                                pmesh.recalculate = true;
-                                which[1] = true;
-                            }
+                                bool[] which = new bool[3] { false, false, false };
 
-                            pmesh.RecalculateModelMatrix(which);
+                                o.transformation.Position = trans.Item1;
+                                if (o.transformation.Position != o.transformation.LastPosition)
+                                {
+                                    pmesh.recalculate = true;
+                                    which[0] = true;
+                                }
+
+                                o.transformation.Rotation = trans.Item2;
+                                if (o.transformation.Rotation != o.transformation.LastRotation)
+                                {
+                                    pmesh.recalculate = true;
+                                    which[1] = true;
+                                }
+
+                                pmesh.RecalculateModelMatrix(which);
+                            }
                         }
                     }
                 }
@@ -641,11 +644,11 @@ namespace Engine3D
 
             Object sun = AddLight(Light.LightType.DirectionalLight);
             sun.name = "Sun";
-            sun.transformation.Position = new Vector3(0, 10, 0);
+            sun.transformation.Position = new Vector3(0, 0, 0);
             sun.transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
             Light? sunComp = (Light?)sun.GetComponent<Light>();
             if(sunComp != null)
-                sunComp.RecalculateFrustumGizmo();
+                sunComp.RecalculateGizmos();
 
             shaderProgram.Use();
             Light.SendToGPU(lights, shaderProgram.id);
@@ -925,11 +928,6 @@ namespace Engine3D
             {
                 throw new Exception($"Framebuffer is incomplete: {status}");
             }
-        }
-
-        public int GetGameViewportTexture()
-        {
-            return textureColorBuffer;
         }
 
         protected override void OnResize(ResizeEventArgs e)

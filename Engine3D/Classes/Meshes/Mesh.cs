@@ -305,7 +305,7 @@ namespace Engine3D
             //    lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY) * Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
 
             if (light != null)
-                lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(light) * light.projectionMatrixOrtho;
+                lightSpaceMatrix = light.GetLightViewMatrix() * light.projectionMatrixOrtho;
             else
                 lightSpaceMatrix = Matrix4.Identity;
 

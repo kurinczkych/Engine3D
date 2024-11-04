@@ -338,6 +338,8 @@ namespace Engine3D
 
                 if(toCalcO.GetComponent<Physics>() is Physics physics)
                     physics.UpdatePhysxPositionAndRotation(toCalcO.transformation);
+                if (toCalcO.GetComponent<Light>() is Light light)
+                    light.RecalculateGizmos();
             }
 
         }

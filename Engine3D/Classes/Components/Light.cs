@@ -1,5 +1,4 @@
-﻿using Assimp.Unmanaged;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
@@ -62,22 +61,23 @@ namespace Engine3D
         public Camera camera;
 
         [JsonIgnore]
-        public Gizmo? frustumGizmo;
+        public Dictionary<string, Gizmo> gizmos = new Dictionary<string, Gizmo>();
 
-        private bool showFrustum_ = true;
+        private bool showGizmos_ = true;
         [JsonIgnore]
-        public bool showFrustum
+        public bool showGizmos
         {
-            get { return showFrustum_; }
+            get { return showGizmos_; }
             set
             {
-                showFrustum_ = value;
+                showGizmos_ = value;
             }
         }
         public Projection projection = Projection.DefaultShadow;
         public Matrix4 projectionMatrixOrtho = Matrix4.Identity;
         public Vector3 target = Vector3.Zero;
         public float distanceFromScene = 50;
+        public Vector3? calculatedDir;
         #endregion
 
         [JsonIgnore]
@@ -181,11 +181,11 @@ namespace Engine3D
                 diffuse = new Vector3(1.0f, 1.0f, 1.0f);
                 specular = new Vector3(1.0f, 1.0f, 1.0f);
                 specularPow = 2.0f;
-                RecalculateFrustumGizmo();
+                RecalculateGizmos();
             }
         }
 
-        public void RecalculateFrustumGizmo()
+        public void RecalculateGizmos()
         {
             projectionMatrixOrtho = GetProjectionMatrixOrtho();
 
@@ -194,18 +194,21 @@ namespace Engine3D
             // Define the corners in normalized device coordinates for the near and far planes
             Vector4[] ndcCorners = new Vector4[]
             {
-            new Vector4(-1, 1, -1, 1), // Near top-left
-            new Vector4(1, 1, -1, 1),  // Near top-right
-            new Vector4(-1, -1, -1, 1), // Near bottom-left
-            new Vector4(1, -1, -1, 1),  // Near bottom-right
-            new Vector4(-1, 1, 1, 1),  // Far top-left
-            new Vector4(1, 1, 1, 1),   // Far top-right
-            new Vector4(-1, -1, 1, 1), // Far bottom-left
-            new Vector4(1, -1, 1, 1)   // Far bottom-right
+                new Vector4(-1, 1, -1, 1), // Near top-left
+                new Vector4(1, 1, -1, 1),  // Near top-right
+                new Vector4(-1, -1, -1, 1), // Near bottom-left
+                new Vector4(1, -1, -1, 1),  // Near bottom-right
+                new Vector4(-1, 1, 1, 1),  // Far top-left
+                new Vector4(1, 1, 1, 1),   // Far top-right
+                new Vector4(-1, -1, 1, 1), // Far bottom-left
+                new Vector4(1, -1, 1, 1)   // Far bottom-right
             };
 
             // Combine the projection and view matrices to transform corners from NDC to world space
-            Matrix4 invCombinedMatrix = Matrix4.Invert(projectionMatrixOrtho * ShadowMapFBO.GetLightViewMatrix(this));
+            Matrix4 invCombinedMatrix = Matrix4.Invert(projectionMatrixOrtho * GetLightViewMatrix());
+
+            Vector3 lightDirection = GetDirection();
+            Vector3 lightPosition = target - (lightDirection * distanceFromScene);
 
             // Transform each corner from NDC to world space
             frustum.ntl = Helper.Transform(invCombinedMatrix, ndcCorners[0]);
@@ -218,20 +221,93 @@ namespace Engine3D
             frustum.fbl = Helper.Transform(invCombinedMatrix, ndcCorners[6]);
             frustum.fbr = Helper.Transform(invCombinedMatrix, ndcCorners[7]);
 
-            if(frustumGizmo == null)
+            if (!gizmos.ContainsKey("frustumGizmo"))
             {
-                frustumGizmo = new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject);
-                frustumGizmo.AddFrustumGizmo(frustum, Color4.Red);
-                frustumGizmo.recalculate = true;
-                frustumGizmo.RecalculateModelMatrix(new bool[] { true, true, true });
+                gizmos.Add("frustumGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                gizmos["frustumGizmo"].AddFrustumGizmo(frustum, Color4.Red);
+                gizmos["frustumGizmo"].recalculate = true;
+                gizmos["frustumGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
             }
             else
             {
-                frustumGizmo.model.meshes.Clear();
-                frustumGizmo.AddFrustumGizmo(frustum, Color4.Red);
-                frustumGizmo.recalculate = true;
-                frustumGizmo.RecalculateModelMatrix(new bool[] { true, true, true });
+                gizmos["frustumGizmo"].model.meshes.Clear();
+                gizmos["frustumGizmo"].AddFrustumGizmo(frustum, Color4.Red);
+                gizmos["frustumGizmo"].recalculate = true;
+                gizmos["frustumGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
             }
+            if (!gizmos.ContainsKey("positionGizmo"))
+            {
+                gizmos.Add("positionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                gizmos["positionGizmo"].AddSphereGizmo(20, Color4.Green, lightPosition);
+                gizmos["positionGizmo"].recalculate = true;
+                gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+            }
+            else
+            {
+                gizmos["positionGizmo"].model.meshes.Clear();
+                gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, lightPosition);
+                gizmos["positionGizmo"].recalculate = true;
+                gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+            }
+            if (!gizmos.ContainsKey("targetGizmo"))
+            {
+                gizmos.Add("targetGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                gizmos["targetGizmo"].AddSphereGizmo(20, Color4.Red, target);
+                gizmos["targetGizmo"].recalculate = true;
+                gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+            }
+            else
+            {
+                gizmos["targetGizmo"].model.meshes.Clear();
+                gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
+                gizmos["targetGizmo"].recalculate = true;
+                gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+            }
+            if (!gizmos.ContainsKey("directionGizmo"))
+            {
+                gizmos.Add("directionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
+                gizmos["directionGizmo"].recalculate = true;
+                gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+            }
+            else
+            {
+                gizmos["directionGizmo"].model.meshes.Clear();
+                gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
+                gizmos["directionGizmo"].recalculate = true;
+                gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+            }
+        }
+
+        //-----------------
+        public static Vector3 NormalizeAngles2(Vector3 angles)
+        {
+            Vector3 n = new Vector3(angles);
+            if (n.X < 0) n.X += 360;
+            if (n.Y < 0) n.Y += 360;
+            if (n.Z < 0) n.Z += 360;
+            return n;
+        }
+        public static Vector3 todeg(Vector3 d)
+        {
+            return new Vector3(MathHelper.RadiansToDegrees(d.X), MathHelper.RadiansToDegrees(d.Y), MathHelper.RadiansToDegrees(d.Z));
+        }
+
+        public Vector3 NormalizeAngles(Vector3 angles)
+        {
+            angles.X = (angles.X > 180) ? angles.X - 360 : angles.X;
+            angles.Y = (angles.Y > 180) ? angles.Y - 360 : angles.Y;
+            angles.Z = (angles.Z > 180) ? angles.Z - 360 : angles.Z;
+            return angles;
+        }
+
+        //--------------
+
+        public Matrix4 GetLightViewMatrix()
+        {
+            Vector3 lightPosition = target - (GetDirection() * distanceFromScene);
+
+            return Matrix4.LookAt(lightPosition, target, Vector3.UnitY);
         }
 
         public Matrix4 GetProjectionMatrixOrtho()

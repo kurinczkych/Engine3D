@@ -153,6 +153,7 @@ namespace Engine3D
         public List<string> loaded = new List<string>();
         public List<Asset> loadedAssets = new List<Asset>();
         public AssetFolder assets = new AssetFolder("Assets");
+        public bool allLoaded = false;
         private TextureManager textureManager;
 
         public AssetManager(ref TextureManager textureManager)
@@ -170,6 +171,7 @@ namespace Engine3D
         {
             toLoad.Add(asset);
             toLoadString.Add(asset.Path);
+            allLoaded = false;
         }
 
         public void Add(List<Asset> assets)
@@ -177,6 +179,7 @@ namespace Engine3D
             toLoad.AddRange(assets);
             foreach (var asset in assets)
                 toLoadString.Add(asset.Path);
+            allLoaded = false;
         }
 
         public void Remove(Asset asset)
@@ -196,12 +199,12 @@ namespace Engine3D
                 Asset a = toLoad[0];
 
                 bool success = false;
-                if(a.EditorType == AssetTypeEditor.UI)
+                if (a.EditorType == AssetTypeEditor.UI)
                 {
                     if (!textureManager.textures.ContainsKey("ui_" + Path.GetFileName(a.Path)))
                         textureManager.AddUITexture(a.Path, out success, flipY: false, type: a.EditorType);
                 }
-                else if(a.EditorType == AssetTypeEditor.Store)
+                else if (a.EditorType == AssetTypeEditor.Store)
                 {
                     if (!textureManager.textures.ContainsKey("ui_" + Path.GetFileName(a.Path)))
                         textureManager.AddUITexture(a.Path, out success, flipY: false, type: a.EditorType);
@@ -217,12 +220,14 @@ namespace Engine3D
                     toLoad.Remove(a);
                     toLoadString.Remove(a.Path);
                     loadedAssets.Add(a);
-                    if(a.EditorType != AssetTypeEditor.Store)
+                    if (a.EditorType != AssetTypeEditor.Store)
                         assets.Insert(a);
                 }
             }
+            else
+                allLoaded = true;
 
-            if(toRemove.Count > 0)
+            if (toRemove.Count > 0)
             {
                 Asset a = toRemove[0];
                 textureManager.DeleteTexture(a.Name);

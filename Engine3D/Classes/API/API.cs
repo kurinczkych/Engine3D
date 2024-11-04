@@ -96,6 +96,28 @@ namespace Engine3D
                 gizmoWindowSize = size;
         }
 
+        public int GetGameViewportTexture()
+        {
+            return textureColorBuffer;
+        }
+
+        public int GetShadowDepthTexture()
+        {
+            if (Engine.GLState.currentTextureUnit != 0)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0);
+                Engine.GLState.currentTextureUnit = 0;
+            }
+
+            if (Engine.GLState.currentTextureId != shadowMapFBO.shadowMap)
+            {
+                GL.BindTexture(TextureTarget.Texture2D, shadowMapFBO.shadowMap);
+                Engine.GLState.currentTextureId = shadowMapFBO.shadowMap;
+            }
+
+            return shadowMapFBO.shadowMap;
+        }
+
         public void SetUIHasMouse(bool hasMouse)
         {
             UIHasMouse = hasMouse;
@@ -219,7 +241,7 @@ namespace Engine3D
             Light lightComp = new Light(light, 0, lightType, wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_);
             light.components.Add(lightComp);
             light.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            lightComp.RecalculateFrustumGizmo();
+            lightComp.RecalculateGizmos();
             objects.Add(light);
 
             lights = new List<Light>();
@@ -355,7 +377,7 @@ namespace Engine3D
             objects[objects.Count - 1].components.Add(light);
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
-            light.RecalculateFrustumGizmo();
+            light.RecalculateGizmos();
             Light.SendToGPU(lights, shaderProgram.id);
 
             lights = new List<Light>();

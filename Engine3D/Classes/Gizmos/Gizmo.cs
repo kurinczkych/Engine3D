@@ -16,6 +16,7 @@ namespace Engine3D
 
         [JsonIgnore]
         private Matrix4 viewMatrix, projectionMatrix;
+        public bool globalPosition = false;
 
         private ModelData modelData = new ModelData();
 
@@ -75,7 +76,7 @@ namespace Engine3D
                 else
                 {
                     recalculate = false;
-                    CalculateFrustumVisibility(true);
+                    CalculateFrustumVisibility(true, globalPosition);
                 }
 
                 if (mesh.visibleIndices.Count == 0)
@@ -108,6 +109,95 @@ namespace Engine3D
             AddLine(f.nbl.Xyz, f.fbl.Xyz, color, color, ref mesh);  // nbl -> fbl
             AddLine(f.nbr.Xyz, f.fbr.Xyz, color, color, ref mesh);  // nbr -> fbr
 
+            MeshData meshData = new MeshData(mesh);
+            model.meshes.Add(meshData);
+        }
+
+        public void AddSphereGizmo(float radius, Color4 color, Vector3 positionOffset = default)
+        {
+            Assimp.Mesh mesh = new Assimp.Mesh();
+            int segments = 24; // Number of segments for smoother appearance; adjust as needed
+
+            // Circle in the X-Y plane
+            for (int i = 0; i < segments; i++)
+            {
+                float theta = (float)(2.0 * Math.PI * i / segments);
+                float nextTheta = (float)(2.0 * Math.PI * (i + 1) / segments);
+
+                Vector3 pointA = new Vector3(radius * (float)Math.Cos(theta), radius * (float)Math.Sin(theta), 0) + positionOffset;
+                Vector3 pointB = new Vector3(radius * (float)Math.Cos(nextTheta), radius * (float)Math.Sin(nextTheta), 0) + positionOffset;
+
+                AddLine(pointA, pointB, color, color, ref mesh);
+            }
+
+            // Circle in the Y-Z plane
+            for (int i = 0; i < segments; i++)
+            {
+                float theta = (float)(2.0 * Math.PI * i / segments);
+                float nextTheta = (float)(2.0 * Math.PI * (i + 1) / segments);
+
+                Vector3 pointA = new Vector3(0, radius * (float)Math.Cos(theta), radius * (float)Math.Sin(theta)) + positionOffset;
+                Vector3 pointB = new Vector3(0, radius * (float)Math.Cos(nextTheta), radius * (float)Math.Sin(nextTheta)) + positionOffset;
+
+                AddLine(pointA, pointB, color, color, ref mesh);
+            }
+
+            // Circle in the X-Z plane
+            for (int i = 0; i < segments; i++)
+            {
+                float theta = (float)(2.0 * Math.PI * i / segments);
+                float nextTheta = (float)(2.0 * Math.PI * (i + 1) / segments);
+
+                Vector3 pointA = new Vector3(radius * (float)Math.Cos(theta), 0, radius * (float)Math.Sin(theta)) + positionOffset;
+                Vector3 pointB = new Vector3(radius * (float)Math.Cos(nextTheta), 0, radius * (float)Math.Sin(nextTheta)) + positionOffset;
+
+                AddLine(pointA, pointB, color, color, ref mesh);
+            }
+
+            MeshData meshData = new MeshData(mesh);
+            model.meshes.Add(meshData);
+        }
+
+        public void AddDirectionGizmo(Vector3 origin, Vector3 direction, float arrowLength, Color4 color)
+        {
+            Assimp.Mesh mesh = new Assimp.Mesh();
+
+            // Normalize the direction vector to ensure it's a unit vector
+            direction = direction.Normalized();
+
+            // Calculate the end point of the arrow
+            Vector3 endPoint = origin + direction * arrowLength;
+
+            // Arrow body (line from origin to endPoint)
+            AddLine(origin, endPoint, color, color, ref mesh);
+
+            // Arrowhead: Make a 3D cross-like structure at the end of the arrow
+            float headLength = arrowLength * 0.2f; // Arrowhead is 20% of arrow length
+            float headWidth = arrowLength * 0.1f;  // Arrowhead width
+
+            // Calculate two vectors perpendicular to the direction to create the arrowhead planes
+            Vector3 right = Vector3.Cross(direction, Vector3.UnitY);
+            if (right.LengthSquared == 0) right = Vector3.Cross(direction, Vector3.UnitX);
+            right.Normalize();
+            Vector3 up = Vector3.Cross(right, direction).Normalized();
+
+            // Create the four points for the 3D arrowhead structure
+            Vector3 headBaseLeft = endPoint - direction * headLength + right * headWidth;
+            Vector3 headBaseRight = endPoint - direction * headLength - right * headWidth;
+            Vector3 headBaseUp = endPoint - direction * headLength + up * headWidth;
+            Vector3 headBaseDown = endPoint - direction * headLength - up * headWidth;
+
+            // Add the arrowhead lines (first arrowhead plane)
+            AddLine(endPoint, headBaseLeft, color, color, ref mesh);    // Right side of arrowhead (first plane)
+            AddLine(endPoint, headBaseRight, color, color, ref mesh);   // Left side of arrowhead (first plane)
+            AddLine(headBaseLeft, headBaseRight, color, color, ref mesh); // Base of the arrowhead (first plane)
+
+            // Add the arrowhead lines (second arrowhead plane, perpendicular to the first)
+            AddLine(endPoint, headBaseUp, color, color, ref mesh);      // Up side of arrowhead (second plane)
+            AddLine(endPoint, headBaseDown, color, color, ref mesh);    // Down side of arrowhead (second plane)
+            AddLine(headBaseUp, headBaseDown, color, color, ref mesh);  // Base of the arrowhead (second plane)
+
+            // Add mesh to the model
             MeshData meshData = new MeshData(mesh);
             model.meshes.Add(meshData);
         }
