@@ -63,6 +63,7 @@ namespace Engine3D
                 }
                 if (ImGui.BeginMenu("Window"))
                 {
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
                     if (ImGui.MenuItem("Reset panels"))
                     {
                         editorData.gameWindow.leftPanelPercent = editorData.gameWindow.origLeftPanelPercent;
@@ -70,6 +71,17 @@ namespace Engine3D
                         editorData.gameWindow.bottomPanelPercent = editorData.gameWindow.origBottomPanelPercent;
                         editorData.windowResized = true;
                     }
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                    ImGui.EndMenu();
+                }
+                if (ImGui.BeginMenu("Shaders"))
+                {
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                    if (ImGui.MenuItem("Reload shaders"))
+                    {
+                        engine.ReloadShaders();
+                    }
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
                     ImGui.EndMenu();
                 }
                 ImGui.EndMenuBar();

@@ -237,46 +237,46 @@ namespace Engine3D
         {
             shader.Use();
 
-            uniformAnimLocations.Add("windowSize", GL.GetUniformLocation(shader.id, "windowSize"));
-            uniformAnimLocations.Add("modelMatrix", GL.GetUniformLocation(shader.id, "modelMatrix"));
-            uniformAnimLocations.Add("viewMatrix", GL.GetUniformLocation(shader.id, "viewMatrix"));
-            uniformAnimLocations.Add("nodeMatrix", GL.GetUniformLocation(shader.id, "nodeMatrix"));
-            uniformAnimLocations.Add("projectionMatrix", GL.GetUniformLocation(shader.id, "projectionMatrix"));
-            uniformAnimLocations.Add("cameraPosition", GL.GetUniformLocation(shader.id, "cameraPosition"));
-            uniformAnimLocations.Add("useBillboarding", GL.GetUniformLocation(shader.id, "useBillboarding"));
-            uniformAnimLocations.Add("useShading", GL.GetUniformLocation(shader.id, "useShading"));
-            uniformAnimLocations.Add("useAnimation", GL.GetUniformLocation(shader.id, "useAnimation"));
-            uniformAnimLocations.Add("boneMatrices", GL.GetUniformLocation(shader.id, "boneMatrices"));
+            uniformAnimLocations.Add("windowSize", GL.GetUniformLocation(shader.programId, "windowSize"));
+            uniformAnimLocations.Add("modelMatrix", GL.GetUniformLocation(shader.programId, "modelMatrix"));
+            uniformAnimLocations.Add("viewMatrix", GL.GetUniformLocation(shader.programId, "viewMatrix"));
+            uniformAnimLocations.Add("nodeMatrix", GL.GetUniformLocation(shader.programId, "nodeMatrix"));
+            uniformAnimLocations.Add("projectionMatrix", GL.GetUniformLocation(shader.programId, "projectionMatrix"));
+            uniformAnimLocations.Add("cameraPosition", GL.GetUniformLocation(shader.programId, "cameraPosition"));
+            uniformAnimLocations.Add("useBillboarding", GL.GetUniformLocation(shader.programId, "useBillboarding"));
+            uniformAnimLocations.Add("useShading", GL.GetUniformLocation(shader.programId, "useShading"));
+            uniformAnimLocations.Add("useAnimation", GL.GetUniformLocation(shader.programId, "useAnimation"));
+            uniformAnimLocations.Add("boneMatrices", GL.GetUniformLocation(shader.programId, "boneMatrices"));
 
             #region TextureLocations
-            uniformAnimLocations.Add("useTexture", GL.GetUniformLocation(shader.id, "useTexture"));
-            uniformAnimLocations.Add("useNormal", GL.GetUniformLocation(shader.id, "useNormal"));
-            uniformAnimLocations.Add("useHeight", GL.GetUniformLocation(shader.id, "useHeight"));
-            uniformAnimLocations.Add("useAO", GL.GetUniformLocation(shader.id, "useAO"));
-            uniformAnimLocations.Add("useRough", GL.GetUniformLocation(shader.id, "useRough"));
-            uniformAnimLocations.Add("useMetal", GL.GetUniformLocation(shader.id, "useMetal"));
+            uniformAnimLocations.Add("useTexture", GL.GetUniformLocation(shader.programId, "useTexture"));
+            uniformAnimLocations.Add("useNormal", GL.GetUniformLocation(shader.programId, "useNormal"));
+            uniformAnimLocations.Add("useHeight", GL.GetUniformLocation(shader.programId, "useHeight"));
+            uniformAnimLocations.Add("useAO", GL.GetUniformLocation(shader.programId, "useAO"));
+            uniformAnimLocations.Add("useRough", GL.GetUniformLocation(shader.programId, "useRough"));
+            uniformAnimLocations.Add("useMetal", GL.GetUniformLocation(shader.programId, "useMetal"));
             if (texture != null)
             {
-                uniformAnimLocations.Add("textureSampler", GL.GetUniformLocation(shader.id, "textureSampler"));
+                uniformAnimLocations.Add("textureSampler", GL.GetUniformLocation(shader.programId, "textureSampler"));
                 if (textureNormal != null)
                 {
-                    uniformAnimLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shader.id, "textureSamplerNormal"));
+                    uniformAnimLocations.Add("textureSamplerNormal", GL.GetUniformLocation(shader.programId, "textureSamplerNormal"));
                 }
                 if (textureHeight != null)
                 {
-                    uniformAnimLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shader.id, "textureSamplerHeight"));
+                    uniformAnimLocations.Add("textureSamplerHeight", GL.GetUniformLocation(shader.programId, "textureSamplerHeight"));
                 }
                 if (textureAO != null)
                 {
-                    uniformAnimLocations.Add("textureSamplerAO", GL.GetUniformLocation(shader.id, "textureSamplerAO"));
+                    uniformAnimLocations.Add("textureSamplerAO", GL.GetUniformLocation(shader.programId, "textureSamplerAO"));
                 }
                 if (textureRough != null)
                 {
-                    uniformAnimLocations.Add("textureSamplerRough", GL.GetUniformLocation(shader.id, "textureSamplerRough"));
+                    uniformAnimLocations.Add("textureSamplerRough", GL.GetUniformLocation(shader.programId, "textureSamplerRough"));
                 }
                 if (textureMetal != null)
                 {
-                    uniformAnimLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shader.id, "textureSamplerMetal"));
+                    uniformAnimLocations.Add("textureSamplerMetal", GL.GetUniformLocation(shader.programId, "textureSamplerMetal"));
                 }
             }
             #endregion
@@ -510,9 +510,9 @@ namespace Engine3D
 
             cameraPos = camera.GetPosition();
 
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "viewMatrix"), true, ref viewMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "projectionMatrix"), true, ref projectionMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "modelMatrix"), true, ref modelMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "viewMatrix"), true, ref viewMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "projectionMatrix"), true, ref projectionMatrix);
             //GL.Uniform3(GL.GetUniformLocation(shader.id, "cameraPos"), cameraPos);
 
             //GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_scaleMatrix"), true, ref scaleMatrix);

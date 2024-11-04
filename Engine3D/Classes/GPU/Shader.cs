@@ -6,69 +6,114 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static Engine3D.Shader;
 
 namespace Engine3D
 {
-    
     public class Shader
     {
+        public class ShaderResource
+        {
+            public int id;
+            public string name;
+            public int path;
+
+            public ShaderResource(int shaderId, string shaderName, int shaderPath)
+            {
+                id = shaderId;
+                name = shaderName;
+                path = shaderPath;
+            }
+
+            public ShaderResource()
+            {
+                
+            }
+        }
+
         private bool shadersLoaded = false;
         private Dictionary<string, string> shaderPaths = new Dictionary<string, string>(); 
 
-        public int id;
+        public int programId;
 
-        private List<int> shaderIds = new List<int>();
-        public List<string> shaderNames = new List<string>();
+        private List<ShaderResource> shaders = new List<ShaderResource>();
 
-        public Shader() { LoadShaderPaths(); }
+        public Shader() { }
 
-        public Shader(List<string> shaders)
+        public Shader(List<string> shaderNames)
         {
-            LoadShaderPaths();
+            LoadShaderPaths(shaderNames);
 
-            id = GL.CreateProgram();
-            shaderNames = new List<string>(shaders);
+            programId = GL.CreateProgram();
 
             for(int i = 0; i < shaderNames.Count(); i++)
             {
-                int shader = GL.CreateShader(GetShaderType(shaderNames[i]));
-                GL.ShaderSource(shader, LoadShaderSource(shaderNames[i]));
-                GL.CompileShader(shader);
-                shaderIds.Add(shader);
+                ShaderResource ss = new ShaderResource();
+                ss.name = shaderNames[i];
 
-                GL.GetShader(shader, ShaderParameter.CompileStatus, out int vertexCompiled);
+                ss.id = GL.CreateShader(GetShaderType(ss.name));
+                GL.ShaderSource(ss.id, LoadShaderSource(ss.name));
+                GL.CompileShader(ss.id);
+
+                GL.GetShader(ss.id, ShaderParameter.CompileStatus, out int vertexCompiled);
                 if (vertexCompiled == 0)
                 {
-                    string infoLog = GL.GetShaderInfoLog(shader);
-                    Engine.consoleManager.AddLog($"{shaderNames[i]} - Shader Compile Error: {infoLog}", LogType.Error);
+                    string infoLog = GL.GetShaderInfoLog(ss.id);
+                    Engine.consoleManager.AddLog($"{ss.name} - Shader Compile Error: {infoLog}", LogType.Error);
                 }
 
+                GL.AttachShader(programId, ss.id);
+
+                shaders.Add(ss);
             }
 
+            GL.LinkProgram(programId);
 
-            for (int i = 0; i < shaderIds.Count(); i++)
-                GL.AttachShader(id, shaderIds[i]);
-
-            GL.LinkProgram(id);
-
-            GL.GetProgram(id, GetProgramParameterName.LinkStatus, out int linked);
+            GL.GetProgram(programId, GetProgramParameterName.LinkStatus, out int linked);
             if (linked == 0)
             {
-                string infoLog = GL.GetProgramInfoLog(id);
+                string infoLog = GL.GetProgramInfoLog(programId);
                 Engine.consoleManager.AddLog($"Shader Program Link Error: {infoLog}", LogType.Error);
             }
 
             Use();
+        }
 
-            
+        public void Reload()
+        {
+            foreach(var ss in shaders)
+            {
+                GL.DetachShader(programId, ss.id);
+
+                GL.ShaderSource(ss.id, LoadShaderSource(ss.name));
+                GL.CompileShader(ss.id);
+
+                GL.GetShader(ss.id, ShaderParameter.CompileStatus, out int vertexCompiled);
+                if (vertexCompiled == 0)
+                {
+                    string infoLog = GL.GetShaderInfoLog(ss.id);
+                    Engine.consoleManager.AddLog($"{ss.name} - Shader Compile Error: {infoLog}", LogType.Error);
+                }
+
+                GL.AttachShader(programId, ss.id);
+            }
+
+            GL.LinkProgram(programId);
+
+            GL.GetProgram(programId, GetProgramParameterName.LinkStatus, out int linked);
+            if (linked == 0)
+            {
+                string infoLog = GL.GetProgramInfoLog(programId);
+                Engine.consoleManager.AddLog($"Shader Program Link Error: {infoLog}", LogType.Error);
+            }
         }
 
         public void Use()
         {
-            if (Engine.GLState.currentShaderId != id)
+            if (Engine.GLState.currentShaderId != programId)
             {
-                GL.UseProgram(id);
-                Engine.GLState.currentShaderId = id;
+                GL.UseProgram(programId);
+                Engine.GLState.currentShaderId = programId;
             }
         }
 
@@ -76,9 +121,9 @@ namespace Engine3D
         {
             Engine.GLState.currentShaderId = -1;
 
-            for (int i = 0;i < shaderIds.Count();i++)
-                GL.DeleteProgram(shaderIds[i]);
-            GL.DeleteProgram(id);
+            for (int i = 0;i < shaders.Count();i++)
+                GL.DeleteShader(shaders[i].id);
+            GL.DeleteProgram(programId);
         }
 
         private ShaderType GetShaderType(string shaderName)
@@ -99,7 +144,7 @@ namespace Engine3D
             }
         }
 
-        private void LoadShaderPaths()
+        private void LoadShaderPaths(List<string> shaderNames)
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
             var list = assembly.GetManifestResourceNames().Where(x => x.StartsWith("Engine3D.Shaders"));
@@ -107,7 +152,8 @@ namespace Engine3D
             {
                 var parts = resourceName.Split('.');
                 string name = parts[parts.Length-2] + "." + parts[parts.Length-1];
-                shaderPaths.Add(name, resourceName);
+                if(shaderNames.Contains(name))
+                    shaderPaths.Add(name, resourceName);
             }
 
             shadersLoaded = true;

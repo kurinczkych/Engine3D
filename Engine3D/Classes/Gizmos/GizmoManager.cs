@@ -147,7 +147,7 @@ namespace Engine3D
             moverGizmoX.name = "xMover";
             Matrix4 xMat = Matrix4.CreateScale(new Vector3(moverGizmoSize, otherAxisScale, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(2, 0, 0));
             modelX.meshes[0].TransformMeshData(xMat);
-            Mesh xMesh = new Mesh(vao, vbo, shader.id, "xMesh", modelX, camera.screenSize, ref camera, ref moverGizmoX);
+            Mesh xMesh = new Mesh(vao, vbo, shader.programId, "xMesh", modelX, camera.screenSize, ref camera, ref moverGizmoX);
             xMesh.useShading = false;
             moverGizmoX.AddMesh(xMesh);
             xMesh.AllIndicesVisible();
@@ -158,7 +158,7 @@ namespace Engine3D
             moverGizmoY.name = "yMover";
             Matrix4 yMat = Matrix4.CreateScale(new Vector3(otherAxisScale, moverGizmoSize, otherAxisScale)) * Matrix4.CreateTranslation(new Vector3(0, 2, 0));
             modelY.meshes[0].TransformMeshData(yMat);
-            Mesh yMesh = new Mesh(vao, vbo, shader.id, "yMesh", modelY, camera.screenSize, ref camera, ref moverGizmoY);
+            Mesh yMesh = new Mesh(vao, vbo, shader.programId, "yMesh", modelY, camera.screenSize, ref camera, ref moverGizmoY);
             yMesh.useShading = false;
             moverGizmoY.AddMesh(yMesh);
             yMesh.AllIndicesVisible();
@@ -169,7 +169,7 @@ namespace Engine3D
             moverGizmoZ.name = "zMover";
             Matrix4 zMat = Matrix4.CreateScale(new Vector3(otherAxisScale, otherAxisScale, moverGizmoSize)) * Matrix4.CreateTranslation(new Vector3(0, 0, 2));
             modelZ.meshes[0].TransformMeshData(zMat);
-            Mesh zMesh = new Mesh(vao, vbo, shader.id, "zMesh", modelZ, camera.screenSize, ref camera, ref moverGizmoZ);
+            Mesh zMesh = new Mesh(vao, vbo, shader.programId, "zMesh", modelZ, camera.screenSize, ref camera, ref moverGizmoZ);
             zMesh.useShading = false;
             moverGizmoZ.AddMesh(zMesh);
             zMesh.AllIndicesVisible();

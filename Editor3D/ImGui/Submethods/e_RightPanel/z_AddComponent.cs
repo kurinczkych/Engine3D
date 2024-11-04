@@ -84,12 +84,12 @@ namespace Engine3D
                             }
                             if (component.name == "Light")
                             {
-                                o.components.Add(new Light(o, 0, LightType.DirectionalLight, engine.wireVao, engine.wireVbo, engine.onlyPosShaderProgram.id, engine.windowSize, ref engine.mainCamera_));
+                                o.components.Add(new Light(o, 0, LightType.DirectionalLight, engine.wireVao, engine.wireVbo, engine.onlyPosShaderProgram.programId, engine.windowSize, ref engine.mainCamera_));
                                 engine.lights = new List<Light>();
                             }
                             if (component.name == "ParticleSystem")
                             {
-                                o.components.Add(new ParticleSystem(engine.instancedMeshVao, engine.instancedMeshVbo, engine.instancedShaderProgram.id,
+                                o.components.Add(new ParticleSystem(engine.instancedMeshVao, engine.instancedMeshVbo, engine.instancedShaderProgram.programId,
                                                                     engine.windowSize, ref engine.mainCamera_, ref o));
 
                                 engine.particleSystems = new List<ParticleSystem>();

@@ -329,7 +329,7 @@ namespace Engine3D
             RenderInfiniteFloor();
 
             shaderProgram.Use();
-            Light.SendToGPU(lights, shaderProgram.id);
+            Light.SendToGPU(lights, shaderProgram.programId);
 
             DrawObjectsForShadow(args.Time);
 
@@ -344,7 +344,7 @@ namespace Engine3D
             TextUpdating();
 
             instancedShaderProgram.Use();
-            Light.SendToGPU(lights, instancedShaderProgram.id);
+            Light.SendToGPU(lights, instancedShaderProgram.programId);
             DrawParticleSystems();
 
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -634,7 +634,7 @@ namespace Engine3D
             onlyPosShaderProgram.Use();
 
             Vector3 characterPos = new Vector3(-5, 10, 0);
-            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref mainCamera_), ref physx, characterPos, ref mainCamera_);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.programId, ref mainCamera_), ref physx, characterPos, ref mainCamera_);
 
             gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
 
@@ -651,7 +651,7 @@ namespace Engine3D
                 sunComp.RecalculateGizmos();
 
             shaderProgram.Use();
-            Light.SendToGPU(lights, shaderProgram.id);
+            Light.SendToGPU(lights, shaderProgram.programId);
 
             #region DebugLines
             // Projection matrix and mesh loading

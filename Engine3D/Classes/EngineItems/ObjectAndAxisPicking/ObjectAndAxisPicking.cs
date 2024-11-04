@@ -49,7 +49,7 @@ namespace Engine3D
                             if(mesh == null)
                                 continue;
 
-                            int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
+                            int objectIdLoc = GL.GetUniformLocation(pickingShader.programId, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
                             ((Mesh)mesh).DrawOnlyPos(gameState, pickingShader, onlyPosVao, onlyPosVbo, onlyPosIbo);
@@ -65,7 +65,7 @@ namespace Engine3D
                             if (mesh == null)
                                 continue;
 
-                            int objectIdLoc = GL.GetUniformLocation(pickingInstancedShader.id, "objectIndex");
+                            int objectIdLoc = GL.GetUniformLocation(pickingInstancedShader.programId, "objectIndex");
                             GL.Uniform1(objectIdLoc, (uint)o.id);
 
                             ((InstancedMesh)mesh).DrawOnlyPosAndNormal(gameState, pickingInstancedShader, instancedOnlyPosAndNormalVao, 
@@ -88,8 +88,8 @@ namespace Engine3D
                             pickingShader.Use();
                             foreach (Object moverGizmo in gizmoManager.moverGizmos)
                             {
-                                int objectIdLoc = GL.GetUniformLocation(pickingShader.id, "objectIndex");
-                                int drawIdLoc = GL.GetUniformLocation(pickingShader.id, "drawIndex");
+                                int objectIdLoc = GL.GetUniformLocation(pickingShader.programId, "objectIndex");
+                                int drawIdLoc = GL.GetUniformLocation(pickingShader.programId, "drawIndex");
                                 GL.Uniform1(objectIdLoc, (uint)moverGizmo.id);
                                 GL.Uniform1(drawIdLoc, (uint)0);
 

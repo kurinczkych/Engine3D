@@ -215,12 +215,12 @@ namespace Engine3D
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
 
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "modelMatrix"), true, ref modelMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "viewMatrix"), true, ref viewMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "projectionMatrix"), true, ref projectionMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "modelMatrix"), true, ref modelMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "viewMatrix"), true, ref viewMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "projectionMatrix"), true, ref projectionMatrix);
 
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_scaleMatrix"), true, ref scaleMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "_scaleMatrix"), true, ref scaleMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(shader.programId, "_rotMatrix"), true, ref rotationMatrix);
         }
 
         private void ConvertToNDCInstance(ref List<float> vertices, InstancedMeshData data)

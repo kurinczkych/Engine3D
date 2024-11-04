@@ -193,31 +193,31 @@ namespace Engine3D
             if (type == ObjectType.Cube)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "cube", BaseMesh.GetUnitCube(), windowSize, ref mainCamera_, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.programId, "cube", BaseMesh.GetUnitCube(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Sphere)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "sphere", BaseMesh.GetUnitSphere(), windowSize, ref mainCamera_, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.programId, "sphere", BaseMesh.GetUnitSphere(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Capsule)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "capsule", BaseMesh.GetUnitCapsule(), windowSize, ref mainCamera_, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.programId, "capsule", BaseMesh.GetUnitCapsule(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Plane)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "plane", BaseMesh.GetUnitFace(), windowSize, ref mainCamera_, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.programId, "plane", BaseMesh.GetUnitFace(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.TriangleMesh)
             {
                 Object o = new Object(type);
-                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, "mesh", new ModelData(), windowSize, ref mainCamera_, ref o));
+                o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.programId, "mesh", new ModelData(), windowSize, ref mainCamera_, ref o));
                 AddObjectAndCalculate(o);
             }
             else if (type == ObjectType.Empty)
@@ -231,14 +231,14 @@ namespace Engine3D
         public void AddMeshObject(string meshName)
         {
             Object o = new Object(ObjectType.TriangleMesh);
-            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.id, FileManager.GetPathAfterAssetFolder(meshName), windowSize, ref mainCamera_, ref o));
+            o.AddMesh(new Mesh(meshVao, meshVbo, shaderProgram.programId, FileManager.GetPathAfterAssetFolder(meshName), windowSize, ref mainCamera_, ref o));
             AddObjectAndCalculate(o);
         }
 
         public Object AddLight(Light.LightType lightType)
         {
             Object light = new Object(ObjectType.Empty) { name = "Light" };
-            Light lightComp = new Light(light, 0, lightType, wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_);
+            Light lightComp = new Light(light, 0, lightType, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
             light.components.Add(lightComp);
             light.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
             lightComp.RecalculateGizmos();
@@ -253,7 +253,7 @@ namespace Engine3D
         {
             Object o = new Object(ObjectType.Empty) { name = "ParticleSystem" };
             o.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            o.components.Add(new ParticleSystem(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.id, windowSize, ref mainCamera_, ref o));
+            o.components.Add(new ParticleSystem(instancedMeshVao, instancedMeshVbo, instancedShaderProgram.programId, windowSize, ref mainCamera_, ref o));
             objects.Add(o);
 
             particleSystems = new List<ParticleSystem>();
@@ -324,12 +324,12 @@ namespace Engine3D
 
             Matrix4 modelMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 
-            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "modelMatrix"), true, ref modelMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "viewMatrix"), true, ref viewMatrix);
-            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.id, "projectionMatrix"), true, ref projectionMatrix);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "cameraPos"), ref cameraPos);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "bgColor"), backgroundColor.R, backgroundColor.G, backgroundColor.B);
-            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.id, "lineColor"), gridColor.R, gridColor.G, gridColor.B);
+            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.programId, "modelMatrix"), true, ref modelMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.programId, "viewMatrix"), true, ref viewMatrix);
+            GL.UniformMatrix4(GL.GetUniformLocation(infiniteFloorShader.programId, "projectionMatrix"), true, ref projectionMatrix);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.programId, "cameraPos"), ref cameraPos);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.programId, "bgColor"), backgroundColor.R, backgroundColor.G, backgroundColor.B);
+            GL.Uniform3(GL.GetUniformLocation(infiniteFloorShader.programId, "lineColor"), gridColor.R, gridColor.G, gridColor.B);
 
             infiniteFloorVao.Bind();
             List<float> gridVertices = new List<float>
@@ -367,18 +367,18 @@ namespace Engine3D
             onlyPosShaderProgram.Use();
 
             Vector3 characterPos = new Vector3(-5, 10, 0);
-            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.id, ref mainCamera_), ref physx, characterPos, ref mainCamera_);
+            character = new Character(new WireframeMesh(wireVao, wireVbo, onlyPosShaderProgram.programId, ref mainCamera_), ref physx, characterPos, ref mainCamera_);
 
             gizmoManager = new GizmoManager(meshVao, meshVbo, shaderProgram, ref mainCamera_);
 
             shaderProgram.Use();
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            Light light = new Light(objects[objects.Count - 1], 0, wireVao, wireVbo, onlyPosShaderProgram.id, windowSize, ref mainCamera_);
+            Light light = new Light(objects[objects.Count - 1], 0, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
             objects[objects.Count - 1].components.Add(light);
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
             light.RecalculateGizmos();
-            Light.SendToGPU(lights, shaderProgram.id);
+            Light.SendToGPU(lights, shaderProgram.programId);
 
             lights = new List<Light>();
             particleSystems = new List<ParticleSystem>();
@@ -477,6 +477,23 @@ namespace Engine3D
             foreach (Light l in lights)
                 l.camera = mainCamera_;
             particleSystems = new List<ParticleSystem>();
+        }
+
+        public void ReloadShaders()
+        {
+            cullingProgram.Reload();
+            outlineShader.Reload();
+            outlineInstancedShader.Reload();
+            pickingShader.Reload();
+            pickingInstancedShader.Reload();
+            shaderProgram.Reload();
+            shaderAnimProgram.Reload();
+            instancedShaderProgram.Reload();
+            posTexShader.Reload();
+            onlyPosShaderProgram.Reload();
+            aabbShaderProgram.Reload();
+            infiniteFloorShader.Reload();
+            shadowShader.Reload();
         }
     }
 }

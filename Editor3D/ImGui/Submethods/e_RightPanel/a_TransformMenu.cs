@@ -155,14 +155,6 @@ namespace Engine3D
                 }
                 #endregion
 
-                ImGui.Spacing();
-                if(o.HasComponent<Light>())
-                {
-                    Light? l = (Light?)o.GetComponent<Light>();
-                    if (l.calculatedDir != null)
-                        ImGui.Text(l.calculatedDir);
-                }
-
                 ImGui.Separator();
 
                 #region Rotation

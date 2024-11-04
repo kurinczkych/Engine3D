@@ -74,7 +74,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal)
     float currentDepth = projCoords.z;
 
     // Apply a bias to avoid shadow acne
-    float bias = 0.005;
+    float bias = 0.05;
     
     // Adjust the bias based on the angle between the normal and the light direction
     // This reduces self-shadowing on surfaces facing away from the light
