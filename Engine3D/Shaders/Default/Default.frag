@@ -24,7 +24,6 @@ in vec2 gsFragTexCoord;
 in vec4 gsFragColor;
 in mat3 gsTBN; 
 in vec3 gsTangentViewDir;
-in vec4 FragPosLightSpace;
 
 uniform vec3 cameraPosition;
 
@@ -40,8 +39,12 @@ uniform sampler2D textureSamplerAO;
 uniform sampler2D textureSamplerRough;
 uniform sampler2D textureSamplerMetal;
 
-uniform sampler2D shadowMap;
-uniform mat4 lightSpaceMatrix;
+uniform sampler2D shadowMapSmall;
+uniform sampler2D shadowMapMedium;
+uniform sampler2D shadowMapLarge;
+uniform mat4 lightSpaceSmallMatrix;
+uniform mat4 lightSpaceMediumMatrix;
+uniform mat4 lightSpaceLargeMatrix;
 
 uniform int useTexture;
 uniform int useNormal;
@@ -68,7 +71,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal)
     }
 
     // Retrieve the closest depth from the shadow map at this fragment's position
-    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    float closestDepth = texture(shadowMapSmall, projCoords.xy).r;
 
     // Current depth of the fragment from the light's perspective
     float currentDepth = projCoords.z;
@@ -243,7 +246,7 @@ void main()
             else if(lights[i].lightType == 1)
             {
                 // Calculate the light-space position for shadow mapping
-                vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * lightSpaceMatrix;
+                vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * lightSpaceSmallMatrix;
                 result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness, fragPosLightSpace);
                 //result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
             }

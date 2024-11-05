@@ -101,21 +101,28 @@ namespace Engine3D
             return textureColorBuffer;
         }
 
-        public int GetShadowDepthTexture()
+        public int GetShadowDepthTexture(ShadowType type)
         {
-            if (Engine.GLState.currentTextureUnit != 0)
+            Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
+            if (light == null)
+                return 0;
+
+            light.BindForReading(type);
+
+            if (type == ShadowType.Small)
             {
-                GL.ActiveTexture(TextureUnit.Texture0);
-                Engine.GLState.currentTextureUnit = 0;
+                return light.shadowSmall.shadowMap.TextureId;
+            }
+            else if (type == ShadowType.Medium)
+            {
+                return light.shadowMedium.shadowMap.TextureId;
+            }
+            else
+            {
+                return light.shadowLarge.shadowMap.TextureId;
             }
 
-            if (Engine.GLState.currentTextureId != shadowMapFBO.shadowMap)
-            {
-                GL.BindTexture(TextureTarget.Texture2D, shadowMapFBO.shadowMap);
-                Engine.GLState.currentTextureId = shadowMapFBO.shadowMap;
-            }
-
-            return shadowMapFBO.shadowMap;
+            return 0;
         }
 
         public void SetUIHasMouse(bool hasMouse)

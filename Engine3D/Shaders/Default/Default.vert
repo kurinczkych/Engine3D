@@ -12,14 +12,12 @@ out vec2 gsFragTexCoord;
 out vec4 gsFragColor;
 out mat3 gsTBN; 
 out vec3 gsTangentViewDir;
-out vec4 FragPosLightSpace;
 
 uniform vec3 cameraPosition;
 uniform vec2 windowSize;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-uniform mat4 lightSpaceMatrix;
 
 uniform int useNormal;
 uniform int useHeight;
@@ -32,7 +30,6 @@ void main()
 	gl_Position = position * modelMatrix * viewMatrix * projectionMatrix;
 
 	vec4 fragPos4 = position * modelMatrix;
-	FragPosLightSpace = fragPos4 * lightSpaceMatrix; 
 
 	if(useBillboarding == 1)
 	{

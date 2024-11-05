@@ -39,7 +39,9 @@ namespace Engine3D
         private Vector2 windowSize;
 
         [JsonIgnore]
-        private Matrix4 viewMatrix, projectionMatrix, lightSpaceMatrix;
+        private Matrix4 viewMatrix, projectionMatrix;
+        [JsonIgnore]
+        private Matrix4 lightSpaceSmallMatrix, lightSpaceMediumMatrix, lightSpaceLargeMatrix;
         [JsonIgnore]
         private Vector3 cameraPos;
 
@@ -192,12 +194,16 @@ namespace Engine3D
             uniformLocations.Add("modelMatrix", GL.GetUniformLocation(shaderProgramId, "modelMatrix"));
             uniformLocations.Add("viewMatrix", GL.GetUniformLocation(shaderProgramId, "viewMatrix"));
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
-            uniformLocations.Add("lightSpaceMatrix", GL.GetUniformLocation(shaderProgramId, "lightSpaceMatrix"));
+            uniformLocations.Add("lightSpaceSmallMatrix", GL.GetUniformLocation(shaderProgramId, "lightSpaceSmallMatrix"));
+            uniformLocations.Add("lightSpaceMediumMatrix", GL.GetUniformLocation(shaderProgramId, "lightSpaceMediumMatrix"));
+            uniformLocations.Add("lightSpaceLargeMatrix", GL.GetUniformLocation(shaderProgramId, "lightSpaceLargeMatrix"));
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
             uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
 
-            uniformLocations.Add("shadowMap", GL.GetUniformLocation(shaderProgramId, "shadowMap"));
+            uniformLocations.Add("shadowMapSmall", GL.GetUniformLocation(shaderProgramId, "shadowMapSmall"));
+            uniformLocations.Add("shadowMapMedium", GL.GetUniformLocation(shaderProgramId, "shadowMapMedium"));
+            uniformLocations.Add("shadowMapLarge", GL.GetUniformLocation(shaderProgramId, "shadowMapLarge"));
 
             #region TextureLocations
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
@@ -305,21 +311,38 @@ namespace Engine3D
             //    lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY) * Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
 
             if (light != null)
-                lightSpaceMatrix = light.GetLightViewMatrix() * light.projectionMatrixOrtho;
+            {
+                Matrix4 lightview = light.GetLightViewMatrix();
+                lightSpaceSmallMatrix = lightview * light.shadowSmall.projectionMatrixOrtho;
+                lightSpaceMediumMatrix = lightview * light.shadowMedium.projectionMatrixOrtho;
+                lightSpaceLargeMatrix = lightview * light.shadowSmall.projectionMatrixOrtho;
+
+                if (light.shadowSmall.fbo != -1 && light.shadowSmall.shadowMap.TextureId != -1)
+                    GL.Uniform1(uniformLocations["shadowMapSmall"], light.shadowSmall.shadowMap.TextureUnit);
+
+                if (light.shadowMedium.fbo != -1 && light.shadowMedium.shadowMap.TextureId != -1)
+                    GL.Uniform1(uniformLocations["shadowMapMedium"], light.shadowMedium.shadowMap.TextureUnit);
+
+                if (light.shadowLarge.fbo != -1 && light.shadowLarge.shadowMap.TextureId != -1)
+                    GL.Uniform1(uniformLocations["shadowMapLarge"], light.shadowLarge.shadowMap.TextureUnit);
+            }
             else
-                lightSpaceMatrix = Matrix4.Identity;
+            {
+                lightSpaceSmallMatrix = Matrix4.Identity;
+                lightSpaceMediumMatrix = Matrix4.Identity;
+                lightSpaceLargeMatrix = Matrix4.Identity;
+            }
 
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
-            GL.UniformMatrix4(uniformLocations["lightSpaceMatrix"], true, ref lightSpaceMatrix);
+            GL.UniformMatrix4(uniformLocations["lightSpaceSmallMatrix"], true, ref lightSpaceSmallMatrix);
+            GL.UniformMatrix4(uniformLocations["lightSpaceMediumMatrix"], true, ref lightSpaceMediumMatrix);
+            GL.UniformMatrix4(uniformLocations["lightSpaceLargeMatrix"], true, ref lightSpaceLargeMatrix);
             GL.Uniform2(uniformLocations["windowSize"], windowSize);
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["useBillboarding"], useBillboarding);
             GL.Uniform1(uniformLocations["useShading"], useShading ? 1 : 0);
-
-            if (Engine.shadowMapFBO != null && Engine.shadowMapFBO.shadowMap != -1)
-                GL.Uniform1(uniformLocations["shadowMap"], 0); // 0 <- shadowMapFBO has TextureUnit.Texture0.
 
             if (texture != null)
             {

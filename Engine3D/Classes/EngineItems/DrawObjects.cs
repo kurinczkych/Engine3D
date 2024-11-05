@@ -24,7 +24,8 @@ namespace Engine3D
 
             Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
 
-            shadowMapFBO.BindForReading();
+            if(light != null)
+                light.BindForReading(ShadowType.Small);
 
             foreach (Object o in objects)
             {
@@ -242,19 +243,24 @@ namespace Engine3D
 
         }
 
-        private void DrawObjectsForShadow(double delta)
+        private void DrawObjectsForShadow(double delta, ShadowType type)
         {
             Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
             if (light == null)
                 return;
 
-            shadowMapFBO.BindForWriting();
+            light.BindForWriting(type);
 
             GL.Clear(ClearBufferMask.DepthBufferBit);
 
             shadowShader.Use();
 
-            Matrix4 shadowProj = light.projectionMatrixOrtho;
+            Matrix4 shadowProj = light.shadowSmall.projectionMatrixOrtho;
+            if(type == ShadowType.Medium)
+                shadowProj = light.shadowMedium.projectionMatrixOrtho;
+            else if(type == ShadowType.Large)
+                shadowProj = light.shadowLarge.projectionMatrixOrtho;
+
             Matrix4 shadowView = light.GetLightViewMatrix();
 
             vertices.Clear();

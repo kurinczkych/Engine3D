@@ -120,6 +120,14 @@ namespace Engine3D
             Unbind();
         }
 
+        public Texture(int unit)
+        {
+            int currentUnit = unit;
+
+            TextureId = GL.GenTexture();
+            TextureUnit = currentUnit;
+        }
+
         public static bool LoadTexture(string filePath, bool flipY, TextureMinFilter tminf, TextureMagFilter tmagf, string folder = "Textures", bool downscale=false)
         {
             Stream? stream_t = FileManager.GetFileStream(filePath);

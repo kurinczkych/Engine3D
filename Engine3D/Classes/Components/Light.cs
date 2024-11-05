@@ -3,6 +3,7 @@ using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Text;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,8 @@ using System.Threading.Tasks;
 
 namespace Engine3D
 {
+    public enum ShadowType { Small, Medium, Large }
+
     public class Light : IComponent
     {
         public enum LightType
@@ -73,11 +76,12 @@ namespace Engine3D
                 showGizmos_ = value;
             }
         }
-        public Projection projection = Projection.DefaultShadow;
-        public Matrix4 projectionMatrixOrtho = Matrix4.Identity;
         public Vector3 target = Vector3.Zero;
         public float distanceFromScene = 50;
-        public string calculatedDir;
+
+        public Shadow shadowLarge;
+        public Shadow shadowMedium;
+        public Shadow shadowSmall;
         #endregion
 
         [JsonIgnore]
@@ -100,6 +104,8 @@ namespace Engine3D
             this.windowSize = windowSize;
             camera = mainCamera;
 
+            SetupShadows();
+
             SetLightType(LightType.DirectionalLight);
         }
 
@@ -113,10 +119,13 @@ namespace Engine3D
             this.windowSize = windowSize;
             camera = mainCamera;
 
+            SetupShadows();
+
             this.lightType = lightType;
             SetLightType(lightType);
         }
 
+        #region Light
         private void GetUniformLocations(int spi)
         {
             if (shaderProgramId == spi)
@@ -185,162 +194,6 @@ namespace Engine3D
             }
         }
 
-        public void RecalculateGizmos()
-        {
-            projectionMatrixOrtho = GetProjectionMatrixOrtho();
-
-            Frustum frustum = new Frustum();
-
-            // Define the corners in normalized device coordinates for the near and far planes
-            Vector4[] ndcCorners = new Vector4[]
-            {
-                new Vector4(-1, 1, -1, 1), // Near top-left
-                new Vector4(1, 1, -1, 1),  // Near top-right
-                new Vector4(-1, -1, -1, 1), // Near bottom-left
-                new Vector4(1, -1, -1, 1),  // Near bottom-right
-                new Vector4(-1, 1, 1, 1),  // Far top-left
-                new Vector4(1, 1, 1, 1),   // Far top-right
-                new Vector4(-1, -1, 1, 1), // Far bottom-left
-                new Vector4(1, -1, 1, 1)   // Far bottom-right
-            };
-
-            // Combine the projection and view matrices to transform corners from NDC to world space
-            Matrix4 invCombinedMatrix = Matrix4.Invert(projectionMatrixOrtho * GetLightViewMatrixForFrustum());
-            calculatedDir = GetLightViewMatrixForFrustum().ToString();
-
-            Vector3 lightDirection = GetDirection();
-            Vector3 lightPosition = target - (lightDirection * distanceFromScene);
-
-            // Transform each corner from NDC to world space
-            frustum.ntl = Helper.Transform(invCombinedMatrix, ndcCorners[0]);
-            frustum.ntr = Helper.Transform(invCombinedMatrix, ndcCorners[1]);
-            frustum.nbl = Helper.Transform(invCombinedMatrix, ndcCorners[2]);
-            frustum.nbr = Helper.Transform(invCombinedMatrix, ndcCorners[3]);
-
-            frustum.ftl = Helper.Transform(invCombinedMatrix, ndcCorners[4]);
-            frustum.ftr = Helper.Transform(invCombinedMatrix, ndcCorners[5]);
-            frustum.fbl = Helper.Transform(invCombinedMatrix, ndcCorners[6]);
-            frustum.fbr = Helper.Transform(invCombinedMatrix, ndcCorners[7]);
-
-            if (!gizmos.ContainsKey("frustumGizmo"))
-            {
-                gizmos.Add("frustumGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                gizmos["frustumGizmo"].AddFrustumGizmo(frustum, Color4.Red);
-                gizmos["frustumGizmo"].recalculate = true;
-                gizmos["frustumGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-            else
-            {
-                gizmos["frustumGizmo"].model.meshes.Clear();
-                gizmos["frustumGizmo"].AddFrustumGizmo(frustum, Color4.Red);
-                gizmos["frustumGizmo"].recalculate = true;
-                gizmos["frustumGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-            if (!gizmos.ContainsKey("positionGizmo"))
-            {
-                gizmos.Add("positionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, lightPosition);
-                gizmos["positionGizmo"].recalculate = true;
-                gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-            else
-            {
-                gizmos["positionGizmo"].model.meshes.Clear();
-                gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, lightPosition);
-                gizmos["positionGizmo"].recalculate = true;
-                gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-            if (!gizmos.ContainsKey("targetGizmo"))
-            {
-                gizmos.Add("targetGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
-                gizmos["targetGizmo"].recalculate = true;
-                gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-            else
-            {
-                gizmos["targetGizmo"].model.meshes.Clear();
-                gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
-                gizmos["targetGizmo"].recalculate = true;
-                gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-            if (!gizmos.ContainsKey("directionGizmo"))
-            {
-                gizmos.Add("directionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
-                gizmos["directionGizmo"].recalculate = true;
-                gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-            else
-            {
-                gizmos["directionGizmo"].model.meshes.Clear();
-                gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
-                gizmos["directionGizmo"].recalculate = true;
-                gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
-            }
-        }
-
-        //-----------------
-        public static Vector3 NormalizeAngles2(Vector3 angles)
-        {
-            Vector3 n = new Vector3(angles);
-            if (n.X < 0) n.X += 360;
-            if (n.Y < 0) n.Y += 360;
-            if (n.Z < 0) n.Z += 360;
-            return n;
-        }
-        public static Vector3 todeg(Vector3 d)
-        {
-            return new Vector3(MathHelper.RadiansToDegrees(d.X), MathHelper.RadiansToDegrees(d.Y), MathHelper.RadiansToDegrees(d.Z));
-        }
-
-        public Vector3 NormalizeAngles(Vector3 angles)
-        {
-            angles.X = (angles.X > 180) ? angles.X - 360 : angles.X;
-            angles.Y = (angles.Y > 180) ? angles.Y - 360 : angles.Y;
-            angles.Z = (angles.Z > 180) ? angles.Z - 360 : angles.Z;
-            return angles;
-        }
-
-        //--------------
-
-        public Matrix4 GetLightViewMatrix()
-        {
-            Vector3 lightPosition = target - (GetDirection() * distanceFromScene);
-
-            return Matrix4.LookAt(lightPosition, target, Vector3.UnitY);
-        }
-
-        public Matrix4 GetLightViewMatrixForFrustum()
-        {
-            Vector3 lightPosition = target - Vector3.Transform(new Vector3(0, 0, -1), parentObject.transformation.Rotation) * distanceFromScene;
-
-            // Create a rotation matrix from the quaternion
-            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.transformation.Rotation);
-
-            // Create a translation matrix for the light's position
-            Matrix4 translationMatrix = Matrix4.CreateTranslation(-lightPosition);
-
-            // Combine rotation and translation to form the view matrix
-            Matrix4 viewMatrix = translationMatrix * rotationMatrix;
-
-            return viewMatrix;
-        }
-
-        public Matrix4 GetProjectionMatrixOrtho()
-        {
-            float l = projection.left;
-            float r = projection.right;
-            float t = projection.top;
-            float b = projection.bottom;
-            float n = projection.near;
-            float f = projection.far;
-
-            Matrix4 m = Matrix4.CreateOrthographic(r - l, t - b, n, f);
-
-            return m;
-        }
-
         public static void SendToGPU(List<Light> lights, int shaderProgramId)
         {
             GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), lights.Count);
@@ -400,7 +253,7 @@ namespace Engine3D
                 quadraticStat = 0.0019f;
             }
 
-            return new float[] {constantStat, linearStat, quadraticStat};
+            return new float[] { constantStat, linearStat, quadraticStat };
         }
 
         public static float AttenuationToRange(float constant, float linear, float quadratic)
@@ -428,13 +281,259 @@ namespace Engine3D
 
             // Rotate the forward vector by the quaternion to get the light direction
             Vector3 lightDirection = Vector3.Transform(forward, rotation);
-            lightDirection.X = (float)Math.Round(lightDirection.X,3);
-            lightDirection.Y = (float)Math.Round(lightDirection.Y,3);
-            lightDirection.Z = (float)Math.Round(lightDirection.Z,3);
+            lightDirection.X = (float)Math.Round(lightDirection.X, 3);
+            lightDirection.Y = (float)Math.Round(lightDirection.Y, 3);
+            lightDirection.Z = (float)Math.Round(lightDirection.Z, 3);
 
             return lightDirection.Normalized();  // Send normalized light direction
         }
+        #endregion
 
+        #region Shadow
+        public void BindForWriting(ShadowType type)
+        {
+            if (type == ShadowType.Small)
+            {
+                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowSmall.fbo);
+                GL.Viewport(0, 0, (int)shadowSmall.size.X, (int)shadowSmall.size.Y);
+            }
+            else if(type == ShadowType.Medium)
+            {
+                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowMedium.fbo);
+                GL.Viewport(0, 0, (int)shadowMedium.size.X, (int)shadowMedium.size.Y);
+            }
+            else
+            {
+                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowLarge.fbo);
+                GL.Viewport(0, 0, (int)shadowLarge.size.X, (int)shadowLarge.size.Y);
+            }
+        }
+
+        public void BindForReading(ShadowType type)
+        {
+            int shadowMapId = shadowSmall.shadowMap.TextureId;
+            int shadowMapUnit = shadowSmall.shadowMap.TextureUnit;
+            if (type == ShadowType.Medium)
+            {
+                shadowMapId = shadowMedium.shadowMap.TextureId;
+                shadowMapUnit = shadowMedium.shadowMap.TextureUnit;
+            }
+            else
+            {
+                shadowMapId = shadowLarge.shadowMap.TextureId;
+                shadowMapUnit = shadowLarge.shadowMap.TextureUnit;
+            }
+
+            if (Engine.GLState.currentTextureUnit != shadowMapUnit)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + shadowMapUnit);
+                Engine.GLState.currentTextureUnit = shadowMapUnit;
+            }
+
+            if (Engine.GLState.currentTextureId != shadowMapId)
+            {
+                GL.BindTexture(TextureTarget.Texture2D, shadowMapId);
+                Engine.GLState.currentTextureId = shadowMapId;
+            }
+        }
+
+        public void SetupShadows()
+        {
+            shadowSmall = new Shadow(new Vector2(2048, 2048 / 1.6606f));
+            shadowSmall.shadowMap = Engine.textureManager.GetShadowTexture(shadowSmall.size);
+            GL.BindTexture(TextureTarget.Texture2D, shadowSmall.shadowMap.TextureId);
+            shadowSmall.fbo = SetupFrameBuffer(shadowSmall.shadowMap.TextureId);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            shadowMedium = new Shadow(new Vector2(2048, 2048 / 1.6606f));
+            shadowMedium.projection = Projection.ShadowMedium;
+            shadowMedium.shadowMap = Engine.textureManager.GetShadowTexture(shadowMedium.size);
+            GL.BindTexture(TextureTarget.Texture2D, shadowMedium.shadowMap.TextureId);
+            shadowMedium.fbo = SetupFrameBuffer(shadowMedium.shadowMap.TextureId);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            shadowLarge = new Shadow(new Vector2(2048, 2048 / 1.6606f));
+            shadowLarge.projection = Projection.ShadowLarge;
+            shadowLarge.shadowMap = Engine.textureManager.GetShadowTexture(shadowLarge.size);
+            GL.BindTexture(TextureTarget.Texture2D, shadowLarge.shadowMap.TextureId);
+            shadowLarge.fbo = SetupFrameBuffer(shadowLarge.shadowMap.TextureId);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+        }
+
+        private int SetupFrameBuffer(int shadowMapId)
+        {
+            int fbo = GL.GenFramebuffer();
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, shadowMapId, 0);
+
+            GL.DrawBuffer(DrawBufferMode.None);
+            GL.ReadBuffer(ReadBufferMode.None);
+
+            TextureManager.textureCount++;
+
+            var status = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+            if (status != FramebufferErrorCode.FramebufferComplete)
+            {
+                throw new Exception($"Framebuffer is incomplete: {status}");
+            }
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+            return fbo;
+        }
+
+        public void RecalculateGizmos()
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                Matrix4 invCombinedMatrix = Matrix4.Invert(shadowSmall.projectionMatrixOrtho * GetLightViewMatrixForFrustum());
+                shadowSmall.projectionMatrixOrtho = GetProjectionMatrixOrtho(ShadowType.Small);
+                if (i == 1)
+                {
+                    shadowMedium.projectionMatrixOrtho = GetProjectionMatrixOrtho(ShadowType.Medium);
+                    invCombinedMatrix = Matrix4.Invert(shadowMedium.projectionMatrixOrtho * GetLightViewMatrixForFrustum());
+                }
+                else if (i == 2)
+                {
+                    shadowLarge.projectionMatrixOrtho = GetProjectionMatrixOrtho(ShadowType.Large);
+                    invCombinedMatrix = Matrix4.Invert(shadowLarge.projectionMatrixOrtho * GetLightViewMatrixForFrustum());
+                }
+
+                Frustum frustum = new Frustum();
+
+                // Define the corners in normalized device coordinates for the near and far planes
+                Vector4[] ndcCorners = new Vector4[]
+                {
+                new Vector4(-1, 1, -1, 1), // Near top-left
+                new Vector4(1, 1, -1, 1),  // Near top-right
+                new Vector4(-1, -1, -1, 1), // Near bottom-left
+                new Vector4(1, -1, -1, 1),  // Near bottom-right
+                new Vector4(-1, 1, 1, 1),  // Far top-left
+                new Vector4(1, 1, 1, 1),   // Far top-right
+                new Vector4(-1, -1, 1, 1), // Far bottom-left
+                new Vector4(1, -1, 1, 1)   // Far bottom-right
+                };
+
+                Vector3 lightDirection = GetDirection();
+                Vector3 lightPosition = target - (lightDirection * distanceFromScene);
+
+                // Transform each corner from NDC to world space
+                frustum.ntl = Helper.Transform(invCombinedMatrix, ndcCorners[0]);
+                frustum.ntr = Helper.Transform(invCombinedMatrix, ndcCorners[1]);
+                frustum.nbl = Helper.Transform(invCombinedMatrix, ndcCorners[2]);
+                frustum.nbr = Helper.Transform(invCombinedMatrix, ndcCorners[3]);
+
+                frustum.ftl = Helper.Transform(invCombinedMatrix, ndcCorners[4]);
+                frustum.ftr = Helper.Transform(invCombinedMatrix, ndcCorners[5]);
+                frustum.fbl = Helper.Transform(invCombinedMatrix, ndcCorners[6]);
+                frustum.fbr = Helper.Transform(invCombinedMatrix, ndcCorners[7]);
+
+                if (!gizmos.ContainsKey("frustumGizmo" + i.ToString()))
+                {
+                    gizmos.Add("frustumGizmo" + i.ToString(), new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                    gizmos["frustumGizmo" + i.ToString()].AddFrustumGizmo(frustum, Color4.Red);
+                    gizmos["frustumGizmo" + i.ToString()].recalculate = true;
+                    gizmos["frustumGizmo" + i.ToString()].RecalculateModelMatrix(new bool[] { true, false, false });
+                }
+                else
+                {
+                    gizmos["frustumGizmo" + i.ToString()].model.meshes.Clear();
+                    gizmos["frustumGizmo" + i.ToString()].AddFrustumGizmo(frustum, Color4.Red);
+                    gizmos["frustumGizmo" + i.ToString()].recalculate = true;
+                    gizmos["frustumGizmo" + i.ToString()].RecalculateModelMatrix(new bool[] { true, false, false });
+                }
+                if (i == 0)
+                {
+                    if (!gizmos.ContainsKey("positionGizmo"))
+                    {
+                        gizmos.Add("positionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                        gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, lightPosition);
+                        gizmos["positionGizmo"].recalculate = true;
+                        gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+                    }
+                    else
+                    {
+                        gizmos["positionGizmo"].model.meshes.Clear();
+                        gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, lightPosition);
+                        gizmos["positionGizmo"].recalculate = true;
+                        gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+                    }
+                    if (!gizmos.ContainsKey("targetGizmo"))
+                    {
+                        gizmos.Add("targetGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                        gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
+                        gizmos["targetGizmo"].recalculate = true;
+                        gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+                    }
+                    else
+                    {
+                        gizmos["targetGizmo"].model.meshes.Clear();
+                        gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
+                        gizmos["targetGizmo"].recalculate = true;
+                        gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+                    }
+                    if (!gizmos.ContainsKey("directionGizmo"))
+                    {
+                        gizmos.Add("directionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                        gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
+                        gizmos["directionGizmo"].recalculate = true;
+                        gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+                    }
+                    else
+                    {
+                        gizmos["directionGizmo"].model.meshes.Clear();
+                        gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
+                        gizmos["directionGizmo"].recalculate = true;
+                        gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
+                    }
+                }
+            }
+        }
+
+        public Matrix4 GetLightViewMatrix()
+        {
+            Vector3 lightPosition = target - (GetDirection() * distanceFromScene);
+
+            return Matrix4.LookAt(lightPosition, target, Vector3.UnitY);
+        }
+
+        public Matrix4 GetLightViewMatrixForFrustum()
+        {
+            Vector3 lightPosition = target - Vector3.Transform(new Vector3(0, 0, -1), parentObject.transformation.Rotation) * distanceFromScene;
+
+            // Create a rotation matrix from the quaternion
+            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.transformation.Rotation);
+
+            // Create a translation matrix for the light's position
+            Matrix4 translationMatrix = Matrix4.CreateTranslation(-lightPosition);
+
+            // Combine rotation and translation to form the view matrix
+            Matrix4 viewMatrix = translationMatrix * rotationMatrix;
+
+            return viewMatrix;
+        }
+
+        public Matrix4 GetProjectionMatrixOrtho(ShadowType type)
+        {
+            Projection projection = shadowSmall.projection;
+            if(type == ShadowType.Medium)
+                projection = shadowMedium.projection;
+            else if(type == ShadowType.Large)
+                projection = shadowLarge.projection;
+
+            float l = projection.left;
+            float r = projection.right;
+            float t = projection.top;
+            float b = projection.bottom;
+            float n = projection.near;
+            float f = projection.far;
+
+            Matrix4 m = Matrix4.CreateOrthographic(r - l, t - b, n, f);
+
+            return m;
+        }
+
+        #endregion
 
         #region Getters/Setters
         public Vector3 GetDirection()

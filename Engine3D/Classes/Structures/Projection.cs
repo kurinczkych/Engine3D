@@ -25,11 +25,27 @@ namespace Engine3D
             this.far = far;
         }
 
-        public static Projection DefaultShadow
+        public static Projection ShadowSmall
         {
             get
             {
                 return new Projection(-10, 10, 10, -10, 0.1f, 100);
+            }
+        }
+
+        public static Projection ShadowMedium
+        {
+            get
+            {
+                return new Projection(-30, 30, 30, -30, 0.1f, 100);
+            }
+        }
+
+        public static Projection ShadowLarge
+        {
+            get
+            {
+                return new Projection(-70, 70, 70, -70, 0.1f, 100);
             }
         }
     }

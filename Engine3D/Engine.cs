@@ -39,8 +39,6 @@ namespace Engine3D
 
         public static GLState GLState = new GLState();
 
-        public static ShadowMapFBO shadowMapFBO;
-
         #region VAO/VBO/IBO
         private VAO onlyPosVao;
         private VBO onlyPosVbo;
@@ -331,7 +329,9 @@ namespace Engine3D
             shaderProgram.Use();
             Light.SendToGPU(lights, shaderProgram.programId);
 
-            DrawObjectsForShadow(args.Time);
+            DrawObjectsForShadow(args.Time, ShadowType.Small);
+            DrawObjectsForShadow(args.Time, ShadowType.Medium);
+            DrawObjectsForShadow(args.Time, ShadowType.Large);
 
             GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
@@ -493,10 +493,6 @@ namespace Engine3D
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
-
-            #region FrameBuffers
-            shadowMapFBO = new ShadowMapFBO(new Vector2(2048, 2048 / 1.6606f));
-            #endregion
 
             #region VBO and VAO Init
             //indirectBuffer = new IndirectBuffer();

@@ -508,7 +508,7 @@ namespace Engine3D
             return new Vector3(vec[0], vec[1], vec[2]);
         }
 
-        private float[] InputFloat2(string title, string[] names, float[] v2, ref KeyboardState keyboardState, bool hideNames = false)
+        private float[] InputFloat2(string title, string[] names, float[] v2, ref KeyboardState keyboardState, bool hideNames = false, string hiddenTitle = "")
         {
             if (names.Length != 2)
                 throw new Exception("InputFloat2 names length must be 3!");
@@ -523,7 +523,7 @@ namespace Engine3D
 
             for(int i = 0; i < names.Length; i++)
             {
-                string bufferName = "##" + title + names[i];
+                string bufferName = "##" + title + names[i] + hiddenTitle;
                 if (!_inputBuffers.ContainsKey(bufferName))
                     _inputBuffers.Add(bufferName, new byte[100]);
 
