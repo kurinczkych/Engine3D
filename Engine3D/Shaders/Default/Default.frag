@@ -45,6 +45,9 @@ uniform sampler2D shadowMapLarge;
 uniform mat4 lightSpaceSmallMatrix;
 uniform mat4 lightSpaceMediumMatrix;
 uniform mat4 lightSpaceLargeMatrix;
+uniform float cascadeFarPlaneSmall;
+uniform float cascadeFarPlaneMedium;
+uniform float cascadeFarPlaneLarge;
 
 uniform int useTexture;
 uniform int useNormal;
@@ -58,28 +61,84 @@ uniform int useShading;
 const float heightScale = 0.1;
 const float metallnessVar = 0.04;
 
-float ShadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal)
+float ShadowCalculation(vec3 lightDir, vec3 normal)
 {
-    // Transform the light-space position to normalized device coordinates (NDC)
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5; // Convert NDC to [0, 1] range
+    float distanceToFragment = length(gsFragPos);
 
-    // Check if fragment is outside the shadow map bounds
-    if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+    float closestDepth = 0;
+    float currentDepth = 0;
+
+    if (distanceToFragment < cascadeFarPlaneSmall) 
     {
-        return 0.0; // No shadow
+        // Transform the fragment position to light space using the selected matrix
+        vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * lightSpaceSmallMatrix;
+
+        // Transform to normalized device coordinates (NDC)
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords = projCoords * 0.5 + 0.5; // Convert NDC to [0, 1] range
+
+        // Check if fragment is outside the shadow map bounds
+        if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+        {
+            return 0.0; // No shadow
+        }
+
+        // Retrieve the closest depth from the shadow map at this fragment's position
+        closestDepth = texture(shadowMapSmall, projCoords.xy).r;
+
+        // Current depth of the fragment from the light's perspective
+        currentDepth = projCoords.z;
+    }
+    else if (distanceToFragment < cascadeFarPlaneMedium) 
+    {
+        // Transform the fragment position to light space using the selected matrix
+        vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * lightSpaceMediumMatrix;
+
+        // Transform to normalized device coordinates (NDC)
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords = projCoords * 0.5 + 0.5; // Convert NDC to [0, 1] range
+
+        // Check if fragment is outside the shadow map bounds
+        if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+        {
+            return 0.0; // No shadow
+        }
+
+        // Retrieve the closest depth from the shadow map at this fragment's position
+        closestDepth = texture(shadowMapMedium, projCoords.xy).r;
+
+        // Current depth of the fragment from the light's perspective
+        currentDepth = projCoords.z;
+    }
+    else 
+    {
+        // Transform the fragment position to light space using the selected matrix
+        vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * lightSpaceLargeMatrix;
+
+        // Transform to normalized device coordinates (NDC)
+        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords = projCoords * 0.5 + 0.5; // Convert NDC to [0, 1] range
+
+        // Check if fragment is outside the shadow map bounds
+        if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+        {
+            return 0.0; // No shadow
+        }
+
+        // Retrieve the closest depth from the shadow map at this fragment's position
+        closestDepth = texture(shadowMapLarge, projCoords.xy).r;
+
+        // Current depth of the fragment from the light's perspective
+        currentDepth = projCoords.z;
     }
 
-    // Retrieve the closest depth from the shadow map at this fragment's position
-    float closestDepth = texture(shadowMapSmall, projCoords.xy).r;
 
-    // Current depth of the fragment from the light's perspective
-    float currentDepth = projCoords.z;
-
-    float slopeScaleFactor = 0.01;  // Start with a slightly higher value to reduce shadow acne
-    float constantBias = 0.0005;    // Start with a lower value to reduce Peter Panning
-
+    // Calculate bias to reduce shadow artifacts
+    float slopeScaleFactor = 0.01;
+    float constantBias = 0.0005;
     float bias = max(slopeScaleFactor * (1.0 - dot(normal, lightDir)), constantBias);
+
+    // Perform shadow comparison
     float shadow = (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
 
     return shadow;
@@ -134,7 +193,7 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float 
     return (ambient + diffuse + specular) * light.color;
 } 
 
-vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness, vec4 fragPosLightSpace)
+vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -179,7 +238,7 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness, vec4 
     }
 
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
-    float shadow = ShadowCalculation(fragPosLightSpace, lightDir, normal); 
+    float shadow = ShadowCalculation(lightDir, normal); 
     return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color;
 //    return (ambient + diffuse + specular) * light.color;
 }
@@ -235,8 +294,7 @@ void main()
             else if(lights[i].lightType == 1)
             {
                 // Calculate the light-space position for shadow mapping
-                vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * lightSpaceSmallMatrix;
-                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness, fragPosLightSpace);
+                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
                 //result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
             }
         }

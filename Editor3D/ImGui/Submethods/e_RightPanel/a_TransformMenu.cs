@@ -21,6 +21,14 @@ namespace Engine3D
                 bool reset = false;
                 ImGui.PushItemWidth(50);
 
+                if (baseMesh != null)
+                {
+                    if (ImGui.Checkbox("Always visible", ref baseMesh.alwaysVisible))
+                    {
+                        
+                    }
+                }
+
                 ImGui.Separator();
 
                 #region Position

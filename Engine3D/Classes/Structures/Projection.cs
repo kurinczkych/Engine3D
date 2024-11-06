@@ -14,15 +14,20 @@ namespace Engine3D
         public float bottom;
         public float near;
         public float far;
+        public float distance;
 
         public Projection(float left, float right, float top, float bottom, float near, float far)
         {
+            if (Math.Abs(left) != Math.Abs(right) && Math.Abs(right) != Math.Abs(top) && Math.Abs(top) != Math.Abs(bottom))
+                throw new Exception("Shadow projection is not uniformly sized");
+
             this.left = left;
             this.right = right;
             this.top = top;
             this.bottom = bottom;
             this.near = near;
             this.far = far;
+            distance = Math.Abs(left);
         }
 
         public static Projection ShadowSmall

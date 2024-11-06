@@ -311,30 +311,15 @@ namespace Engine3D
 
         public void BindForReading(ShadowType type)
         {
-            int shadowMapId = shadowSmall.shadowMap.TextureId;
-            int shadowMapUnit = shadowSmall.shadowMap.TextureUnit;
-            if (type == ShadowType.Medium)
-            {
-                shadowMapId = shadowMedium.shadowMap.TextureId;
-                shadowMapUnit = shadowMedium.shadowMap.TextureUnit;
-            }
-            else if(type == ShadowType.Large)
-            {
-                shadowMapId = shadowLarge.shadowMap.TextureId;
-                shadowMapUnit = shadowLarge.shadowMap.TextureUnit;
-            }
+            //TODO: Dont bind every frame
+            GL.ActiveTexture(TextureUnit.Texture0 + shadowSmall.shadowMap.TextureUnit);//12
+            GL.BindTexture(TextureTarget.Texture2D, shadowSmall.shadowMap.TextureId);//17
 
-            if (Engine.GLState.currentTextureUnit != shadowMapUnit)
-            {
-                GL.ActiveTexture(TextureUnit.Texture0 + shadowMapUnit);
-                Engine.GLState.currentTextureUnit = shadowMapUnit;
-            }
+            GL.ActiveTexture(TextureUnit.Texture0 + shadowMedium.shadowMap.TextureUnit);//14
+            GL.BindTexture(TextureTarget.Texture2D, shadowMedium.shadowMap.TextureId);//18
 
-            if (Engine.GLState.currentTextureId != shadowMapId)
-            {
-                GL.BindTexture(TextureTarget.Texture2D, shadowMapId);
-                Engine.GLState.currentTextureId = shadowMapId;
-            }
+            GL.ActiveTexture(TextureUnit.Texture0 + shadowLarge.shadowMap.TextureUnit);//16
+            GL.BindTexture(TextureTarget.Texture2D, shadowLarge.shadowMap.TextureId);//19
         }
 
         public void SetupShadows()
@@ -345,14 +330,14 @@ namespace Engine3D
             shadowSmall.fbo = SetupFrameBuffer(shadowSmall.shadowMap.TextureId);
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            shadowMedium = new Shadow(new Vector2(2048, 2048 / 1.6606f));
+            shadowMedium = new Shadow(new Vector2(1024, 1024 / 1.6606f));
             shadowMedium.projection = Projection.ShadowMedium;
             shadowMedium.shadowMap = Engine.textureManager.GetShadowTexture(shadowMedium.size);
             GL.BindTexture(TextureTarget.Texture2D, shadowMedium.shadowMap.TextureId);
             shadowMedium.fbo = SetupFrameBuffer(shadowMedium.shadowMap.TextureId);
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            shadowLarge = new Shadow(new Vector2(2048, 2048 / 1.6606f));
+            shadowLarge = new Shadow(new Vector2(512, 512 / 1.6606f));
             shadowLarge.projection = Projection.ShadowLarge;
             shadowLarge.shadowMap = Engine.textureManager.GetShadowTexture(shadowLarge.size);
             GL.BindTexture(TextureTarget.Texture2D, shadowLarge.shadowMap.TextureId);

@@ -43,6 +43,8 @@ namespace Engine3D
         }
         public string modelPath;
 
+        public bool alwaysVisible = false;
+
         [JsonIgnore]
         private bool _recalculate = false;
         [JsonIgnore]
@@ -519,7 +521,7 @@ namespace Engine3D
                 }
                 else
                 {
-                    if (allVisible)
+                    if (allVisible || alwaysVisible)
                     {
                         AllIndicesVisible();
                     }
@@ -602,7 +604,7 @@ namespace Engine3D
             }
             else if(GetType() == typeof(Gizmo))
             {
-                if (allVisible)
+                if (allVisible || alwaysVisible)
                 {
                     AllIndicesVisible();
                 }
