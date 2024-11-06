@@ -297,17 +297,17 @@ namespace Engine3D
             if (type == ShadowType.Small)
             {
                 GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowSmall.fbo);
-                GL.Viewport(0, 0, (int)shadowSmall.size.X, (int)shadowSmall.size.Y);
+                GL.Viewport(0, 0, shadowSmall.size, shadowSmall.size);
             }
             else if(type == ShadowType.Medium)
             {
                 GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowMedium.fbo);
-                GL.Viewport(0, 0, (int)shadowMedium.size.X, (int)shadowMedium.size.Y);
+                GL.Viewport(0, 0, shadowMedium.size, shadowMedium.size);
             }
             else
             {
                 GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowLarge.fbo);
-                GL.Viewport(0, 0, (int)shadowLarge.size.X, (int)shadowLarge.size.Y);
+                GL.Viewport(0, 0, shadowLarge.size, shadowLarge.size);
             }
         }
 
@@ -326,13 +326,13 @@ namespace Engine3D
 
         public void InitShadows()
         {
-            shadowSmall = new Shadow(new Vector2(2048, 2048 / 1.6606f));
+            shadowSmall = new Shadow(2048);
             shadowSmall.projection = Projection.ShadowSmall;
 
-            shadowMedium = new Shadow(new Vector2(1024, 1024 / 1.6606f));
+            shadowMedium = new Shadow(1024);
             shadowMedium.projection = Projection.ShadowMedium;
 
-            shadowLarge = new Shadow(new Vector2(512, 512 / 1.6606f));
+            shadowLarge = new Shadow(512);
             shadowLarge.projection = Projection.ShadowLarge;
         }
 
@@ -352,6 +352,25 @@ namespace Engine3D
             GL.BindTexture(TextureTarget.Texture2D, shadowLarge.shadowMap.TextureId);
             shadowLarge.fbo = SetupFrameBuffer(shadowLarge.shadowMap.TextureId);
             GL.BindTexture(TextureTarget.Texture2D, 0);
+        }
+
+        public void ResizeShadowMap(ShadowType type, int size)
+        {
+            if(type == ShadowType.Small)
+            {
+                shadowSmall.size = size;
+                Engine.textureManager.ResizeShadowTexture(shadowSmall.shadowMap, size);
+            }
+            else if(type == ShadowType.Medium)
+            {
+                shadowMedium.size = size;
+                Engine.textureManager.ResizeShadowTexture(shadowMedium.shadowMap, size);
+            }
+            else if(type == ShadowType.Large)
+            {
+                shadowLarge.size = size;
+                Engine.textureManager.ResizeShadowTexture(shadowLarge.shadowMap, size);
+            }
         }
 
         private int SetupFrameBuffer(int shadowMapId)

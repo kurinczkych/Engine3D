@@ -10,7 +10,7 @@ namespace Engine3D
 {
     public class Shadow
     {
-        public Vector2 size;
+        public int size;
 
         [JsonIgnore]
         public int fbo = -1;
@@ -20,7 +20,7 @@ namespace Engine3D
         public Projection projection = Projection.ShadowSmall;
         public Matrix4 projectionMatrixOrtho = Matrix4.Identity;
 
-        public Shadow(Vector2 size)
+        public Shadow(int size)
         {
             this.size = size;
         }

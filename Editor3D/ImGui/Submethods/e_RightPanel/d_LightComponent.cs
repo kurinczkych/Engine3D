@@ -3,6 +3,7 @@ using ImGuiNET;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -82,6 +83,8 @@ namespace Engine3D
                     if (ImGui.CollapsingHeader("Shadow"))
                     {
                         bool recalculateFrustum = false;
+                        int resizedShadowMap = -1;
+                        ShadowType resizedShadowType = ShadowType.Small;
 
                         bool showFrustum = light.showGizmos;
                         if (ImGui.Checkbox("##showFrustum", ref showFrustum))
@@ -112,6 +115,14 @@ namespace Engine3D
                         #region SmallProjection
                         if (ImGui.CollapsingHeader("Small"))
                         {
+                            float[] sizeVec = new float[] { light.shadowSmall.size };
+                            float size = InputFloat1("Shadow Map Size", new string[] { "" }, sizeVec, ref keyboardState, titleSameLine: true, hiddenTitle:"Small");
+                            if (light.shadowSmall.size != size)
+                            {
+                                resizedShadowMap = (int)size;
+                                resizedShadowType = ShadowType.Small;
+                            }
+
                             float[] projection1Vec = new float[] { light.shadowSmall.projection.left, light.shadowSmall.projection.right };
                             float[] projection1 = InputFloat2("Projection", new string[] { "L", "R" }, projection1Vec, ref keyboardState, hiddenTitle:"Small");
                             if (projection1[0] != light.shadowSmall.projection.left)
@@ -156,6 +167,14 @@ namespace Engine3D
                         #region MediumProjection
                         if (ImGui.CollapsingHeader("Medium"))
                         {
+                            float[] sizeVec = new float[] { light.shadowMedium.size };
+                            float size = InputFloat1("Shadow Map Size", new string[] { "" }, sizeVec, ref keyboardState, titleSameLine: true, hiddenTitle: "Medium");
+                            if (light.shadowMedium.size != size)
+                            {
+                                resizedShadowMap = (int)size;
+                                resizedShadowType = ShadowType.Medium;
+                            }
+
                             float[] projection1Vec = new float[] { light.shadowMedium.projection.left, light.shadowMedium.projection.right };
                             float[] projection1 = InputFloat2("Projection", new string[] { "L", "R" }, projection1Vec, ref keyboardState, hiddenTitle: "Medium");
                             if (projection1[0] != light.shadowMedium.projection.left)
@@ -200,6 +219,14 @@ namespace Engine3D
                         #region LargeProjection
                         if (ImGui.CollapsingHeader("Large"))
                         {
+                            float[] sizeVec = new float[] { light.shadowLarge.size };
+                            float size = InputFloat1("Shadow Map Size", new string[] { "" }, sizeVec, ref keyboardState, titleSameLine: true, hiddenTitle: "Large");
+                            if (light.shadowLarge.size != size)
+                            {
+                                resizedShadowMap = (int)size;
+                                resizedShadowType = ShadowType.Large;
+                            }
+
                             float[] projection1Vec = new float[] { light.shadowLarge.projection.left, light.shadowLarge.projection.right };
                             float[] projection1 = InputFloat2("Projection", new string[] { "L", "R" }, projection1Vec, ref keyboardState, hiddenTitle: "Large");
                             if (projection1[0] != light.shadowLarge.projection.left)
@@ -240,6 +267,11 @@ namespace Engine3D
                             }
                         }
                         #endregion
+
+                        if(resizedShadowMap != -1)
+                        {
+                            light.ResizeShadowMap(resizedShadowType, resizedShadowMap);
+                        }
 
                         if (recalculateFrustum)
                         {
