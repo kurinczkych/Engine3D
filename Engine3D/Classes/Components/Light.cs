@@ -76,7 +76,6 @@ namespace Engine3D
                 showGizmos_ = value;
             }
         }
-        public Vector3 target = Vector3.Zero;
         public float distanceFromScene = 50;
 
         public Shadow shadowLarge;
@@ -428,14 +427,13 @@ namespace Engine3D
                 };
 
                 Vector3 lightDirection = GetDirection();
-                Vector3 lightPosition = target - (lightDirection * distanceFromScene);
+                Vector3 lightPosition = -(lightDirection * distanceFromScene);
 
                 // Transform each corner from NDC to world space
                 frustum.ntl = Helper.Transform(invCombinedMatrix, ndcCorners[0]);
                 frustum.ntr = Helper.Transform(invCombinedMatrix, ndcCorners[1]);
                 frustum.nbl = Helper.Transform(invCombinedMatrix, ndcCorners[2]);
                 frustum.nbr = Helper.Transform(invCombinedMatrix, ndcCorners[3]);
-
                 frustum.ftl = Helper.Transform(invCombinedMatrix, ndcCorners[4]);
                 frustum.ftr = Helper.Transform(invCombinedMatrix, ndcCorners[5]);
                 frustum.fbl = Helper.Transform(invCombinedMatrix, ndcCorners[6]);
@@ -474,28 +472,28 @@ namespace Engine3D
                     if (!gizmos.ContainsKey("targetGizmo"))
                     {
                         gizmos.Add("targetGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                        gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
+                        gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red);
                         gizmos["targetGizmo"].recalculate = true;
                         gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
                     }
                     else
                     {
                         gizmos["targetGizmo"].model.meshes.Clear();
-                        gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red, target);
+                        gizmos["targetGizmo"].AddSphereGizmo(2, Color4.Red);
                         gizmos["targetGizmo"].recalculate = true;
                         gizmos["targetGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
                     }
                     if (!gizmos.ContainsKey("directionGizmo"))
                     {
                         gizmos.Add("directionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                        gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
+                        gizmos["directionGizmo"].AddDirectionGizmo(Vector3.Zero, lightDirection, 10, Color4.Green);
                         gizmos["directionGizmo"].recalculate = true;
                         gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
                     }
                     else
                     {
                         gizmos["directionGizmo"].model.meshes.Clear();
-                        gizmos["directionGizmo"].AddDirectionGizmo(target, lightDirection, 10, Color4.Green);
+                        gizmos["directionGizmo"].AddDirectionGizmo(Vector3.Zero, lightDirection, 10, Color4.Green);
                         gizmos["directionGizmo"].recalculate = true;
                         gizmos["directionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
                     }
@@ -505,14 +503,14 @@ namespace Engine3D
 
         public Matrix4 GetLightViewMatrix()
         {
-            Vector3 lightPosition = target - (GetDirection() * distanceFromScene);
+            Vector3 lightPosition = parentObject.transformation.Position - (GetDirection() * distanceFromScene);
 
-            return Matrix4.LookAt(lightPosition, target, Vector3.UnitY);
+            return Matrix4.LookAt(lightPosition, parentObject.transformation.Position, Vector3.UnitY);
         }
 
         public Matrix4 GetLightViewMatrixForFrustum()
         {
-            Vector3 lightPosition = target - Vector3.Transform(new Vector3(0, 0, -1), parentObject.transformation.Rotation) * distanceFromScene;
+            Vector3 lightPosition = parentObject.transformation.Position - Vector3.Transform(new Vector3(0, 0, -1), parentObject.transformation.Rotation) * distanceFromScene;
 
             // Create a rotation matrix from the quaternion
             Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(parentObject.transformation.Rotation);

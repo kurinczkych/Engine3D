@@ -104,14 +104,6 @@ namespace Engine3D
                             recalculateFrustum = true;
                         }
 
-                        float[] targetVec = new float[] { light.target.X, light.target.Y, light.target.Z };
-                        Vector3 target = InputFloat3("Scene Target", new string[] { "X", "Y", "Z" }, targetVec, ref keyboardState);
-                        if (light.target != target)
-                        {
-                            light.target = target;
-                            recalculateFrustum = true;
-                        }
-
                         #region SmallProjection
                         if (ImGui.CollapsingHeader("Small"))
                         {
