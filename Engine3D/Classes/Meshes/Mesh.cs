@@ -305,17 +305,12 @@ namespace Engine3D
                 GetUniformLocations();
             }
 
-            //if (lightDir != null)
-            //    lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(lightDir??-Vector3.UnitY) * Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
-            //else
-            //    lightSpaceMatrix = ShadowMapFBO.GetLightViewMatrix(-Vector3.UnitY) * Camera.GetProjectionMatrixOrthoShadow(ShadowMapFBO.minLightSpace, ShadowMapFBO.maxLightSpace);
-
             if (light != null)
             {
                 Matrix4 lightview = light.GetLightViewMatrix();
                 lightSpaceSmallMatrix = lightview * light.shadowSmall.projectionMatrixOrtho;
                 lightSpaceMediumMatrix = lightview * light.shadowMedium.projectionMatrixOrtho;
-                lightSpaceLargeMatrix = lightview * light.shadowSmall.projectionMatrixOrtho;
+                lightSpaceLargeMatrix = lightview * light.shadowLarge.projectionMatrixOrtho;
 
                 if (light.shadowSmall.fbo != -1 && light.shadowSmall.shadowMap.TextureId != -1)
                     GL.Uniform1(uniformLocations["shadowMapSmall"], light.shadowSmall.shadowMap.TextureUnit);

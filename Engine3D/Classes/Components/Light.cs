@@ -318,7 +318,7 @@ namespace Engine3D
                 shadowMapId = shadowMedium.shadowMap.TextureId;
                 shadowMapUnit = shadowMedium.shadowMap.TextureUnit;
             }
-            else
+            else if(type == ShadowType.Large)
             {
                 shadowMapId = shadowLarge.shadowMap.TextureId;
                 shadowMapUnit = shadowLarge.shadowMap.TextureUnit;
@@ -404,14 +404,14 @@ namespace Engine3D
                 // Define the corners in normalized device coordinates for the near and far planes
                 Vector4[] ndcCorners = new Vector4[]
                 {
-                new Vector4(-1, 1, -1, 1), // Near top-left
-                new Vector4(1, 1, -1, 1),  // Near top-right
-                new Vector4(-1, -1, -1, 1), // Near bottom-left
-                new Vector4(1, -1, -1, 1),  // Near bottom-right
-                new Vector4(-1, 1, 1, 1),  // Far top-left
-                new Vector4(1, 1, 1, 1),   // Far top-right
-                new Vector4(-1, -1, 1, 1), // Far bottom-left
-                new Vector4(1, -1, 1, 1)   // Far bottom-right
+                    new Vector4(-1, 1, -1, 1), // Near top-left
+                    new Vector4(1, 1, -1, 1),  // Near top-right
+                    new Vector4(-1, -1, -1, 1), // Near bottom-left
+                    new Vector4(1, -1, -1, 1),  // Near bottom-right
+                    new Vector4(-1, 1, 1, 1),  // Far top-left
+                    new Vector4(1, 1, 1, 1),   // Far top-right
+                    new Vector4(-1, -1, 1, 1), // Far bottom-left
+                    new Vector4(1, -1, 1, 1)   // Far bottom-right
                 };
 
                 Vector3 lightDirection = GetDirection();
