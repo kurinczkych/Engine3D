@@ -472,6 +472,7 @@ namespace Engine3D
                         light.parentObject = obj;
                         light.camera = mainCamera;
                         light.RecalculateGizmos();
+                        light.SetupShadows();
                     }
                 }
             }
