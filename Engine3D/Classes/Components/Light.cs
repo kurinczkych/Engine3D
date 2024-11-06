@@ -78,6 +78,7 @@ namespace Engine3D
         }
         public float distanceFromScene = 50;
         public bool freezeView = true;
+        public bool castShadows = true;
 
         public Shadow shadowLarge;
         public Shadow shadowMedium;
@@ -397,6 +398,9 @@ namespace Engine3D
 
         public void RecalculateShadows()
         {
+            if (!castShadows)
+                return;
+
             for (int i = 0; i < 3; i++)
             {
                 Matrix4 invCombinedMatrix = Matrix4.Invert(shadowSmall.projectionMatrixOrtho * GetLightViewMatrixForFrustum());

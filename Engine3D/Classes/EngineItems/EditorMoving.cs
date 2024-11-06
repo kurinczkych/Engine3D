@@ -122,7 +122,7 @@ namespace Engine3D
                 });
                 Parallel.ForEach(lights, parallelOptions, light =>
                 {
-                    if (!light.freezeView)
+                    if (!light.freezeView && light.castShadows)
                     {
                         light.parentObject.transformation.Position = mainCamera.parentObject.transformation.Position;
                         light.RecalculateShadows();

@@ -13,6 +13,8 @@ namespace Engine3D
     {
         public void ShadowDepth()
         {
+            return;
+
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(200,245));
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(_windowWidth * editorData.gameWindow.leftPanelPercent + seperatorSize, editorData.gameWindow.topPanelSize), ImGuiCond.Always);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(0, 0));  // Disable padding

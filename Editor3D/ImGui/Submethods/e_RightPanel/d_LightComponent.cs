@@ -86,6 +86,23 @@ namespace Engine3D
                         int resizedShadowMap = -1;
                         ShadowType resizedShadowType = ShadowType.Small;
 
+                        if (ImGui.Checkbox("##castShadows", ref light.castShadows))
+                        {
+                            if (light.castShadows)
+                            {
+                                recalculateFrustum = true;
+                                light.showGizmos = true;
+                                light.freezeView = true;
+                            }
+                            else
+                            {
+                                light.showGizmos = false;
+                                light.freezeView = true;
+                            }
+                        }
+                        ImGui.SameLine();
+                        ImGui.Text("Cast shadows");
+
                         bool showFrustum = light.showGizmos;
                         if (ImGui.Checkbox("##showFrustum", ref showFrustum))
                         {
