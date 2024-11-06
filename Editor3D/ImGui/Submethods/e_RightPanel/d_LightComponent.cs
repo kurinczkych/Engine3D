@@ -96,6 +96,10 @@ namespace Engine3D
                         ImGui.SameLine();
                         ImGui.Text("Show light frustum");
 
+                        if (ImGui.Checkbox("##freezeView", ref light.freezeView)) { }
+                        ImGui.SameLine();
+                        ImGui.Text("Freeze view");
+
                         float[] distanceFromSceneVec = new float[] { light.distanceFromScene };
                         float distanceFromScene = InputFloat1("Light Distance", new string[] { "" }, distanceFromSceneVec, ref keyboardState, titleSameLine:true);
                         if (light.distanceFromScene != distanceFromScene)
@@ -267,7 +271,7 @@ namespace Engine3D
 
                         if (recalculateFrustum)
                         {
-                            light.RecalculateGizmos();
+                            light.RecalculateShadows();
                         }
                     }
                 }

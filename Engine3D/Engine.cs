@@ -210,7 +210,7 @@ namespace Engine3D
                     else
                         SetBackgroundColor(false);
                 }
-                return lights_??new List<Light>();
+                return lights_;
             }
             set
             {
@@ -644,7 +644,7 @@ namespace Engine3D
             sun.transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
             Light? sunComp = (Light?)sun.GetComponent<Light>();
             if(sunComp != null)
-                sunComp.RecalculateGizmos();
+                sunComp.RecalculateShadows();
 
             shaderProgram.Use();
             Light.SendToGPU(lights, shaderProgram.programId);

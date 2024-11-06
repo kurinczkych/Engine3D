@@ -248,7 +248,7 @@ namespace Engine3D
             Light lightComp = new Light(light, 0, lightType, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
             light.components.Add(lightComp);
             light.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
-            lightComp.RecalculateGizmos();
+            lightComp.RecalculateShadows();
             objects.Add(light);
 
             lights = new List<Light>();
@@ -384,7 +384,7 @@ namespace Engine3D
             objects[objects.Count - 1].components.Add(light);
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
-            light.RecalculateGizmos();
+            light.RecalculateShadows();
             Light.SendToGPU(lights, shaderProgram.programId);
 
             lights = new List<Light>();
@@ -471,7 +471,7 @@ namespace Engine3D
                     {
                         light.parentObject = obj;
                         light.camera = mainCamera;
-                        light.RecalculateGizmos();
+                        light.RecalculateShadows();
                         light.SetupShadows();
                     }
                 }

@@ -77,6 +77,7 @@ namespace Engine3D
             }
         }
         public float distanceFromScene = 50;
+        public bool freezeView = true;
 
         public Shadow shadowLarge;
         public Shadow shadowMedium;
@@ -191,7 +192,7 @@ namespace Engine3D
                 diffuse = new Vector3(1.0f, 1.0f, 1.0f);
                 specular = new Vector3(1.0f, 1.0f, 1.0f);
                 specularPow = 2.0f;
-                RecalculateGizmos();
+                RecalculateShadows();
             }
         }
 
@@ -394,7 +395,7 @@ namespace Engine3D
             return fbo;
         }
 
-        public void RecalculateGizmos()
+        public void RecalculateShadows()
         {
             for (int i = 0; i < 3; i++)
             {

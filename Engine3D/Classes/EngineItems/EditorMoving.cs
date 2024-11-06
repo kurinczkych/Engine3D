@@ -18,6 +18,7 @@ namespace Engine3D
         private void EditorMoving(FrameEventArgs args)
         {
             bool moved = false;
+            bool characterMoved = false;
             if (IsMouseInGameWindow(MouseState))
             {
                 if (Math.Abs(MouseState.ScrollDelta.Y) > 0)
@@ -49,7 +50,6 @@ namespace Engine3D
                     }
                     #region Moving with right click
 
-                    bool characterMoved = false;
                     float flySpeed_ = character.flySpeed;
                     if (KeyboardState.IsKeyDown(Keys.LeftShift))
                     {
@@ -109,7 +109,7 @@ namespace Engine3D
                 }
             }
 
-            if (moved)
+            if (moved || characterMoved)
             {
                 ParallelOptions parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = BaseMesh.threadSize };
                 Parallel.ForEach(objects, parallelOptions, obj =>
@@ -118,6 +118,14 @@ namespace Engine3D
                     if (mesh != null)
                     {
                         mesh.recalculate = true;
+                    }
+                });
+                Parallel.ForEach(lights, parallelOptions, light =>
+                {
+                    if (!light.freezeView)
+                    {
+                        light.parentObject.transformation.Position = mainCamera.parentObject.transformation.Position;
+                        light.RecalculateShadows();
                     }
                 });
             }

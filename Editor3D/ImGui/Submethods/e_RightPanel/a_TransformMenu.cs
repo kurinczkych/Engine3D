@@ -21,14 +21,6 @@ namespace Engine3D
                 bool reset = false;
                 ImGui.PushItemWidth(50);
 
-                if (baseMesh != null)
-                {
-                    if (ImGui.Checkbox("Always visible", ref baseMesh.alwaysVisible))
-                    {
-                        
-                    }
-                }
-
                 ImGui.Separator();
 
                 #region Position
@@ -72,7 +64,7 @@ namespace Engine3D
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
                         if (o.GetComponent<Light>() is Light light)
-                            light.RecalculateGizmos();
+                            light.RecalculateShadows();
                     }
                 }
                 ImGui.SameLine();
@@ -115,7 +107,7 @@ namespace Engine3D
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
                         if (o.GetComponent<Light>() is Light light)
-                            light.RecalculateGizmos();
+                            light.RecalculateShadows();
                     }
                 }
                 ImGui.SameLine();
@@ -158,7 +150,7 @@ namespace Engine3D
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
                         if (o.GetComponent<Light>() is Light light)
-                            light.RecalculateGizmos();
+                            light.RecalculateShadows();
                     }
                 }
                 #endregion
@@ -213,7 +205,7 @@ namespace Engine3D
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
                         if (o.GetComponent<Light>() is Light light)
-                            light.RecalculateGizmos();
+                            light.RecalculateShadows();
                     }
                 }
                 ImGui.SameLine();
@@ -260,7 +252,7 @@ namespace Engine3D
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
                         if (o.GetComponent<Light>() is Light light)
-                            light.RecalculateGizmos();
+                            light.RecalculateShadows();
                     }
                 }
                 ImGui.SameLine();
@@ -307,7 +299,7 @@ namespace Engine3D
                         if (o.GetComponent<Physics>() is Physics p)
                             p.UpdatePhysxPositionAndRotation(o.transformation);
                         if (o.GetComponent<Light>() is Light light)
-                            light.RecalculateGizmos();
+                            light.RecalculateShadows();
                     }
                 }
                 #endregion
