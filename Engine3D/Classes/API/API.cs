@@ -103,7 +103,7 @@ namespace Engine3D
 
         public int GetShadowDepthTexture(ShadowType type)
         {
-            Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
+            DirectionalLight? light = lights.Where(x => x is DirectionalLight).FirstOrDefault() as DirectionalLight;
             if (light == null)
                 return 0;
 
@@ -245,7 +245,12 @@ namespace Engine3D
         public Object AddLight(Light.LightType lightType)
         {
             Object light = new Object(ObjectType.Empty) { name = "Light" };
-            Light lightComp = new Light(light, 0, lightType, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
+            Light lightComp;
+            if(lightType == Light.LightType.DirectionalLight)
+                lightComp = new DirectionalLight(light, 0, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
+            else
+                lightComp = new PointLight(light, 0, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
+
             light.components.Add(lightComp);
             light.transformation.Position = mainCamera.GetPosition() + mainCamera.front * 5;
             lightComp.RecalculateShadows();
@@ -380,7 +385,7 @@ namespace Engine3D
 
             shaderProgram.Use();
             objects.Add(new Object(ObjectType.Empty) { name = "Light" });
-            Light light = new Light(objects[objects.Count - 1], 0, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
+            Light light = new DirectionalLight(objects[objects.Count - 1], 0, wireVao, wireVbo, onlyPosShaderProgram.programId, windowSize, ref mainCamera_);
             objects[objects.Count - 1].components.Add(light);
             objects[objects.Count - 1].transformation.Position = new Vector3(0, 10, 0);
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
