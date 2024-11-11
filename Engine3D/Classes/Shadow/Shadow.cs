@@ -18,7 +18,7 @@ namespace Engine3D
         public Texture shadowMap;
 
         public Projection projection = Projection.ShadowSmall;
-        public Matrix4 projectionMatrixOrtho = Matrix4.Identity;
+        public Matrix4 projectionMatrix = Matrix4.Identity;
 
         public Shadow(int size)
         {

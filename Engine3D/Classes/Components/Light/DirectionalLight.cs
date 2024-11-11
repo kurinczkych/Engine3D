@@ -142,17 +142,17 @@ namespace Engine3D
 
             for (int i = 0; i < 3; i++)
             {
-                Matrix4 invCombinedMatrix = Matrix4.Invert(shadowSmall.projectionMatrixOrtho * GetLightViewMatrixForFrustum());
-                shadowSmall.projectionMatrixOrtho = GetProjectionMatrix(ShadowType.Small);
+                Matrix4 invCombinedMatrix = Matrix4.Invert(shadowSmall.projectionMatrix * GetLightViewMatrixForFrustum());
+                shadowSmall.projectionMatrix = GetProjectionMatrix(ShadowType.Small);
                 if (i == 1)
                 {
-                    shadowMedium.projectionMatrixOrtho = GetProjectionMatrix(ShadowType.Medium);
-                    invCombinedMatrix = Matrix4.Invert(shadowMedium.projectionMatrixOrtho * GetLightViewMatrixForFrustum());
+                    shadowMedium.projectionMatrix = GetProjectionMatrix(ShadowType.Medium);
+                    invCombinedMatrix = Matrix4.Invert(shadowMedium.projectionMatrix * GetLightViewMatrixForFrustum());
                 }
                 else if (i == 2)
                 {
-                    shadowLarge.projectionMatrixOrtho = GetProjectionMatrix(ShadowType.Large);
-                    invCombinedMatrix = Matrix4.Invert(shadowLarge.projectionMatrixOrtho * GetLightViewMatrixForFrustum());
+                    shadowLarge.projectionMatrix = GetProjectionMatrix(ShadowType.Large);
+                    invCombinedMatrix = Matrix4.Invert(shadowLarge.projectionMatrix * GetLightViewMatrixForFrustum());
                 }
 
                 Frustum frustum = new Frustum();

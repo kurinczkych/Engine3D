@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#pragma warning disable CS8602
+
 namespace Engine3D
 {
     public class PointLight : Light
@@ -29,11 +31,19 @@ namespace Engine3D
         public Shadow shadowFront;
         public Shadow shadowBack;
 
-        public List<Shadow> shadowFaces = new List<Shadow>();
+        public List<Shadow?> shadowFaces = new List<Shadow?>();
         
         public PointLight()
         {
-            shadowFaces.Add(shadowTop);
+            shadowFaces = new List<Shadow?>()
+            {
+                shadowTop,
+                shadowBottom,
+                shadowLeft,
+                shadowRight,
+                shadowFront,
+                shadowBack
+            };
         }
 
         public PointLight(Object parentObject, int id, VAO wireVao, VBO wireVbo, int wireShaderId, Vector2 windowSize, ref Camera mainCamera) :
@@ -50,6 +60,16 @@ namespace Engine3D
             quadratic = 0.032f;
 
             range = AttenuationToRange(constant, linear, quadratic);
+
+            shadowFaces = new List<Shadow?>()
+            {
+                shadowTop,
+                shadowBottom,
+                shadowLeft,
+                shadowRight,
+                shadowFront,
+                shadowBack
+            };
         }
 
         #region Light
@@ -157,62 +177,73 @@ namespace Engine3D
 
         public override void BindForReading(ShadowType type)
         {
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowTop.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowTop.shadowMap.TextureId);
+            foreach (Shadow? shadow in shadowFaces)
+            {
+                if (shadow == null)
+                    continue;
 
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowBottom.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowBottom.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowLeft.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowLeft.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowRight.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowRight.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowFront.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowFront.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowBack.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowBack.shadowMap.TextureId);
+                GL.ActiveTexture(TextureUnit.Texture0 + shadow.shadowMap.TextureUnit);
+                GL.BindTexture(TextureTarget.Texture2D, shadow.shadowMap.TextureId);
+            }
         }
 
         public override void InitShadows()
         {
-            shadowTop = new Shadow(1024);
-            shadowTop.projection = Projection.ShadowMedium;
+            for (int i = 0; i < shadowFaces.Count; i++)
+            {
+                if (shadowFaces[i] == null)
+                    continue;
 
-            shadowBottom = new Shadow(1024);
-            shadowBottom.projection = Projection.ShadowMedium;
-
-            shadowLeft = new Shadow(1024);
-            shadowLeft.projection = Projection.ShadowMedium;
-
-            shadowRight = new Shadow(1024);
-            shadowRight.projection = Projection.ShadowMedium;
-
-            shadowFront = new Shadow(1024);
-            shadowFront.projection = Projection.ShadowMedium;
-
-            shadowBack = new Shadow(1024);
-            shadowBack.projection = Projection.ShadowMedium;
+                shadowFaces[i] = new Shadow(1024)
+                {
+                    projection = Projection.ShadowMedium
+                };
+            }
         }
 
         public override void SetupShadows()
         {
-            shadowTop.shadowMap = Engine.textureManager.GetShadowTexture(shadowTop.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowTop.shadowMap.TextureId);
-            shadowTop.fbo = SetupFrameBuffer(shadowTop.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+            for (int i = 0; i < shadowFaces.Count; i++)
+            {
+                if (shadowFaces[i] == null)
+                    continue;
 
-            shadowTop.shadowMap = Engine.textureManager.GetShadowTexture(shadowTop.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowTop.shadowMap.TextureId);
-            shadowTop.fbo = SetupFrameBuffer(shadowTop.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
+                shadowFaces[i].shadowMap = Engine.textureManager.GetShadowTexture(shadowFaces[i].size);
+                GL.BindTexture(TextureTarget.Texture2D, shadowFaces[i].shadowMap.TextureId);
+                shadowFaces[i].fbo = SetupFrameBuffer(shadowFaces[i].shadowMap.TextureId);
+                GL.BindTexture(TextureTarget.Texture2D, 0);
+            }
         }
 
         public override void ResizeShadowMap(ShadowType type, int size)
         {
-            throw new NotImplementedException();
+            switch (type)
+            {
+                case ShadowType.Top:
+                    shadowTop.size = size;
+                    Engine.textureManager.ResizeShadowTexture(shadowTop.shadowMap, size);
+                    break;
+                case ShadowType.Bottom:
+                    shadowBottom.size = size;
+                    Engine.textureManager.ResizeShadowTexture(shadowBottom.shadowMap, size);
+                    break;
+                case ShadowType.Left:
+                    shadowLeft.size = size;
+                    Engine.textureManager.ResizeShadowTexture(shadowLeft.shadowMap, size);
+                    break;
+                case ShadowType.Right:
+                    shadowRight.size = size;
+                    Engine.textureManager.ResizeShadowTexture(shadowRight.shadowMap, size);
+                    break;
+                case ShadowType.Front:
+                    shadowFront.size = size;
+                    Engine.textureManager.ResizeShadowTexture(shadowFront.shadowMap, size);
+                    break;
+                case ShadowType.Back:
+                    shadowBack.size = size;
+                    Engine.textureManager.ResizeShadowTexture(shadowBack.shadowMap, size);
+                    break;
+            }
         }
 
         public override void RecalculateShadows()
@@ -232,7 +263,29 @@ namespace Engine3D
 
         public override Matrix4 GetProjectionMatrix(ShadowType type)
         {
-            throw new NotImplementedException();
+            Matrix4 projection = Matrix4.Identity;
+            switch (type)
+            {
+                case ShadowType.Top:
+                    projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90), 1.0f, shadowTop.projection.near, shadowTop.projection.far);
+                    break;
+                case ShadowType.Bottom:
+                    projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90), 1.0f, shadowBottom.projection.near, shadowBottom.projection.far);
+                    break;
+                case ShadowType.Left:
+                    projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90), 1.0f, shadowLeft.projection.near, shadowLeft.projection.far);
+                    break;
+                case ShadowType.Right:
+                    projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90), 1.0f, shadowRight.projection.near, shadowRight.projection.far);
+                    break;
+                case ShadowType.Front:
+                    projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90), 1.0f, shadowFront.projection.near, shadowFront.projection.far);
+                    break;
+                case ShadowType.Back:
+                    projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(90), 1.0f, shadowBack.projection.near, shadowBack.projection.far);
+                    break;
+            }
+            return projection;
         }
 
         #endregion
