@@ -410,6 +410,7 @@ namespace Engine3D
             objects[objects.Count - 1].transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(240, 0, 0));
             light.RecalculateShadows();
             Light.SendToGPU(lights, shaderProgram.programId);
+            Light.SendUBOToGPU(lights, lightUBO);
 
             lights = new List<Light>();
             particleSystems = new List<ParticleSystem>();
@@ -526,6 +527,7 @@ namespace Engine3D
             aabbShaderProgram.Reload();
             infiniteFloorShader.Reload();
             shadowShader.Reload();
+            Light.SendUBOToGPU(lights, lightUBO);
         }
     }
 }

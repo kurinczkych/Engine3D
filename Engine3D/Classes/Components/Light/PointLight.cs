@@ -15,15 +15,6 @@ namespace Engine3D
     {
         public float range;
 
-        public int constantLoc;
-        public float constant;
-
-        public int linearLoc;
-        public float linear;
-
-        public int quadraticLoc;
-        public float quadratic;
-
         public Shadow shadowTop;
         public Shadow shadowBottom;
         public Shadow shadowLeft;
@@ -39,57 +30,22 @@ namespace Engine3D
         public PointLight(Object parentObject, int id, VAO wireVao, VBO wireVbo, int wireShaderId, Vector2 windowSize, ref Camera mainCamera) :
             base(parentObject, id, wireVao, wireVbo, wireShaderId, windowSize, ref mainCamera)
         {
-            color = Color4.White;
-            ambient = new Vector3(2f, 2f, 2f);
-            diffuse = new Vector3(0.8f, 0.8f, 0.8f);
-            specular = new Vector3(1.0f, 1.0f, 1.0f);
-            specularPow = 32f;
+            properties.color = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            properties.ambient = new Vector4(2f, 2f, 2f, 1.0f);
+            properties.diffuse = new Vector4(0.8f, 0.8f, 0.8f, 1.0f);
+            properties.specular = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            properties.specularPow = 32f;
 
-            constant = 1.0f;
-            linear = 0.09f;
-            quadratic = 0.032f;
+            properties.constant = 1.0f;
+            properties.linear = 0.09f;
+            properties.quadratic = 0.032f;
 
-            range = AttenuationToRange(constant, linear, quadratic);
+            properties.lightType = 0;
+
+            range = AttenuationToRange(properties.constant, properties.linear, properties.quadratic);
         }
 
         #region Light
-        protected override void GetUniformLocations(int spi)
-        {
-            if (shaderProgramId == spi)
-                return;
-            shaderProgramId = spi;
-
-            uniforms = new Dictionary<string, int>
-            {
-                { "lightTypeLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightType") },
-                { "positionLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].position") },
-                { "colorLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].color") },
-
-                { "ambientLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].ambient") },
-                { "diffuseLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].diffuse") },
-                { "specularLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].specular") },
-
-                { "specularPowLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].specularPow") },
-                { "constantLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].constant") },
-                { "linearLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].linear") },
-                { "quadraticLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].quadratic") },
-
-                { "lightSpaceTopMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceTopMatrix") },
-                { "lightSpaceBottomMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceBottomMatrix") },
-                { "lightSpaceLeftMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceLeftMatrix") },
-                { "lightSpaceRightMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceRightMatrix") },
-                { "lightSpaceFrontMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceFrontMatrix") },
-                { "lightSpaceBackMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceBackMatrix") },
-
-                { "shadowMapTop", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapTop") },
-                { "shadowMapBottom", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapBottom") },
-                { "shadowMapLeft", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapLeft") },
-                { "shadowMapRight", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapRight") },
-                { "shadowMapFront", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapFront") },
-                { "shadowMapBack", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapBack") },
-            };
-        }
-
         public static float AttenuationToRange(float constant, float linear, float quadratic)
         {
             if (linear == 0.7f && quadratic == 1.8f)
@@ -294,26 +250,32 @@ namespace Engine3D
                 {
                     case 0:
                         shadowTop.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
+                        properties.lightSpaceTopMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowTop.projectionMatrix;
                         invCombinedMatrix = Matrix4.Invert(shadowTop.projectionMatrix * GetLightViewMatrixForFrustum(shadowTop.shadowType));
                         break;
                     case 1:
                         shadowBottom.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
+                        properties.lightSpaceBottomMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowBottom.projectionMatrix;
                         invCombinedMatrix = Matrix4.Invert(shadowBottom.projectionMatrix * GetLightViewMatrixForFrustum(shadowBottom.shadowType));
                         break;
                     case 2:
                         shadowLeft.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
+                        properties.lightSpaceLeftMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowLeft.projectionMatrix;
                         invCombinedMatrix = Matrix4.Invert(shadowLeft.projectionMatrix * GetLightViewMatrixForFrustum(shadowLeft.shadowType));
                         break;
                     case 3:
                         shadowRight.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
+                        properties.lightSpaceRightMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowRight.projectionMatrix;
                         invCombinedMatrix = Matrix4.Invert(shadowRight.projectionMatrix * GetLightViewMatrixForFrustum(shadowRight.shadowType));
                         break;
                     case 4:
                         shadowFront.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
+                        properties.lightSpaceFrontMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowFront.projectionMatrix;
                         invCombinedMatrix = Matrix4.Invert(shadowFront.projectionMatrix * GetLightViewMatrixForFrustum(shadowFront.shadowType));
                         break;
                     case 5:
                         shadowBack.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
+                        properties.lightSpaceBackMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowBack.projectionMatrix;
                         invCombinedMatrix = Matrix4.Invert(shadowBack.projectionMatrix * GetLightViewMatrixForFrustum(shadowBack.shadowType));
                         break;
                 }

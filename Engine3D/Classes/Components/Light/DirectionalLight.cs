@@ -27,46 +27,19 @@ namespace Engine3D
         public DirectionalLight(Object parentObject, int id, VAO wireVao, VBO wireVbo, int wireShaderId, Vector2 windowSize, ref Camera mainCamera) :
             base(parentObject, id, wireVao, wireVbo, wireShaderId, windowSize, ref mainCamera)
         {
-            color = Color4.White;
+            properties.color = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
             parentObject.transformation.Rotation = Helper.QuaternionFromEuler(new Vector3(0.0f, -1.0f, 0.0f));
-            ambient = new Vector3(0.1f, 0.1f, 0.1f);
-            diffuse = new Vector3(1.0f, 1.0f, 1.0f);
-            specular = new Vector3(1.0f, 1.0f, 1.0f);
-            specularPow = 2.0f;
+
+            properties.ambient = new Vector4(0.1f, 0.1f, 0.1f, 1.0f);
+            properties.diffuse = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            properties.specular = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            properties.specularPow = 2.0f;
+
+            properties.lightType = 1;
             RecalculateShadows();
         }
 
         #region Light
-        protected override void GetUniformLocations(int spi)
-        {
-            if (shaderProgramId == spi)
-                return;
-            shaderProgramId = spi;
-
-            uniforms = new Dictionary<string, int>
-            {
-                { "lightTypeLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightType") },
-                { "directionLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].direction") },
-                { "colorLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].color") },
-
-                { "ambientLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].ambient") },
-                { "diffuseLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].diffuse") },
-                { "specularLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].specular") },
-                { "specularPowLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].specularPow") },
-
-                { "lightSpaceSmallMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceSmallMatrix") },
-                { "lightSpaceMediumMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceMediumMatrix") },
-                { "lightSpaceLargeMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceLargeMatrix") },
-
-                { "shadowMapSmall", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapSmall") },
-                { "shadowMapMedium", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapMedium") },
-                { "shadowMapLarge", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapLarge") },
-
-                { "cascadeFarPlaneSmall", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].cascadeFarPlaneSmall") },
-                { "cascadeFarPlaneMedium", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].cascadeFarPlaneMedium") },
-                { "cascadeFarPlaneLarge", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].cascadeFarPlaneLarge") },
-            };
-        }
         #endregion
 
         #region Shadow
@@ -155,6 +128,14 @@ namespace Engine3D
         {
             if (!castShadows)
                 return;
+
+            Matrix4 lightview = GetLightViewMatrix();
+            properties.lightSpaceSmallMatrix = lightview * shadowSmall.projectionMatrix;
+            properties.lightSpaceMediumMatrix = lightview * shadowMedium.projectionMatrix;
+            properties.lightSpaceLargeMatrix = lightview * shadowLarge.projectionMatrix;
+            properties.cascadeFarPlaneSmall = shadowSmall.projection.distance;
+            properties.cascadeFarPlaneMedium = shadowMedium.projection.distance;
+            properties.cascadeFarPlaneLarge = shadowLarge.projection.distance;
 
             for (int i = 0; i < 3; i++)
             {

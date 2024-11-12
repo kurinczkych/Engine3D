@@ -79,6 +79,10 @@ namespace Engine3D
         private VBO infiniteFloorVbo;
         #endregion
 
+        #region UBO
+        public int lightUBO;
+        #endregion
+
         #region Shaders
         private Shader cullingProgram;
         private Shader outlineShader;
@@ -206,7 +210,10 @@ namespace Engine3D
                         .ToList();
 
                     if (lights_.Count > 0)
+                    {
                         SetBackgroundColor(true);
+                        Light.SendUBOToGPU(lights, lightUBO);
+                    }
                     else
                         SetBackgroundColor(false);
                 }
@@ -589,6 +596,10 @@ namespace Engine3D
 
             #endregion
 
+            #region UBO Init
+            lightUBO = GL.GenBuffer();
+            #endregion
+
             #region Shader Init
 
             // Create the shader program
@@ -598,7 +609,7 @@ namespace Engine3D
             pickingShader = new Shader(new List<string>() { "picking.vert", "picking.frag" });
             pickingInstancedShader = new Shader(new List<string>() { "pickingInstanced.vert", "pickingInstanced.frag" });
             shaderProgram = new Shader(new List<string>() { "Default.vert", "Default.frag" });
-            shaderAnimProgram = new Shader(new List<string>() { "DefaultWithBone.vert", "Default.frag" });
+            shaderAnimProgram = new Shader(new List<string>() { "DefaultWithBone.vert", "Default.frag" }, "Default");
             instancedShaderProgram = new Shader(new List<string>() { "Instanced.vert", "Instanced.frag" });
             posTexShader = new Shader(new List<string>() { "postex.vert", "postex.frag" });
             onlyPosShaderProgram = new Shader(new List<string>() { "onlyPos.vert", "onlyPos.frag" });
@@ -647,7 +658,12 @@ namespace Engine3D
                 sunComp.RecalculateShadows();
 
             shaderProgram.Use();
+            int blockIndex = GL.GetUniformBlockIndex(shaderProgram.programId, "LightData");
+            GL.UniformBlockBinding(shaderProgram.programId, blockIndex, 0);
+            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, lightUBO);
+
             Light.SendToGPU(lights, shaderProgram.programId);
+            Light.SendUBOToGPU(lights, lightUBO);
 
             #region DebugLines
             // Projection matrix and mesh loading

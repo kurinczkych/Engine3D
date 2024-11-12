@@ -98,6 +98,10 @@ namespace Engine3D
                             Engine.consoleManager.AddLog("Test");
                         }
                     }
+                    if (ImGui.MenuItem("Clear messages"))
+                    {
+                        Engine.consoleManager.Clear();
+                    }
                     ImGui.Dummy(new System.Numerics.Vector2(0, 5));
                     ImGui.EndMenu();
                 }

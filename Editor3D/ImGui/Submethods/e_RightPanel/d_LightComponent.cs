@@ -61,25 +61,25 @@ namespace Engine3D
                         ColorPicker("Color", ref color);
                         light.SetColor(color);
 
-                        float[] ambientVec = new float[] { light.ambient.X, light.ambient.Y, light.ambient.Z };
+                        float[] ambientVec = new float[] { light.properties.ambient.X, light.properties.ambient.Y, light.properties.ambient.Z };
                         Vector3 ambient = InputFloat3("Ambient", new string[] { "X", "Y", "Z" }, ambientVec, ref keyboardState);
-                        if (light.ambient != ambient)
-                            light.ambient = ambient;
+                        if (light.properties.ambient.Xyz != ambient)
+                            light.properties.ambient = new Vector4(ambient, 1.0f);
 
-                        float[] diffuseVec = new float[] { light.diffuse.X, light.diffuse.Y, light.diffuse.Z };
+                        float[] diffuseVec = new float[] { light.properties.diffuse.X, light.properties.diffuse.Y, light.properties.diffuse.Z };
                         Vector3 diffuse = InputFloat3("Diffuse", new string[] { "X", "Y", "Z" }, diffuseVec, ref keyboardState);
-                        if (light.diffuse != diffuse)
-                            light.diffuse = diffuse;
+                        if (light.properties.diffuse.Xyz != diffuse)
+                            light.properties.diffuse = new Vector4(diffuse, 1.0f);
 
-                        float[] specularVec = new float[] { light.specular.X, light.specular.Y, light.specular.Z };
+                        float[] specularVec = new float[] { light.properties.specular.X, light.properties.specular.Y, light.properties.specular.Z };
                         Vector3 specular = InputFloat3("Specular", new string[] { "X", "Y", "Z" }, specularVec, ref keyboardState);
-                        if (light.specular != specular)
-                            light.specular = specular;
+                        if (light.properties.specular.Xyz != specular)
+                            light.properties.specular = new Vector4(specular, 1.0f);
 
-                        float[] specularPowVec = new float[] { light.specularPow };
+                        float[] specularPowVec = new float[] { light.properties.specularPow };
                         float specularPow = InputFloat1("SpecularPow", new string[] { "X" }, specularPowVec, ref keyboardState);
-                        if (light.specularPow != specularPow)
-                            light.specularPow = specularPow;
+                        if (light.properties.specularPow != specularPow)
+                            light.properties.specularPow = specularPow;
                     }
                     if (ImGui.CollapsingHeader("Shadow"))
                     {
@@ -290,6 +290,7 @@ namespace Engine3D
                         if (recalculateFrustum)
                         {
                             light.RecalculateShadows();
+                            Light.SendUBOToGPU(engine.lights, engine.lightUBO);
                         }
                     }
                 }
@@ -301,25 +302,25 @@ namespace Engine3D
                         ColorPicker("Color", ref color);
                         light.SetColor(color);
 
-                        float[] ambientVec = new float[] { light.ambient.X, light.ambient.Y, light.ambient.Z };
+                        float[] ambientVec = new float[] { light.properties.ambient.X, light.properties.ambient.Y, light.properties.ambient.Z };
                         Vector3 ambient = InputFloat3("Ambient", new string[] { "X", "Y", "Z" }, ambientVec, ref keyboardState);
-                        if (light.ambient != ambient)
-                            light.ambient = ambient;
+                        if (light.properties.ambient.Xyz != ambient)
+                            light.properties.ambient = new Vector4(ambient, 1.0f);
 
-                        float[] diffuseVec = new float[] { light.diffuse.X, light.diffuse.Y, light.diffuse.Z };
+                        float[] diffuseVec = new float[] { light.properties.diffuse.X, light.properties.diffuse.Y, light.properties.diffuse.Z };
                         Vector3 diffuse = InputFloat3("Diffuse", new string[] { "X", "Y", "Z" }, diffuseVec, ref keyboardState);
-                        if (light.diffuse != diffuse)
-                            light.diffuse = diffuse;
+                        if (light.properties.diffuse.Xyz != diffuse)
+                            light.properties.diffuse = new Vector4(diffuse, 1.0f);
 
-                        float[] specularVec = new float[] { light.specular.X, light.specular.Y, light.specular.Z };
+                        float[] specularVec = new float[] { light.properties.specular.X, light.properties.specular.Y, light.properties.specular.Z };
                         Vector3 specular = InputFloat3("Specular", new string[] { "X", "Y", "Z" }, specularVec, ref keyboardState);
-                        if (light.specular != specular)
-                            light.specular = specular;
+                        if (light.properties.specular.Xyz != specular)
+                            light.properties.specular = new Vector4(specular, 1.0f);
 
-                        float[] specularPowVec = new float[] { light.specularPow };
+                        float[] specularPowVec = new float[] { light.properties.specularPow };
                         float specularPow = InputFloat1("SpecularPow", new string[] { "X" }, specularPowVec, ref keyboardState);
-                        if (light.specularPow != specularPow)
-                            light.specularPow = specularPow;
+                        if (light.properties.specularPow != specularPow)
+                            light.properties.specularPow = specularPow;
 
 
                         ImGui.Checkbox("Advanced", ref advancedLightSetting);
@@ -332,22 +333,22 @@ namespace Engine3D
                             {
                                 pl.range = range;
                                 float[] att = PointLight.RangeToAttenuation(range);
-                                pl.constant = att[0];
-                                pl.linear = att[1];
-                                pl.quadratic = att[2];
+                                pl.properties.constant = att[0];
+                                pl.properties.linear = att[1];
+                                pl.properties.quadratic = att[2];
                             }
                         }
                         else
                         {
                             ImGui.Text("Constant Linear Quadratic");
-                            float[] pointVec = new float[] { pl.constant, pl.linear, pl.quadratic };
+                            float[] pointVec = new float[] { pl.properties.constant, pl.properties.linear, pl.properties.quadratic };
                             Vector3 point = InputFloat3("Point", new string[] { "Constant", "Linear", "Quadratic" }, pointVec, ref keyboardState, true);
-                            if (pl.constant != point[0])
-                                pl.constant = point[0];
-                            if (pl.linear != point[1])
-                                pl.linear = point[1];
-                            if (pl.quadratic != point[2])
-                                pl.quadratic = point[2];
+                            if (pl.properties.constant != point[0])
+                                pl.properties.constant = point[0];
+                            if (pl.properties.linear != point[1])
+                                pl.properties.linear = point[1];
+                            if (pl.properties.quadratic != point[2])
+                                pl.properties.quadratic = point[2];
                         }
                     }
                 }

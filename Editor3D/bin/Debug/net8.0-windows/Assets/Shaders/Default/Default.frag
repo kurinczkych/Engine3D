@@ -14,12 +14,13 @@ struct Light
     vec4 ambient;     
     vec4 diffuse;     
     vec4 specular;    
+
     float specularPow;
-    float padding2;   
+    float padding2;
     float padding3;
     float padding4;
 
-    int lightType;
+    int lightType; 
     int padding5;
     int padding6;
     int padding7;
@@ -28,18 +29,18 @@ struct Light
     mat4 lightSpaceMediumMatrix;
     mat4 lightSpaceLargeMatrix;
     
-    float cascadeFarPlaneSmall;
+    float cascadeFarPlaneSmall; 
     float cascadeFarPlaneMedium;
     float cascadeFarPlaneLarge;
-    float padding8;
+    float padding8;          
     
-    mat4 lightSpaceTopMatrix;
+    mat4 lightSpaceTopMatrix;  
     mat4 lightSpaceBottomMatrix;
     mat4 lightSpaceLeftMatrix;
     mat4 lightSpaceRightMatrix;
     mat4 lightSpaceFrontMatrix;
     mat4 lightSpaceBackMatrix;
-};
+}; 
 
 in vec3 gsFragPos;
 in vec3 gsFragNormal;
@@ -51,12 +52,18 @@ in vec3 gsTangentViewDir;
 uniform vec3 cameraPosition;
 
 //TODO: Refine this array thingy, because using 64 MAX_LIGHTS, makes it exceed the maximum register size(?).
-#define MAX_LIGHTS 32
+#define MAX_LIGHTS 64 //64 is max with UBO
 
 layout(std140) uniform LightData {
     Light lights[MAX_LIGHTS];
-    int actualNumOfLights;
 };
+
+uniform int actualNumOfLights;
+
+uniform sampler2DArray smallShadowMaps;
+uniform sampler2DArray mediumShadowMaps;
+uniform sampler2DArray largeShadowMaps;
+uniform sampler2DArray faceShadowMaps;
 
 out vec4 FragColor;
 uniform sampler2D textureSampler;
@@ -81,7 +88,7 @@ const float metallnessVar = 0.04;
 float DirShadowCalculation(Light light, vec3 normal)
 {
     float distanceToFragment = length(gsFragPos);
-    vec3 lightDir = normalize(-light.direction);
+    vec3 lightDir = normalize(-light.direction.xyz);
 
     float closestDepth = 0;
     float currentDepth = 0;
@@ -102,7 +109,8 @@ float DirShadowCalculation(Light light, vec3 normal)
         }
 
         // Retrieve the closest depth from the shadow map at this fragment's position
-        closestDepth = texture(light.shadowMapSmall, projCoords.xy).r;
+        //closestDepth = texture(light.shadowMapSmall, projCoords.xy).r;
+        closestDepth = 0;
 
         // Current depth of the fragment from the light's perspective
         currentDepth = projCoords.z;
@@ -123,7 +131,8 @@ float DirShadowCalculation(Light light, vec3 normal)
         }
 
         // Retrieve the closest depth from the shadow map at this fragment's position
-        closestDepth = texture(light.shadowMapMedium, projCoords.xy).r;
+        //closestDepth = texture(light.shadowMapMedium, projCoords.xy).r;
+        closestDepth = 0;
 
         // Current depth of the fragment from the light's perspective
         currentDepth = projCoords.z;
@@ -144,7 +153,8 @@ float DirShadowCalculation(Light light, vec3 normal)
         }
 
         // Retrieve the closest depth from the shadow map at this fragment's position
-        closestDepth = texture(light.shadowMapLarge, projCoords.xy).r;
+        //closestDepth = texture(light.shadowMapLarge, projCoords.xy).r;
+        closestDepth = 0;
 
         // Current depth of the fragment from the light's perspective
         currentDepth = projCoords.z;
@@ -164,7 +174,7 @@ float DirShadowCalculation(Light light, vec3 normal)
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float metalness)
 {
-    vec3 lightDir = normalize(light.position - fragPos);
+    vec3 lightDir = normalize(light.position.xyz - fragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
     // diffuse shading
@@ -181,20 +191,20 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float 
     }
 
     // attenuation
-    float distance    = length(light.position - fragPos);
+    float distance    = length(light.position.xyz - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + 
   			     light.quadratic * (distance * distance));    
 
     // combine results
     float ao = texture(textureSamplerAO, gsFragTexCoord).r;
-    vec3 ambient  = light.ambient * light.diffuse;
+    vec3 ambient  = light.ambient.xyz * light.diffuse.xyz;
     if(useAO == 1)
     {
         ambient  = ambient * ao;
     }
 
-    vec3 diffuse  = light.diffuse  * diff * light.diffuse;
-    vec3 specular = light.specular * spec * light.specular;
+    vec3 diffuse  = light.diffuse.xyz  * diff * light.diffuse.xyz;
+    vec3 specular = light.specular.xyz * spec * light.specular.xyz;
 
     if(useMetal == 1)
     {
@@ -208,12 +218,12 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float 
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
-    return (ambient + diffuse + specular) * light.color;
+    return (ambient + diffuse + specular) * light.color.xyz;
 } 
 
 vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 {
-    vec3 lightDir = normalize(-light.direction);
+    vec3 lightDir = normalize(-light.direction.xyz);
 
     // Diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -233,7 +243,7 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
     }
 
     // Ambient lighting
-    vec3 ambient = light.ambient * light.diffuse;
+    vec3 ambient = light.ambient.xyz * light.diffuse.xyz;
     if (useAO == 1)
     {
         float ao = texture(textureSamplerAO, gsFragTexCoord).r;
@@ -241,8 +251,8 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
     }
 
     // Diffuse and Specular calculation
-    vec3 diffuse = light.diffuse * diff;
-    vec3 specular = light.specular * spec;
+    vec3 diffuse = light.diffuse.xyz * diff;
+    vec3 specular = light.specular.xyz * spec;
 
     // Metalness adjustment (using Fresnel-Schlick approximation)
     if (useMetal == 1)
@@ -256,8 +266,10 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
     }
 
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
-    float shadow = DirShadowCalculation(light, normal); 
-    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color;
+//    float shadow = DirShadowCalculation(light, normal); 
+    float shadow = 0.5;
+//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
+    return vec3(1);
 //    return (ambient + diffuse + specular) * light.color;
 }
 
@@ -303,19 +315,30 @@ void main()
     {
         result = vec3(0);
 
-        for(int i = 0; i < actualNumOfLights; i++)
+        if(lights[0].lightType == 0)
         {
-            if(lights[i].lightType == 0)
-            {
-                result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
-            }
-            else if(lights[i].lightType == 1)
-            {
-                // Calculate the light-space position for shadow mapping
-                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
-                //result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
-            }
+            result = vec3(1.0,0.0,0.0);
         }
+        else
+        {
+            result = vec3(0.0,1.0,0.0);
+        }
+
+//        for(int i = 0; i < actualNumOfLights; i++)
+//        {
+//            if(lights[i].lightType == 0)
+//            {
+//                result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
+//                result = vec3(1.0,0.0,0.0);
+//            }
+//            else if(lights[i].lightType == 1)
+//            {
+//                // Calculate the light-space position for shadow mapping
+//                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
+//                result = vec3(0.0,1.0,0.0);
+//                //result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
+//            }
+//        }
     }
 
     FragColor = vec4(result, 1.0) * gsFragColor;

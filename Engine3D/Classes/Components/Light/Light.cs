@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Text;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ namespace Engine3D
 
     public abstract class Light : IComponent
     {
+        public const int MAX_LIGHTS = 64;
+
         public enum LightType
         {
             PointLight = 0,
@@ -26,21 +29,9 @@ namespace Engine3D
         protected int shaderProgramId;
         protected int id;
 
+        public LightStruct properties = new LightStruct();
+
         #region LightVars
-        public int colorLoc;
-        protected Color4 color;
-
-        public float ambientS = 0.1f;
-        public int ambientLoc;
-        public Vector3 ambient;
-
-        public int diffuseLoc;
-        public Vector3 diffuse;
-
-        public int specularPowLoc;
-        public float specularPow = 64f;
-        public int specularLoc;
-        public Vector3 specular;
         #endregion
 
         #region ShadowVars
@@ -94,64 +85,95 @@ namespace Engine3D
         }
 
         #region Light
-        protected abstract void GetUniformLocations(int spi);
+
+        public static void SendUBOToGPU(List<Light> lights, int lightUBO)
+        {
+            //TODO: Optimalization, only send lights that can be seen
+            LightStruct[] lightStructs = lights.Take(MAX_LIGHTS).Select(x => x.properties).ToArray();
+            int structSize = Marshal.SizeOf(typeof(LightStruct));
+            int size = structSize * MAX_LIGHTS;
+
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+
+            try
+            {
+                // Copy each LightStruct to unmanaged memory
+                for (int i = 0; i < lightStructs.Length; i++)
+                {
+                    IntPtr structPtr = IntPtr.Add(ptr, i * structSize);
+                    Marshal.StructureToPtr(lightStructs[i], structPtr, false);
+                }
+
+                // Bind and upload data to the UBO
+                GL.BindBuffer(BufferTarget.UniformBuffer, lightUBO);
+                GL.BufferSubData(BufferTarget.UniformBuffer, IntPtr.Zero, size, ptr);
+            }
+            finally
+            {
+                // Free the unmanaged memory
+                Marshal.FreeHGlobal(ptr);
+
+                // Unbind the buffer
+                GL.BindBuffer(BufferTarget.UniformBuffer, 0);
+            }
+        }
 
         public static void SendToGPU(List<Light> lights, int shaderProgramId)
         {
             GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), lights.Count);
 
-            for (int i = 0; i < lights.Count; i++)
-            {
-                lights[i].GetUniformLocations(shaderProgramId);
-                if (lights[i] is PointLight pl)
-                {
-                    GL.Uniform1(lights[i].uniforms["lightTypeLoc"], 0);
-                    Vector3 c = new Vector3(lights[i].color.R, lights[i].color.G, lights[i].color.B);
-                    GL.Uniform3(lights[i].uniforms["positionLoc"], lights[i].parentObject.transformation.Position);
-                    GL.Uniform3(lights[i].uniforms["colorLoc"], c);
-                    GL.Uniform3(lights[i].uniforms["ambientLoc"], lights[i].ambient);
-                    GL.Uniform3(lights[i].uniforms["diffuseLoc"], lights[i].diffuse);
-                    GL.Uniform3(lights[i].uniforms["specularLoc"], lights[i].specular);
-                    GL.Uniform1(lights[i].uniforms["specularPowLoc"], lights[i].specularPow);
-                    GL.Uniform1(lights[i].uniforms["constantLoc"], pl.constant);
-                    GL.Uniform1(lights[i].uniforms["linearLoc"], pl.linear);
-                }
-                else if (lights[i] is DirectionalLight dl)
-                {
-                    GL.Uniform1(lights[i].uniforms["lightTypeLoc"], 1);
-                    Vector3 c = new Vector3(lights[i].color.R, lights[i].color.G, lights[i].color.B);
-                    Vector3 rot = GetLightDirectionFromEuler(lights[i].parentObject.transformation.Rotation);
-                    GL.Uniform3(lights[i].uniforms["directionLoc"], rot);
-                    GL.Uniform3(lights[i].uniforms["colorLoc"], c);
+            //for (int i = 0; i < lights.Count; i++)
+            //{
+            //    lights[i].GetUniformLocations(shaderProgramId);
+            //    if (lights[i] is PointLight pl)
+            //    {
+            //        GL.Uniform1(lights[i].uniforms["lightTypeLoc"], 0);
+            //        Vector4 c = new Vector4(lights[i].properties.color.X, lights[i].properties.color.Y, lights[i].properties.color.X, 1.0f);
+            //        GL.Uniform4(lights[i].uniforms["positionLoc"], lights[i].parentObject.transformation.Position.X, lights[i].parentObject.transformation.Position.Y, lights[i].parentObject.transformation.Position.Z, 1.0f);
+            //        GL.Uniform4(lights[i].uniforms["colorLoc"], c);
+            //        GL.Uniform4(lights[i].uniforms["ambientLoc"], lights[i].properties.ambient);
+            //        GL.Uniform4(lights[i].uniforms["diffuseLoc"], lights[i].properties.diffuse);
+            //        GL.Uniform4(lights[i].uniforms["specularLoc"], lights[i].properties.specular);
+            //        GL.Uniform1(lights[i].uniforms["specularPowLoc"], lights[i].properties.specularPow);
+            //        GL.Uniform1(lights[i].uniforms["constantLoc"], pl.properties.constant);
+            //        GL.Uniform1(lights[i].uniforms["linearLoc"], pl.properties.linear);
+            //    }
+            //    else if (lights[i] is DirectionalLight dl)
+            //    {
+            //        GL.Uniform1(lights[i].uniforms["lightTypeLoc"], 1);
+            //        Vector4 c = new Vector4(lights[i].properties.color.X, lights[i].properties.color.Y, lights[i].properties.color.X, 1.0f);
+            //        Vector3 rot = GetLightDirectionFromEuler(lights[i].parentObject.transformation.Rotation);
+            //        GL.Uniform4(lights[i].uniforms["directionLoc"], rot.X, rot.Y, rot.Z, 1.0f);
+            //        GL.Uniform4(lights[i].uniforms["colorLoc"], c);
 
-                    GL.Uniform3(lights[i].uniforms["ambientLoc"], lights[i].ambient);
-                    GL.Uniform3(lights[i].uniforms["diffuseLoc"], lights[i].diffuse);
-                    GL.Uniform3(lights[i].uniforms["specularLoc"], lights[i].specular);
-                    GL.Uniform1(lights[i].uniforms["specularPowLoc"], lights[i].specularPow);
+            //        GL.Uniform4(lights[i].uniforms["ambientLoc"], lights[i].properties.ambient);
+            //        GL.Uniform4(lights[i].uniforms["diffuseLoc"], lights[i].properties.diffuse);
+            //        GL.Uniform4(lights[i].uniforms["specularLoc"], lights[i].properties.specular);
+            //        GL.Uniform1(lights[i].uniforms["specularPowLoc"], lights[i].properties.specularPow);
 
-                    Matrix4 lightview = lights[i].GetLightViewMatrix();
-                    dl.lightSpaceSmallMatrix = lightview * dl.shadowSmall.projectionMatrix;
-                    dl.lightSpaceMediumMatrix = lightview * dl.shadowMedium.projectionMatrix;
-                    dl.lightSpaceLargeMatrix = lightview * dl.shadowLarge.projectionMatrix;
+            //        Matrix4 lightview = lights[i].GetLightViewMatrix();
+            //        dl.lightSpaceSmallMatrix = lightview * dl.shadowSmall.projectionMatrix;
+            //        dl.lightSpaceMediumMatrix = lightview * dl.shadowMedium.projectionMatrix;
+            //        dl.lightSpaceLargeMatrix = lightview * dl.shadowLarge.projectionMatrix;
 
-                    GL.UniformMatrix4(lights[i].uniforms["lightSpaceSmallMatrix"], true, ref dl.lightSpaceSmallMatrix);
-                    GL.UniformMatrix4(lights[i].uniforms["lightSpaceMediumMatrix"], true, ref dl.lightSpaceMediumMatrix);
-                    GL.UniformMatrix4(lights[i].uniforms["lightSpaceLargeMatrix"], true, ref dl.lightSpaceLargeMatrix);
+            //        GL.UniformMatrix4(lights[i].uniforms["lightSpaceSmallMatrix"], true, ref dl.lightSpaceSmallMatrix);
+            //        GL.UniformMatrix4(lights[i].uniforms["lightSpaceMediumMatrix"], true, ref dl.lightSpaceMediumMatrix);
+            //        GL.UniformMatrix4(lights[i].uniforms["lightSpaceLargeMatrix"], true, ref dl.lightSpaceLargeMatrix);
 
-                    if (dl.shadowSmall.fbo != -1 && dl.shadowSmall.shadowMap.TextureId != -1)
-                        GL.Uniform1(lights[i].uniforms["shadowMapSmall"], dl.shadowSmall.shadowMap.TextureUnit);
+            //        if (dl.shadowSmall.fbo != -1 && dl.shadowSmall.shadowMap.TextureId != -1)
+            //            GL.Uniform1(lights[i].uniforms["shadowMapSmall"], dl.shadowSmall.shadowMap.TextureUnit);
 
-                    if (dl.shadowMedium.fbo != -1 && dl.shadowMedium.shadowMap.TextureId != -1)
-                        GL.Uniform1(lights[i].uniforms["shadowMapMedium"], dl.shadowMedium.shadowMap.TextureUnit);
+            //        if (dl.shadowMedium.fbo != -1 && dl.shadowMedium.shadowMap.TextureId != -1)
+            //            GL.Uniform1(lights[i].uniforms["shadowMapMedium"], dl.shadowMedium.shadowMap.TextureUnit);
 
-                    if (dl.shadowLarge.fbo != -1 && dl.shadowLarge.shadowMap.TextureId != -1)
-                        GL.Uniform1(lights[i].uniforms["shadowMapLarge"], dl.shadowLarge.shadowMap.TextureUnit);
+            //        if (dl.shadowLarge.fbo != -1 && dl.shadowLarge.shadowMap.TextureId != -1)
+            //            GL.Uniform1(lights[i].uniforms["shadowMapLarge"], dl.shadowLarge.shadowMap.TextureUnit);
 
-                    GL.Uniform1(lights[i].uniforms["cascadeFarPlaneSmall"], dl.shadowSmall.projection.distance);
-                    GL.Uniform1(lights[i].uniforms["cascadeFarPlaneMedium"], dl.shadowMedium.projection.distance);
-                    GL.Uniform1(lights[i].uniforms["cascadeFarPlaneLarge"], dl.shadowLarge.projection.distance);
-                }
-            }
+            //        GL.Uniform1(lights[i].uniforms["cascadeFarPlaneSmall"], dl.shadowSmall.projection.distance);
+            //        GL.Uniform1(lights[i].uniforms["cascadeFarPlaneMedium"], dl.shadowMedium.projection.distance);
+            //        GL.Uniform1(lights[i].uniforms["cascadeFarPlaneLarge"], dl.shadowLarge.projection.distance);
+            //    }
+            //}
         }
 
         public static Vector3 GetLightDirectionFromEuler(Quaternion rotation)
@@ -212,19 +234,15 @@ namespace Engine3D
         }
         public void SetColor(Color4 c)
         {
-            color = new Color4(c.R,c.G,c.B,c.A);
+            properties.color = new Vector4(c.R,c.G,c.B,c.A);
         }
-        public void SetColor(System.Numerics.Vector3 c)
+        public void SetColor(System.Numerics.Vector4 c)
         {
-            color = new Color4(c.X, c.Y, c.Z, 1.0f);
-        }
-        public System.Numerics.Vector3 GetColorV3()
-        {
-            return new System.Numerics.Vector3(color.R, color.G, color.B);
+            properties.color = new Vector4(c.X, c.Y, c.Z, 1.0f);
         }
         public Color4 GetColorC4()
         {
-            return color;
+            return new Color4(properties.color.X, properties.color.Y, properties.color.Z, properties.color.W);
         }
         #endregion
     }

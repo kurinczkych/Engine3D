@@ -275,20 +275,20 @@ namespace Engine3D
             //{
             //    mesh.BVHStruct = new BVH(mesh.tris);
             //}
-            throw new NotImplementedException();
+            Engine.consoleManager.AddLog("BVH not implemented yet!", LogType.Warning);
         }
 
         public void BuildBSP()
         {
             //BSPStruct = new BSP(((Mesh)mesh).tris);
-            throw new NotImplementedException();
+            Engine.consoleManager.AddLog("BSP not implemented yet!", LogType.Warning);
         }
 
         public void BuildOctree()
         {
             //Octree = new Octree();
             //Octree.Build(((Mesh)mesh).tris, ((Mesh)mesh).Bounds);
-            throw new NotImplementedException();
+            Engine.consoleManager.AddLog("Octree not implemented yet!", LogType.Warning);
         }
 
         public void BuildGrid(Shader currentShader, Shader GridShader)
@@ -296,7 +296,7 @@ namespace Engine3D
             //GridShader.Use();
             //GridStructure = new GridStructure(((Mesh)mesh).tris, ((Mesh)mesh).Bounds, 20, GridShader.id);
             //currentShader.Use();
-            throw new NotImplementedException();
+            Engine.consoleManager.AddLog("GridStructure not implemented yet!", LogType.Warning);
         }
 
         public void Delete(ref TextureManager textureManager)

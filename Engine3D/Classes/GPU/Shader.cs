@@ -35,16 +35,20 @@ namespace Engine3D
         private Dictionary<string, string> shaderPaths = new Dictionary<string, string>(); 
 
         public int programId;
+        private string folder;
 
         private List<ShaderResource> shaders = new List<ShaderResource>();
 
         public Shader() { }
 
-        public Shader(List<string> shaderNames)
+        public Shader(List<string> shaderNames, string folder = "")
         {
-            LoadShaderPaths(shaderNames);
-
             programId = GL.CreateProgram();
+
+            if (folder == "")
+                this.folder = Path.GetFileNameWithoutExtension(shaderNames[0]);
+            else
+                this.folder = folder;
 
             for(int i = 0; i < shaderNames.Count(); i++)
             {
@@ -77,6 +81,7 @@ namespace Engine3D
             }
 
             Use();
+            shadersLoaded = true;
         }
 
         public void Reload()
@@ -144,45 +149,23 @@ namespace Engine3D
             }
         }
 
-        private void LoadShaderPaths(List<string> shaderNames)
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            var list = assembly.GetManifestResourceNames().Where(x => x.StartsWith("Engine3D.Shaders"));
-            foreach (string resourceName in list)
-            {
-                var parts = resourceName.Split('.');
-                string name = parts[parts.Length-2] + "." + parts[parts.Length-1];
-                if(shaderNames.Contains(name))
-                    shaderPaths.Add(name, resourceName);
-            }
-
-            shadersLoaded = true;
-        }
-
         private string LoadShaderSource(string shaderName)
         {
-            string shaderSource = "";
-            if (shadersLoaded && shaderPaths.ContainsKey(shaderName))
+            // Get the path to the executable directory
+            string exeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+            // Combine the executable directory with the shader path and filename
+            string shaderPath = Path.Combine(exeDirectory, "Assets", "Shaders", folder, shaderName);
+
+            // Check if the shader file exists
+            if (!File.Exists(shaderPath))
             {
-                Assembly assembly = Assembly.GetExecutingAssembly();
-                using (var stream = assembly.GetManifestResourceStream(shaderPaths[shaderName]))
-                {
-                    if(stream != null)
-                    {
-                        using (var reader = new StreamReader(stream))
-                        {
-                            shaderSource = reader.ReadToEnd();
-                            return shaderSource;
-                        }
-                    }
-                    else
-                       throw new Exception("Shader not found!");
-                }
+                Engine.consoleManager.AddLog($"Shader file '{shaderName}' not found at path '{shaderPath}'", LogType.Error);
+                return "";
             }
-            else
-            {
-                throw new Exception("Shader not found!");
-            }
+
+            // Read and return the shader source code as a string
+            return File.ReadAllText(shaderPath);
         }
 
         public static List<string> GetUniformNames(int shaderProgramId)

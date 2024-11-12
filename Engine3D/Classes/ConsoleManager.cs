@@ -59,5 +59,11 @@ namespace Engine3D
             justAdded = true;
         }
 
+        public void Clear()
+        {
+            Logs.Clear();
+            justAdded = true;
+        }
+
     }
 }
