@@ -18,42 +18,17 @@
 
   <ItemGroup>
     <Compile Remove="Audio\**" />
+    <Compile Remove="Shaders\**" />
     <EmbeddedResource Remove="Audio\**" />
+    <EmbeddedResource Remove="Shaders\**" />
     <None Remove="Audio\**" />
+    <None Remove="Shaders\**" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="Fonts\default.ttf" />
     <None Remove="Fonts\times.ttf" />
     <None Remove="Fonts\timesbd.ttf" />
-    <None Remove="Shaders\aabb\aabb.frag" />
-    <None Remove="Shaders\aabb\aabb.vert" />
-    <None Remove="Shaders\ComputeShaders\cullingshader.comp" />
-    <None Remove="Shaders\Default\Default - Copy.frag" />
-    <None Remove="Shaders\Default\Default - Copy.vert" />
-    <None Remove="Shaders\Default\Default.frag" />
-    <None Remove="Shaders\Default\Default.geom" />
-    <None Remove="Shaders\Default\Default.vert" />
-    <None Remove="Shaders\Default\DefaultForGeom.vert" />
-    <None Remove="Shaders\Default\DefaultWithBone.vert" />
-    <None Remove="Shaders\infiniteFloor\infiniteFloor.frag" />
-    <None Remove="Shaders\infiniteFloor\infiniteFloor.vert" />
-    <None Remove="Shaders\Instanced\Instanced.frag" />
-    <None Remove="Shaders\Instanced\Instanced.vert" />
-    <None Remove="Shaders\onlyPos\onlyPos.geom" />
-    <None Remove="Shaders\onlyPos\onlyPosForGeom.vert" />
-    <None Remove="Shaders\outlineInstanced\outlineInstanced.frag" />
-    <None Remove="Shaders\outlineInstanced\outlineInstanced.vert" />
-    <None Remove="Shaders\outline\outline.frag" />
-    <None Remove="Shaders\outline\outline.vert" />
-    <None Remove="Shaders\pickingInstanced\pickingInstanced.frag" />
-    <None Remove="Shaders\pickingInstanced\pickingInstanced.vert" />
-    <None Remove="Shaders\picking\picking.frag" />
-    <None Remove="Shaders\picking\picking.vert" />
-    <None Remove="Shaders\postex\postex.frag" />
-    <None Remove="Shaders\postex\postex.vert" />
-    <None Remove="Shaders\shadow\shadow.frag" />
-    <None Remove="Shaders\shadow\shadow.vert" />
     <None Remove="Textures\bmp_24.bmp" />
     <None Remove="Textures\font.json" />
     <None Remove="Textures\font2.PNG" />
@@ -99,36 +74,6 @@
     <EmbeddedResource Include="Fonts\font.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
-    <EmbeddedResource Include="Shaders\aabb\aabb.frag" />
-    <EmbeddedResource Include="Shaders\aabb\aabb.vert" />
-    <EmbeddedResource Include="Shaders\ComputeShaders\cullingshader.comp" />
-    <EmbeddedResource Include="Shaders\Default\Default - Copy.frag" />
-    <EmbeddedResource Include="Shaders\Default\Default - Copy.vert" />
-    <EmbeddedResource Include="Shaders\Default\DefaultWithBone.vert" />
-    <EmbeddedResource Include="Shaders\Default\Default.frag" />
-    <EmbeddedResource Include="Shaders\Default\Default.geom" />
-    <EmbeddedResource Include="Shaders\Default\Default.vert" />
-    <EmbeddedResource Include="Shaders\Default\DefaultForGeom.vert" />
-    <EmbeddedResource Include="Shaders\infiniteFloor\infiniteFloor.frag" />
-    <EmbeddedResource Include="Shaders\infiniteFloor\infiniteFloor.vert" />
-    <EmbeddedResource Include="Shaders\Instanced\Instanced.frag" />
-    <EmbeddedResource Include="Shaders\Instanced\Instanced.vert" />
-    <EmbeddedResource Include="Shaders\onlyPos\onlyPos.frag" />
-    <EmbeddedResource Include="Shaders\onlyPos\onlyPos.geom" />
-    <EmbeddedResource Include="Shaders\onlyPos\onlyPos.vert" />
-    <EmbeddedResource Include="Shaders\onlyPos\onlyPosForGeom.vert" />
-    <EmbeddedResource Include="Shaders\outlineInstanced\outlineInstanced.frag" />
-    <EmbeddedResource Include="Shaders\outlineInstanced\outlineInstanced.vert" />
-    <EmbeddedResource Include="Shaders\outline\outline.frag" />
-    <EmbeddedResource Include="Shaders\outline\outline.vert" />
-    <EmbeddedResource Include="Shaders\pickingInstanced\pickingInstanced.frag" />
-    <EmbeddedResource Include="Shaders\pickingInstanced\pickingInstanced.vert" />
-    <EmbeddedResource Include="Shaders\picking\picking.frag" />
-    <EmbeddedResource Include="Shaders\picking\picking.vert" />
-    <EmbeddedResource Include="Shaders\postex\postex.frag" />
-    <EmbeddedResource Include="Shaders\postex\postex.vert" />
-    <EmbeddedResource Include="Shaders\shadow\shadow.frag" />
-    <EmbeddedResource Include="Shaders\shadow\shadow.vert" />
     <EmbeddedResource Include="Textures\font.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>

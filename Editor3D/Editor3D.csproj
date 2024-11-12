@@ -14,10 +14,129 @@
     <NoWarn>1701;1702;8618;CA1416;CS0162;CS8601</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="bin\Debug\net8.0-windows\Assets\Temp\**" />
+    <EmbeddedResource Remove="bin\Debug\net8.0-windows\Assets\Temp\**" />
+    <None Remove="bin\Debug\net8.0-windows\Assets\Temp\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\net8.0-windows\Assets\Fonts\font.json" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Fonts\times.ttf" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Fonts\timesbd.ttf" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\bmp_24_t.bmp" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\cow.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\High_t.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\High_test_t.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\level.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\metalbox\metalbox_AO.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\metalbox\metalbox_bump.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\metalbox\metalbox_diffuse.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\metalbox\metalbox_full.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\metalbox\metalbox_normal.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\red_t.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\rock_h.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\rock_n.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\rock_t.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\smoke.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Space\space_ao.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Space\space_h.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Space\space_m.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Space\space_n.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Space\space_r.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Space\space_t.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\transparent.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Twilight\TwilightNormalSkin_Twilight_BaseColor.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\Twilight\TwilightNormalSkin_Twilight_Normal.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\wall_ao.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\wall_h.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\wall_n.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\wall_r.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\wall_t.png" />
+    <Content Include="bin\Debug\net8.0-windows\Assets\Textures\white.png" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.10" />
   </ItemGroup>
   <ItemGroup>
   	<FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bin\Debug\net8.0-windows\Assets\Animations\Twilight_Run.FBX" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Audio\example.ogg" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Audio\nyanya.ogg" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\axis.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\bob\bob.blend" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\bob\bob.dae" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\bob\bob.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\bob\bob.stl" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\bob\bob2.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\core_transfer.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\cow.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\cube\cube.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\cube\cube.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\cube\cube2.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\cube\cubeB.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\cube\cubeMoving.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\finger.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\finger2.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\level\level.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\level\level2.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\level\level2Rot.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\level\level2Rot.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\mountains.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\plane.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\roblox\roblox.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\roblox\roblox2.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\roblox\roblox3.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\roblox\roblox4.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\rotating.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\rotatingSingle.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\sphere\sphere.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\sphere\sphereRounded.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\sphere\sphereSmall.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\Spiro\spiro.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\Spiro\spiro_small.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\sponza.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\sponza_big.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\stickman\stick.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\stickman\stickman.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\stickman\stickPos.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\stickman\stickRot.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\suzanne.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\teapot.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\test.obj" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\Twilight_Character.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Models\Twilight_CharacterR.fbx" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\aabb\aabb.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\aabb\aabb.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\ComputeShaders\cullingshader.comp" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default - Copy.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default - Copy.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default.geom" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\DefaultForGeom.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\DefaultWithBone.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\infiniteFloor\infiniteFloor.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\infiniteFloor\infiniteFloor.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Instanced\Instanced.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Instanced\Instanced.frag.bak" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Instanced\Instanced.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\onlyPos\onlyPos.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\onlyPos\onlyPos.geom" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\onlyPos\onlyPos.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\onlyPos\onlyPosForGeom.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\outlineInstanced\outlineInstanced.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\outlineInstanced\outlineInstanced.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\outline\outline.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\outline\outline.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\pickingInstanced\pickingInstanced.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\pickingInstanced\pickingInstanced.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\picking\picking.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\picking\picking.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\postex\postex.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\postex\postex.vert" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\shadow\shadow.frag" />
+    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\shadow\shadow.vert" />
   </ItemGroup>	
   <ItemGroup>
     <ProjectReference Include="..\Engine3D\Engine3D.csproj" />

@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Engine3D", "Engine3D\Engine3D.csproj", "{10BCE775-5FA2-4D27-AA2C-1322E6A705E3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor3D", "Editor3D\Editor3D.csproj", "{421490C4-8605-4D16-8054-5E8DA3BD4424}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Editor3D", "Editor3D\Editor3D.csproj", "{421490C4-8605-4D16-8054-5E8DA3BD4424}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
