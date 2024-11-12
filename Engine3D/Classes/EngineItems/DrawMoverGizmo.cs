@@ -51,7 +51,7 @@ namespace Engine3D
                     if (moverMesh == null)
                         continue;
 
-                    ((Mesh)moverMesh).Draw(gameState, shaderProgram, meshVbo, meshIbo, null);
+                    ((Mesh)moverMesh).Draw(gameState, shaderProgram, meshVbo, meshIbo);
                 }
             }
         }

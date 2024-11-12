@@ -101,25 +101,44 @@ namespace Engine3D
             return textureColorBuffer;
         }
 
-        public int GetShadowDepthTexture(ShadowType type)
+        public int GetShadowDepthTexture(ShadowType type, Light? light)
         {
-            DirectionalLight? light = lights.Where(x => x is DirectionalLight).FirstOrDefault() as DirectionalLight;
             if (light == null)
                 return 0;
 
-            light.BindForReading(type);
+            if (light is DirectionalLight dl)
+            {
+                light.BindForReading(type);
 
-            if (type == ShadowType.Small)
-            {
-                return light.shadowSmall.shadowMap.TextureId;
+                switch(type)
+                {
+                    case ShadowType.Small:
+                        return dl.shadowSmall.shadowMap.TextureId;
+                    case ShadowType.Medium:
+                        return dl.shadowMedium.shadowMap.TextureId;
+                    case ShadowType.Large:
+                        return dl.shadowLarge.shadowMap.TextureId;
+                }
             }
-            else if (type == ShadowType.Medium)
+            else if(light is PointLight pl)
             {
-                return light.shadowMedium.shadowMap.TextureId;
-            }
-            else
-            {
-                return light.shadowLarge.shadowMap.TextureId;
+                light.BindForReading(type);
+
+                switch(type)
+                {
+                    case ShadowType.Top:
+                        return pl.shadowTop.shadowMap.TextureId;
+                    case ShadowType.Bottom:
+                        return pl.shadowBottom.shadowMap.TextureId;
+                    case ShadowType.Left:
+                        return pl.shadowLeft.shadowMap.TextureId;
+                    case ShadowType.Right:
+                        return pl.shadowRight.shadowMap.TextureId;
+                    case ShadowType.Front:
+                        return pl.shadowFront.shadowMap.TextureId;
+                    case ShadowType.Back:
+                        return pl.shadowBack.shadowMap.TextureId;
+                }
             }
 
             return 0;

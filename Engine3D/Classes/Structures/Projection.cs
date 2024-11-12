@@ -53,5 +53,13 @@ namespace Engine3D
                 return new Projection(-70, 70, 70, -70, 0.1f, 100);
             }
         }
+
+        public static Projection ShadowFace
+        {
+            get
+            {
+                return new Projection(-30, 30, 30, -30, 0.1f, 1000);
+            }
+        }
     }
 }

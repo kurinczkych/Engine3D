@@ -33,26 +33,27 @@ namespace Engine3D
                 ImGui.Dummy(new System.Numerics.Vector2(0, 0));
 
                 #region Light
-                LightType lightType = light.GetLightType();
-                ImGui.Text("Type");
-                ImGui.SameLine();
-                ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 0.0f);
-                if (ImGui.BeginCombo("##lightType", lightType.ToString()))
-                {
-                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
-                    foreach (LightType newLightType in Enum.GetValues(typeof(LightType)))
-                    {
-                        if (ImGui.Selectable(newLightType.ToString()))
-                        {
-                            light.SetLightType(newLightType);
-                        }
-                    }
-                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                // TODO: Light type change
+                //LightType lightType = light.GetLightType();
+                //ImGui.Text("Type");
+                //ImGui.SameLine();
+                //ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 0.0f);
+                //if (ImGui.BeginCombo("##lightType", lightType.ToString()))
+                //{
+                //    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                //    foreach (LightType newLightType in Enum.GetValues(typeof(LightType)))
+                //    {
+                //        if (ImGui.Selectable(newLightType.ToString()))
+                //        {
+                //            light.SetLightType(newLightType);
+                //        }
+                //    }
+                //    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
 
-                    ImGui.EndCombo();
-                }
+                //    ImGui.EndCombo();
+                //}
 
-                if (lightType == LightType.DirectionalLight)
+                if (light is DirectionalLight dl)
                 {
                     if (ImGui.CollapsingHeader("Lighting", ImGuiTreeNodeFlags.DefaultOpen))
                     {
@@ -128,50 +129,50 @@ namespace Engine3D
                         #region SmallProjection
                         if (ImGui.CollapsingHeader("Small"))
                         {
-                            float[] sizeVec = new float[] { light.shadowSmall.size };
+                            float[] sizeVec = new float[] { dl.shadowSmall.size };
                             float size = InputFloat1("Shadow Map Size", new string[] { "" }, sizeVec, ref keyboardState, titleSameLine: true, hiddenTitle:"Small");
-                            if (light.shadowSmall.size != size)
+                            if (dl.shadowSmall.size != size)
                             {
                                 resizedShadowMap = (int)size;
                                 resizedShadowType = ShadowType.Small;
                             }
 
-                            float[] projection1Vec = new float[] { light.shadowSmall.projection.left, light.shadowSmall.projection.right };
+                            float[] projection1Vec = new float[] { dl.shadowSmall.projection.left, dl.shadowSmall.projection.right };
                             float[] projection1 = InputFloat2("Projection", new string[] { "L", "R" }, projection1Vec, ref keyboardState, hiddenTitle:"Small");
-                            if (projection1[0] != light.shadowSmall.projection.left)
+                            if (projection1[0] != dl.shadowSmall.projection.left)
                             {
-                                light.shadowSmall.projection.left = projection1[0];
+                                dl.shadowSmall.projection.left = projection1[0];
                                 recalculateFrustum = true;
                             }
-                            if (projection1[1] != light.shadowSmall.projection.right)
+                            if (projection1[1] != dl.shadowSmall.projection.right)
                             {
-                                light.shadowSmall.projection.right = projection1[1];
+                                dl.shadowSmall.projection.right = projection1[1];
                                 recalculateFrustum = true;
                             }
 
-                            float[] projection2Vec = new float[] { light.shadowSmall.projection.top, light.shadowSmall.projection.bottom };
+                            float[] projection2Vec = new float[] { dl.shadowSmall.projection.top, dl.shadowSmall.projection.bottom };
                             float[] projection2 = InputFloat2("", new string[] { "T", "B" }, projection2Vec, ref keyboardState, hiddenTitle: "Small");
-                            if (projection2[0] != light.shadowSmall.projection.top)
+                            if (projection2[0] != dl.shadowSmall.projection.top)
                             {
-                                light.shadowSmall.projection.top = projection2[0];
+                                dl.shadowSmall.projection.top = projection2[0];
                                 recalculateFrustum = true;
                             }
-                            if (projection2[1] != light.shadowSmall.projection.bottom)
+                            if (projection2[1] != dl.shadowSmall.projection.bottom)
                             {
-                                light.shadowSmall.projection.bottom = projection2[1];
+                                dl.shadowSmall.projection.bottom = projection2[1];
                                 recalculateFrustum = true;
                             }
 
-                            float[] nearFarVec = new float[] { light.shadowSmall.projection.near, light.shadowSmall.projection.far };
+                            float[] nearFarVec = new float[] { dl.shadowSmall.projection.near, dl.shadowSmall.projection.far };
                             float[] nearFar = InputFloat2("", new string[] { "Near", "Far" }, nearFarVec, ref keyboardState, hiddenTitle: "Small");
-                            if (nearFar[0] != light.shadowSmall.projection.near)
+                            if (nearFar[0] != dl.shadowSmall.projection.near)
                             {
-                                light.shadowSmall.projection.near = nearFar[0];
+                                dl.shadowSmall.projection.near = nearFar[0];
                                 recalculateFrustum = true;
                             }
-                            if (nearFar[1] != light.shadowSmall.projection.far)
+                            if (nearFar[1] != dl.shadowSmall.projection.far)
                             {
-                                light.shadowSmall.projection.far = nearFar[1];
+                                dl.shadowSmall.projection.far = nearFar[1];
                                 recalculateFrustum = true;
                             }
                         }
@@ -180,50 +181,50 @@ namespace Engine3D
                         #region MediumProjection
                         if (ImGui.CollapsingHeader("Medium"))
                         {
-                            float[] sizeVec = new float[] { light.shadowMedium.size };
+                            float[] sizeVec = new float[] { dl.shadowMedium.size };
                             float size = InputFloat1("Shadow Map Size", new string[] { "" }, sizeVec, ref keyboardState, titleSameLine: true, hiddenTitle: "Medium");
-                            if (light.shadowMedium.size != size)
+                            if (dl.shadowMedium.size != size)
                             {
                                 resizedShadowMap = (int)size;
                                 resizedShadowType = ShadowType.Medium;
                             }
 
-                            float[] projection1Vec = new float[] { light.shadowMedium.projection.left, light.shadowMedium.projection.right };
+                            float[] projection1Vec = new float[] { dl.shadowMedium.projection.left, dl.shadowMedium.projection.right };
                             float[] projection1 = InputFloat2("Projection", new string[] { "L", "R" }, projection1Vec, ref keyboardState, hiddenTitle: "Medium");
-                            if (projection1[0] != light.shadowMedium.projection.left)
+                            if (projection1[0] != dl.shadowMedium.projection.left)
                             {
-                                light.shadowMedium.projection.left = projection1[0];
+                                dl.shadowMedium.projection.left = projection1[0];
                                 recalculateFrustum = true;
                             }
-                            if (projection1[1] != light.shadowMedium.projection.right)
+                            if (projection1[1] != dl.shadowMedium.projection.right)
                             {
-                                light.shadowMedium.projection.right = projection1[1];
+                                dl.shadowMedium.projection.right = projection1[1];
                                 recalculateFrustum = true;
                             }
 
-                            float[] projection2Vec = new float[] { light.shadowMedium.projection.top, light.shadowMedium.projection.bottom };
+                            float[] projection2Vec = new float[] { dl.shadowMedium.projection.top, dl.shadowMedium.projection.bottom };
                             float[] projection2 = InputFloat2("", new string[] { "T", "B" }, projection2Vec, ref keyboardState, hiddenTitle: "Medium");
-                            if (projection2[0] != light.shadowMedium.projection.top)
+                            if (projection2[0] != dl.shadowMedium.projection.top)
                             {
-                                light.shadowMedium.projection.top = projection2[0];
+                                dl.shadowMedium.projection.top = projection2[0];
                                 recalculateFrustum = true;
                             }
-                            if (projection2[1] != light.shadowMedium.projection.bottom)
+                            if (projection2[1] != dl.shadowMedium.projection.bottom)
                             {
-                                light.shadowMedium.projection.bottom = projection2[1];
+                                dl.shadowMedium.projection.bottom = projection2[1];
                                 recalculateFrustum = true;
                             }
 
-                            float[] nearFarVec = new float[] { light.shadowMedium.projection.near, light.shadowMedium.projection.far };
+                            float[] nearFarVec = new float[] { dl.shadowMedium.projection.near, dl.shadowMedium.projection.far };
                             float[] nearFar = InputFloat2("", new string[] { "Near", "Far" }, nearFarVec, ref keyboardState, hiddenTitle: "Medium");
-                            if (nearFar[0] != light.shadowMedium.projection.near)
+                            if (nearFar[0] != dl.shadowMedium.projection.near)
                             {
-                                light.shadowMedium.projection.near = nearFar[0];
+                                dl.shadowMedium.projection.near = nearFar[0];
                                 recalculateFrustum = true;
                             }
-                            if (nearFar[1] != light.shadowMedium.projection.far)
+                            if (nearFar[1] != dl.shadowMedium.projection.far)
                             {
-                                light.shadowMedium.projection.far = nearFar[1];
+                                dl.shadowMedium.projection.far = nearFar[1];
                                 recalculateFrustum = true;
                             }
                         }
@@ -232,50 +233,50 @@ namespace Engine3D
                         #region LargeProjection
                         if (ImGui.CollapsingHeader("Large"))
                         {
-                            float[] sizeVec = new float[] { light.shadowLarge.size };
+                            float[] sizeVec = new float[] { dl.shadowLarge.size };
                             float size = InputFloat1("Shadow Map Size", new string[] { "" }, sizeVec, ref keyboardState, titleSameLine: true, hiddenTitle: "Large");
-                            if (light.shadowLarge.size != size)
+                            if (dl.shadowLarge.size != size)
                             {
                                 resizedShadowMap = (int)size;
                                 resizedShadowType = ShadowType.Large;
                             }
 
-                            float[] projection1Vec = new float[] { light.shadowLarge.projection.left, light.shadowLarge.projection.right };
+                            float[] projection1Vec = new float[] { dl.shadowLarge.projection.left, dl.shadowLarge.projection.right };
                             float[] projection1 = InputFloat2("Projection", new string[] { "L", "R" }, projection1Vec, ref keyboardState, hiddenTitle: "Large");
-                            if (projection1[0] != light.shadowLarge.projection.left)
+                            if (projection1[0] != dl.shadowLarge.projection.left)
                             {
-                                light.shadowLarge.projection.left = projection1[0];
+                                dl.shadowLarge.projection.left = projection1[0];
                                 recalculateFrustum = true;
                             }
-                            if (projection1[1] != light.shadowLarge.projection.right)
+                            if (projection1[1] != dl.shadowLarge.projection.right)
                             {
-                                light.shadowLarge.projection.right = projection1[1];
+                                dl.shadowLarge.projection.right = projection1[1];
                                 recalculateFrustum = true;
                             }
 
-                            float[] projection2Vec = new float[] { light.shadowLarge.projection.top, light.shadowLarge.projection.bottom };
+                            float[] projection2Vec = new float[] { dl.shadowLarge.projection.top, dl.shadowLarge.projection.bottom };
                             float[] projection2 = InputFloat2("", new string[] { "T", "B" }, projection2Vec, ref keyboardState, hiddenTitle: "Large");
-                            if (projection2[0] != light.shadowLarge.projection.top)
+                            if (projection2[0] != dl.shadowLarge.projection.top)
                             {
-                                light.shadowLarge.projection.top = projection2[0];
+                                dl.shadowLarge.projection.top = projection2[0];
                                 recalculateFrustum = true;
                             }
-                            if (projection2[1] != light.shadowLarge.projection.bottom)
+                            if (projection2[1] != dl.shadowLarge.projection.bottom)
                             {
-                                light.shadowLarge.projection.bottom = projection2[1];
+                                dl.shadowLarge.projection.bottom = projection2[1];
                                 recalculateFrustum = true;
                             }
 
-                            float[] nearFarVec = new float[] { light.shadowLarge.projection.near, light.shadowLarge.projection.far };
+                            float[] nearFarVec = new float[] { dl.shadowLarge.projection.near, dl.shadowLarge.projection.far };
                             float[] nearFar = InputFloat2("", new string[] { "Near", "Far" }, nearFarVec, ref keyboardState, hiddenTitle: "Large");
-                            if (nearFar[0] != light.shadowLarge.projection.near)
+                            if (nearFar[0] != dl.shadowLarge.projection.near)
                             {
-                                light.shadowLarge.projection.near = nearFar[0];
+                                dl.shadowLarge.projection.near = nearFar[0];
                                 recalculateFrustum = true;
                             }
-                            if (nearFar[1] != light.shadowLarge.projection.far)
+                            if (nearFar[1] != dl.shadowLarge.projection.far)
                             {
-                                light.shadowLarge.projection.far = nearFar[1];
+                                dl.shadowLarge.projection.far = nearFar[1];
                                 recalculateFrustum = true;
                             }
                         }
@@ -292,7 +293,7 @@ namespace Engine3D
                         }
                     }
                 }
-                else if (lightType == LightType.PointLight)
+                else if (light is PointLight pl)
                 {
                     if (ImGui.CollapsingHeader("Lighting"))
                     {
@@ -325,28 +326,28 @@ namespace Engine3D
 
                         if (!advancedLightSetting)
                         {
-                            float[] rangeVec = new float[] { light.range };
+                            float[] rangeVec = new float[] { pl.range };
                             float range = InputFloat1("Range", new string[] { "" }, specularPowVec, ref keyboardState);
-                            if (light.range != range)
+                            if (pl.range != range)
                             {
-                                light.range = range;
-                                float[] att = Light.RangeToAttenuation(range);
-                                light.constant = att[0];
-                                light.linear = att[1];
-                                light.quadratic = att[2];
+                                pl.range = range;
+                                float[] att = PointLight.RangeToAttenuation(range);
+                                pl.constant = att[0];
+                                pl.linear = att[1];
+                                pl.quadratic = att[2];
                             }
                         }
                         else
                         {
                             ImGui.Text("Constant Linear Quadratic");
-                            float[] pointVec = new float[] { light.constant, light.linear, light.quadratic };
+                            float[] pointVec = new float[] { pl.constant, pl.linear, pl.quadratic };
                             Vector3 point = InputFloat3("Point", new string[] { "Constant", "Linear", "Quadratic" }, pointVec, ref keyboardState, true);
-                            if (light.constant != point[0])
-                                light.constant = point[0];
-                            if (light.linear != point[1])
-                                light.linear = point[1];
-                            if (light.quadratic != point[2])
-                                light.quadratic = point[2];
+                            if (pl.constant != point[0])
+                                pl.constant = point[0];
+                            if (pl.linear != point[1])
+                                pl.linear = point[1];
+                            if (pl.quadratic != point[2])
+                                pl.quadratic = point[2];
                         }
                     }
                 }

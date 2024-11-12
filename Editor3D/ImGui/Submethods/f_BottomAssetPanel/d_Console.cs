@@ -17,16 +17,15 @@ namespace Engine3D
                     currentBottomPanelTab = "Console";
 
                 ImGui.PushFont(default18);
-                foreach (Log log in Engine.consoleManager.Logs)
+                foreach (Log log in Engine.consoleManager.Logs.AsEnumerable().Reverse().Take(numberOfLogsToShowList[numberOfLogsToShowListIndex]))
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, Engine.consoleManager.LogColors[log.logType]);
                     ImGui.TextWrapped(log.message);
                     ImGui.PopStyleColor();
                 }
                 ImGui.PopFont();
-                ImGui.SetScrollHereY(1.0f);
 
-                ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - editorData.gameWindow.bottomPanelSize - 4);
+                //ImGui.SetCursorPosY(ImGui.GetWindowSize().Y - editorData.gameWindow.bottomPanelSize - 4);
                 ImGui.Separator();
                 ImGui.SetNextItemWidth(200);
                 ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 0);
@@ -52,8 +51,32 @@ namespace Engine3D
 
                     ImGui.EndCombo();
                 }
-                ImGui.PopStyleVar();
+                ImGui.SameLine();
+                ImGui.Dummy(new System.Numerics.Vector2(20, 0));
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(200);
+                if (ImGui.BeginCombo("##numberOfLogsToShow", numberOfLogsToShowList[numberOfLogsToShowListIndex].ToString()))
+                {
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                    for (int i = 0; i < numberOfLogsToShowList.Length; i++)
+                    {
+                        bool isSelected = (i == numberOfLogsToShowListIndex);
 
+                        if (ImGui.Selectable(numberOfLogsToShowList[i].ToString(), isSelected))
+                        {
+                            numberOfLogsToShowListIndex = i;
+                        }
+
+                        if (isSelected)
+                        {
+                            ImGui.SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+
+                    ImGui.EndCombo();
+                }
+                ImGui.PopStyleVar();
                 ImGui.Dummy(new System.Numerics.Vector2(ImGui.GetContentRegionAvail().X, 20));
 
                 ImGui.EndTabItem();

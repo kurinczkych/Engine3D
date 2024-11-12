@@ -41,8 +41,6 @@ namespace Engine3D
         [JsonIgnore]
         private Matrix4 viewMatrix, projectionMatrix;
         [JsonIgnore]
-        private Matrix4 lightSpaceSmallMatrix, lightSpaceMediumMatrix, lightSpaceLargeMatrix;
-        [JsonIgnore]
         private Vector3 cameraPos;
 
         public AnimationClip? animation;
@@ -81,7 +79,7 @@ namespace Engine3D
             //ComputeTangents();
 
             GetUniformLocations();
-            SendUniforms(null);
+            SendUniforms();
         }
 
         // Custom Mesh Without Texture
@@ -105,7 +103,7 @@ namespace Engine3D
             //ComputeTangents();
 
             GetUniformLocations();
-            SendUniforms(null);
+            SendUniforms();
         }
 
         // Uniform Mesh With Texture
@@ -133,7 +131,7 @@ namespace Engine3D
             //ComputeTangents();
 
             GetUniformLocations();
-            SendUniforms(null);
+            SendUniforms();
         }
 
         // Uniform Mesh Without Texture
@@ -156,7 +154,7 @@ namespace Engine3D
             //ComputeTangents();
 
             GetUniformLocations();
-            SendUniforms(null);
+            SendUniforms();
         }
 
         private void ConvertToNDCOnlyPos(ref List<float> vertices, triangle tri, int index)
@@ -197,16 +195,6 @@ namespace Engine3D
             uniformLocations.Add("cameraPosition", GL.GetUniformLocation(shaderProgramId, "cameraPosition"));
             uniformLocations.Add("useBillboarding", GL.GetUniformLocation(shaderProgramId, "useBillboarding"));
             uniformLocations.Add("useShading", GL.GetUniformLocation(shaderProgramId, "useShading"));
-
-            uniformLocations.Add("lightSpaceSmallMatrix", GL.GetUniformLocation(shaderProgramId, "lightSpaceSmallMatrix"));
-            uniformLocations.Add("lightSpaceMediumMatrix", GL.GetUniformLocation(shaderProgramId, "lightSpaceMediumMatrix"));
-            uniformLocations.Add("lightSpaceLargeMatrix", GL.GetUniformLocation(shaderProgramId, "lightSpaceLargeMatrix"));
-            uniformLocations.Add("shadowMapSmall", GL.GetUniformLocation(shaderProgramId, "shadowMapSmall"));
-            uniformLocations.Add("shadowMapMedium", GL.GetUniformLocation(shaderProgramId, "shadowMapMedium"));
-            uniformLocations.Add("shadowMapLarge", GL.GetUniformLocation(shaderProgramId, "shadowMapLarge"));
-            uniformLocations.Add("cascadeFarPlaneSmall", GL.GetUniformLocation(shaderProgramId, "cascadeFarPlaneSmall"));
-            uniformLocations.Add("cascadeFarPlaneMedium", GL.GetUniformLocation(shaderProgramId, "cascadeFarPlaneMedium"));
-            uniformLocations.Add("cascadeFarPlaneLarge", GL.GetUniformLocation(shaderProgramId, "cascadeFarPlaneLarge"));
 
             #region TextureLocations
             uniformLocations.Add("useTexture", GL.GetUniformLocation(shaderProgramId, "useTexture"));
@@ -291,7 +279,7 @@ namespace Engine3D
             #endregion
         }
 
-        protected override void SendUniforms(Light? light)
+        protected override void SendUniforms()
         {
             if(Engine.GLState.currentShaderId != shaderProgramId)
             {
@@ -308,33 +296,6 @@ namespace Engine3D
                 GetUniformLocations();
             }
 
-            if (light != null)
-            {
-                Matrix4 lightview = light.GetLightViewMatrix();
-                lightSpaceSmallMatrix = lightview * light.shadowSmall.projectionMatrixOrtho;
-                lightSpaceMediumMatrix = lightview * light.shadowMedium.projectionMatrixOrtho;
-                lightSpaceLargeMatrix = lightview * light.shadowLarge.projectionMatrixOrtho;
-
-                if (light.shadowSmall.fbo != -1 && light.shadowSmall.shadowMap.TextureId != -1)
-                    GL.Uniform1(uniformLocations["shadowMapSmall"], light.shadowSmall.shadowMap.TextureUnit);
-
-                if (light.shadowMedium.fbo != -1 && light.shadowMedium.shadowMap.TextureId != -1)
-                    GL.Uniform1(uniformLocations["shadowMapMedium"], light.shadowMedium.shadowMap.TextureUnit);
-
-                if (light.shadowLarge.fbo != -1 && light.shadowLarge.shadowMap.TextureId != -1)
-                    GL.Uniform1(uniformLocations["shadowMapLarge"], light.shadowLarge.shadowMap.TextureUnit);
-
-                GL.Uniform1(uniformLocations["cascadeFarPlaneSmall"], light.shadowSmall.projection.distance);
-                GL.Uniform1(uniformLocations["cascadeFarPlaneMedium"], light.shadowMedium.projection.distance);
-                GL.Uniform1(uniformLocations["cascadeFarPlaneLarge"], light.shadowLarge.projection.distance);
-            }
-            else
-            {
-                lightSpaceSmallMatrix = Matrix4.Identity;
-                lightSpaceMediumMatrix = Matrix4.Identity;
-                lightSpaceLargeMatrix = Matrix4.Identity;
-            }
-
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
@@ -342,10 +303,6 @@ namespace Engine3D
             GL.Uniform3(uniformLocations["cameraPosition"], camera.GetPosition());
             GL.Uniform1(uniformLocations["useBillboarding"], useBillboarding);
             GL.Uniform1(uniformLocations["useShading"], useShading ? 1 : 0);
-
-            GL.UniformMatrix4(uniformLocations["lightSpaceSmallMatrix"], true, ref lightSpaceSmallMatrix);
-            GL.UniformMatrix4(uniformLocations["lightSpaceMediumMatrix"], true, ref lightSpaceMediumMatrix);
-            GL.UniformMatrix4(uniformLocations["lightSpaceLargeMatrix"], true, ref lightSpaceLargeMatrix);
 
             if (texture != null)
             {
@@ -545,7 +502,7 @@ namespace Engine3D
             //GL.UniformMatrix4(GL.GetUniformLocation(shader.id, "_rotMatrix"), true, ref rotationMatrix);
         }
 
-        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_, Light? light)
+        public void Draw(GameState gameRunning, Shader shader, VBO vbo_, IBO ibo_)
         {
             if (!parentObject.isEnabled)
                 return;
@@ -553,7 +510,7 @@ namespace Engine3D
             Vao.Bind();
             shader.Use();
 
-            SendUniforms(light);
+            SendUniforms();
 
             foreach (MeshData mesh in model.meshes)
             {

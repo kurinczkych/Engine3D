@@ -84,6 +84,23 @@ namespace Engine3D
                     ImGui.Dummy(new System.Numerics.Vector2(0, 5));
                     ImGui.EndMenu();
                 }
+                if (ImGui.BeginMenu("Console"))
+                {
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                    if (ImGui.MenuItem("Add test message"))
+                    {
+                        Engine.consoleManager.AddLog("Test");
+                    }
+                    if (ImGui.MenuItem("Add 100 test messages"))
+                    {
+                        for (int i = 0; i < 100; i++)
+                        {
+                            Engine.consoleManager.AddLog("Test");
+                        }
+                    }
+                    ImGui.Dummy(new System.Numerics.Vector2(0, 5));
+                    ImGui.EndMenu();
+                }
                 ImGui.EndMenuBar();
             }
         }

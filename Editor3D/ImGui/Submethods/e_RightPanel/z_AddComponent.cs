@@ -45,6 +45,10 @@ namespace Engine3D
                         {
                             alreadyGotBase.Add("BaseMesh");
                         }
+                        if (cType.BaseType != null && cType.BaseType.Name == "Light")
+                        {
+                            alreadyGotBase.Add("Light");
+                        }
                     }
                     HashSet<string> alreadyGotClass = new HashSet<string>();
                     foreach (IComponent c in o.components)
@@ -82,9 +86,14 @@ namespace Engine3D
 
                                 o.components.Add((IComponent)comp);
                             }
-                            if (component.name == "Light")
+                            if (component.name == "PointLight")
                             {
-                                o.components.Add(new Light(o, 0, LightType.DirectionalLight, engine.wireVao, engine.wireVbo, engine.onlyPosShaderProgram.programId, engine.windowSize, ref engine.mainCamera_));
+                                o.components.Add(new PointLight(o, 0, engine.wireVao, engine.wireVbo, engine.onlyPosShaderProgram.programId, engine.windowSize, ref engine.mainCamera_));
+                                engine.lights = new List<Light>();
+                            }
+                            if (component.name == "DirectionalLight")
+                            {
+                                o.components.Add(new DirectionalLight(o, 0, engine.wireVao, engine.wireVbo, engine.onlyPosShaderProgram.programId, engine.windowSize, ref engine.mainCamera_));
                                 engine.lights = new List<Light>();
                             }
                             if (component.name == "ParticleSystem")

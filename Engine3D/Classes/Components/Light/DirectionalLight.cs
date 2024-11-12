@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using Newtonsoft.Json;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,9 @@ namespace Engine3D
         public Shadow shadowLarge;
         public Shadow shadowMedium;
         public Shadow shadowSmall;
+
+        [JsonIgnore]
+        public Matrix4 lightSpaceSmallMatrix, lightSpaceMediumMatrix, lightSpaceLargeMatrix;
 
         public DirectionalLight()
         {
@@ -48,7 +52,19 @@ namespace Engine3D
                 { "ambientLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].ambient") },
                 { "diffuseLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].diffuse") },
                 { "specularLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].specular") },
-                { "specularPowLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].specularPow") }
+                { "specularPowLoc", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].specularPow") },
+
+                { "lightSpaceSmallMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceSmallMatrix") },
+                { "lightSpaceMediumMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceMediumMatrix") },
+                { "lightSpaceLargeMatrix", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].lightSpaceLargeMatrix") },
+
+                { "shadowMapSmall", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapSmall") },
+                { "shadowMapMedium", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapMedium") },
+                { "shadowMapLarge", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].shadowMapLarge") },
+
+                { "cascadeFarPlaneSmall", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].cascadeFarPlaneSmall") },
+                { "cascadeFarPlaneMedium", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].cascadeFarPlaneMedium") },
+                { "cascadeFarPlaneLarge", GL.GetUniformLocation(shaderProgramId, "lights[" + id + "].cascadeFarPlaneLarge") },
             };
         }
         #endregion
@@ -88,13 +104,13 @@ namespace Engine3D
 
         public override void InitShadows()
         {
-            shadowSmall = new Shadow(2048);
+            shadowSmall = new Shadow(2048, ShadowType.Small);
             shadowSmall.projection = Projection.ShadowSmall;
 
-            shadowMedium = new Shadow(1024);
+            shadowMedium = new Shadow(1024, ShadowType.Medium);
             shadowMedium.projection = Projection.ShadowMedium;
 
-            shadowLarge = new Shadow(512);
+            shadowLarge = new Shadow(512, ShadowType.Large);
             shadowLarge.projection = Projection.ShadowLarge;
         }
 
@@ -142,8 +158,8 @@ namespace Engine3D
 
             for (int i = 0; i < 3; i++)
             {
-                Matrix4 invCombinedMatrix = Matrix4.Invert(shadowSmall.projectionMatrix * GetLightViewMatrixForFrustum());
                 shadowSmall.projectionMatrix = GetProjectionMatrix(ShadowType.Small);
+                Matrix4 invCombinedMatrix = Matrix4.Invert(shadowSmall.projectionMatrix * GetLightViewMatrixForFrustum());
                 if (i == 1)
                 {
                     shadowMedium.projectionMatrix = GetProjectionMatrix(ShadowType.Medium);
@@ -245,14 +261,14 @@ namespace Engine3D
             }
         }
 
-        public override Matrix4 GetLightViewMatrix()
+        public override Matrix4 GetLightViewMatrix(ShadowType type = default)
         {
             Vector3 lightPosition = parentObject.transformation.Position - (GetDirection() * distanceFromScene);
 
             return Matrix4.LookAt(lightPosition, parentObject.transformation.Position, Vector3.UnitY);
         }
 
-        public override Matrix4 GetLightViewMatrixForFrustum()
+        public override Matrix4 GetLightViewMatrixForFrustum(ShadowType type = default)
         {
             Vector3 lightPosition = parentObject.transformation.Position - Vector3.Transform(new Vector3(0, 0, -1), parentObject.transformation.Rotation) * distanceFromScene;
 

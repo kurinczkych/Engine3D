@@ -46,13 +46,17 @@ namespace Engine3D
         private string[] showConsoleTypeList = new string[0];
         private int showConsoleTypeListIndex = 2;
 
+        private int[] numberOfLogsToShowList = new int[0];
+        private int numberOfLogsToShowListIndex = 1;
+
         private bool showAddComponentWindow = false;
         private string searchQueryAddComponent = "";
         private List<ComponentType> availableComponents = new List<ComponentType>();
         private List<ComponentType> filteredComponents = new List<ComponentType>();
         private HashSet<string> exludedComponents = new HashSet<string>
         {
-            "BaseMesh"
+            "BaseMesh",
+            "Light"
         };
 
         public System.Numerics.Vector2? particlesWindowPos = null;
@@ -72,6 +76,7 @@ namespace Engine3D
             engineData = new EngineData();
 
             showConsoleTypeList = Enum.GetNames(typeof(ShowConsoleType));
+            numberOfLogsToShowList = new int[] { 50, 100, 200, 500, 1000 };
 
             var style = ImGui.GetStyle();
             style.WindowBorderSize = 0.5f;

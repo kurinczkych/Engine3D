@@ -329,9 +329,9 @@ namespace Engine3D
             shaderProgram.Use();
             Light.SendToGPU(lights, shaderProgram.programId);
 
-            DrawObjectsForShadow(args.Time, ShadowType.Small);
-            DrawObjectsForShadow(args.Time, ShadowType.Medium);
-            DrawObjectsForShadow(args.Time, ShadowType.Large);
+            shadowShader.Use();
+            foreach (var light in lights)
+                DrawObjectsForShadow(args.Time, light);
 
             GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);

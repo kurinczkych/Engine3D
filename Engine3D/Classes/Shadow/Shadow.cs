@@ -20,9 +20,12 @@ namespace Engine3D
         public Projection projection = Projection.ShadowSmall;
         public Matrix4 projectionMatrix = Matrix4.Identity;
 
-        public Shadow(int size)
+        public ShadowType shadowType;
+
+        public Shadow(int size, ShadowType shadowType)
         {
             this.size = size;
+            this.shadowType = shadowType;
         }
     }
 }

@@ -116,7 +116,7 @@ namespace Engine3D
                     GL.Uniform1(lights[i].uniforms["constantLoc"], pl.constant);
                     GL.Uniform1(lights[i].uniforms["linearLoc"], pl.linear);
                 }
-                else if (lights[i] is DirectionalLight)
+                else if (lights[i] is DirectionalLight dl)
                 {
                     GL.Uniform1(lights[i].uniforms["lightTypeLoc"], 1);
                     Vector3 c = new Vector3(lights[i].color.R, lights[i].color.G, lights[i].color.B);
@@ -128,6 +128,28 @@ namespace Engine3D
                     GL.Uniform3(lights[i].uniforms["diffuseLoc"], lights[i].diffuse);
                     GL.Uniform3(lights[i].uniforms["specularLoc"], lights[i].specular);
                     GL.Uniform1(lights[i].uniforms["specularPowLoc"], lights[i].specularPow);
+
+                    Matrix4 lightview = lights[i].GetLightViewMatrix();
+                    dl.lightSpaceSmallMatrix = lightview * dl.shadowSmall.projectionMatrix;
+                    dl.lightSpaceMediumMatrix = lightview * dl.shadowMedium.projectionMatrix;
+                    dl.lightSpaceLargeMatrix = lightview * dl.shadowLarge.projectionMatrix;
+
+                    GL.UniformMatrix4(lights[i].uniforms["lightSpaceSmallMatrix"], true, ref dl.lightSpaceSmallMatrix);
+                    GL.UniformMatrix4(lights[i].uniforms["lightSpaceMediumMatrix"], true, ref dl.lightSpaceMediumMatrix);
+                    GL.UniformMatrix4(lights[i].uniforms["lightSpaceLargeMatrix"], true, ref dl.lightSpaceLargeMatrix);
+
+                    if (dl.shadowSmall.fbo != -1 && dl.shadowSmall.shadowMap.TextureId != -1)
+                        GL.Uniform1(lights[i].uniforms["shadowMapSmall"], dl.shadowSmall.shadowMap.TextureUnit);
+
+                    if (dl.shadowMedium.fbo != -1 && dl.shadowMedium.shadowMap.TextureId != -1)
+                        GL.Uniform1(lights[i].uniforms["shadowMapMedium"], dl.shadowMedium.shadowMap.TextureUnit);
+
+                    if (dl.shadowLarge.fbo != -1 && dl.shadowLarge.shadowMap.TextureId != -1)
+                        GL.Uniform1(lights[i].uniforms["shadowMapLarge"], dl.shadowLarge.shadowMap.TextureUnit);
+
+                    GL.Uniform1(lights[i].uniforms["cascadeFarPlaneSmall"], dl.shadowSmall.projection.distance);
+                    GL.Uniform1(lights[i].uniforms["cascadeFarPlaneMedium"], dl.shadowMedium.projection.distance);
+                    GL.Uniform1(lights[i].uniforms["cascadeFarPlaneLarge"], dl.shadowLarge.projection.distance);
                 }
             }
         }
@@ -156,8 +178,8 @@ namespace Engine3D
         public abstract void ResizeShadowMap(ShadowType type, int size);
 
         public abstract void RecalculateShadows();
-        public abstract Matrix4 GetLightViewMatrix();
-        public abstract Matrix4 GetLightViewMatrixForFrustum();
+        public abstract Matrix4 GetLightViewMatrix(ShadowType type = default);
+        public abstract Matrix4 GetLightViewMatrixForFrustum(ShadowType type = default);
         public abstract Matrix4 GetProjectionMatrix(ShadowType type);
 
         protected int SetupFrameBuffer(int shadowMapId)

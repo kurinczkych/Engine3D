@@ -508,7 +508,7 @@ namespace Engine3D
             }
         }
 
-        protected abstract void SendUniforms(Light? light);
+        protected abstract void SendUniforms();
 
         public void CalculateFrustumVisibility(bool allVisible=false, bool globalPosition=false)
         {

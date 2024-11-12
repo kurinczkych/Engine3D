@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#pragma warning disable CS8602
+
 namespace Engine3D
 {
     public partial class Engine
@@ -22,10 +24,24 @@ namespace Engine3D
             vertices.Clear();
             Type? currentMeshType = null;
 
-            Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
-
-            if(light != null)
-                light.BindForReading(ShadowType.Small);
+            foreach(Light light in lights)
+            {
+                if (light is PointLight pl)
+                {
+                    light.BindForReading(pl.shadowTop.shadowType);
+                    light.BindForReading(pl.shadowBottom.shadowType);
+                    light.BindForReading(pl.shadowLeft.shadowType);
+                    light.BindForReading(pl.shadowRight.shadowType);
+                    light.BindForReading(pl.shadowFront.shadowType);
+                    light.BindForReading(pl.shadowBack.shadowType);
+                }
+                else if (light is DirectionalLight dl)
+                {
+                    light.BindForReading(dl.shadowSmall.shadowType);
+                    light.BindForReading(dl.shadowMedium.shadowType);
+                    light.BindForReading(dl.shadowLarge.shadowType);
+                }
+            }
 
             foreach (Object o in objects)
             {
@@ -68,7 +84,7 @@ namespace Engine3D
                                 }
 
                                 if(mesh.animation == null)
-                                    mesh.Draw(gameState, shaderProgram, meshVbo, meshIbo, light);
+                                    mesh.Draw(gameState, shaderProgram, meshVbo, meshIbo);
                                 else
                                     mesh.DrawAnimated(gameState, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
 
@@ -140,7 +156,7 @@ namespace Engine3D
 
                         onlyPosShaderProgram.Use();
 
-                        mesh.Draw(gameState, onlyPosShaderProgram, wireVbo, wireIbo, light);
+                        mesh.Draw(gameState, onlyPosShaderProgram, wireVbo, wireIbo);
                         currentMeshType = typeof(Gizmo);
                     }
                 }
@@ -243,25 +259,83 @@ namespace Engine3D
 
         }
 
-        private void DrawObjectsForShadow(double delta, ShadowType type)
+        private void DrawObjectsForShadow(double delta, Light light)
         {
-            Light? light = lights.Where(x => x.GetLightType() == Light.LightType.DirectionalLight).FirstOrDefault();
-            if (light == null)
-                return;
+            Matrix4 shadowView = Matrix4.Identity;
+            Matrix4 shadowProj = Matrix4.Identity;
 
-            light.BindForWriting(type);
+            if(light is PointLight pl)
+            {
+                for(int i = 0; i < 6; i++)
+                {
+                    switch (i)
+                    {
+                        case 0:
+                            light.BindForWriting(pl.shadowTop.shadowType);
+                            shadowProj = pl.shadowTop.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowTop.shadowType);
+                            break;
+                        case 1:
+                            light.BindForWriting(pl.shadowBottom.shadowType);
+                            shadowProj = pl.shadowBottom.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowBottom.shadowType);
+                            break;
+                        case 2:
+                            light.BindForWriting(pl.shadowLeft.shadowType);
+                            shadowProj = pl.shadowLeft.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowLeft.shadowType);
+                            break;
+                        case 3:
+                            light.BindForWriting(pl.shadowRight.shadowType);
+                            shadowProj = pl.shadowRight.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowRight.shadowType);
+                            break;
+                        case 4:
+                            light.BindForWriting(pl.shadowFront.shadowType);
+                            shadowProj = pl.shadowFront.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowFront.shadowType);
+                            break;
+                        case 5:
+                            light.BindForWriting(pl.shadowBack.shadowType);
+                            shadowProj = pl.shadowBack.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowBack.shadowType);
+                            break;
+                    }
 
+                    DrawObjectsForShadow(shadowProj, shadowView);
+                }
+            }
+            else if(light is DirectionalLight dl)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    if (i == 0)
+                    {
+                        light.BindForWriting(dl.shadowSmall.shadowType);
+                        shadowProj = dl.shadowSmall.projectionMatrix;
+                        shadowView = light.GetLightViewMatrix(dl.shadowSmall.shadowType);
+                    }
+                    else if (i == 1)
+                    {
+                        light.BindForWriting(dl.shadowMedium.shadowType);
+                        shadowProj = dl.shadowMedium.projectionMatrix;
+                        shadowView = light.GetLightViewMatrix(dl.shadowMedium.shadowType);
+                    }
+                    else if (i == 2)
+                    {
+                        light.BindForWriting(dl.shadowLarge.shadowType);
+                        shadowProj = dl.shadowLarge.projectionMatrix;
+                        shadowView = light.GetLightViewMatrix(dl.shadowLarge.shadowType);
+                    }
+
+                    DrawObjectsForShadow(shadowProj, shadowView);
+                }
+            }
+        }
+
+        private void DrawObjectsForShadow(Matrix4 shadowProj, Matrix4 shadowView)
+        {
             GL.Clear(ClearBufferMask.DepthBufferBit);
-
-            shadowShader.Use();
-
-            Matrix4 shadowProj = light.shadowSmall.projectionMatrixOrtho;
-            if(type == ShadowType.Medium)
-                shadowProj = light.shadowMedium.projectionMatrixOrtho;
-            else if(type == ShadowType.Large)
-                shadowProj = light.shadowLarge.projectionMatrixOrtho;
-
-            Matrix4 shadowView = light.GetLightViewMatrix();
 
             vertices.Clear();
             Type? currentMeshType = null;
@@ -290,7 +364,7 @@ namespace Engine3D
                         if (o.isEnabled)
                         {
                             if (mesh.animation == null)
-                                mesh.DrawOnlyPos(gameState, shadowShader, onlyPosVao, onlyPosVbo, onlyPosIbo, shadowProj, shadowView);  
+                                mesh.DrawOnlyPos(gameState, shadowShader, onlyPosVao, onlyPosVbo, onlyPosIbo, shadowProj, shadowView);
                             //else
                             //    mesh.DrawAnimated(gameState, shaderAnimProgram, meshAnimVao, meshAnimVbo, meshAnimIbo, delta);
                         }

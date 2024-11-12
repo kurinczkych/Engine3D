@@ -50,7 +50,7 @@ namespace Engine3D
             lines = new List<Line>();
 
             GetUniformLocations();
-            SendUniforms(null);
+            SendUniforms();
         }
 
 
@@ -61,7 +61,7 @@ namespace Engine3D
             uniformLocations.Add("projectionMatrix", GL.GetUniformLocation(shaderProgramId, "projectionMatrix"));
         }
 
-        protected override void SendUniforms(Light? light)
+        protected override void SendUniforms()
         {
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
@@ -94,7 +94,7 @@ namespace Engine3D
 
             if (gameRunning == GameState.Stopped && vertices.Count > 0)
             {
-                SendUniforms(null);
+                SendUniforms();
 
                 return vertices;
             }
@@ -118,7 +118,7 @@ namespace Engine3D
                      }
                  });
 
-            SendUniforms(null);
+            SendUniforms();
 
             return vertices;
         }

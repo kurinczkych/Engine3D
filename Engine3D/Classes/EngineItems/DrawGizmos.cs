@@ -33,7 +33,7 @@ namespace Engine3D
 
                 onlyPosShaderProgram.Use();
 
-                gizmo.Draw(gameState, onlyPosShaderProgram, wireVbo, wireIbo, null);
+                gizmo.Draw(gameState, onlyPosShaderProgram, wireVbo, wireIbo);
             }
         }
     }
