@@ -14,8 +14,11 @@
     <NoWarn>1701;1702;8618;CA1416;CS0162;CS8601</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="bin\Debug\net8.0-windows\Assets\Shaders\ComputeShaders\**" />
     <Compile Remove="bin\Debug\net8.0-windows\Assets\Temp\**" />
+    <EmbeddedResource Remove="bin\Debug\net8.0-windows\Assets\Shaders\ComputeShaders\**" />
     <EmbeddedResource Remove="bin\Debug\net8.0-windows\Assets\Temp\**" />
+    <None Remove="bin\Debug\net8.0-windows\Assets\Shaders\ComputeShaders\**" />
     <None Remove="bin\Debug\net8.0-windows\Assets\Temp\**" />
   </ItemGroup>
   <ItemGroup>
@@ -108,7 +111,6 @@
     <None Include="bin\Debug\net8.0-windows\Assets\Models\Twilight_CharacterR.fbx" />
     <None Include="bin\Debug\net8.0-windows\Assets\Shaders\aabb\aabb.frag" />
     <None Include="bin\Debug\net8.0-windows\Assets\Shaders\aabb\aabb.vert" />
-    <None Include="bin\Debug\net8.0-windows\Assets\Shaders\ComputeShaders\cullingshader.comp" />
     <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default - Copy.frag" />
     <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default - Copy.vert" />
     <None Include="bin\Debug\net8.0-windows\Assets\Shaders\Default\Default.frag" />

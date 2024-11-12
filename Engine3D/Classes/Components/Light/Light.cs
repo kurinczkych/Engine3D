@@ -86,6 +86,13 @@ namespace Engine3D
 
         #region Light
 
+        public static void BindLightUBO(ref int lightUBO, int shaderId)
+        {
+            int blockIndex = GL.GetUniformBlockIndex(shaderId, "LightData");
+            GL.UniformBlockBinding(shaderId, blockIndex, 0);
+            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, lightUBO);
+        }
+
         public static void SendUBOToGPU(List<Light> lights, int lightUBO)
         {
             //TODO: Optimalization, only send lights that can be seen

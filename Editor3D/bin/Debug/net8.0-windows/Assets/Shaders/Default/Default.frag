@@ -267,10 +267,11 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
 //    float shadow = DirShadowCalculation(light, normal); 
-    float shadow = 0.5;
+    float shadow = 0.5; 
 //    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
-    return vec3(1);
-//    return (ambient + diffuse + specular) * light.color;
+    return vec3(1.0);
+//    return light.color.xyz;
+//    return (ambient + diffuse + specular) * light.color.xyz;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
@@ -315,30 +316,20 @@ void main()
     {
         result = vec3(0);
 
-        if(lights[0].lightType == 0)
+        for(int i = 0; i < actualNumOfLights; i++)
         {
-            result = vec3(1.0,0.0,0.0);
+            if(lights[i].lightType == 0)
+            {
+                result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
+                result = vec3(1.0,0.0,0.0);
+            }
+            else if(lights[i].lightType == 1)
+            {
+                // Calculate the light-space position for shadow mapping
+                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
+                //result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
+            }
         }
-        else
-        {
-            result = vec3(0.0,1.0,0.0);
-        }
-
-//        for(int i = 0; i < actualNumOfLights; i++)
-//        {
-//            if(lights[i].lightType == 0)
-//            {
-//                result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
-//                result = vec3(1.0,0.0,0.0);
-//            }
-//            else if(lights[i].lightType == 1)
-//            {
-//                // Calculate the light-space position for shadow mapping
-//                result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
-//                result = vec3(0.0,1.0,0.0);
-//                //result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
-//            }
-//        }
     }
 
     FragColor = vec4(result, 1.0) * gsFragColor;

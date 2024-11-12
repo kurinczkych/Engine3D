@@ -16,6 +16,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using static Engine3D.Engine;
 using System.Text;
+using System.Runtime.InteropServices;
 
 #pragma warning disable CS0649
 #pragma warning disable CS8618
@@ -38,6 +39,7 @@ namespace Engine3D
         private int depthRenderbuffer = -1;
 
         public static GLState GLState = new GLState();
+        public static bool reloadUniformLocations = false;
 
         #region VAO/VBO/IBO
         private VAO onlyPosVao;
@@ -84,7 +86,6 @@ namespace Engine3D
         #endregion
 
         #region Shaders
-        private Shader cullingProgram;
         private Shader outlineShader;
         private Shader outlineInstancedShader;
         private Shader pickingShader;
@@ -316,6 +317,10 @@ namespace Engine3D
             //}
             #endregion
 
+            var glError = GL.GetError();
+            if (glError != OpenTK.Graphics.OpenGL4.ErrorCode.NoError)
+                consoleManager.AddLog(glError.ToString(), LogType.Error);
+
             vertices.Clear();
 
             FrustumCalculating();
@@ -457,6 +462,9 @@ namespace Engine3D
                     }
                 }
             }
+
+            if(reloadUniformLocations)
+                reloadUniformLocations = false;
         }
 
         protected override void OnLoad()
@@ -598,12 +606,15 @@ namespace Engine3D
 
             #region UBO Init
             lightUBO = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.UniformBuffer, lightUBO);
+            int size = Marshal.SizeOf(typeof(LightStruct)) * Light.MAX_LIGHTS;
+            GL.BufferData(BufferTarget.UniformBuffer, size, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.BindBuffer(BufferTarget.UniformBuffer, 0);
             #endregion
 
             #region Shader Init
 
             // Create the shader program
-            cullingProgram = new Shader(new List<string>() { "cullingshader.comp" });
             outlineShader = new Shader(new List<string>() { "outline.vert", "outline.frag" });
             outlineInstancedShader = new Shader(new List<string>() { "outlineInstanced.vert", "outlineInstanced.frag" });
             pickingShader = new Shader(new List<string>() { "picking.vert", "picking.frag" });
@@ -658,10 +669,8 @@ namespace Engine3D
                 sunComp.RecalculateShadows();
 
             shaderProgram.Use();
-            int blockIndex = GL.GetUniformBlockIndex(shaderProgram.programId, "LightData");
-            GL.UniformBlockBinding(shaderProgram.programId, blockIndex, 0);
-            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, lightUBO);
 
+            Light.BindLightUBO(ref lightUBO, shaderProgram.programId);
             Light.SendToGPU(lights, shaderProgram.programId);
             Light.SendUBOToGPU(lights, lightUBO);
 
@@ -862,7 +871,6 @@ namespace Engine3D
                 GL.DeleteBuffer(mesh.vboId);               
             }
 
-            cullingProgram.Unload();
             outlineShader.Unload();
             pickingShader.Unload();
             shaderProgram.Unload();

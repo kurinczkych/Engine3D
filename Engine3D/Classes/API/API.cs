@@ -514,7 +514,6 @@ namespace Engine3D
 
         public void ReloadShaders()
         {
-            cullingProgram.Reload();
             outlineShader.Reload();
             outlineInstancedShader.Reload();
             pickingShader.Reload();
@@ -527,6 +526,12 @@ namespace Engine3D
             aabbShaderProgram.Reload();
             infiniteFloorShader.Reload();
             shadowShader.Reload();
+
+            reloadUniformLocations = true;
+
+            shaderProgram.Use();
+            Light.BindLightUBO(ref lightUBO, shaderProgram.programId);
+            Light.SendToGPU(lights, shaderProgram.programId);
             Light.SendUBOToGPU(lights, lightUBO);
         }
     }

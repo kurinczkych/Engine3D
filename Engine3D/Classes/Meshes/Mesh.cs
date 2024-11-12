@@ -290,7 +290,7 @@ namespace Engine3D
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
 
-            if (!uniformLocations.ContainsKey("modelMatrix"))
+            if (!uniformLocations.ContainsKey("modelMatrix") || Engine.reloadUniformLocations)
             {
                 uniformLocations.Clear();
                 GetUniformLocations();

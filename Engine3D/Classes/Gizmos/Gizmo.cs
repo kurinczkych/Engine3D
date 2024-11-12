@@ -42,6 +42,12 @@ namespace Engine3D
             projectionMatrix = camera.projectionMatrix;
             viewMatrix = camera.viewMatrix;
 
+            if (Engine.reloadUniformLocations)
+            {
+                uniformLocations.Clear();
+                GetUniformLocations();
+            }
+
             GL.UniformMatrix4(uniformLocations["modelMatrix"], true, ref modelMatrix);
             GL.UniformMatrix4(uniformLocations["viewMatrix"], true, ref viewMatrix);
             GL.UniformMatrix4(uniformLocations["projectionMatrix"], true, ref projectionMatrix);
