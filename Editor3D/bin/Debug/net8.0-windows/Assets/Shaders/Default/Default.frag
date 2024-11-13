@@ -52,7 +52,7 @@ in vec3 gsTangentViewDir;
 uniform vec3 cameraPosition;
 
 //TODO: Refine this array thingy, because using 64 MAX_LIGHTS, makes it exceed the maximum register size(?).
-#define MAX_LIGHTS 64 //64 is max with UBO
+#define MAX_LIGHTS 16 //64 is max with UBO
 
 layout(std140) uniform LightData {
     Light lights[MAX_LIGHTS];
@@ -166,8 +166,8 @@ float PointShadowCalculation(Light light, vec3 normal)
     
     // Select the closest face for the fragment
     vec3 absLightDir = abs(lightDir);
-    int faceIndex;
-    vec4 fragPosLightSpace;
+    int faceIndex = 0;
+    vec4 fragPosLightSpace = vec4(0.0);
     
     if (absLightDir.x > absLightDir.y && absLightDir.x > absLightDir.z)
     {
@@ -198,18 +198,18 @@ float PointShadowCalculation(Light light, vec3 normal)
         return 0.0; // No shadow
     }
 
-//    // Retrieve the closest depth from the shadow map at this fragment's position
+    // Retrieve the closest depth from the shadow map at this fragment's position
     float closestDepth = texture(faceShadowMaps, vec3(projCoords.xy, light.shadowIndex * 6 + faceIndex)).r;
-//    
-//    // Calculate bias to avoid shadow artifacts
-//    float slopeScaleFactor = 0.01;
-//    float constantBias = 0.0005;
-//    float bias = max(slopeScaleFactor * (1.0 - dot(normal, normalize(lightDir))), constantBias);
-//
-//    // Perform shadow comparison
-//    float shadow = (distanceToFragment - bias > closestDepth) ? 1.0 : 0.0;
-//
-    return 0.0;
+    
+    // Calculate bias to avoid shadow artifacts
+    float slopeScaleFactor = 0.01;
+    float constantBias = 0.0005;
+    float bias = max(slopeScaleFactor * (1.0 - dot(normal, normalize(lightDir))), constantBias);
+
+    // Perform shadow comparison
+    float shadow = (distanceToFragment - bias > closestDepth) ? 1.0 : 0.0;
+
+//    return 0.0;
 }
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir, float metalness)
@@ -262,9 +262,9 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir, float metalness)
     specular *= attenuation;
 
     // Final color calculation, ensuring that contributions do not affect the back face
-//    float shadow = PointShadowCalculation(light, normal); 
-//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
-    return (ambient + diffuse + specular) * light.color.xyz;
+    float shadow = PointShadowCalculation(light, normal); 
+    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
+//    return (ambient + diffuse + specular) * light.color.xyz;
 } 
 
 vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
