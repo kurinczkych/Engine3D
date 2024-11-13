@@ -21,7 +21,7 @@ struct Light
     float padding4;
 
     int lightType; 
-    int padding5;
+    int shadowIndex;
     int padding6;
     int padding7;
 
@@ -90,8 +90,8 @@ float DirShadowCalculation(Light light, vec3 normal)
     float distanceToFragment = length(gsFragPos);
     vec3 lightDir = normalize(-light.direction.xyz);
 
-    float closestDepth = 0;
-    float currentDepth = 0;
+    float closestDepth = 0.0;
+    float currentDepth = 0.0;
 
     if (distanceToFragment < light.cascadeFarPlaneSmall) 
     {
@@ -109,57 +109,41 @@ float DirShadowCalculation(Light light, vec3 normal)
         }
 
         // Retrieve the closest depth from the shadow map at this fragment's position
-        //closestDepth = texture(light.shadowMapSmall, projCoords.xy).r;
-        closestDepth = 0;
+        closestDepth = texture(smallShadowMaps, vec3(projCoords.xy, light.shadowIndex)).r;
 
         // Current depth of the fragment from the light's perspective
         currentDepth = projCoords.z;
     }
     else if (distanceToFragment < light.cascadeFarPlaneMedium) 
     {
-        // Transform the fragment position to light space using the selected matrix
         vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * light.lightSpaceMediumMatrix;
 
-        // Transform to normalized device coordinates (NDC)
         vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5; // Convert NDC to [0, 1] range
+        projCoords = projCoords * 0.5 + 0.5;
 
-        // Check if fragment is outside the shadow map bounds
         if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
         {
             return 0.0; // No shadow
         }
 
-        // Retrieve the closest depth from the shadow map at this fragment's position
-        //closestDepth = texture(light.shadowMapMedium, projCoords.xy).r;
-        closestDepth = 0;
-
-        // Current depth of the fragment from the light's perspective
+        closestDepth = texture(mediumShadowMaps, vec3(projCoords.xy, light.shadowIndex)).r;
         currentDepth = projCoords.z;
     }
     else 
     {
-        // Transform the fragment position to light space using the selected matrix
         vec4 fragPosLightSpace = vec4(gsFragPos, 1.0) * light.lightSpaceLargeMatrix;
 
-        // Transform to normalized device coordinates (NDC)
         vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5; // Convert NDC to [0, 1] range
+        projCoords = projCoords * 0.5 + 0.5;
 
-        // Check if fragment is outside the shadow map bounds
         if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
         {
             return 0.0; // No shadow
         }
 
-        // Retrieve the closest depth from the shadow map at this fragment's position
-        //closestDepth = texture(light.shadowMapLarge, projCoords.xy).r;
-        closestDepth = 0;
-
-        // Current depth of the fragment from the light's perspective
+        closestDepth = texture(largeShadowMaps, vec3(projCoords.xy, light.shadowIndex)).r;
         currentDepth = projCoords.z;
     }
-
 
     // Calculate bias to reduce shadow artifacts
     float slopeScaleFactor = 0.01;
@@ -270,10 +254,10 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
     }
 
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
-//    float shadow = DirShadowCalculation(light, normal); 
-    float shadow = 0.5; 
-//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
-    return (ambient + diffuse + specular) * light.color.xyz;
+    float shadow = DirShadowCalculation(light, normal); 
+//    return (shadow == 0.0) ? vec3(shadow,0.0,0.0) : vec3(0.0,shadow,0.0);
+    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
+//    return (ambient + diffuse + specular) * light.color.xyz;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {

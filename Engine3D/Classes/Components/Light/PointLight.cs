@@ -99,51 +99,36 @@ namespace Engine3D
             switch(type)
             {
                 case ShadowType.Top:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowTop.fbo);
+                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex);
                     GL.Viewport(0, 0, shadowTop.size, shadowTop.size);
                     break;
                 case ShadowType.Bottom:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowBottom.fbo);
+                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 1);
                     GL.Viewport(0, 0, shadowBottom.size, shadowBottom.size);
                     break;
                 case ShadowType.Left:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowLeft.fbo);
+                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 2);
                     GL.Viewport(0, 0, shadowLeft.size, shadowLeft.size);
                     break;
                 case ShadowType.Right:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowRight.fbo);
+                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 3);
                     GL.Viewport(0, 0, shadowRight.size, shadowRight.size);
                     break;
                 case ShadowType.Front:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowFront.fbo);
+                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 4);
                     GL.Viewport(0, 0, shadowFront.size, shadowFront.size);
                     break;
                 case ShadowType.Back:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowBack.fbo);
+                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 5);
                     GL.Viewport(0, 0, shadowBack.size, shadowBack.size);
                     break;
             }
-        }
-
-        public override void BindForReading(ShadowType type)
-        {
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowTop.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowTop.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowBottom.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowBottom.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowLeft.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowLeft.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowRight.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowRight.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowFront.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowFront.shadowMap.TextureId);
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowBack.shadowMap.TextureUnit);
-            GL.BindTexture(TextureTarget.Texture2D, shadowBack.shadowMap.TextureId);
         }
 
         public override void InitShadows()
@@ -172,70 +157,6 @@ namespace Engine3D
             {
                 projection = Projection.ShadowFace
             };
-        }
-
-        public override void SetupShadows()
-        {
-            shadowTop.shadowMap = Engine.textureManager.GetShadowTexture(shadowTop.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowTop.shadowMap.TextureId);
-            shadowTop.fbo = SetupFrameBuffer(shadowTop.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            shadowBottom.shadowMap = Engine.textureManager.GetShadowTexture(shadowBottom.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowBottom.shadowMap.TextureId);
-            shadowBottom.fbo = SetupFrameBuffer(shadowBottom.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            shadowLeft.shadowMap = Engine.textureManager.GetShadowTexture(shadowLeft.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowLeft.shadowMap.TextureId);
-            shadowLeft.fbo = SetupFrameBuffer(shadowLeft.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            shadowRight.shadowMap = Engine.textureManager.GetShadowTexture(shadowRight.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowRight.shadowMap.TextureId);
-            shadowRight.fbo = SetupFrameBuffer(shadowRight.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            shadowFront.shadowMap = Engine.textureManager.GetShadowTexture(shadowFront.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowFront.shadowMap.TextureId);
-            shadowFront.fbo = SetupFrameBuffer(shadowFront.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            shadowBack.shadowMap = Engine.textureManager.GetShadowTexture(shadowBack.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowBack.shadowMap.TextureId);
-            shadowBack.fbo = SetupFrameBuffer(shadowBack.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-        }
-
-        public override void ResizeShadowMap(ShadowType type, int size)
-        {
-            switch (type)
-            {
-                case ShadowType.Top:
-                    shadowTop.size = size;
-                    Engine.textureManager.ResizeShadowTexture(shadowTop.shadowMap, size);
-                    break;
-                case ShadowType.Bottom:
-                    shadowBottom.size = size;
-                    Engine.textureManager.ResizeShadowTexture(shadowBottom.shadowMap, size);
-                    break;
-                case ShadowType.Left:
-                    shadowLeft.size = size;
-                    Engine.textureManager.ResizeShadowTexture(shadowLeft.shadowMap, size);
-                    break;
-                case ShadowType.Right:
-                    shadowRight.size = size;
-                    Engine.textureManager.ResizeShadowTexture(shadowRight.shadowMap, size);
-                    break;
-                case ShadowType.Front:
-                    shadowFront.size = size;
-                    Engine.textureManager.ResizeShadowTexture(shadowFront.shadowMap, size);
-                    break;
-                case ShadowType.Back:
-                    shadowBack.size = size;
-                    Engine.textureManager.ResizeShadowTexture(shadowBack.shadowMap, size);
-                    break;
-            }
         }
 
         public override void RecalculateShadows()

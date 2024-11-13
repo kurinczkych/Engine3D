@@ -48,32 +48,22 @@ namespace Engine3D
         {
             if (type == ShadowType.Small)
             {
-                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowSmall.fbo);
+                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.smallShadowMapArrayId, 0, properties.shadowIndex);
                 GL.Viewport(0, 0, shadowSmall.size, shadowSmall.size);
             }
             else if (type == ShadowType.Medium)
             {
-                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowMedium.fbo);
+                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.mediumShadowMapArrayId, 0, properties.shadowIndex);
                 GL.Viewport(0, 0, shadowMedium.size, shadowMedium.size);
             }
             else
             {
-                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, shadowLarge.fbo);
+                GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+                GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.largeShadowMapArrayId, 0, properties.shadowIndex);
                 GL.Viewport(0, 0, shadowLarge.size, shadowLarge.size);
             }
-        }
-
-        public override void BindForReading(ShadowType type)
-        {
-            //TODO: Dont bind every frame
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowSmall.shadowMap.TextureUnit);//12
-            GL.BindTexture(TextureTarget.Texture2D, shadowSmall.shadowMap.TextureId);//17
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowMedium.shadowMap.TextureUnit);//14
-            GL.BindTexture(TextureTarget.Texture2D, shadowMedium.shadowMap.TextureId);//18
-
-            GL.ActiveTexture(TextureUnit.Texture0 + shadowLarge.shadowMap.TextureUnit);//16
-            GL.BindTexture(TextureTarget.Texture2D, shadowLarge.shadowMap.TextureId);//19
         }
 
         public override void InitShadows()
@@ -86,43 +76,6 @@ namespace Engine3D
 
             shadowLarge = new Shadow(512, ShadowType.Large);
             shadowLarge.projection = Projection.ShadowLarge;
-        }
-
-        public override void SetupShadows()
-        {
-            shadowSmall.shadowMap = Engine.textureManager.GetShadowTexture(shadowSmall.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowSmall.shadowMap.TextureId);
-            shadowSmall.fbo = SetupFrameBuffer(shadowSmall.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            shadowMedium.shadowMap = Engine.textureManager.GetShadowTexture(shadowMedium.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowMedium.shadowMap.TextureId);
-            shadowMedium.fbo = SetupFrameBuffer(shadowMedium.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            shadowLarge.shadowMap = Engine.textureManager.GetShadowTexture(shadowLarge.size);
-            GL.BindTexture(TextureTarget.Texture2D, shadowLarge.shadowMap.TextureId);
-            shadowLarge.fbo = SetupFrameBuffer(shadowLarge.shadowMap.TextureId);
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-        }
-
-        public override void ResizeShadowMap(ShadowType type, int size)
-        {
-            if (type == ShadowType.Small)
-            {
-                shadowSmall.size = size;
-                Engine.textureManager.ResizeShadowTexture(shadowSmall.shadowMap, size);
-            }
-            else if (type == ShadowType.Medium)
-            {
-                shadowMedium.size = size;
-                Engine.textureManager.ResizeShadowTexture(shadowMedium.shadowMap, size);
-            }
-            else if (type == ShadowType.Large)
-            {
-                shadowLarge.size = size;
-                Engine.textureManager.ResizeShadowTexture(shadowLarge.shadowMap, size);
-            }
         }
 
         public override void RecalculateShadows()

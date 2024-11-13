@@ -30,7 +30,7 @@ namespace Engine3D
         public float padding4;
 
         public int lightType;
-        public int padding5;
+        public int shadowIndex;
         public int padding6;
         public int padding7;
 

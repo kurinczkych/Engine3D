@@ -9,7 +9,6 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Diagnostics;
 using MagicPhysX;
-using Assimp;
 using System.Drawing;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
@@ -41,6 +40,9 @@ namespace Engine3D
         public static GLState GLState = new GLState();
         public static bool reloadUniformLocations = false;
         public string GLError = "";
+        public int debugTexture2048 = -1;
+        public int debugTexture1024 = -1;
+        public int debugTexture512 = -1;
 
         #region VAO/VBO/IBO
         private VAO onlyPosVao;
@@ -85,6 +87,7 @@ namespace Engine3D
         #region UBO
         public int lightUBO;
         public static bool sendLightUBO = false;
+        public static bool recreateShadowArray = false;
         #endregion
 
         #region Shaders
@@ -219,6 +222,8 @@ namespace Engine3D
                     }
                     else
                         SetBackgroundColor(false);
+
+                    Light.ManageShadowArrays(lights_, ref shadowMapArray);
                 }
                 return lights_;
             }
@@ -227,6 +232,8 @@ namespace Engine3D
                 lights_ = null;
             }
         }
+        public static ShadowMapArray shadowMapArray = new ShadowMapArray();
+        public static int globalShadowFrameBuffer = -1;
 
         private List<ParticleSystem>? particleSystems_ = null;
         public List<ParticleSystem> particleSystems
@@ -262,7 +269,15 @@ namespace Engine3D
         public Object lightViewFrustum;
         #endregion
 
-        public Engine(int width, int height) : base(GameWindowSettings.Default, new NativeWindowSettings() { StencilBits = 8, DepthBits = 32 })
+        public Engine(int width, int height) : base(GameWindowSettings.Default, 
+                                                    new NativeWindowSettings()
+                                                    {  
+                                                        StencilBits = 8, 
+                                                        DepthBits = 32, 
+                                                        APIVersion = new Version(4,6),
+                                                        Profile = ContextProfile.Core,
+                                                        Flags = ContextFlags.ForwardCompatible
+                                                    })
         {
             Title = "3D Engine";
 
@@ -329,6 +344,12 @@ namespace Engine3D
                 sendLightUBO = false;
             }
 
+            if (recreateShadowArray)
+            {
+                Light.ManageShadowArrays(lights, ref shadowMapArray);
+                recreateShadowArray = false;
+            }
+
             vertices.Clear();
 
             FrustumCalculating();
@@ -351,7 +372,15 @@ namespace Engine3D
 
             shadowShader.Use();
             foreach (var light in lights)
+            {
+                //TODO: Optimalization - Only render for shadow if change actually changes (mesh or light moves, etc).
+                //if (light.drawDepthBuffers)
+                //{
+                //    DrawObjectsForShadow(args.Time, light);
+                //    light.drawDepthBuffers = false;
+                //}
                 DrawObjectsForShadow(args.Time, light);
+            }
 
             GL.Viewport(0, 0, (int)gameWindowProperty.gameWindowSize.X, (int)gameWindowProperty.gameWindowSize.Y);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
@@ -906,8 +935,27 @@ namespace Engine3D
             return isInsideHorizontally && isInsideVertically;
         }
 
+        public static void CreateGlobalShadowFramebuffer()
+        {
+            globalShadowFrameBuffer = GL.GenFramebuffer();
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, globalShadowFrameBuffer);
+            GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, shadowMapArray.smallShadowMapArrayId, 0, 0);
+
+            GL.DrawBuffer(DrawBufferMode.None);
+            GL.ReadBuffer(ReadBufferMode.None);
+
+            var status = GL.CheckFramebufferStatus(FramebufferTarget.DrawFramebuffer);
+            if (status != FramebufferErrorCode.FramebufferComplete)
+            {
+                throw new Exception($"Framebuffer is incomplete: {status}");
+            }
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
+
         private void InitFramebuffer(Vector2 viewportSize)
         {
+            #region SceneBuffers
             framebuffer = GL.GenFramebuffer();
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebuffer);
 
@@ -936,8 +984,38 @@ namespace Engine3D
                 throw new Exception($"Framebuffer is incomplete: {status}");
             }
 
-            // Unbind the framebuffer to avoid accidental rendering to it
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            #endregion
+
+            #region DebugTexture
+            debugTexture2048 = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, debugTexture2048);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, 2048, 2048, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToBorder);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToBorder);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            debugTexture1024 = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, debugTexture1024);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, 1024, 1024, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToBorder);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToBorder);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            debugTexture512 = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, debugTexture512);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, 512, 512, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToBorder);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToBorder);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            #endregion
         }
 
         public void ResizeFramebuffer(Vector2 newViewPortSize)

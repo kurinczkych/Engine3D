@@ -30,6 +30,7 @@ namespace Engine3D
         protected int id;
 
         public LightStruct properties = new LightStruct();
+        public bool drawDepthBuffers = false;
 
         #region LightVars
         #endregion
@@ -81,7 +82,6 @@ namespace Engine3D
             camera = mainCamera;
 
             InitShadows();
-            SetupShadows();
         }
 
         #region Light
@@ -129,58 +129,37 @@ namespace Engine3D
         {
             GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), lights.Count);
 
-            //for (int i = 0; i < lights.Count; i++)
-            //{
-            //    lights[i].GetUniformLocations(shaderProgramId);
-            //    if (lights[i] is PointLight pl)
-            //    {
-            //        GL.Uniform1(lights[i].uniforms["lightTypeLoc"], 0);
-            //        Vector4 c = new Vector4(lights[i].properties.color.X, lights[i].properties.color.Y, lights[i].properties.color.X, 1.0f);
-            //        GL.Uniform4(lights[i].uniforms["positionLoc"], lights[i].parentObject.transformation.Position.X, lights[i].parentObject.transformation.Position.Y, lights[i].parentObject.transformation.Position.Z, 1.0f);
-            //        GL.Uniform4(lights[i].uniforms["colorLoc"], c);
-            //        GL.Uniform4(lights[i].uniforms["ambientLoc"], lights[i].properties.ambient);
-            //        GL.Uniform4(lights[i].uniforms["diffuseLoc"], lights[i].properties.diffuse);
-            //        GL.Uniform4(lights[i].uniforms["specularLoc"], lights[i].properties.specular);
-            //        GL.Uniform1(lights[i].uniforms["specularPowLoc"], lights[i].properties.specularPow);
-            //        GL.Uniform1(lights[i].uniforms["constantLoc"], pl.properties.constant);
-            //        GL.Uniform1(lights[i].uniforms["linearLoc"], pl.properties.linear);
-            //    }
-            //    else if (lights[i] is DirectionalLight dl)
-            //    {
-            //        GL.Uniform1(lights[i].uniforms["lightTypeLoc"], 1);
-            //        Vector4 c = new Vector4(lights[i].properties.color.X, lights[i].properties.color.Y, lights[i].properties.color.X, 1.0f);
-            //        Vector3 rot = GetLightDirectionFromEuler(lights[i].parentObject.transformation.Rotation);
-            //        GL.Uniform4(lights[i].uniforms["directionLoc"], rot.X, rot.Y, rot.Z, 1.0f);
-            //        GL.Uniform4(lights[i].uniforms["colorLoc"], c);
+            var smallShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "smallShadowMaps");
+            if (smallShadowMapsLoc != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 0);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
+                GL.Uniform1(smallShadowMapsLoc, 0); // TextureUnit 0 for smallShadowMapArray
+            }
 
-            //        GL.Uniform4(lights[i].uniforms["ambientLoc"], lights[i].properties.ambient);
-            //        GL.Uniform4(lights[i].uniforms["diffuseLoc"], lights[i].properties.diffuse);
-            //        GL.Uniform4(lights[i].uniforms["specularLoc"], lights[i].properties.specular);
-            //        GL.Uniform1(lights[i].uniforms["specularPowLoc"], lights[i].properties.specularPow);
+            var mediumShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "mediumShadowMaps");
+            if (mediumShadowMapsLoc != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 1);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
+                GL.Uniform1(mediumShadowMapsLoc, 1); // TextureUnit 0 for mediumShadowMapArrayId
+            }
 
-            //        Matrix4 lightview = lights[i].GetLightViewMatrix();
-            //        dl.lightSpaceSmallMatrix = lightview * dl.shadowSmall.projectionMatrix;
-            //        dl.lightSpaceMediumMatrix = lightview * dl.shadowMedium.projectionMatrix;
-            //        dl.lightSpaceLargeMatrix = lightview * dl.shadowLarge.projectionMatrix;
+            var largeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "largeShadowMaps");
+            if (largeShadowMapsLoc != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 2);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
+                GL.Uniform1(largeShadowMapsLoc, 2); // TextureUnit 0 for largeShadowMapArrayId
+            }
 
-            //        GL.UniformMatrix4(lights[i].uniforms["lightSpaceSmallMatrix"], true, ref dl.lightSpaceSmallMatrix);
-            //        GL.UniformMatrix4(lights[i].uniforms["lightSpaceMediumMatrix"], true, ref dl.lightSpaceMediumMatrix);
-            //        GL.UniformMatrix4(lights[i].uniforms["lightSpaceLargeMatrix"], true, ref dl.lightSpaceLargeMatrix);
-
-            //        if (dl.shadowSmall.fbo != -1 && dl.shadowSmall.shadowMap.TextureId != -1)
-            //            GL.Uniform1(lights[i].uniforms["shadowMapSmall"], dl.shadowSmall.shadowMap.TextureUnit);
-
-            //        if (dl.shadowMedium.fbo != -1 && dl.shadowMedium.shadowMap.TextureId != -1)
-            //            GL.Uniform1(lights[i].uniforms["shadowMapMedium"], dl.shadowMedium.shadowMap.TextureUnit);
-
-            //        if (dl.shadowLarge.fbo != -1 && dl.shadowLarge.shadowMap.TextureId != -1)
-            //            GL.Uniform1(lights[i].uniforms["shadowMapLarge"], dl.shadowLarge.shadowMap.TextureUnit);
-
-            //        GL.Uniform1(lights[i].uniforms["cascadeFarPlaneSmall"], dl.shadowSmall.projection.distance);
-            //        GL.Uniform1(lights[i].uniforms["cascadeFarPlaneMedium"], dl.shadowMedium.projection.distance);
-            //        GL.Uniform1(lights[i].uniforms["cascadeFarPlaneLarge"], dl.shadowLarge.projection.distance);
-            //    }
-            //}
+            var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
+            if (faceShadowMapsLoc != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 3);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
+                GL.Uniform1(faceShadowMapsLoc, 3); // TextureUnit 0 for faceShadowMapArrayId
+            }
         }
 
         public static Vector3 GetLightDirectionFromEuler(Quaternion rotation)
@@ -199,39 +178,78 @@ namespace Engine3D
         #endregion
 
         #region Shadow
+        public static void ManageShadowArrays(List<Light> lights, ref ShadowMapArray shadowMapArray)
+        {
+            bool justCreated = false;
+            if(shadowMapArray.smallShadowMapArrayId == -1)
+                justCreated = true;
+
+            int dirIndex = -1;
+            int pointIndex = -1;
+            for (int i = 0; i < lights.Count; i++)
+            {
+                if (lights[i] == null)
+                    continue;
+
+                if (lights[i] is DirectionalLight dl)
+                {
+                    dirIndex++;
+                    lights[i].properties.shadowIndex = dirIndex;
+                }
+                else if (lights[i] is PointLight pl)
+                {
+                    pointIndex++;
+                    lights[i].properties.shadowIndex = pointIndex;
+                }
+            }
+
+            if(dirIndex != -1 && dirIndex != shadowMapArray.dirIndex)
+            {
+                shadowMapArray.dirIndex = dirIndex;
+                shadowMapArray.CreateResizeDirArray();
+            }
+
+            if(pointIndex != -1 && pointIndex != shadowMapArray.pointIndex)
+            {
+                shadowMapArray.pointIndex = pointIndex * 6;
+                shadowMapArray.CreateResizePointArray();
+            }
+
+            if (justCreated)
+                Engine.CreateGlobalShadowFramebuffer();
+        }
+
         public abstract void BindForWriting(ShadowType type);
-        public abstract void BindForReading(ShadowType type);
+        public static void BindForReading()
+        {
+            if (Engine.shadowMapArray.smallShadowMapArrayId != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 0);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
+            }
+            if (Engine.shadowMapArray.mediumShadowMapArrayId != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 1);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
+            }
+            if (Engine.shadowMapArray.largeShadowMapArrayId != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 2);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
+            }
+            if (Engine.shadowMapArray.faceShadowMapArrayId != -1)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0 + 3);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
+            }
+        }
 
         public abstract void InitShadows();
-        public abstract void SetupShadows();
-        public abstract void ResizeShadowMap(ShadowType type, int size);
 
         public abstract void RecalculateShadows();
         public abstract Matrix4 GetLightViewMatrix(ShadowType type = default);
         public abstract Matrix4 GetLightViewMatrixForFrustum(ShadowType type = default);
         public abstract Matrix4 GetProjectionMatrix(ShadowType type);
-
-        protected int SetupFrameBuffer(int shadowMapId)
-        {
-            int fbo = GL.GenFramebuffer();
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
-            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, shadowMapId, 0);
-
-            GL.DrawBuffer(DrawBufferMode.None);
-            GL.ReadBuffer(ReadBufferMode.None);
-
-            TextureManager.textureCount++;
-
-            var status = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
-            if (status != FramebufferErrorCode.FramebufferComplete)
-            {
-                throw new Exception($"Framebuffer is incomplete: {status}");
-            }
-
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-
-            return fbo;
-        }
         #endregion
 
         #region Getters/Setters

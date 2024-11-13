@@ -128,8 +128,8 @@ namespace Engine3D
                         light.RecalculateShadows();
                     }
                 });
-                Light.SendToGPU(lights, shaderProgram.programId);
-                Light.SendUBOToGPU(lights, lightUBO);
+                //Light.SendToGPU(lights, shaderProgram.programId);
+                //Light.SendUBOToGPU(lights, lightUBO);
             }
         }
     }

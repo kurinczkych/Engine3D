@@ -12,11 +12,6 @@ namespace Engine3D
     {
         public int size;
 
-        [JsonIgnore]
-        public int fbo = -1;
-        [JsonIgnore]
-        public Texture shadowMap;
-
         public Projection projection = Projection.ShadowSmall;
         public Matrix4 projectionMatrix = Matrix4.Identity;
 

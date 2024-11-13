@@ -12,7 +12,13 @@ namespace Engine3D
     public class TextureManager
     {
         public Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
-        public static int textureCount = 0;
+
+        //Unit 0 - smallShadowMapArray texture
+        //Unit 1 - mediumShadowMapArray texture
+        //Unit 2 - largeShadowMapArray texture
+        //Unit 3 - faceShadowMapArray texture
+        //Unit 4 - debug texture
+        public static int textureCount = 5;
 
         public TextureManager() { }
 
@@ -75,37 +81,6 @@ namespace Engine3D
             {
                 success = false;
             }
-        }
-
-        public Texture GetShadowTexture(int size)
-        {
-            Texture t = new Texture(textureCount);
-            textureCount++;
-
-            GL.BindTexture(TextureTarget.Texture2D, t.TextureId);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent24, size, size, 0, PixelFormat.DepthComponent, PixelType.UnsignedByte, IntPtr.Zero);
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToBorder);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToBorder);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            return t;
-        }
-
-        public void ResizeShadowTexture(Texture t, int size)
-        {
-            GL.BindTexture(TextureTarget.Texture2D, t.TextureId);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent24, size, size, 0, PixelFormat.DepthComponent, PixelType.UnsignedByte, IntPtr.Zero);
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (float)TextureWrapMode.ClampToBorder);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToBorder);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
-            GL.BindTexture(TextureTarget.Texture2D, 0);
         }
 
         public void DeleteTexture(Texture texture)

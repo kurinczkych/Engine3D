@@ -24,24 +24,7 @@ namespace Engine3D
             vertices.Clear();
             Type? currentMeshType = null;
 
-            foreach(Light light in lights)
-            {
-                if (light is PointLight pl)
-                {
-                    light.BindForReading(pl.shadowTop.shadowType);
-                    light.BindForReading(pl.shadowBottom.shadowType);
-                    light.BindForReading(pl.shadowLeft.shadowType);
-                    light.BindForReading(pl.shadowRight.shadowType);
-                    light.BindForReading(pl.shadowFront.shadowType);
-                    light.BindForReading(pl.shadowBack.shadowType);
-                }
-                else if (light is DirectionalLight dl)
-                {
-                    light.BindForReading(dl.shadowSmall.shadowType);
-                    light.BindForReading(dl.shadowMedium.shadowType);
-                    light.BindForReading(dl.shadowLarge.shadowType);
-                }
-            }
+            Light.BindForReading();
 
             foreach (Object o in objects)
             {

@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL4;
+﻿using Assimp;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
@@ -108,36 +109,86 @@ namespace Engine3D
 
             if (light is DirectionalLight dl)
             {
-                light.BindForReading(type);
-
-                switch(type)
+                switch (type)
                 {
                     case ShadowType.Small:
-                        return dl.shadowSmall.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.smallShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex,
+                            debugTexture2048, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            2048, 2048, 1
+                        );
+                        return debugTexture2048;
                     case ShadowType.Medium:
-                        return dl.shadowMedium.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.mediumShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex,
+                            debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            1024, 1024, 1
+                        );
+                        return debugTexture1024;
                     case ShadowType.Large:
-                        return dl.shadowLarge.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.largeShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex,
+                            debugTexture512, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            512, 512, 1
+                        );
+                        return debugTexture512;
                 }
             }
-            else if(light is PointLight pl)
+            else if (light is PointLight pl)
             {
-                light.BindForReading(type);
-
-                switch(type)
+                switch (type)
                 {
                     case ShadowType.Top:
-                        return pl.shadowTop.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex + 0,
+                            debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            1024, 1024, 1
+                        );
+                        return debugTexture1024;
                     case ShadowType.Bottom:
-                        return pl.shadowBottom.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex + 1,
+                            debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            1024, 1024, 1
+                        );
+                        return debugTexture1024;
                     case ShadowType.Left:
-                        return pl.shadowLeft.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex + 2,
+                            debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            1024, 1024, 1
+                        );
+                        return debugTexture1024;
                     case ShadowType.Right:
-                        return pl.shadowRight.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex + 3,
+                            debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            1024, 1024, 1
+                        );
+                        return debugTexture1024;
                     case ShadowType.Front:
-                        return pl.shadowFront.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex + 4,
+                            debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            1024, 1024, 1
+                        );
+                        return debugTexture1024;
                     case ShadowType.Back:
-                        return pl.shadowBack.shadowMap.TextureId;
+                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                            ImageTarget.Texture2DArray, 0, 0, 0,
+                            light.properties.shadowIndex + 5,
+                            debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
+                            1024, 1024, 1
+                        );
+                        return debugTexture1024;
                 }
             }
 
@@ -497,7 +548,6 @@ namespace Engine3D
                         light.parentObject = obj;
                         light.camera = mainCamera;
                         light.RecalculateShadows();
-                        light.SetupShadows();
                     }
                 }
             }

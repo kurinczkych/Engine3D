@@ -284,7 +284,7 @@ namespace Engine3D
 
                         if(resizedShadowMap != -1)
                         {
-                            light.ResizeShadowMap(resizedShadowType, resizedShadowMap);
+                            Engine.recreateShadowArray = true;
                         }
 
                         if (recalculateFrustum)
