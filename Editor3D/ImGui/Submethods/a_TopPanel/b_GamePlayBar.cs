@@ -1,7 +1,9 @@
 ﻿using ImGuiNET;
+using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -55,6 +57,18 @@ namespace Engine3D
             {
                 editorData.isGameFullscreen = !editorData.isGameFullscreen;
                 editorData.windowResized = true;
+            }
+
+            if (engine.GLError != "")
+            {
+                ImGui.SameLine();
+                ImGui.PushFont(default18);
+                Vector2 textSize = ImGui.CalcTextSize(engine.GLError);
+                ImGui.SetCursorPos(new Vector2(ImGui.GetWindowSize().X - textSize.X - 10, ImGui.GetWindowSize().Y - textSize.Y));
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1.0f,0.0f,0.0f,1.0f));
+                ImGui.Text(engine.GLError);
+                ImGui.PopStyleColor();
+                ImGui.PopFont();
             }
 
             style.Colors[(int)ImGuiCol.Button] = button;

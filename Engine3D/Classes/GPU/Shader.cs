@@ -89,7 +89,9 @@ namespace Engine3D
             foreach(var ss in shaders)
             {
                 GL.DetachShader(programId, ss.id);
+                GL.DeleteShader(ss.id);
 
+                ss.id = GL.CreateShader(GetShaderType(ss.name));
                 GL.ShaderSource(ss.id, LoadShaderSource(ss.name));
                 GL.CompileShader(ss.id);
 

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Assimp;
+using Newtonsoft.Json;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using System;
@@ -130,6 +131,7 @@ namespace Engine3D
                 return;
 
             Matrix4 lightview = GetLightViewMatrix();
+            properties.direction = new Vector4(GetDirection(),1.0f);
             properties.lightSpaceSmallMatrix = lightview * shadowSmall.projectionMatrix;
             properties.lightSpaceMediumMatrix = lightview * shadowMedium.projectionMatrix;
             properties.lightSpaceLargeMatrix = lightview * shadowLarge.projectionMatrix;
@@ -240,6 +242,8 @@ namespace Engine3D
                     }
                 }
             }
+
+            Engine.sendLightUBO = true;
         }
 
         public override Matrix4 GetLightViewMatrix(ShadowType type = default)

@@ -243,6 +243,7 @@ namespace Engine3D
             if (!castShadows)
                 return;
 
+            properties.position = new Vector4(parentObject.transformation.Position, 1.0f);
             for (int i = 0; i < 6; i++)
             {
                 Matrix4 invCombinedMatrix = Matrix4.Identity;
@@ -336,6 +337,8 @@ namespace Engine3D
                     }
                 }
             }
+
+            Engine.sendLightUBO = true;
         }
 
         public override Matrix4 GetLightViewMatrix(ShadowType type = default)

@@ -177,47 +177,51 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float 
     vec3 lightDir = normalize(light.position.xyz - fragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
-    // diffuse shading
+    // Diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
 
-    // specular shading
+    // Specular shading
     float spec = pow(max(dot(normal, halfwayDir), 0.0), light.specularPow);
 
-    if(useRough == 1)
+    if (useRough == 1)
     {
         float roughness = texture(textureSamplerRough, gsFragTexCoord).r;
         float m = roughness * roughness;
         spec = pow(max(dot(normal, halfwayDir), 0.0), light.specularPow / m);
     }
 
-    // attenuation
-    float distance    = length(light.position.xyz - fragPos);
+    // Attenuation
+    float distance = length(light.position.xyz - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + 
-  			     light.quadratic * (distance * distance));    
+                               light.quadratic * (distance * distance));    
 
-    // combine results
-    float ao = texture(textureSamplerAO, gsFragTexCoord).r;
-    vec3 ambient  = light.ambient.xyz * light.diffuse.xyz;
-    if(useAO == 1)
+    // Ambient occlusion
+    vec3 ambient = light.ambient.xyz * light.diffuse.xyz;
+    if (useAO == 1)
     {
-        ambient  = ambient * ao;
+        float ao = texture(textureSamplerAO, gsFragTexCoord).r;
+        ambient *= ao;
     }
 
-    vec3 diffuse  = light.diffuse.xyz  * diff * light.diffuse.xyz;
+    // Calculate diffuse and specular terms
+    vec3 diffuse = light.diffuse.xyz * diff * light.diffuse.xyz;
     vec3 specular = light.specular.xyz * spec * light.specular.xyz;
 
-    if(useMetal == 1)
+    if (useMetal == 1)
     {
-        vec3 k_s = mix(vec3(metallnessVar), vec3(1.0), metalness); // Reflectance at normal incidence, can be tweaked.
+        vec3 k_s = mix(vec3(metallnessVar), vec3(1.0), metalness); // Reflectance at normal incidence
         vec3 k_d = k_s;
 
-        diffuse = diffuse * k_d;
-        specular = specular * k_s;
+        diffuse *= k_d;
+        specular *= k_s;
     }
 
-    ambient  *= attenuation;
-    diffuse  *= attenuation;
+    // Apply attenuation to ambient, diffuse, and specular contributions
+    ambient *= attenuation;
+    diffuse *= attenuation;
     specular *= attenuation;
+
+    // Final color calculation, ensuring that contributions do not affect the back face
     return (ambient + diffuse + specular) * light.color.xyz;
 } 
 
@@ -269,9 +273,7 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 //    float shadow = DirShadowCalculation(light, normal); 
     float shadow = 0.5; 
 //    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
-    return vec3(1.0);
-//    return light.color.xyz;
-//    return (ambient + diffuse + specular) * light.color.xyz;
+    return (ambient + diffuse + specular) * light.color.xyz;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
@@ -321,7 +323,6 @@ void main()
             if(lights[i].lightType == 0)
             {
                 result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
-                result = vec3(1.0,0.0,0.0);
             }
             else if(lights[i].lightType == 1)
             {

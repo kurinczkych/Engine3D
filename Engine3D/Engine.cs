@@ -40,6 +40,7 @@ namespace Engine3D
 
         public static GLState GLState = new GLState();
         public static bool reloadUniformLocations = false;
+        public string GLError = "";
 
         #region VAO/VBO/IBO
         private VAO onlyPosVao;
@@ -83,6 +84,7 @@ namespace Engine3D
 
         #region UBO
         public int lightUBO;
+        public static bool sendLightUBO = false;
         #endregion
 
         #region Shaders
@@ -318,8 +320,14 @@ namespace Engine3D
             #endregion
 
             var glError = GL.GetError();
-            if (glError != OpenTK.Graphics.OpenGL4.ErrorCode.NoError)
-                consoleManager.AddLog(glError.ToString(), LogType.Error);
+            GLError = glError == OpenTK.Graphics.OpenGL4.ErrorCode.NoError ? "" : glError.ToString();
+
+            if(sendLightUBO)
+            {
+                Light.SendToGPU(lights, shaderProgram.programId);
+                Light.SendUBOToGPU(lights, lightUBO);
+                sendLightUBO = false;
+            }
 
             vertices.Clear();
 

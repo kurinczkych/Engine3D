@@ -329,12 +329,12 @@ namespace Engine3D
                 }
             }
 
-            GL.Uniform1(uniformLocations["useTexture"], texture != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useNormal"], textureNormal != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useHeight"], textureHeight != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useAO"], textureAO != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useRough"], textureRough != null ? 1 : 0);
-            GL.Uniform1(uniformLocations["useMetal"], textureMetal != null ? 1 : 0);
+            if (uniformLocations["useTexture"] != -1) GL.Uniform1(uniformLocations["useTexture"], texture != null ? 1 : 0);
+            if(uniformLocations["useNormal"] != -1) GL.Uniform1(uniformLocations["useNormal"], textureNormal != null ? 1 : 0);
+            if(uniformLocations["useHeight"] != -1) GL.Uniform1(uniformLocations["useHeight"], textureHeight != null ? 1 : 0);
+            if(uniformLocations["useAO"] != -1) GL.Uniform1(uniformLocations["useAO"], textureAO != null ? 1 : 0);
+            if(uniformLocations["useRough"] != -1) GL.Uniform1(uniformLocations["useRough"], textureRough != null ? 1 : 0);
+            if (uniformLocations["useMetal"] != -1) GL.Uniform1(uniformLocations["useMetal"], textureMetal != null ? 1 : 0);
         }
 
         protected void SendAnimationUniforms(int meshId, double delta, Shader sh)
