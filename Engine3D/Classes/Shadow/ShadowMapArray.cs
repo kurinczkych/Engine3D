@@ -10,9 +10,13 @@ namespace Engine3D
     public class ShadowMapArray
     {
         public int smallShadowMapArrayId = -1;
+        public int smallShadowMapArrayUnit = -1;
         public int mediumShadowMapArrayId = -1;
+        public int mediumShadowMapArrayUnit = -1;
         public int largeShadowMapArrayId = -1;
+        public int largeShadowMapArrayUnit = -1;
         public int faceShadowMapArrayId = -1;
+        public int faceShadowMapArrayUnit = -1;
         public int dirIndex = -1;
         public int pointIndex = -1;
 
@@ -27,6 +31,7 @@ namespace Engine3D
             if(mediumShadowMapArrayId != -1) GL.DeleteTexture(mediumShadowMapArrayId);
             if(largeShadowMapArrayId != -1) GL.DeleteTexture(largeShadowMapArrayId);
 
+            smallShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             smallShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, smallShadowMapArrayId);
 
@@ -41,6 +46,7 @@ namespace Engine3D
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
             GL.BindTexture(TextureTarget.Texture2DArray, 0);
 
+            mediumShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             mediumShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, mediumShadowMapArrayId);
 
@@ -55,6 +61,7 @@ namespace Engine3D
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
             GL.BindTexture(TextureTarget.Texture2DArray, 0);
 
+            largeShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             largeShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, largeShadowMapArrayId);
 
@@ -75,6 +82,7 @@ namespace Engine3D
         {
             if (faceShadowMapArrayId != -1) GL.DeleteTexture(faceShadowMapArrayId);
 
+            faceShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             faceShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, faceShadowMapArrayId);
 

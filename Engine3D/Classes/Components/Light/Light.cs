@@ -129,37 +129,37 @@ namespace Engine3D
         {
             GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), lights.Count);
 
-            var smallShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "smallShadowMaps");
-            if (smallShadowMapsLoc != -1)
-            {
-                GL.ActiveTexture(TextureUnit.Texture0 + 0);
-                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
-                GL.Uniform1(smallShadowMapsLoc, 0); // TextureUnit 0 for smallShadowMapArray
-            }
+            //var smallShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "smallShadowMaps");
+            //if (smallShadowMapsLoc != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.smallShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
+            //    GL.Uniform1(smallShadowMapsLoc, 0); // TextureUnit 0 for smallShadowMapArray
+            //}
 
-            var mediumShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "mediumShadowMaps");
-            if (mediumShadowMapsLoc != -1)
-            {
-                GL.ActiveTexture(TextureUnit.Texture0 + 1);
-                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
-                GL.Uniform1(mediumShadowMapsLoc, 1); // TextureUnit 0 for mediumShadowMapArrayId
-            }
+            //var mediumShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "mediumShadowMaps");
+            //if (mediumShadowMapsLoc != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.mediumShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
+            //    GL.Uniform1(mediumShadowMapsLoc, 1); // TextureUnit 0 for mediumShadowMapArrayId
+            //}
 
-            var largeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "largeShadowMaps");
-            if (largeShadowMapsLoc != -1)
-            {
-                GL.ActiveTexture(TextureUnit.Texture0 + 2);
-                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
-                GL.Uniform1(largeShadowMapsLoc, 2); // TextureUnit 0 for largeShadowMapArrayId
-            }
+            //var largeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "largeShadowMaps");
+            //if (largeShadowMapsLoc != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.largeShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
+            //    GL.Uniform1(largeShadowMapsLoc, 2); // TextureUnit 0 for largeShadowMapArrayId
+            //}
 
-            var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
-            if (faceShadowMapsLoc != -1)
-            {
-                GL.ActiveTexture(TextureUnit.Texture0 + 3);
-                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
-                GL.Uniform1(faceShadowMapsLoc, 3); // TextureUnit 0 for faceShadowMapArrayId
-            }
+            //var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
+            //if (faceShadowMapsLoc != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.faceShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
+            //    GL.Uniform1(faceShadowMapsLoc, 3); // TextureUnit 0 for faceShadowMapArrayId
+            //}
         }
 
         public static Vector3 GetLightDirectionFromEuler(Quaternion rotation)
@@ -220,28 +220,59 @@ namespace Engine3D
         }
 
         public abstract void BindForWriting(ShadowType type);
-        public static void BindForReading()
+        public static void BindForReading(int shaderProgramId)
         {
-            if (Engine.shadowMapArray.smallShadowMapArrayId != -1)
+            var smallShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "smallShadowMaps");
+            if (smallShadowMapsLoc != -1)
             {
-                GL.ActiveTexture(TextureUnit.Texture0 + 0);
+                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.smallShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
+                GL.Uniform1(smallShadowMapsLoc, 0); // TextureUnit 0 for smallShadowMapArray
             }
-            if (Engine.shadowMapArray.mediumShadowMapArrayId != -1)
+
+            var mediumShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "mediumShadowMaps");
+            if (mediumShadowMapsLoc != -1)
             {
-                GL.ActiveTexture(TextureUnit.Texture0 + 1);
+                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.mediumShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
+                GL.Uniform1(mediumShadowMapsLoc, 1); // TextureUnit 0 for mediumShadowMapArrayId
             }
-            if (Engine.shadowMapArray.largeShadowMapArrayId != -1)
+
+            var largeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "largeShadowMaps");
+            if (largeShadowMapsLoc != -1)
             {
-                GL.ActiveTexture(TextureUnit.Texture0 + 2);
+                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.largeShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
+                GL.Uniform1(largeShadowMapsLoc, 2); // TextureUnit 0 for largeShadowMapArrayId
             }
-            if (Engine.shadowMapArray.faceShadowMapArrayId != -1)
+
+            var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
+            if (faceShadowMapsLoc != -1)
             {
-                GL.ActiveTexture(TextureUnit.Texture0 + 3);
+                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.faceShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
+                GL.Uniform1(faceShadowMapsLoc, 3); // TextureUnit 0 for faceShadowMapArrayId
             }
+            //if (Engine.shadowMapArray.smallShadowMapArrayId != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.smallShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
+            //}
+            //if (Engine.shadowMapArray.mediumShadowMapArrayId != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.mediumShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
+            //}
+            //if (Engine.shadowMapArray.largeShadowMapArrayId != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.largeShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
+            //}
+            //if (Engine.shadowMapArray.faceShadowMapArrayId != -1)
+            //{
+            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.faceShadowMapArrayUnit);
+            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
+            //}
         }
 
         public abstract void InitShadows();

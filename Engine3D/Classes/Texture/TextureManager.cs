@@ -13,12 +13,7 @@ namespace Engine3D
     {
         public Dictionary<string, Texture> textures = new Dictionary<string, Texture>();
 
-        //Unit 0 - smallShadowMapArray texture
-        //Unit 1 - mediumShadowMapArray texture
-        //Unit 2 - largeShadowMapArray texture
-        //Unit 3 - faceShadowMapArray texture
-        //Unit 4 - debug texture
-        public static int textureCount = 5;
+        public static int textureCount = 0;
 
         public TextureManager() { }
 
@@ -81,6 +76,13 @@ namespace Engine3D
             {
                 success = false;
             }
+        }
+
+        public int GetTextureUnit()
+        {
+            var unit = textureCount;
+            textureCount++;
+            return unit;
         }
 
         public void DeleteTexture(Texture texture)

@@ -24,7 +24,7 @@ namespace Engine3D
             vertices.Clear();
             Type? currentMeshType = null;
 
-            Light.BindForReading();
+            Light.BindForReading(shaderProgram.programId);
 
             foreach (Object o in objects)
             {

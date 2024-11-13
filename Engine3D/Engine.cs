@@ -35,6 +35,7 @@ namespace Engine3D
         #region OPENGL
         private int framebuffer = -1;
         private int textureColorBuffer = -1;
+        private int textureColorBufferUnit = -1;
         private int depthRenderbuffer = -1;
 
         public static GLState GLState = new GLState();
@@ -961,6 +962,8 @@ namespace Engine3D
 
             // Create a texture to render to
             textureColorBuffer = GL.GenTexture();
+            textureColorBufferUnit = textureManager.GetTextureUnit();
+            GL.ActiveTexture(TextureUnit.Texture0 + textureColorBufferUnit);
             GL.BindTexture(TextureTarget.Texture2D, textureColorBuffer);
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)viewportSize.X, (int)viewportSize.Y, 0, PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
 

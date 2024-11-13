@@ -256,7 +256,8 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
     float shadow = DirShadowCalculation(light, normal); 
 //    return (shadow == 0.0) ? vec3(shadow,0.0,0.0) : vec3(0.0,shadow,0.0);
-    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
+//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
+    return shadow==1.0?vec3(1.0,0.0,0.0):vec3(0.0,1.0,0.0);
 //    return (ambient + diffuse + specular) * light.color.xyz;
 }
 
