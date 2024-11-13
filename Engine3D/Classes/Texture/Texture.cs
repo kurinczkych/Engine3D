@@ -204,17 +204,11 @@ namespace Engine3D
 
         public void Bind() 
         {
-            if(Engine.GLState.currentTextureUnit != TextureUnit)
-            {
-                GL.ActiveTexture(OpenTK.Graphics.OpenGL4.TextureUnit.Texture0 + TextureUnit);
-                Engine.GLState.currentTextureUnit = TextureUnit;
-            }
+            GL.ActiveTexture(OpenTK.Graphics.OpenGL4.TextureUnit.Texture0 + TextureUnit);
+            Engine.GLState.currentTextureUnit = TextureUnit;
 
-            if (Engine.GLState.currentTextureId != TextureId)
-            {
-                GL.BindTexture(TextureTarget.Texture2D, TextureId);
-                Engine.GLState.currentTextureId = TextureId;
-            }
+            GL.BindTexture(TextureTarget.Texture2D, TextureId);
+            Engine.GLState.currentTextureId = TextureId;
             isBinded = true;
         }
         public void Unbind()
