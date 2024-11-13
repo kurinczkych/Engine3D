@@ -92,7 +92,10 @@ namespace Engine3D
                 GL.DeleteShader(ss.id);
 
                 ss.id = GL.CreateShader(GetShaderType(ss.name));
-                GL.ShaderSource(ss.id, LoadShaderSource(ss.name));
+                string code = LoadShaderSource(ss.name);
+                if (code == "")
+                    Engine.consoleManager.AddLog(ss.name + " file returned empty!", LogType.Error);
+                GL.ShaderSource(ss.id, code);
                 GL.CompileShader(ss.id);
 
                 GL.GetShader(ss.id, ShaderParameter.CompileStatus, out int vertexCompiled);

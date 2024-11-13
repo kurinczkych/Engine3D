@@ -227,7 +227,7 @@ namespace Engine3D
             {
                 GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.smallShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
-                GL.Uniform1(smallShadowMapsLoc, 0); // TextureUnit 0 for smallShadowMapArray
+                GL.Uniform1(smallShadowMapsLoc, Engine.shadowMapArray.smallShadowMapArrayUnit);
             }
 
             var mediumShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "mediumShadowMaps");
@@ -235,7 +235,7 @@ namespace Engine3D
             {
                 GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.mediumShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
-                GL.Uniform1(mediumShadowMapsLoc, 1); // TextureUnit 0 for mediumShadowMapArrayId
+                GL.Uniform1(mediumShadowMapsLoc, Engine.shadowMapArray.mediumShadowMapArrayUnit);
             }
 
             var largeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "largeShadowMaps");
@@ -243,7 +243,7 @@ namespace Engine3D
             {
                 GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.largeShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
-                GL.Uniform1(largeShadowMapsLoc, 2); // TextureUnit 0 for largeShadowMapArrayId
+                GL.Uniform1(largeShadowMapsLoc, Engine.shadowMapArray.largeShadowMapArrayUnit);
             }
 
             var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
@@ -251,7 +251,7 @@ namespace Engine3D
             {
                 GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.faceShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
-                GL.Uniform1(faceShadowMapsLoc, 3); // TextureUnit 0 for faceShadowMapArrayId
+                GL.Uniform1(faceShadowMapsLoc, Engine.shadowMapArray.faceShadowMapArrayUnit);
             }
             //if (Engine.shadowMapArray.smallShadowMapArrayId != -1)
             //{

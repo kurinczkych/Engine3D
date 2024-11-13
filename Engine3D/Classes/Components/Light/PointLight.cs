@@ -173,31 +173,37 @@ namespace Engine3D
                     case 0:
                         shadowTop.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceTopMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowTop.projectionMatrix;
+                        properties.lightSpaceTopMatrix.Transpose();
                         invCombinedMatrix = Matrix4.Invert(shadowTop.projectionMatrix * GetLightViewMatrixForFrustum(shadowTop.shadowType));
                         break;
                     case 1:
                         shadowBottom.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceBottomMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowBottom.projectionMatrix;
+                        properties.lightSpaceBottomMatrix.Transpose();
                         invCombinedMatrix = Matrix4.Invert(shadowBottom.projectionMatrix * GetLightViewMatrixForFrustum(shadowBottom.shadowType));
                         break;
                     case 2:
                         shadowLeft.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceLeftMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowLeft.projectionMatrix;
+                        properties.lightSpaceLeftMatrix.Transpose();
                         invCombinedMatrix = Matrix4.Invert(shadowLeft.projectionMatrix * GetLightViewMatrixForFrustum(shadowLeft.shadowType));
                         break;
                     case 3:
                         shadowRight.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceRightMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowRight.projectionMatrix;
+                        properties.lightSpaceRightMatrix.Transpose();
                         invCombinedMatrix = Matrix4.Invert(shadowRight.projectionMatrix * GetLightViewMatrixForFrustum(shadowRight.shadowType));
                         break;
                     case 4:
                         shadowFront.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceFrontMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowFront.projectionMatrix;
+                        properties.lightSpaceFrontMatrix.Transpose();
                         invCombinedMatrix = Matrix4.Invert(shadowFront.projectionMatrix * GetLightViewMatrixForFrustum(shadowFront.shadowType));
                         break;
                     case 5:
                         shadowBack.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceBackMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowBack.projectionMatrix;
+                        properties.lightSpaceBackMatrix.Transpose();
                         invCombinedMatrix = Matrix4.Invert(shadowBack.projectionMatrix * GetLightViewMatrixForFrustum(shadowBack.shadowType));
                         break;
                 }

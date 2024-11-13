@@ -85,9 +85,12 @@ namespace Engine3D
 
             Matrix4 lightview = GetLightViewMatrix();
             properties.direction = new Vector4(GetDirection(),1.0f);
-            properties.lightSpaceSmallMatrix = lightview * shadowSmall.projectionMatrix;
-            properties.lightSpaceMediumMatrix = lightview * shadowMedium.projectionMatrix;
-            properties.lightSpaceLargeMatrix = lightview * shadowLarge.projectionMatrix;
+            properties.lightSpaceSmallMatrix = (lightview * shadowSmall.projectionMatrix);
+            properties.lightSpaceSmallMatrix.Transpose();
+            properties.lightSpaceMediumMatrix = (lightview * shadowMedium.projectionMatrix);
+            properties.lightSpaceMediumMatrix.Transpose();
+            properties.lightSpaceLargeMatrix = (lightview * shadowLarge.projectionMatrix);
+            properties.lightSpaceLargeMatrix.Transpose();
             properties.cascadeFarPlaneSmall = shadowSmall.projection.distance;
             properties.cascadeFarPlaneMedium = shadowMedium.projection.distance;
             properties.cascadeFarPlaneLarge = shadowLarge.projection.distance;

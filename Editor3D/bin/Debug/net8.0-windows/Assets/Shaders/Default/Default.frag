@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 struct Light 
 {
@@ -90,7 +90,7 @@ float DirShadowCalculation(Light light, vec3 normal)
     float distanceToFragment = length(gsFragPos);
     vec3 lightDir = normalize(-light.direction.xyz);
 
-    float closestDepth = 0.0;
+    float closestDepth = 1.0;
     float currentDepth = 0.0;
 
     if (distanceToFragment < light.cascadeFarPlaneSmall) 
@@ -127,6 +127,7 @@ float DirShadowCalculation(Light light, vec3 normal)
         }
 
         closestDepth = texture(mediumShadowMaps, vec3(projCoords.xy, light.shadowIndex)).r;
+
         currentDepth = projCoords.z;
     }
     else 
@@ -142,6 +143,7 @@ float DirShadowCalculation(Light light, vec3 normal)
         }
 
         closestDepth = texture(largeShadowMaps, vec3(projCoords.xy, light.shadowIndex)).r;
+
         currentDepth = projCoords.z;
     }
 
@@ -156,9 +158,63 @@ float DirShadowCalculation(Light light, vec3 normal)
     return shadow;
 }
 
-vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float metalness)
+float PointShadowCalculation(Light light, vec3 normal)
 {
-    vec3 lightDir = normalize(light.position.xyz - fragPos);
+    // Calculate vector from light to fragment
+    vec3 lightDir = gsFragPos - light.position.xyz;
+    float distanceToFragment = length(lightDir);
+    
+    // Select the closest face for the fragment
+    vec3 absLightDir = abs(lightDir);
+    int faceIndex;
+    vec4 fragPosLightSpace;
+    
+    if (absLightDir.x > absLightDir.y && absLightDir.x > absLightDir.z)
+    {
+        faceIndex = lightDir.x > 0.0 ? 2 : 3; // 2: Left, 3: Right
+        fragPosLightSpace = lightDir.x > 0.0 ? vec4(lightDir.yz, lightDir.x, 1.0) * light.lightSpaceLeftMatrix
+                                             : vec4(lightDir.yz, -lightDir.x, 1.0) * light.lightSpaceRightMatrix;
+    }
+    else if (absLightDir.y > absLightDir.x && absLightDir.y > absLightDir.z)
+    {
+        faceIndex = lightDir.y > 0.0 ? 0 : 1; // 0: Top, 1: Bottom
+        fragPosLightSpace = lightDir.y > 0.0 ? vec4(lightDir.xz, lightDir.y, 1.0) * light.lightSpaceTopMatrix
+                                             : vec4(lightDir.xz, -lightDir.y, 1.0) * light.lightSpaceBottomMatrix;
+    }
+    else
+    {
+        faceIndex = lightDir.z > 0.0 ? 4 : 5; // 4: Front, 5: Back
+        fragPosLightSpace = lightDir.z > 0.0 ? vec4(lightDir.xy, lightDir.z, 1.0) * light.lightSpaceFrontMatrix
+                                             : vec4(lightDir.xy, -lightDir.z, 1.0) * light.lightSpaceBackMatrix;
+    }
+
+    // Project to normalized device coordinates (NDC) and map to [0,1] range
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // Check if fragment is outside the shadow map bounds
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
+    {
+        return 0.0; // No shadow
+    }
+
+//    // Retrieve the closest depth from the shadow map at this fragment's position
+    float closestDepth = texture(faceShadowMaps, vec3(projCoords.xy, light.shadowIndex * 6 + faceIndex)).r;
+//    
+//    // Calculate bias to avoid shadow artifacts
+//    float slopeScaleFactor = 0.01;
+//    float constantBias = 0.0005;
+//    float bias = max(slopeScaleFactor * (1.0 - dot(normal, normalize(lightDir))), constantBias);
+//
+//    // Perform shadow comparison
+//    float shadow = (distanceToFragment - bias > closestDepth) ? 1.0 : 0.0;
+//
+    return 0.0;
+}
+
+vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir, float metalness)
+{
+    vec3 lightDir = normalize(light.position.xyz - gsFragPos);
     vec3 halfwayDir = normalize(lightDir + viewDir);
 
     // Diffuse shading
@@ -175,7 +231,7 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float 
     }
 
     // Attenuation
-    float distance = length(light.position.xyz - fragPos);
+    float distance = length(light.position.xyz - gsFragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + 
                                light.quadratic * (distance * distance));    
 
@@ -206,6 +262,8 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, float 
     specular *= attenuation;
 
     // Final color calculation, ensuring that contributions do not affect the back face
+//    float shadow = PointShadowCalculation(light, normal); 
+//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
     return (ambient + diffuse + specular) * light.color.xyz;
 } 
 
@@ -255,10 +313,7 @@ vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 
     // Shadow calculation (attenuate specular more than diffuse to retain depth)
     float shadow = DirShadowCalculation(light, normal); 
-//    return (shadow == 0.0) ? vec3(shadow,0.0,0.0) : vec3(0.0,shadow,0.0);
-//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
-    return shadow==1.0?vec3(1.0,0.0,0.0):vec3(0.0,1.0,0.0);
-//    return (ambient + diffuse + specular) * light.color.xyz;
+    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
@@ -307,13 +362,11 @@ void main()
         {
             if(lights[i].lightType == 0)
             {
-                result += CalcPointLight(lights[i], normalFromMap, gsFragPos, viewDir, metalness);
+                result += CalcPointLight(lights[i], normalFromMap, viewDir, metalness);
             }
             else if(lights[i].lightType == 1)
             {
-                // Calculate the light-space position for shadow mapping
                 result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
-                //result += CalcDirLight(lights[i], normalFromMap, viewDir, metalness);
             }
         }
     }
