@@ -63,7 +63,7 @@ uniform int actualNumOfLights;
 uniform sampler2DArray smallShadowMaps;
 uniform sampler2DArray mediumShadowMaps;
 uniform sampler2DArray largeShadowMaps;
-uniform sampler2DArray faceShadowMaps;
+uniform samplerCubeArray cubeShadowMaps;
 
 out vec4 FragColor;
 uniform sampler2D textureSampler;
@@ -160,46 +160,11 @@ float DirShadowCalculation(Light light, vec3 normal)
 
 float PointShadowCalculation(Light light, vec3 normal)
 {
-    // Calculate vector from light to fragment
-    vec3 lightDir = gsFragPos - light.position.xyz;
-    float distanceToFragment = length(lightDir);
-    
-    // Select the closest face for the fragment
-    vec3 absLightDir = abs(lightDir);
-    int faceIndex = 0;
-    vec4 fragPosLightSpace = vec4(0.0);
-    
-    if (absLightDir.x > absLightDir.y && absLightDir.x > absLightDir.z)
-    {
-        faceIndex = lightDir.x > 0.0 ? 2 : 3; // 2: Left, 3: Right
-        fragPosLightSpace = lightDir.x > 0.0 ? vec4(lightDir.yz, lightDir.x, 1.0) * light.lightSpaceLeftMatrix
-                                             : vec4(lightDir.yz, -lightDir.x, 1.0) * light.lightSpaceRightMatrix;
-    }
-    else if (absLightDir.y > absLightDir.x && absLightDir.y > absLightDir.z)
-    {
-        faceIndex = lightDir.y > 0.0 ? 0 : 1; // 0: Top, 1: Bottom
-        fragPosLightSpace = lightDir.y > 0.0 ? vec4(lightDir.xz, lightDir.y, 1.0) * light.lightSpaceTopMatrix
-                                             : vec4(lightDir.xz, -lightDir.y, 1.0) * light.lightSpaceBottomMatrix;
-    }
-    else
-    {
-        faceIndex = lightDir.z > 0.0 ? 4 : 5; // 4: Front, 5: Back
-        fragPosLightSpace = lightDir.z > 0.0 ? vec4(lightDir.xy, lightDir.z, 1.0) * light.lightSpaceFrontMatrix
-                                             : vec4(lightDir.xy, -lightDir.z, 1.0) * light.lightSpaceBackMatrix;
-    }
+    vec3 lightDir = gsFragPos - vec3(light.position);
 
-    // Project to normalized device coordinates (NDC) and map to [0,1] range
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;
-
-    // Check if fragment is outside the shadow map bounds
-    if (projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
-    {
-        return 0.0; // No shadow
-    }
-
-    // Retrieve the closest depth from the shadow map at this fragment's position
-    float closestDepth = texture(faceShadowMaps, vec3(projCoords.xy, light.shadowIndex * 6 + faceIndex)).r;
+    // Sample the cube shadow map directly
+    float closestDepth = texture(cubeShadowMaps, vec4(normalize(lightDir), light.shadowIndex)).r;
+    float currentDepth = length(lightDir);
     
     // Calculate bias to avoid shadow artifacts
     float slopeScaleFactor = 0.01;
@@ -207,9 +172,8 @@ float PointShadowCalculation(Light light, vec3 normal)
     float bias = max(slopeScaleFactor * (1.0 - dot(normal, normalize(lightDir))), constantBias);
 
     // Perform shadow comparison
-    float shadow = (distanceToFragment - bias > closestDepth) ? 1.0 : 0.0;
-
-//    return 0.0;
+    float shadow = (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
+    return shadow;
 }
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir, float metalness)

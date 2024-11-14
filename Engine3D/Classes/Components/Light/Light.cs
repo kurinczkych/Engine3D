@@ -128,38 +128,6 @@ namespace Engine3D
         public static void SendToGPU(List<Light> lights, int shaderProgramId)
         {
             GL.Uniform1(GL.GetUniformLocation(shaderProgramId, "actualNumOfLights"), lights.Count);
-
-            //var smallShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "smallShadowMaps");
-            //if (smallShadowMapsLoc != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.smallShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
-            //    GL.Uniform1(smallShadowMapsLoc, 0); // TextureUnit 0 for smallShadowMapArray
-            //}
-
-            //var mediumShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "mediumShadowMaps");
-            //if (mediumShadowMapsLoc != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.mediumShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
-            //    GL.Uniform1(mediumShadowMapsLoc, 1); // TextureUnit 0 for mediumShadowMapArrayId
-            //}
-
-            //var largeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "largeShadowMaps");
-            //if (largeShadowMapsLoc != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.largeShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
-            //    GL.Uniform1(largeShadowMapsLoc, 2); // TextureUnit 0 for largeShadowMapArrayId
-            //}
-
-            //var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
-            //if (faceShadowMapsLoc != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.faceShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
-            //    GL.Uniform1(faceShadowMapsLoc, 3); // TextureUnit 0 for faceShadowMapArrayId
-            //}
         }
 
         public static Vector3 GetLightDirectionFromEuler(Quaternion rotation)
@@ -223,7 +191,7 @@ namespace Engine3D
         public static void BindForReading(int shaderProgramId)
         {
             var smallShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "smallShadowMaps");
-            if (smallShadowMapsLoc != -1)
+            if (smallShadowMapsLoc != -1 && Engine.shadowMapArray.smallShadowMapArrayId != -1)
             {
                 GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.smallShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
@@ -231,7 +199,7 @@ namespace Engine3D
             }
 
             var mediumShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "mediumShadowMaps");
-            if (mediumShadowMapsLoc != -1)
+            if (mediumShadowMapsLoc != -1 && Engine.shadowMapArray.mediumShadowMapArrayId != -1)
             {
                 GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.mediumShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
@@ -239,7 +207,7 @@ namespace Engine3D
             }
 
             var largeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "largeShadowMaps");
-            if (largeShadowMapsLoc != -1)
+            if (largeShadowMapsLoc != -1 && Engine.shadowMapArray.largeShadowMapArrayId != -1)
             {
                 GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.largeShadowMapArrayUnit);
                 GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
@@ -247,32 +215,12 @@ namespace Engine3D
             }
 
             var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
-            if (faceShadowMapsLoc != -1)
+            if (faceShadowMapsLoc != -1 && Engine.shadowMapArray.cubeShadowMapArrayId != -1)
             {
-                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.faceShadowMapArrayUnit);
-                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
-                GL.Uniform1(faceShadowMapsLoc, Engine.shadowMapArray.faceShadowMapArrayUnit);
+                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.cubehadowMapArrayUnit);
+                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.cubeShadowMapArrayId);
+                GL.Uniform1(faceShadowMapsLoc, Engine.shadowMapArray.cubehadowMapArrayUnit);
             }
-            //if (Engine.shadowMapArray.smallShadowMapArrayId != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.smallShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.smallShadowMapArrayId);
-            //}
-            //if (Engine.shadowMapArray.mediumShadowMapArrayId != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.mediumShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.mediumShadowMapArrayId);
-            //}
-            //if (Engine.shadowMapArray.largeShadowMapArrayId != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.largeShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.largeShadowMapArrayId);
-            //}
-            //if (Engine.shadowMapArray.faceShadowMapArrayId != -1)
-            //{
-            //    GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.faceShadowMapArrayUnit);
-            //    GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.faceShadowMapArrayId);
-            //}
         }
 
         public abstract void InitShadows();

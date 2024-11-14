@@ -58,7 +58,7 @@ namespace Engine3D
         {
             get
             {
-                return new Projection(-30, 30, 30, -30, 0.1f, 1000);
+                return new Projection(-30, 30, 30, -30, 0.1f, 100);
             }
         }
     }

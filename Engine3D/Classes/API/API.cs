@@ -142,7 +142,7 @@ namespace Engine3D
                 switch (type)
                 {
                     case ShadowType.Top:
-                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                        GL.CopyImageSubData(shadowMapArray.cubeShadowMapArrayId,
                             ImageTarget.Texture2DArray, 0, 0, 0,
                             light.properties.shadowIndex + 0,
                             debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
@@ -150,7 +150,7 @@ namespace Engine3D
                         );
                         return debugTexture1024;
                     case ShadowType.Bottom:
-                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                        GL.CopyImageSubData(shadowMapArray.cubeShadowMapArrayId,
                             ImageTarget.Texture2DArray, 0, 0, 0,
                             light.properties.shadowIndex + 1,
                             debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
@@ -158,7 +158,7 @@ namespace Engine3D
                         );
                         return debugTexture1024;
                     case ShadowType.Left:
-                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                        GL.CopyImageSubData(shadowMapArray.cubeShadowMapArrayId,
                             ImageTarget.Texture2DArray, 0, 0, 0,
                             light.properties.shadowIndex + 2,
                             debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
@@ -166,7 +166,7 @@ namespace Engine3D
                         );
                         return debugTexture1024;
                     case ShadowType.Right:
-                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                        GL.CopyImageSubData(shadowMapArray.cubeShadowMapArrayId,
                             ImageTarget.Texture2DArray, 0, 0, 0,
                             light.properties.shadowIndex + 3,
                             debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
@@ -174,7 +174,7 @@ namespace Engine3D
                         );
                         return debugTexture1024;
                     case ShadowType.Front:
-                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                        GL.CopyImageSubData(shadowMapArray.cubeShadowMapArrayId,
                             ImageTarget.Texture2DArray, 0, 0, 0,
                             light.properties.shadowIndex + 4,
                             debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,
@@ -182,7 +182,7 @@ namespace Engine3D
                         );
                         return debugTexture1024;
                     case ShadowType.Back:
-                        GL.CopyImageSubData(shadowMapArray.faceShadowMapArrayId,
+                        GL.CopyImageSubData(shadowMapArray.cubeShadowMapArrayId,
                             ImageTarget.Texture2DArray, 0, 0, 0,
                             light.properties.shadowIndex + 5,
                             debugTexture1024, ImageTarget.Texture2D, 0, 0, 0, 0,

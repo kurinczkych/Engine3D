@@ -96,39 +96,17 @@ namespace Engine3D
 
         public override void BindForWriting(ShadowType type)
         {
-            switch(type)
-            {
-                case ShadowType.Top:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
-                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex);
-                    GL.Viewport(0, 0, shadowTop.size, shadowTop.size);
-                    break;
-                case ShadowType.Bottom:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
-                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 1);
-                    GL.Viewport(0, 0, shadowBottom.size, shadowBottom.size);
-                    break;
-                case ShadowType.Left:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
-                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 2);
-                    GL.Viewport(0, 0, shadowLeft.size, shadowLeft.size);
-                    break;
-                case ShadowType.Right:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
-                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 3);
-                    GL.Viewport(0, 0, shadowRight.size, shadowRight.size);
-                    break;
-                case ShadowType.Front:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
-                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 4);
-                    GL.Viewport(0, 0, shadowFront.size, shadowFront.size);
-                    break;
-                case ShadowType.Back:
-                    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
-                    GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer, FramebufferAttachment.DepthAttachment, Engine.shadowMapArray.faceShadowMapArrayId, 0, properties.shadowIndex + 5);
-                    GL.Viewport(0, 0, shadowBack.size, shadowBack.size);
-                    break;
-            }
+            // Bind the framebuffer for shadow rendering
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, Engine.globalShadowFrameBuffer);
+
+            // Bind the entire cube map layer for the specified light
+            GL.FramebufferTextureLayer(FramebufferTarget.DrawFramebuffer,
+                                       FramebufferAttachment.DepthAttachment,
+                                       Engine.shadowMapArray.cubeShadowMapArrayId,
+                                       0, properties.shadowIndex);
+
+            // Set the viewport based on shadow map resolution (assuming all faces use the same resolution)
+            GL.Viewport(0, 0, 1024, 1024);
         }
 
         public override void InitShadows()
@@ -143,7 +121,7 @@ namespace Engine3D
             };
             shadowLeft = new Shadow(1024, ShadowType.Left)
             {
-                projection = Projection.ShadowFace
+                projection = Projection.ShadowFace  
             };
             shadowRight = new Shadow(1024, ShadowType.Right)
             {
@@ -174,37 +152,49 @@ namespace Engine3D
                         shadowTop.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceTopMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowTop.projectionMatrix;
                         properties.lightSpaceTopMatrix.Transpose();
-                        invCombinedMatrix = Matrix4.Invert(shadowTop.projectionMatrix * GetLightViewMatrixForFrustum(shadowTop.shadowType));
+                        invCombinedMatrix = GetLightViewMatrixForFrustum(ShadowType.Top + i) * shadowTop.projectionMatrix;
+                        invCombinedMatrix.Transpose();
+                        invCombinedMatrix = Matrix4.Invert(invCombinedMatrix);
                         break;
                     case 1:
                         shadowBottom.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceBottomMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowBottom.projectionMatrix;
                         properties.lightSpaceBottomMatrix.Transpose();
-                        invCombinedMatrix = Matrix4.Invert(shadowBottom.projectionMatrix * GetLightViewMatrixForFrustum(shadowBottom.shadowType));
+                        invCombinedMatrix = GetLightViewMatrixForFrustum(ShadowType.Top + i) * shadowBottom.projectionMatrix;
+                        invCombinedMatrix.Transpose();
+                        invCombinedMatrix = Matrix4.Invert(invCombinedMatrix);
                         break;
                     case 2:
                         shadowLeft.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceLeftMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowLeft.projectionMatrix;
                         properties.lightSpaceLeftMatrix.Transpose();
-                        invCombinedMatrix = Matrix4.Invert(shadowLeft.projectionMatrix * GetLightViewMatrixForFrustum(shadowLeft.shadowType));
+                        invCombinedMatrix = GetLightViewMatrixForFrustum(ShadowType.Top + i) * shadowLeft.projectionMatrix;
+                        invCombinedMatrix.Transpose();
+                        invCombinedMatrix = Matrix4.Invert(invCombinedMatrix);
                         break;
                     case 3:
                         shadowRight.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceRightMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowRight.projectionMatrix;
                         properties.lightSpaceRightMatrix.Transpose();
-                        invCombinedMatrix = Matrix4.Invert(shadowRight.projectionMatrix * GetLightViewMatrixForFrustum(shadowRight.shadowType));
+                        invCombinedMatrix = GetLightViewMatrixForFrustum(ShadowType.Top + i) * shadowRight.projectionMatrix;
+                        invCombinedMatrix.Transpose();
+                        invCombinedMatrix = Matrix4.Invert(invCombinedMatrix);
                         break;
                     case 4:
                         shadowFront.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceFrontMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowFront.projectionMatrix;
                         properties.lightSpaceFrontMatrix.Transpose();
-                        invCombinedMatrix = Matrix4.Invert(shadowFront.projectionMatrix * GetLightViewMatrixForFrustum(shadowFront.shadowType));
+                        invCombinedMatrix = GetLightViewMatrixForFrustum(ShadowType.Top + i) * shadowFront.projectionMatrix;
+                        invCombinedMatrix.Transpose();
+                        invCombinedMatrix = Matrix4.Invert(invCombinedMatrix);
                         break;
                     case 5:
                         shadowBack.projectionMatrix = GetProjectionMatrix(ShadowType.Top + i);
                         properties.lightSpaceBackMatrix = GetLightViewMatrix(ShadowType.Top + i) * shadowBack.projectionMatrix;
                         properties.lightSpaceBackMatrix.Transpose();
-                        invCombinedMatrix = Matrix4.Invert(shadowBack.projectionMatrix * GetLightViewMatrixForFrustum(shadowBack.shadowType));
+                        invCombinedMatrix = GetLightViewMatrixForFrustum(ShadowType.Top + i) * shadowBack.projectionMatrix;
+                        invCombinedMatrix.Transpose();
+                        invCombinedMatrix = Matrix4.Invert(invCombinedMatrix);
                         break;
                 }
 
@@ -232,9 +222,19 @@ namespace Engine3D
                 frustum.fbl = Helper.Transform(invCombinedMatrix, ndcCorners[6]);
                 frustum.fbr = Helper.Transform(invCombinedMatrix, ndcCorners[7]);
 
+                frustum.ntl /= frustum.ntl.W;
+                frustum.ntr /= frustum.ntr.W;
+                frustum.nbl /= frustum.nbl.W;
+                frustum.nbr /= frustum.nbr.W;
+                frustum.ftl /= frustum.ftl.W;
+                frustum.ftr /= frustum.ftr.W;
+                frustum.fbl /= frustum.fbl.W;
+                frustum.fbr /= frustum.fbr.W;
+
                 if (!gizmos.ContainsKey("frustumGizmo" + i.ToString()))
                 {
                     gizmos.Add("frustumGizmo" + i.ToString(), new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
+                    gizmos["frustumGizmo" + i.ToString()].alwaysVisible = true;
                     gizmos["frustumGizmo" + i.ToString()].AddFrustumGizmo(frustum, Color4.Red);
                     gizmos["frustumGizmo" + i.ToString()].recalculate = true;
                     gizmos["frustumGizmo" + i.ToString()].RecalculateModelMatrix(new bool[] { true, false, false });
@@ -251,14 +251,14 @@ namespace Engine3D
                     if (!gizmos.ContainsKey("positionGizmo"))
                     {
                         gizmos.Add("positionGizmo", new Gizmo(wireVao, wireVbo, wireShaderId, windowSize, ref camera, ref parentObject));
-                        gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, parentObject.transformation.Position);
+                        gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green);
                         gizmos["positionGizmo"].recalculate = true;
                         gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
                     }
                     else
                     {
                         gizmos["positionGizmo"].model.meshes.Clear();
-                        gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green, parentObject.transformation.Position);
+                        gizmos["positionGizmo"].AddSphereGizmo(2, Color4.Green);
                         gizmos["positionGizmo"].recalculate = true;
                         gizmos["positionGizmo"].RecalculateModelMatrix(new bool[] { true, false, false });
                     }
@@ -301,22 +301,22 @@ namespace Engine3D
             switch (type)
             {
                 case ShadowType.Top:
-                    lightView = Matrix4.LookAt(parentObject.transformation.Position, parentObject.transformation.Position + Vector3.UnitY, Vector3.UnitZ);
+                    lightView = Matrix4.LookAt(Vector3.Zero, Vector3.UnitY, Vector3.UnitZ);
                     break;
                 case ShadowType.Bottom:
-                    lightView = Matrix4.LookAt(parentObject.transformation.Position, parentObject.transformation.Position - Vector3.UnitY, -Vector3.UnitZ);
+                    lightView = Matrix4.LookAt(Vector3.Zero, -Vector3.UnitY, -Vector3.UnitZ);
                     break;
                 case ShadowType.Left:
-                    lightView = Matrix4.LookAt(parentObject.transformation.Position, parentObject.transformation.Position - Vector3.UnitX, Vector3.UnitY);
+                    lightView = Matrix4.LookAt(Vector3.Zero, -Vector3.UnitX, Vector3.UnitY);
                     break;
                 case ShadowType.Right:
-                    lightView = Matrix4.LookAt(parentObject.transformation.Position, parentObject.transformation.Position + Vector3.UnitX, Vector3.UnitY);
+                    lightView = Matrix4.LookAt(Vector3.Zero, Vector3.UnitX, Vector3.UnitY);
                     break;
                 case ShadowType.Front:
-                    lightView = Matrix4.LookAt(parentObject.transformation.Position, parentObject.transformation.Position + Vector3.UnitZ, Vector3.UnitY);
+                    lightView = Matrix4.LookAt(Vector3.Zero, Vector3.UnitZ, Vector3.UnitY);
                     break;
                 case ShadowType.Back:
-                    lightView = Matrix4.LookAt(parentObject.transformation.Position, parentObject.transformation.Position - Vector3.UnitZ, Vector3.UnitY);
+                    lightView = Matrix4.LookAt(Vector3.Zero, -Vector3.UnitZ, Vector3.UnitY);
                     break;
             }
             return lightView;
