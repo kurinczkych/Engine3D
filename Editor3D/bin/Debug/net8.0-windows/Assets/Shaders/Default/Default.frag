@@ -16,14 +16,19 @@ struct Light
     vec4 specular;    
 
     float specularPow;
-    float padding2;
-    float padding3;
+    float farPlanePointLight;
+    float nearPlanePointLight;
     float padding4;
+
+    float minBias;
+    float maxBias;
+    float padding5;
+    float padding6;
 
     int lightType; 
     int shadowIndex;
-    int padding6;
     int padding7;
+    int padding8;
 
     mat4 lightSpaceSmallMatrix;
     mat4 lightSpaceMediumMatrix;
@@ -32,14 +37,7 @@ struct Light
     float cascadeFarPlaneSmall; 
     float cascadeFarPlaneMedium;
     float cascadeFarPlaneLarge;
-    float padding8;          
-    
-    mat4 lightSpaceTopMatrix;  
-    mat4 lightSpaceBottomMatrix;
-    mat4 lightSpaceLeftMatrix;
-    mat4 lightSpaceRightMatrix;
-    mat4 lightSpaceFrontMatrix;
-    mat4 lightSpaceBackMatrix;
+    float padding9;
 }; 
 
 in vec3 gsFragPos;
@@ -166,19 +164,24 @@ float PointShadowCalculation(Light light, vec3 normal)
     float currentDepth = length(lightDir);
 
     // 2. Normalize the direction vector for cube map sampling
-    vec3 normalizedLightDir = normalize(lightDir);
+    vec3 normalizedLightDir = normalize(gsFragPos - light.position.xyz);
 
      // 3. Sample the closest depth stored in the cube shadow map
     float closestDepth = texture(cubeShadowMaps, vec4(normalizedLightDir, light.shadowIndex)).r;
 
     // 4. Convert the sampled depth (in [0, 1]) back to world-space depth
-//    closestDepth *= 100;
+//    closestDepth *= light.farPlanePointLight;
 
     // 5. Compute a bias to prevent self-shadowing (shadow acne)
-    float bias = max(0.005 * (1.0 - dot(normalizedLightDir, normalize(normal))), 0.001);
+    float bias = max(light.maxBias * (1.0 - dot(normal, normalize(lightDir))), light.minBias);
+
+    float linearDepth = currentDepth;
+    float nonLinearDepth = (linearDepth - light.nearPlanePointLight) / (light.farPlanePointLight - light.nearPlanePointLight); // Normalize
+    nonLinearDepth = (light.farPlanePointLight * nonLinearDepth) / linearDepth;
 
     // 6. Perform depth comparison to determine if the fragment is in shadow
-    float shadow = (1-currentDepth/100) > closestDepth + bias ? 1.0 : 0.0;
+    float shadow = nonLinearDepth > closestDepth + bias ? 1.0 : 0.0;
+//    float shadow = (1-currentDepth/ light.farPlanePointLight) >= closestDepth + bias ? 1.0 : 0.0;
 
 //    return (1-currentDepth/100);
 //    return closestDepth;
@@ -257,8 +260,8 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 
     // Final color calculation, ensuring that contributions do not affect the back face
     float shadow = PointShadowCalculation(light, normal); 
-//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
-    return vec3(shadow);
+    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
+//    return vec3(shadow);
 } 
 
 vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)

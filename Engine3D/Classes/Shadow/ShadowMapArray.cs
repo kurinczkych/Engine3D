@@ -113,8 +113,8 @@ namespace Engine3D
             cubeShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.TextureCubeMapArray, cubeShadowMapArrayId);
 
-            GL.TexImage3D(TextureTarget.TextureCubeMapArray, 0, PixelInternalFormat.DepthComponent32,
-                          4096, 4096, (pointIndex + 1) * 6, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexImage3D(TextureTarget.TextureCubeMapArray, 0, PixelInternalFormat.DepthComponent,
+                          1024, 1024, (pointIndex + 1) * 6, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
 
             GL.TexParameter(TextureTarget.TextureCubeMapArray, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
             GL.TexParameter(TextureTarget.TextureCubeMapArray, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);

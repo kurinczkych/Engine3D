@@ -1,5 +1,6 @@
 ﻿using Assimp;
 using ImGuiNET;
+using Newtonsoft.Json.Linq;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -350,6 +351,18 @@ namespace Engine3D
                             if (pl.properties.quadratic != point[2])
                                 pl.properties.quadratic = point[2];
                         }
+
+                        if (ImGui.SliderFloat("MinBias", ref light.properties.minBias, 0.00001f, 0.01f, "%.6f"))
+                        {
+                            light.RecalculateShadows();
+                            Light.SendUBOToGPU(engine.lights, engine.lightUBO);
+                        }
+                        if(ImGui.SliderFloat("MaxBias", ref light.properties.maxBias, 0.00001f, 0.01f, "%.6f"))
+                        {
+                            light.RecalculateShadows();
+                            Light.SendUBOToGPU(engine.lights, engine.lightUBO);
+                        }
+
                     }
                 }
 

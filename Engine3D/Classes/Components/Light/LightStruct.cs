@@ -25,14 +25,19 @@ namespace Engine3D
         public Vector4 specular;
 
         public float specularPow;
-        public float padding2;
-        public float padding3;
+        public float farPlanePointLight;
+        public float nearPlanePointLight;
         public float padding4;
+
+        public float minBias;
+        public float maxBias;
+        public float padding5;
+        public float padding6;
 
         public int lightType;
         public int shadowIndex;
-        public int padding6;
         public int padding7;
+        public int padding8;
 
         public Matrix4 lightSpaceSmallMatrix;
         public Matrix4 lightSpaceMediumMatrix;
@@ -41,13 +46,6 @@ namespace Engine3D
         public float cascadeFarPlaneSmall;
         public float cascadeFarPlaneMedium;
         public float cascadeFarPlaneLarge;
-        public float padding8;
-
-        public Matrix4 lightSpaceTopMatrix;
-        public Matrix4 lightSpaceBottomMatrix;
-        public Matrix4 lightSpaceLeftMatrix;
-        public Matrix4 lightSpaceRightMatrix;
-        public Matrix4 lightSpaceFrontMatrix;
-        public Matrix4 lightSpaceBackMatrix;
+        public float padding9;
     }
 }
