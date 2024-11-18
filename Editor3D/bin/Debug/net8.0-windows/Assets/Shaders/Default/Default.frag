@@ -160,20 +160,50 @@ float DirShadowCalculation(Light light, vec3 normal)
 
 float PointShadowCalculation(Light light, vec3 normal)
 {
-    vec3 lightDir = gsFragPos - vec3(light.position);
+    vec3 lightDir = gsFragPos - light.position.xyz;
 
-    // Sample the cube shadow map directly
-    float closestDepth = texture(cubeShadowMaps, vec4(normalize(lightDir), light.shadowIndex)).r;
+    // 1. Compute current depth (distance from the fragment to the light, not normalized)
     float currentDepth = length(lightDir);
-    
-    // Calculate bias to avoid shadow artifacts
-    float slopeScaleFactor = 0.01;
-    float constantBias = 0.0005;
-    float bias = max(slopeScaleFactor * (1.0 - dot(normal, normalize(lightDir))), constantBias);
 
-    // Perform shadow comparison
-    float shadow = (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
+    // 2. Normalize the direction vector for cube map sampling
+    vec3 normalizedLightDir = normalize(lightDir);
+
+     // 3. Sample the closest depth stored in the cube shadow map
+    float closestDepth = texture(cubeShadowMaps, vec4(normalizedLightDir, light.shadowIndex)).r;
+
+    // 4. Convert the sampled depth (in [0, 1]) back to world-space depth
+//    closestDepth *= 100;
+
+    // 5. Compute a bias to prevent self-shadowing (shadow acne)
+    float bias = max(0.005 * (1.0 - dot(normalizedLightDir, normalize(normal))), 0.001);
+
+    // 6. Perform depth comparison to determine if the fragment is in shadow
+    float shadow = (1-currentDepth/100) > closestDepth + bias ? 1.0 : 0.0;
+
+//    return (1-currentDepth/100);
+//    return closestDepth;
     return shadow;
+
+
+//    vec3 lightDir = gsFragPos - light.position.xyz;
+//
+//    // Sample the cube shadow map directly
+//    float closestDepth = texture(cubeShadowMaps, vec4(normalize(lightDir), light.shadowIndex)).r * 50;
+//
+//    float currentDepth = length(lightDir);
+//    
+//    // Calculate bias to avoid shadow artifacts
+////    float slopeScaleFactor = 0.01;
+////    float constantBias = 0.0005;
+////    float bias = max(slopeScaleFactor * (1.0 - dot(normal, lightDir)), constantBias);
+//    float cosTheta = dot(normalize(normal), normalize(lightDir));
+//
+//    // Use a small base bias and scale it by the angle
+//    float bias = max(0.005 * (1.0 - cosTheta), 0.001);
+//
+//    // Perform shadow comparison
+//    float shadow = (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
+//    return shadow;
 }
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir, float metalness)
@@ -227,8 +257,8 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 viewDir, float metalness)
 
     // Final color calculation, ensuring that contributions do not affect the back face
     float shadow = PointShadowCalculation(light, normal); 
-    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
-//    return (ambient + diffuse + specular) * light.color.xyz;
+//    return (ambient + diffuse * (1.0 - shadow * 0.5) + specular * (1.0 - shadow)) * light.color.xyz;
+    return vec3(shadow);
 } 
 
 vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir, float metalness)

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Engine3D
 {
     public enum ShadowType { Small, Medium, Large,
-                             Top, Bottom, Left, Right, Front, Back}
+                             Right, Left, Top, Bottom, Front, Back}
 
     public abstract class Light : IComponent
     {
@@ -148,6 +148,8 @@ namespace Engine3D
         #region Shadow
         public static void ManageShadowArrays(List<Light> lights, ref ShadowMapArray shadowMapArray)
         {
+            shadowMapArray.GetTextureUnits();
+
             bool justCreated = false;
             if(shadowMapArray.smallShadowMapArrayId == -1)
                 justCreated = true;
@@ -171,17 +173,21 @@ namespace Engine3D
                 }
             }
 
-            if(dirIndex != -1 && dirIndex != shadowMapArray.dirIndex)
+            if (dirIndex != -1 && dirIndex != shadowMapArray.dirIndex)
             {
                 shadowMapArray.dirIndex = dirIndex;
                 shadowMapArray.CreateResizeDirArray();
             }
+            //else if (dirIndex == -1)
+            //    shadowMapArray.DeleteDirArray();
 
-            if(pointIndex != -1 && pointIndex != shadowMapArray.pointIndex)
+            if (pointIndex != -1 && pointIndex != shadowMapArray.pointIndex)
             {
-                shadowMapArray.pointIndex = pointIndex * 6;
+                shadowMapArray.pointIndex = pointIndex;
                 shadowMapArray.CreateResizePointArray();
             }
+            //else if (pointIndex == -1)
+            //    shadowMapArray.DeletePointArray();
 
             if (justCreated)
                 Engine.CreateGlobalShadowFramebuffer();
@@ -214,12 +220,12 @@ namespace Engine3D
                 GL.Uniform1(largeShadowMapsLoc, Engine.shadowMapArray.largeShadowMapArrayUnit);
             }
 
-            var faceShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "faceShadowMaps");
-            if (faceShadowMapsLoc != -1 && Engine.shadowMapArray.cubeShadowMapArrayId != -1)
+            var cubeShadowMapsLoc = GL.GetUniformLocation(shaderProgramId, "cubeShadowMaps");
+            if (cubeShadowMapsLoc != -1 && Engine.shadowMapArray.cubeShadowMapArrayId != -1)
             {
-                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.cubehadowMapArrayUnit);
-                GL.BindTexture(TextureTarget.Texture2DArray, Engine.shadowMapArray.cubeShadowMapArrayId);
-                GL.Uniform1(faceShadowMapsLoc, Engine.shadowMapArray.cubehadowMapArrayUnit);
+                GL.ActiveTexture(TextureUnit.Texture0 + Engine.shadowMapArray.cubeShadowMapArrayUnit);
+                GL.BindTexture(TextureTarget.TextureCubeMapArray, Engine.shadowMapArray.cubeShadowMapArrayId);
+                GL.Uniform1(cubeShadowMapsLoc, Engine.shadowMapArray.cubeShadowMapArrayUnit);
             }
         }
 

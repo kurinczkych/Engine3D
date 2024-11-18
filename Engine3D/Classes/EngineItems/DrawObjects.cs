@@ -254,24 +254,24 @@ namespace Engine3D
                     switch (i)
                     {
                         case 0:
-                            light.BindForWriting(pl.shadowTop.shadowType);
-                            shadowProj = pl.shadowTop.projectionMatrix;
-                            shadowView = light.GetLightViewMatrix(pl.shadowTop.shadowType);
+                            light.BindForWriting(pl.shadowRight.shadowType);
+                            shadowProj = pl.shadowRight.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowRight.shadowType);
                             break;
                         case 1:
-                            light.BindForWriting(pl.shadowBottom.shadowType);
-                            shadowProj = pl.shadowBottom.projectionMatrix;
-                            shadowView = light.GetLightViewMatrix(pl.shadowBottom.shadowType);
-                            break;
-                        case 2:
                             light.BindForWriting(pl.shadowLeft.shadowType);
                             shadowProj = pl.shadowLeft.projectionMatrix;
                             shadowView = light.GetLightViewMatrix(pl.shadowLeft.shadowType);
                             break;
+                        case 2:
+                            light.BindForWriting(pl.shadowTop.shadowType);
+                            shadowProj = pl.shadowTop.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowTop.shadowType);
+                            break;
                         case 3:
-                            light.BindForWriting(pl.shadowRight.shadowType);
-                            shadowProj = pl.shadowRight.projectionMatrix;
-                            shadowView = light.GetLightViewMatrix(pl.shadowRight.shadowType);
+                            light.BindForWriting(pl.shadowBottom.shadowType);
+                            shadowProj = pl.shadowBottom.projectionMatrix;
+                            shadowView = light.GetLightViewMatrix(pl.shadowBottom.shadowType);
                             break;
                         case 4:
                             light.BindForWriting(pl.shadowFront.shadowType);

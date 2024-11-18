@@ -16,13 +16,23 @@ namespace Engine3D
         public int largeShadowMapArrayId = -1;
         public int largeShadowMapArrayUnit = -1;
         public int cubeShadowMapArrayId = -1;
-        public int cubehadowMapArrayUnit = -1;
+        public int cubeShadowMapArrayUnit = -1;
         public int dirIndex = -1;
         public int pointIndex = -1;
 
         public ShadowMapArray()
         {
-            
+        }
+
+        public void GetTextureUnits()
+        {
+            if (smallShadowMapArrayUnit == -1)
+            {
+                smallShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
+                mediumShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
+                largeShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
+                cubeShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
+            }
         }
 
         public void CreateResizeDirArray()
@@ -31,7 +41,6 @@ namespace Engine3D
             if(mediumShadowMapArrayId != -1) GL.DeleteTexture(mediumShadowMapArrayId);
             if(largeShadowMapArrayId != -1) GL.DeleteTexture(largeShadowMapArrayId);
 
-            smallShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             smallShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, smallShadowMapArrayId);
 
@@ -47,7 +56,6 @@ namespace Engine3D
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.None);
             GL.BindTexture(TextureTarget.Texture2DArray, 0);
 
-            mediumShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             mediumShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, mediumShadowMapArrayId);
 
@@ -63,7 +71,6 @@ namespace Engine3D
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.None);
             GL.BindTexture(TextureTarget.Texture2DArray, 0);
 
-            largeShadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             largeShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2DArray, largeShadowMapArrayId);
 
@@ -78,20 +85,36 @@ namespace Engine3D
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureCompareMode, (int)TextureCompareMode.None);
             GL.BindTexture(TextureTarget.Texture2DArray, 0);
+        }
 
+        public void DeleteDirArray()
+        {
+            if (smallShadowMapArrayId != -1)
+            {
+                GL.DeleteTexture(smallShadowMapArrayId);
+                smallShadowMapArrayId = -1;
+            }
+            if (mediumShadowMapArrayId != -1)
+            {
+                GL.DeleteTexture(mediumShadowMapArrayId);
+                mediumShadowMapArrayId = -1;
+            }
+            if (largeShadowMapArrayId != -1)
+            {
+                GL.DeleteTexture(largeShadowMapArrayId);
+                largeShadowMapArrayId = -1;
+            }
         }
 
         public void CreateResizePointArray()
         {
             if (cubeShadowMapArrayId != -1) GL.DeleteTexture(cubeShadowMapArrayId);
 
-            cubehadowMapArrayUnit = Engine.textureManager.GetTextureUnit();
             cubeShadowMapArrayId = GL.GenTexture();
             GL.BindTexture(TextureTarget.TextureCubeMapArray, cubeShadowMapArrayId);
 
-            // is Float -> UnsignedByte? TODO
-            GL.TexImage3D(TextureTarget.TextureCubeMapArray, 0, PixelInternalFormat.DepthComponent,
-                          1024, 1024, (pointIndex + 1), 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+            GL.TexImage3D(TextureTarget.TextureCubeMapArray, 0, PixelInternalFormat.DepthComponent32,
+                          4096, 4096, (pointIndex + 1) * 6, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
 
             GL.TexParameter(TextureTarget.TextureCubeMapArray, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
             GL.TexParameter(TextureTarget.TextureCubeMapArray, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
@@ -99,6 +122,16 @@ namespace Engine3D
             GL.TexParameter(TextureTarget.TextureCubeMapArray, TextureParameterName.TextureWrapT, (float)TextureWrapMode.ClampToBorder);
             GL.TexParameter(TextureTarget.TextureCubeMapArray, TextureParameterName.TextureBorderColor, new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
             GL.BindTexture(TextureTarget.TextureCubeMapArray, cubeShadowMapArrayId);
+        }
+
+        public void DeletePointArray()
+        {
+            if (cubeShadowMapArrayId != -1)
+            {
+                GL.DeleteTexture(cubeShadowMapArrayId);
+                cubeShadowMapArrayId = -1;
+                cubeShadowMapArrayUnit = -1;
+            }
         }
     }
 }
